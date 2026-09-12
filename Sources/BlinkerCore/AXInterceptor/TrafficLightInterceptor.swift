@@ -169,7 +169,7 @@ public final class TrafficLightInterceptor {
 
         let buttonName = String(describing: button)
         let actionName = String(describing: action)
-        let summary = "\(buttonName, privacy: .public) -> \(actionName, privacy: .public)"
+        let summary = "\(buttonName) -> \(actionName)"
         logger.info("\(bundleIdentifier, privacy: .public): \(summary, privacy: .public)")
         return (button, action)
     }
