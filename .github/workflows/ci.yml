@@ -22,12 +22,22 @@ jobs:
 
   lint:
     runs-on: macos-15
+    env:
+      SWIFTFORMAT_VERSION: 0.63.0
+      SWIFTLINT_VERSION: 0.62.2
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install SwiftLint & SwiftFormat
+      - name: Install pinned SwiftLint & SwiftFormat
         run: |
-          brew install swiftlint swiftformat
+          curl -LsS "https://github.com/nicklockwood/SwiftFormat/releases/download/${SWIFTFORMAT_VERSION}/swiftformat.zip" -o /tmp/swiftformat.zip
+          curl -LsS "https://github.com/realm/SwiftLint/releases/download/${SWIFTLINT_VERSION}/portable_swiftlint.zip" -o /tmp/swiftlint.zip
+          mkdir -p /usr/local/bin
+          unzip -oq /tmp/swiftformat.zip -d /tmp/swiftformat
+          unzip -oq /tmp/swiftlint.zip -d /tmp/swiftlint
+          install /tmp/swiftformat/swiftformat /usr/local/bin/swiftformat
+          install /tmp/swiftlint/swiftlint /usr/local/bin/swiftlint
+          swiftlint version && swiftformat --version
 
       - name: SwiftLint
         run: swiftlint lint --strict

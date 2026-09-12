@@ -1,4 +1,9 @@
 # Rules: enabled by default, disabled by exception.
+# trailing_comma is disabled because SwiftFormat owns comma placement
+# (it adds trailing commas in multi-line collections).
+disabled_rules:
+  - trailing_comma
+
 opt_in_rules:
   - empty_count
   - explicit_init
