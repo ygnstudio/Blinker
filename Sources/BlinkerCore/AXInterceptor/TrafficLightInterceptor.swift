@@ -20,6 +20,8 @@ public final class TrafficLightInterceptor {
     private let workQueue = DispatchQueue(label: "com.ygnstudio.blinker.interceptor")
     private let logger = Logger(subsystem: "com.ygnstudio.blinker", category: "interceptor")
 
+    private static let titleBarBandHeight: CGFloat = 32
+
     public init(ruleEngine: RuleEngine) {
         self.ruleEngine = ruleEngine
     }
@@ -102,13 +104,32 @@ public final class TrafficLightInterceptor {
 
         let location = event.location
         guard let window = Self.windowUnderPoint(location) else { return Unmanaged.passUnretained(event) }
+        guard let decision = resolveDecision(location: location, window: window) else {
+            return Unmanaged.passUnretained(event)
+        }
 
+        // Swallow the original click and perform the remapped action.
+        workQueue.async { [weak self] in
+            self?.perform(
+                decision.action,
+                button: decision.button,
+                processIdentifier: window.processIdentifier
+            )
+        }
+        return nil
+    }
+
+    /// Resolves whether the click should be intercepted and with which action.
+    /// Logs every rejection reason; returns `nil` for pass-through.
+    private func resolveDecision(
+        location: CGPoint,
+        window: WindowHit
+    ) -> (button: TrafficButton, action: ButtonAction)? {
         // Coarse rejection: only clicks inside the title bar band reach the
         // (comparatively expensive) AX hit test.
-        let titleBarBandHeight: CGFloat = 32
-        guard location.y - window.bounds.minY <= titleBarBandHeight else {
+        guard location.y - window.bounds.minY <= Self.titleBarBandHeight else {
             logger.debug("click outside title bar band; pass-through")
-            return Unmanaged.passUnretained(event)
+            return nil
         }
 
         guard
@@ -116,13 +137,13 @@ public final class TrafficLightInterceptor {
             let bundleIdentifier = app.bundleIdentifier
         else {
             logger.debug("no running app/bundle id for pid \(window.processIdentifier)")
-            return Unmanaged.passUnretained(event)
+            return nil
         }
 
         // Cheap second rejection: no rule for this app at all.
         guard ruleEngine.hasRule(forBundleIdentifier: bundleIdentifier) else {
-            logger.debug("\(bundleIdentifier, privacy: .public) has no rule; pass-through")
-            return Unmanaged.passUnretained(event)
+            logger.debug("\(bundleIdentifier, privacy: .public): no rule; pass-through")
+            return nil
         }
 
         guard
@@ -131,35 +152,27 @@ public final class TrafficLightInterceptor {
                 expectedProcessIdentifier: window.processIdentifier
             )
         else {
-            logger.debug("\(bundleIdentifier, privacy: .public): AX hit test found no traffic button")
-            return Unmanaged.passUnretained(event)
+            logger.debug("\(bundleIdentifier, privacy: .public): AX found no traffic button")
+            return nil
         }
 
         guard let action = ruleEngine.action(forBundleIdentifier: bundleIdentifier, button: button) else {
-            logger
-                .debug(
-                    "\(bundleIdentifier, privacy: .public): rule maps \(button.axSubrole) to nil; pass-through"
-                )
-            return Unmanaged.passUnretained(event)
+            logger.debug("\(bundleIdentifier, privacy: .public): \(button.axSubrole) maps to nil")
+            return nil
         }
 
         guard action.isImplemented else {
-            logger
-                .info(
-                    "\(bundleIdentifier, privacy: .public): action \(String(describing: action)) not implemented yet"
-                )
-            return Unmanaged.passUnretained(event)
+            let actionName = String(describing: action)
+            logger.info("\(bundleIdentifier, privacy: .public): \(actionName) not implemented")
+            return nil
         }
 
-        // Swallow the original click and perform the remapped action.
-        logger
-            .info(
-                "\(bundleIdentifier, privacy: .public): intercepting \(button.axSubrole, privacy: .public) -> \(String(describing: action), privacy: .public)"
-            )
-        workQueue.async { [weak self] in
-            self?.perform(action, button: button, processIdentifier: window.processIdentifier)
-        }
-        return nil
+        let buttonName = String(describing: button)
+        let actionName = String(describing: action)
+        logger.info(
+            "\(bundleIdentifier, privacy: .public): \(buttonName, privacy: .public) -> \(actionName, privacy: .public)"
+        )
+        return (button, action)
     }
 
     // MARK: - Action execution
