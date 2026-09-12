@@ -18,8 +18,28 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
     func applicationDidFinishLaunching(_: Notification) {
         // Menu bar app: no Dock icon, no main window.
         NSApp.setActivationPolicy(.accessory)
+        observeWindowVisibility()
         observeAccessibilityTrustChanges()
         attemptStartInterceptor()
+    }
+
+    /// Activates the app so newly opened windows (settings) appear on top.
+    /// Menu bar apps run with the `.accessory` policy and are not activated
+    /// automatically when they open a window.
+    func bringToFront() {
+        NSApp.activate(ignoringOtherApps: true)
+    }
+
+    /// Safety net: whenever any window of the app becomes key, pull the
+    /// app to the front again. Covers paths that bypass `bringToFront()`.
+    private func observeWindowVisibility() {
+        NotificationCenter.default.addObserver(
+            forName: NSWindow.didBecomeKeyNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            self?.bringToFront()
+        }
     }
 
     /// Starts (or restarts, e.g. after the permission was granted) interception.

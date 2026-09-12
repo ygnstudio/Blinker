@@ -4,12 +4,16 @@ import SwiftUI
 @main
 struct BlinkerApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
+    @Environment(\.openSettings) private var openSettings
 
     var body: some Scene {
         MenuBarExtra("Blinker", systemImage: "circle.circle") {
             InterceptorStatusRow(appDelegate: appDelegate)
             Divider()
-            SettingsLink { Text("设置…") }
+            Button("设置…") {
+                appDelegate.bringToFront()
+                openSettings()
+            }
             Button("重新检查权限") {
                 appDelegate.attemptStartInterceptor()
             }
