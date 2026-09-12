@@ -1,5 +1,5 @@
-import XCTest
 @testable import BlinkerCore
+import XCTest
 
 final class RuleEngineTests: XCTestCase {
     func testReturnsNilWhenNoRuleMatches() {

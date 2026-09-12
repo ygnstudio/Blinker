@@ -44,7 +44,9 @@ public final class TrafficLightInterceptor {
                 tap: .cghidEventTap,
                 place: .headInsertEventTap,
                 options: .defaultTap,
-                eventsOfInterest: CGEventMask(1 << CGEventType.leftMouseDown.rawValue),
+                eventsOfInterest: CGEventMask(
+                    1 << CGEventType.leftMouseDown.rawValue
+                ),
                 callback: callback,
                 userInfo: Unmanaged.passUnretained(self).toOpaque()
             )
@@ -174,15 +176,17 @@ public final class TrafficLightInterceptor {
     /// Zooms the focused window to fill the screen without entering fullscreen.
     private static func zoomWindowWithoutFullscreen(processIdentifier: pid_t) {
         guard let window = focusedWindowElement(processIdentifier: processIdentifier) else { return }
-        AXUIElementSetAttributeValue(window, "AXZoomWindow" as CFString, kCFBooleanTrue)
+        let zoomAttribute = "AXZoomWindow" as CFString
+        AXUIElementSetAttributeValue(window, zoomAttribute, kCFBooleanTrue)
     }
 
     private static func focusedWindowElement(processIdentifier: pid_t) -> AXUIElement? {
         let appElement = AXUIElementCreateApplication(processIdentifier)
         var windowRef: CFTypeRef?
-        let result = AXUIElementCopyAttributeValue(appElement, kAXFocusedWindowAttribute as CFString, &windowRef)
+        let focusedWindow = kAXFocusedWindowAttribute as CFString
+        let result = AXUIElementCopyAttributeValue(appElement, focusedWindow, &windowRef)
         guard result == .success, let window = windowRef else { return nil }
-        return window as! AXUIElement
+        return unsafeDowncast(window, to: AXUIElement.self)
     }
 
     private static func stringAttribute(_ element: AXUIElement, _ attribute: String) -> String? {
@@ -200,12 +204,16 @@ public final class TrafficLightInterceptor {
 
     /// Cheaply finds the topmost standard on-screen window containing the point.
     private static func windowUnderPoint(_ point: CGPoint) -> WindowHit? {
-        let windowList = CGWindowListCopyWindowInfo([.optionOnScreenOnly], kCGNullWindowID) as? [[String: Any]] ?? []
+        let windowList = CGWindowListCopyWindowInfo([.optionOnScreenOnly], kCGNullWindowID)
+            as? [[String: Any]] ?? []
         for info in windowList {
             guard info[kCGWindowLayer as String] as? Int == 0 else { continue }
             guard
                 let boundsDictionary = info[kCGWindowBounds as String],
-                let bounds = CGRect(dictionaryRepresentation: boundsDictionary as! CFDictionary),
+                // CGWindowList values are toll-free-bridged CF objects.
+                let bounds = CGRect(
+                    dictionaryRepresentation: boundsDictionary as! CFDictionary // swiftlint:disable:this force_cast
+                ),
                 bounds.contains(point)
             else { continue }
             guard let pid = info[kCGWindowOwnerPID as String] as? pid_t else { continue }

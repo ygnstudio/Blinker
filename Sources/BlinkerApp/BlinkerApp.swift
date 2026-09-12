@@ -1,5 +1,5 @@
-import SwiftUI
 import BlinkerCore
+import SwiftUI
 
 @main
 struct BlinkerApp: App {

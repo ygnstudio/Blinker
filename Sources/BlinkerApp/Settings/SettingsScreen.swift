@@ -1,5 +1,5 @@
-import SwiftUI
 import BlinkerCore
+import SwiftUI
 
 /// The settings window: per-app remapping of the red and green buttons.
 struct SettingsScreen: View {

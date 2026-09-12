@@ -1,6 +1,6 @@
+import BlinkerCore
 import AppKit
 import SwiftUI
-import BlinkerCore
 
 /// Owns the long-lived app state: the rule store and the event interceptor.
 final class AppDelegate: NSObject, NSApplicationDelegate {

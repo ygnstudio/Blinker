@@ -14,7 +14,10 @@ public final class RuleStore: ObservableObject {
     /// Published for SwiftUI observation; read via `snapshot` off the main thread.
     @Published public private(set) var rules: [AppRule] = []
 
-    public init(defaults: UserDefaults = .standard, storageKey: String = "com.ygnstudio.blinker.rules") {
+    public init(
+        defaults: UserDefaults = .standard,
+        storageKey: String = "com.ygnstudio.blinker.rules"
+    ) {
         self.defaults = defaults
         self.storageKey = storageKey
         rules = Self.load(defaults: defaults, key: storageKey)
