@@ -113,7 +113,7 @@ public final class TrafficLightInterceptor {
             self?.perform(
                 decision.action,
                 button: decision.button,
-                processIdentifier: window.processIdentifier
+                window: window
             )
         }
         return nil
@@ -176,22 +176,28 @@ public final class TrafficLightInterceptor {
 
     // MARK: - Action execution
 
-    private func perform(_ action: ButtonAction, button: TrafficButton, processIdentifier: pid_t) {
-        let runningApp = NSRunningApplication(processIdentifier: processIdentifier)
+    private func perform(_ action: ButtonAction, button: TrafficButton, window hit: WindowHit) {
+        let runningApp = NSRunningApplication(processIdentifier: hit.processIdentifier)
+
+        // Resolve the AX window that was actually clicked. The swallowed
+        // mouse-down never activates the app, so the focused window can be a
+        // different one; matching by frame keeps the action on the right
+        // window when several windows of the same app are open.
+        guard let targetWindow = Self.resolveWindow(for: hit) else { return }
 
         switch (button, action) {
         case (.close, .closeWindow), (.minimize, .minimize), (.zoom, .fullscreen):
             // The remapped action equals a native press of the clicked button.
-            Self.pressElement(subrole: button.axSubrole, processIdentifier: processIdentifier)
+            Self.pressElement(subrole: button.axSubrole, in: targetWindow)
         case (_, .quitApp):
-            logger.info("terminating pid \(processIdentifier)")
+            logger.info("terminating pid \(hit.processIdentifier)")
             runningApp?.terminate()
         case (_, .hideApp):
-            logger.info("hiding pid \(processIdentifier)")
+            logger.info("hiding pid \(hit.processIdentifier)")
             runningApp?.hide()
         case (_, .maximize):
-            logger.info("zooming window of pid \(processIdentifier)")
-            Self.zoomWindowWithoutFullscreen(processIdentifier: processIdentifier)
+            logger.info("zooming pid \(hit.processIdentifier) window")
+            Self.zoomWindow(targetWindow)
         case (_, .closeWindow), (_, .minimize), (_, .fullscreen), (_, .none):
             break
         case (_, .tileLeft), (_, .tileRight):
@@ -201,12 +207,26 @@ public final class TrafficLightInterceptor {
 
     // MARK: - AX helpers
 
+    /// Bounds within this distance (in points) count as the same window when
+    /// matching a `CGWindowList` hit against an AX window frame.
+    private static let frameMatchTolerance: CGFloat = 1
+
+    /// AX calls are synchronous IPC into the target app; a hung app would
+    /// otherwise block the event tap for seconds. Cap every element at 250 ms.
+    private static let messagingTimeout: Float = 0.25
+
+    /// Applies the capped messaging timeout to an element and its descendants.
+    private static func applyMessagingTimeout(_ element: AXUIElement) {
+        AXUIElementSetMessagingTimeout(element, messagingTimeout)
+    }
+
     /// Identifies the traffic button under the cursor via an AX hit test.
     private static func trafficButton(
         at point: CGPoint,
         expectedProcessIdentifier processIdentifier: pid_t
     ) -> TrafficButton? {
         let systemWide = AXUIElementCreateSystemWide()
+        applyMessagingTimeout(systemWide)
         var element: AXUIElement?
         let result = AXUIElementCopyElementAtPosition(systemWide, Float(point.x), Float(point.y), &element)
         guard result == .success, let element else { return nil }
@@ -218,9 +238,41 @@ public final class TrafficLightInterceptor {
         return TrafficButton(axSubrole: subrole)
     }
 
-    /// Finds a button by subrole inside the focused window of an app and presses it.
-    private static func pressElement(subrole: String, processIdentifier: pid_t) {
-        guard let window = focusedWindowElement(processIdentifier: processIdentifier) else { return }
+    /// Resolves the AX window matching a `CGWindowList` hit by frame, falling
+    /// back to the app's focused window when no frame matches closely.
+    private static func resolveWindow(for hit: WindowHit) -> AXUIElement? {
+        let appElement = AXUIElementCreateApplication(hit.processIdentifier)
+        applyMessagingTimeout(appElement)
+
+        var windowsRef: CFTypeRef?
+        guard
+            AXUIElementCopyAttributeValue(appElement, kAXWindowsAttribute as CFString, &windowsRef) ==
+            .success,
+            let windows = windowsRef as? [AXUIElement]
+        else {
+            return focusedWindowElement(processIdentifier: hit.processIdentifier)
+        }
+
+        let matched = windows.first { window in
+            guard let frame = windowFrame(of: window) else { return false }
+            return abs(frame.minX - hit.bounds.minX) <= frameMatchTolerance
+                && abs(frame.minY - hit.bounds.minY) <= frameMatchTolerance
+                && abs(frame.width - hit.bounds.width) <= frameMatchTolerance
+                && abs(frame.height - hit.bounds.height) <= frameMatchTolerance
+        }
+        return matched ?? focusedWindowElement(processIdentifier: hit.processIdentifier)
+    }
+
+    /// Reads a window's frame in AX (top-left origin) coordinates.
+    private static func windowFrame(of window: AXUIElement) -> CGRect? {
+        var origin = CGPoint.zero
+        var size = CGSize.zero
+        guard readWindowFrame(window, origin: &origin, size: &size) else { return nil }
+        return CGRect(origin: origin, size: size)
+    }
+
+    /// Finds a button by subrole inside the given window and presses it.
+    private static func pressElement(subrole: String, in window: AXUIElement) {
         var childrenRef: CFTypeRef?
         guard
             AXUIElementCopyAttributeValue(window, kAXChildrenAttribute as CFString, &childrenRef) == .success,
@@ -234,15 +286,13 @@ public final class TrafficLightInterceptor {
         }
     }
 
-    /// Zooms the focused window to fill the visible frame of the screen it is
-    /// mostly on, without entering fullscreen.
+    /// Zooms the window to fill the visible frame of the screen it is mostly
+    /// on, without entering fullscreen.
     ///
     /// The `AXZoomWindow` attribute is read-only in practice, so the zoom is
     /// performed by setting the window position and size directly — the same
     /// approach Rectangle and Magnet use.
-    private static func zoomWindowWithoutFullscreen(processIdentifier: pid_t) {
-        guard let window = focusedWindowElement(processIdentifier: processIdentifier) else { return }
-
+    private static func zoomWindow(_ window: AXUIElement) {
         var windowOrigin = CGPoint.zero
         var windowSize = CGSize.zero
         guard readWindowFrame(window, origin: &windowOrigin, size: &windowSize) else { return }
@@ -302,6 +352,7 @@ public final class TrafficLightInterceptor {
 
     private static func focusedWindowElement(processIdentifier: pid_t) -> AXUIElement? {
         let appElement = AXUIElementCreateApplication(processIdentifier)
+        applyMessagingTimeout(appElement)
         var windowRef: CFTypeRef?
         let focusedWindow = kAXFocusedWindowAttribute as CFString
         let result = AXUIElementCopyAttributeValue(appElement, focusedWindow, &windowRef)

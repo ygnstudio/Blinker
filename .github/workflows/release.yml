@@ -8,7 +8,19 @@ permissions:
   contents: write
 
 jobs:
+  test:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build
+        run: swift build
+
+      - name: Run tests
+        run: swift test
+
   release:
+    needs: test
     runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
@@ -16,42 +28,14 @@ jobs:
       - name: Build universal binary
         run: swift build -c release --arch arm64 --arch x86_64
 
-      - name: Assemble Blinker.app
+      - name: Assemble and zip Blinker.app
         env:
           VERSION: ${{ github.ref_name }}
         run: |
-          APP=Blinker.app
           APP_VERSION="${VERSION#v}"
-          mkdir -p "$APP/Contents/MacOS"
-          cp .build/apple/Products/Release/Blinker "$APP/Contents/MacOS/Blinker"
-          cat > "$APP/Contents/Info.plist" <<PLIST
-          <?xml version="1.0" encoding="UTF-8"?>
-          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-          <plist version="1.0">
-          <dict>
-              <key>CFBundleExecutable</key>
-              <string>Blinker</string>
-              <key>CFBundleIdentifier</key>
-              <string>com.ygnstudio.Blinker</string>
-              <key>CFBundleName</key>
-              <string>Blinker</string>
-              <key>CFBundlePackageType</key>
-              <string>APPL</string>
-              <key>CFBundleShortVersionString</key>
-              <string>$APP_VERSION</string>
-              <key>CFBundleVersion</key>
-              <string>1</string>
-              <key>LSMinimumSystemVersion</key>
-              <string>15.0</string>
-              <key>LSUIElement</key>
-              <true/>
-              <key>NSPrincipalClass</key>
-              <string>NSApplication</string>
-          </dict>
-          </plist>
-          PLIST
-          codesign --force --sign - "$APP"
-          ditto -c -k --keepParent "$APP" "Blinker-${VERSION}-universal.zip"
+          Scripts/package-app.sh .build/apple/Products/Release/Blinker \
+            "$APP_VERSION" "${GITHUB_RUN_NUMBER}" "Blinker.app"
+          ditto -c -k --keepParent Blinker.app "Blinker-${VERSION}-universal.zip"
           shasum -a 256 "Blinker-${VERSION}-universal.zip" > SHA256SUMS.txt
 
       - name: Upload to GitHub Release

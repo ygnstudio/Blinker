@@ -108,8 +108,9 @@ private struct RuleRowView: View {
     static let closeOptions: [ButtonAction?] = [
         nil, .closeWindow, .quitApp, .minimize, .hideApp, ButtonAction.none,
     ]
+    /// Tile actions land in a follow-up release and stay hidden until then.
     static let zoomOptions: [ButtonAction?] = [
-        nil, .maximize, .fullscreen, .tileLeft, .tileRight, ButtonAction.none,
+        nil, .maximize, .fullscreen, ButtonAction.none,
     ]
 
     var body: some View {
