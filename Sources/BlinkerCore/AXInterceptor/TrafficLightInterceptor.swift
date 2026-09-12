@@ -1,6 +1,7 @@
 import AppKit
 import ApplicationServices
 import CoreGraphics
+import os
 
 /// Intercepts mouse clicks on traffic light buttons of other applications and
 /// remaps them according to the active rules.
@@ -17,6 +18,7 @@ public final class TrafficLightInterceptor {
     private var eventTap: CFMachPort?
     private var runLoopSource: CFRunLoopSource?
     private let workQueue = DispatchQueue(label: "com.ygnstudio.blinker.interceptor")
+    private let logger = Logger(subsystem: "com.ygnstudio.blinker", category: "interceptor")
 
     public init(ruleEngine: RuleEngine) {
         self.ruleEngine = ruleEngine
@@ -31,7 +33,10 @@ public final class TrafficLightInterceptor {
     @discardableResult
     public func start() -> Bool {
         guard eventTap == nil else { return true }
-        guard AccessibilityPermission.isTrusted else { return false }
+        guard AccessibilityPermission.isTrusted else {
+            logger.error("start aborted: accessibility permission missing")
+            return false
+        }
 
         let callback: CGEventTapCallBack = { _, eventType, event, userData in
             guard let userData else { return Unmanaged.passUnretained(event) }
@@ -52,7 +57,10 @@ public final class TrafficLightInterceptor {
                 callback: callback,
                 userInfo: Unmanaged.passUnretained(self).toOpaque()
             )
-        else { return false }
+        else {
+            logger.error("CGEvent.tapCreate returned nil (hidTap, headInsert, defaultTap)")
+            return false
+        }
 
         let source = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, tap, 0)
         CFRunLoopAddSource(CFRunLoopGetMain(), source, .commonModes)
@@ -60,6 +68,7 @@ public final class TrafficLightInterceptor {
 
         eventTap = tap
         runLoopSource = source
+        logger.info("event tap installed and enabled")
         return true
     }
 
@@ -83,6 +92,7 @@ public final class TrafficLightInterceptor {
     private func handle(event: CGEvent, eventType: CGEventType) -> Unmanaged<CGEvent>? {
         // The system can disable the tap (e.g. after a timeout); re-arm it.
         if eventType == .tapDisabledByTimeout || eventType == .tapDisabledByUserInput {
+            logger.warning("tap disabled (\(eventType.rawValue)); re-enabling")
             if let tap = eventTap {
                 CGEvent.tapEnable(tap: tap, enable: true)
             }
@@ -97,16 +107,21 @@ public final class TrafficLightInterceptor {
         // (comparatively expensive) AX hit test.
         let titleBarBandHeight: CGFloat = 32
         guard location.y - window.bounds.minY <= titleBarBandHeight else {
+            logger.debug("click outside title bar band; pass-through")
             return Unmanaged.passUnretained(event)
         }
 
         guard
             let app = NSRunningApplication(processIdentifier: window.processIdentifier),
             let bundleIdentifier = app.bundleIdentifier
-        else { return Unmanaged.passUnretained(event) }
+        else {
+            logger.debug("no running app/bundle id for pid \(window.processIdentifier)")
+            return Unmanaged.passUnretained(event)
+        }
 
         // Cheap second rejection: no rule for this app at all.
         guard ruleEngine.hasRule(forBundleIdentifier: bundleIdentifier) else {
+            logger.debug("\(bundleIdentifier, privacy: .public) has no rule; pass-through")
             return Unmanaged.passUnretained(event)
         }
 
@@ -114,13 +129,33 @@ public final class TrafficLightInterceptor {
             let button = Self.trafficButton(
                 at: location,
                 expectedProcessIdentifier: window.processIdentifier
-            ),
-            let action = ruleEngine.action(forBundleIdentifier: bundleIdentifier, button: button)
-        else { return Unmanaged.passUnretained(event) }
+            )
+        else {
+            logger.debug("\(bundleIdentifier, privacy: .public): AX hit test found no traffic button")
+            return Unmanaged.passUnretained(event)
+        }
 
-        guard action.isImplemented else { return Unmanaged.passUnretained(event) }
+        guard let action = ruleEngine.action(forBundleIdentifier: bundleIdentifier, button: button) else {
+            logger
+                .debug(
+                    "\(bundleIdentifier, privacy: .public): rule maps \(button.axSubrole) to nil; pass-through"
+                )
+            return Unmanaged.passUnretained(event)
+        }
+
+        guard action.isImplemented else {
+            logger
+                .info(
+                    "\(bundleIdentifier, privacy: .public): action \(String(describing: action)) not implemented yet"
+                )
+            return Unmanaged.passUnretained(event)
+        }
 
         // Swallow the original click and perform the remapped action.
+        logger
+            .info(
+                "\(bundleIdentifier, privacy: .public): intercepting \(button.axSubrole, privacy: .public) -> \(String(describing: action), privacy: .public)"
+            )
         workQueue.async { [weak self] in
             self?.perform(action, button: button, processIdentifier: window.processIdentifier)
         }
@@ -137,10 +172,13 @@ public final class TrafficLightInterceptor {
             // The remapped action equals a native press of the clicked button.
             Self.pressElement(subrole: button.axSubrole, processIdentifier: processIdentifier)
         case (_, .quitApp):
+            logger.info("terminating pid \(processIdentifier)")
             runningApp?.terminate()
         case (_, .hideApp):
+            logger.info("hiding pid \(processIdentifier)")
             runningApp?.hide()
         case (_, .maximize):
+            logger.info("zooming window of pid \(processIdentifier)")
             Self.zoomWindowWithoutFullscreen(processIdentifier: processIdentifier)
         case (_, .closeWindow), (_, .minimize), (_, .fullscreen), (_, .none):
             break

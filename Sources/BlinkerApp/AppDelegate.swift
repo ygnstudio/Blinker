@@ -1,30 +1,112 @@
 import AppKit
 import BlinkerCore
+import os
 import SwiftUI
 
 /// Owns the long-lived app state: the rule store and the event interceptor.
-final class AppDelegate: NSObject, NSApplicationDelegate {
+final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
     let ruleStore = RuleStore()
 
+    @Published private(set) var isIntercepting = false
+    @Published private(set) var statusMessage = "检查辅助功能权限…"
+
     private var interceptor: TrafficLightInterceptor?
+    private var retryTimer: Timer?
+    private var hasPromptedForPermission = false
+    private let logger = Logger(subsystem: "com.ygnstudio.blinker", category: "app")
 
     func applicationDidFinishLaunching(_: Notification) {
         // Menu bar app: no Dock icon, no main window.
         NSApp.setActivationPolicy(.accessory)
-
-        guard AccessibilityPermission.isTrusted else {
-            AccessibilityPermission.prompt()
-            return
-        }
-        startInterceptor()
+        observeAccessibilityTrustChanges()
+        attemptStartInterceptor()
     }
 
     /// Starts (or restarts, e.g. after the permission was granted) interception.
-    func startInterceptor() {
-        guard AccessibilityPermission.isTrusted else { return }
+    func attemptStartInterceptor() {
+        guard interceptor == nil else {
+            // Already running; still refresh the visible status.
+            statusMessage = "拦截运行中"
+            return
+        }
+        guard AccessibilityPermission.isTrusted else {
+            statusMessage = "未授权辅助功能"
+            logger.error("accessibility permission missing")
+            if !hasPromptedForPermission {
+                hasPromptedForPermission = true
+                AccessibilityPermission.prompt()
+            }
+            schedulePermissionRetry()
+            return
+        }
+
         let engine = RuleEngine { [weak ruleStore] in ruleStore?.snapshot ?? [] }
         let interceptor = TrafficLightInterceptor(ruleEngine: engine)
-        guard interceptor.start() else { return }
+        guard interceptor.start() else {
+            statusMessage = "事件监听启动失败"
+            logger.error("event tap creation failed")
+            schedulePermissionRetry()
+            return
+        }
+
         self.interceptor = interceptor
+        isIntercepting = true
+        statusMessage = "拦截运行中"
+        logger.info("interceptor started; event tap active")
+    }
+
+    func stopInterceptor() {
+        interceptor?.stop()
+        interceptor = nil
+        isIntercepting = false
+        statusMessage = "已暂停"
+        logger.info("interceptor stopped")
+    }
+
+    // MARK: - Permission observation
+
+    /// The system posts this distributed notification whenever the
+    /// Accessibility trust list changes (user grants or revokes access).
+    private func observeAccessibilityTrustChanges() {
+        DistributedNotificationCenter.default.addObserver(
+            self,
+            selector: #selector(accessibilityTrustDidChange),
+            name: NSNotification.Name("com.apple.accessibility.api"),
+            object: nil
+        )
+    }
+
+    @objc private func accessibilityTrustDidChange() {
+        logger.info("accessibility trust list changed; re-evaluating")
+        retryTimer?.invalidate()
+        retryTimer = nil
+        attemptStartInterceptor()
+    }
+
+    /// Polls briefly until the user finishes granting access in System
+    /// Settings, in case the distributed notification is missed.
+    private func schedulePermissionRetry() {
+        guard retryTimer == nil else { return }
+        retryTimer = Timer.scheduledTimer(withTimeInterval: 2, repeats: true) { [weak self] _ in
+            guard let self, interceptor == nil else { return }
+            retryTimer?.invalidate()
+            retryTimer = nil
+            attemptStartInterceptor()
+        }
+    }
+}
+
+/// Live status row shown at the top of the menu bar menu.
+struct InterceptorStatusRow: View {
+    @ObservedObject var appDelegate: AppDelegate
+
+    var body: some View {
+        HStack(spacing: 6) {
+            Circle()
+                .fill(appDelegate.isIntercepting ? Color.green : Color.orange)
+                .frame(width: 8, height: 8)
+            Text(appDelegate.statusMessage)
+                .font(.callout)
+        }
     }
 }

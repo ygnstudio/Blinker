@@ -7,7 +7,13 @@ struct BlinkerApp: App {
 
     var body: some Scene {
         MenuBarExtra("Blinker", systemImage: "circle.circle") {
+            InterceptorStatusRow(appDelegate: appDelegate)
+            Divider()
             SettingsLink { Text("设置…") }
+            Button("重新检查权限") {
+                appDelegate.attemptStartInterceptor()
+            }
+            .disabled(appDelegate.isIntercepting)
             Divider()
             Button("退出 Blinker") { NSApp.terminate(nil) }
         }
