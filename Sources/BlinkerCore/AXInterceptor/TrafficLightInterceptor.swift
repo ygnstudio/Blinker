@@ -103,7 +103,10 @@ public final class TrafficLightInterceptor {
         }
 
         guard
-            let button = Self.trafficButton(at: location, expectedProcessIdentifier: window.processIdentifier),
+            let button = Self.trafficButton(
+                at: location,
+                expectedProcessIdentifier: window.processIdentifier
+            ),
             let action = ruleEngine.action(forBundleIdentifier: bundleIdentifier, button: button)
         else { return Unmanaged.passUnretained(event) }
 
@@ -191,7 +194,8 @@ public final class TrafficLightInterceptor {
 
     private static func stringAttribute(_ element: AXUIElement, _ attribute: String) -> String? {
         var value: CFTypeRef?
-        guard AXUIElementCopyAttributeValue(element, attribute as CFString, &value) == .success else { return nil }
+        let result = AXUIElementCopyAttributeValue(element, attribute as CFString, &value)
+        guard result == .success else { return nil }
         return value as? String
     }
 
@@ -211,9 +215,8 @@ public final class TrafficLightInterceptor {
             guard
                 let boundsDictionary = info[kCGWindowBounds as String],
                 // CGWindowList values are toll-free-bridged CF objects.
-                let bounds = CGRect(
-                    dictionaryRepresentation: boundsDictionary as! CFDictionary // swiftlint:disable:this force_cast
-                ),
+                // swiftlint:disable:next force_cast
+                let bounds = CGRect(dictionaryRepresentation: boundsDictionary as! CFDictionary),
                 bounds.contains(point)
             else { continue }
             guard let pid = info[kCGWindowOwnerPID as String] as? pid_t else { continue }

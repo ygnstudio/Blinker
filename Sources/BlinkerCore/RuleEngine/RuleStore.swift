@@ -51,7 +51,9 @@ public final class RuleStore: ObservableObject {
     public func setEnabled(_ isEnabled: Bool, bundleIdentifier: String) {
         assert(Thread.isMainThread, "RuleStore mutations must happen on the main thread")
         lock.withLock {
-            guard let index = rules.firstIndex(where: { $0.bundleIdentifier == bundleIdentifier }) else { return }
+            guard
+                let index = rules.firstIndex(where: { $0.bundleIdentifier == bundleIdentifier })
+            else { return }
             rules[index].isEnabled = isEnabled
         }
         persist()
