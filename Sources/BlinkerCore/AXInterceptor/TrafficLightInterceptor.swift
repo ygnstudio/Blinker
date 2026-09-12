@@ -234,11 +234,70 @@ public final class TrafficLightInterceptor {
         }
     }
 
-    /// Zooms the focused window to fill the screen without entering fullscreen.
+    /// Zooms the focused window to fill the visible frame of the screen it is
+    /// mostly on, without entering fullscreen.
+    ///
+    /// The `AXZoomWindow` attribute is read-only in practice, so the zoom is
+    /// performed by setting the window position and size directly — the same
+    /// approach Rectangle and Magnet use.
     private static func zoomWindowWithoutFullscreen(processIdentifier: pid_t) {
         guard let window = focusedWindowElement(processIdentifier: processIdentifier) else { return }
-        let zoomAttribute = "AXZoomWindow" as CFString
-        AXUIElementSetAttributeValue(window, zoomAttribute, kCFBooleanTrue)
+
+        var windowOrigin = CGPoint.zero
+        var windowSize = CGSize.zero
+        guard readWindowFrame(window, origin: &windowOrigin, size: &windowSize) else { return }
+
+        let globalMaxY = NSScreen.screens.first?.frame.maxY ?? 0
+        // Convert the AX (top-left origin) frame back to AppKit coordinates
+        // to find the screen the window is mostly on.
+        let appKitFrame = CGRect(
+            x: windowOrigin.x,
+            y: globalMaxY - windowOrigin.y - windowSize.height,
+            width: windowSize.width,
+            height: windowSize.height
+        )
+        let targetScreen = NSScreen.screens.first {
+            $0.frame.contains(
+                CGPoint(
+                    x: appKitFrame.midX,
+                    y: appKitFrame.midY
+                )
+            )
+        } ?? NSScreen.main
+
+        guard let visibleFrame = targetScreen?.visibleFrame else { return }
+        var position = CGPoint(
+            x: visibleFrame.minX,
+            y: globalMaxY - visibleFrame.maxY
+        )
+        var size = CGSize(width: visibleFrame.width, height: visibleFrame.height)
+
+        if let positionValue = AXValueCreate(.cgPoint, &position) {
+            AXUIElementSetAttributeValue(window, kAXPositionAttribute as CFString, positionValue)
+        }
+        if let sizeValue = AXValueCreate(.cgSize, &size) {
+            AXUIElementSetAttributeValue(window, kAXSizeAttribute as CFString, sizeValue)
+        }
+    }
+
+    /// Reads the window frame through the AX attributes (top-left origin).
+    private static func readWindowFrame(
+        _ window: AXUIElement,
+        origin: inout CGPoint,
+        size: inout CGSize
+    ) -> Bool {
+        var originRef: CFTypeRef?
+        var sizeRef: CFTypeRef?
+        guard
+            AXUIElementCopyAttributeValue(window, kAXPositionAttribute as CFString, &originRef) == .success,
+            AXUIElementCopyAttributeValue(window, kAXSizeAttribute as CFString, &sizeRef) == .success,
+            let originValue = originRef, let sizeValue = sizeRef
+        else { return false }
+
+        let originAXValue = unsafeDowncast(originValue, to: AXValue.self)
+        let sizeAXValue = unsafeDowncast(sizeValue, to: AXValue.self)
+        return AXValueGetValue(originAXValue, .cgPoint, &origin)
+            && AXValueGetValue(sizeAXValue, .cgSize, &size)
     }
 
     private static func focusedWindowElement(processIdentifier: pid_t) -> AXUIElement? {
