@@ -89,9 +89,9 @@ extension HoverOverlayController {
         return (buttons, axWindow)
     }
 
-    private func cacheButtons(_ buttons: [OverlayButtonInfo], axWindow: AXUIElement?,
-                              hit: AXQuery.WindowHit)
-    {
+    private func cacheButtons(
+        _ buttons: [OverlayButtonInfo], axWindow: AXUIElement?, hit: AXQuery.WindowHit
+    ) {
         cachedButtons = buttons
         cachedAXWindow = axWindow
         cachedWindowPID = hit.processIdentifier
