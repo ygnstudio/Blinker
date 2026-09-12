@@ -5,3 +5,4 @@
 *.xcodeproj
 Blinker.app/
 Package.resolved
+release-artifact/
