@@ -8,7 +8,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private var interceptor: TrafficLightInterceptor?
 
-    func applicationDidFinishLaunching(_ notification: Notification) {
+    func applicationDidFinishLaunching(_: Notification) {
         // Menu bar app: no Dock icon, no main window.
         NSApp.setActivationPolicy(.accessory)
 

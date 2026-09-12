@@ -15,7 +15,7 @@ final class RuleEngineTests: XCTestCase {
                 displayName: "Safari",
                 closeAction: .quitApp,
                 zoomAction: .maximize
-            )
+            ),
         ]
         let engine = RuleEngine(rulesProvider: { rules })
 
@@ -26,7 +26,7 @@ final class RuleEngineTests: XCTestCase {
 
     func testNilActionMeansPassthrough() {
         let rules = [
-            AppRule(bundleIdentifier: "com.apple.Safari", displayName: "Safari")
+            AppRule(bundleIdentifier: "com.apple.Safari", displayName: "Safari"),
         ]
         let engine = RuleEngine(rulesProvider: { rules })
 
@@ -54,15 +54,15 @@ final class RuleEngineTests: XCTestCase {
                 bundleIdentifier: "com.apple.Safari",
                 displayName: "Safari",
                 closeAction: .quitApp
-            )
+            ),
         ]
         let engine = RuleEngine(rulesProvider: { rules })
         XCTAssertNil(engine.action(forBundleIdentifier: "com.apple.Safari", button: .minimize))
     }
 
-    func testRuleStoreRoundTripsThroughDefaults() {
+    func testRuleStoreRoundTripsThroughDefaults() throws {
         let suiteName = "RuleStoreTests.\(UUID().uuidString)"
-        let defaults = UserDefaults(suiteName: suiteName)!
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
         defer { defaults.removePersistentDomain(forName: suiteName) }
 
         let store = RuleStore(defaults: defaults)

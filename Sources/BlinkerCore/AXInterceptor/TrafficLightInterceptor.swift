@@ -22,7 +22,9 @@ public final class TrafficLightInterceptor {
         self.ruleEngine = ruleEngine
     }
 
-    public var isRunning: Bool { eventTap != nil }
+    public var isRunning: Bool {
+        eventTap != nil
+    }
 
     /// Installs the event tap. Returns `false` when the Accessibility
     /// permission is missing or the system refuses the tap.
@@ -62,8 +64,12 @@ public final class TrafficLightInterceptor {
     }
 
     public func stop() {
-        if let tap = eventTap { CGEvent.tapEnable(tap: tap, enable: false) }
-        if let source = runLoopSource { CFRunLoopRemoveSource(CFRunLoopGetMain(), source, .commonModes) }
+        if let tap = eventTap {
+            CGEvent.tapEnable(tap: tap, enable: false)
+        }
+        if let source = runLoopSource {
+            CFRunLoopRemoveSource(CFRunLoopGetMain(), source, .commonModes)
+        }
         eventTap = nil
         runLoopSource = nil
     }
@@ -77,7 +83,9 @@ public final class TrafficLightInterceptor {
     private func handle(event: CGEvent, eventType: CGEventType) -> Unmanaged<CGEvent>? {
         // The system can disable the tap (e.g. after a timeout); re-arm it.
         if eventType == .tapDisabledByTimeout || eventType == .tapDisabledByUserInput {
-            if let tap = eventTap { CGEvent.tapEnable(tap: tap, enable: true) }
+            if let tap = eventTap {
+                CGEvent.tapEnable(tap: tap, enable: true)
+            }
             return Unmanaged.passUnretained(event)
         }
         guard eventType == .leftMouseDown else { return Unmanaged.passUnretained(event) }
@@ -232,9 +240,9 @@ private extension TrafficButton {
     /// The AX subrole that identifies this button inside another app's window.
     var axSubrole: String {
         switch self {
-        case .close: return "AXCloseButton"
-        case .minimize: return "AXMinimizeButton"
-        case .zoom: return "AXFullScreenButton"
+        case .close: "AXCloseButton"
+        case .minimize: "AXMinimizeButton"
+        case .zoom: "AXFullScreenButton"
         }
     }
 
@@ -253,9 +261,9 @@ private extension ButtonAction {
     var isImplemented: Bool {
         switch self {
         case .closeWindow, .quitApp, .minimize, .hideApp, .maximize, .fullscreen, .none:
-            return true
+            true
         case .tileLeft, .tileRight:
-            return false
+            false
         }
     }
 }

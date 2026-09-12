@@ -74,7 +74,10 @@ struct SettingsScreen: View {
     }
 
     private struct RunningApp: Identifiable {
-        var id: String { bundleIdentifier }
+        var id: String {
+            bundleIdentifier
+        }
+
         let bundleIdentifier: String
         let name: String
     }
@@ -103,10 +106,10 @@ private struct RuleRowView: View {
     let onRemove: () -> Void
 
     static let closeOptions: [ButtonAction?] = [
-        nil, .closeWindow, .quitApp, .minimize, .hideApp, ButtonAction.none
+        nil, .closeWindow, .quitApp, .minimize, .hideApp, ButtonAction.none,
     ]
     static let zoomOptions: [ButtonAction?] = [
-        nil, .maximize, .fullscreen, .tileLeft, .tileRight, ButtonAction.none
+        nil, .maximize, .fullscreen, .tileLeft, .tileRight, ButtonAction.none,
     ]
 
     var body: some View {

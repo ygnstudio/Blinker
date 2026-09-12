@@ -4,11 +4,11 @@ import PackageDescription
 let package = Package(
     name: "Blinker",
     platforms: [
-        .macOS(.v15)
+        .macOS(.v15),
     ],
     products: [
         .library(name: "BlinkerCore", targets: ["BlinkerCore"]),
-        .executable(name: "Blinker", targets: ["BlinkerApp"])
+        .executable(name: "Blinker", targets: ["BlinkerApp"]),
     ],
     targets: [
         .target(
@@ -24,7 +24,7 @@ let package = Package(
             name: "BlinkerCoreTests",
             dependencies: ["BlinkerCore"],
             path: "Tests/BlinkerCoreTests"
-        )
+        ),
     ],
     swiftLanguageModes: [.v5]
 )

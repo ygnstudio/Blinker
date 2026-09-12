@@ -3,7 +3,9 @@
 /// `closeAction` maps the red button, `zoomAction` maps the green button.
 /// A `nil` action means "keep the system default behavior" for that button.
 public struct AppRule: Identifiable, Codable, Hashable, Sendable {
-    public var id: String { bundleIdentifier }
+    public var id: String {
+        bundleIdentifier
+    }
 
     /// The target application's bundle identifier, e.g. `com.apple.Safari`.
     public let bundleIdentifier: String
