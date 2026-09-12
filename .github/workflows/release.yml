@@ -39,7 +39,8 @@ jobs:
           shasum -a 256 "Blinker-${VERSION}-universal.zip" > SHA256SUMS.txt
 
       - name: Upload to GitHub Release
-        uses: softprops/action-gh-release@v2
+        # Pinned to the commit that `v2` pointed at (supply-chain hardening).
+        uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65
         with:
           files: |
             Blinker-*-universal.zip

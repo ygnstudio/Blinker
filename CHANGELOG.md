@@ -5,6 +5,34 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-09-13
+
+### Added
+- Hover enlargement overlays: enlarged traffic light buttons appear above
+  the native ones while the pointer rests near a window's title bar, with
+  an action preview label and a dwell progress ring for mis-click
+  protection (size 18–48 pt, dwell 0–800 ms, scope all windows or
+  rule apps only; configurable in Settings).
+- Without a per-app rule, an enlarged click performs the button's native
+  action, so enlargement works standalone.
+- Left/right half tiling actions for the green button, implemented via
+  direct window frame setting (visible frame halves).
+- Shared `WindowActionPerformer` used by both the click interceptor and
+  the hover overlays, so every action path behaves identically.
+
+### Fixed
+- Settings window now activates the app when opened from the menu bar;
+  it previously appeared behind the frontmost app.
+- Overlay clicks are gated with a short suppression window so the
+  interceptor event tap can never execute the same click twice.
+- `RuleStore` and `HoverOverlaySettings` mutate published state outside
+  their locks, removing a potential re-entrant deadlock.
+- Hover overlays no longer appear for Blinker's own windows, and a
+  native button press failure is now logged instead of being silent.
+
+### Changed
+- GitHub Actions release action pinned to a commit SHA.
+
 ## [0.1.5] - 2026-09-13
 
 ### Fixed

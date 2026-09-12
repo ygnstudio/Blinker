@@ -3,14 +3,17 @@ import BlinkerCore
 import os
 import SwiftUI
 
-/// Owns the long-lived app state: the rule store and the event interceptor.
+/// Owns the long-lived app state: the rule store, the event interceptor and
+/// the hover overlay.
 final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
     let ruleStore = RuleStore()
+    let hoverOverlaySettingsStore = HoverOverlaySettingsStore()
 
     @Published private(set) var isIntercepting = false
     @Published private(set) var statusMessage = "检查辅助功能权限…"
 
     private var interceptor: TrafficLightInterceptor?
+    private var hoverOverlay: HoverOverlayController?
     private var retryTimer: Timer?
     private var hasPromptedForPermission = false
     private let logger = Logger(subsystem: "com.ygnstudio.blinker", category: "app")
@@ -61,7 +64,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
         }
 
         let engine = RuleEngine { [weak ruleStore] in ruleStore?.snapshot ?? [] }
-        let interceptor = TrafficLightInterceptor(ruleEngine: engine)
+        let performer = DefaultWindowActionPerformer()
+        let interceptor = TrafficLightInterceptor(ruleEngine: engine, actionPerformer: performer)
         guard interceptor.start() else {
             statusMessage = "事件监听启动失败"
             logger.error("event tap creation failed")
@@ -69,7 +73,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
             return
         }
 
+        // The overlay only works while the interceptor's tap is active too.
+        let overlay = HoverOverlayController(
+            ruleEngine: engine,
+            actionPerformer: performer,
+            settingsStore: hoverOverlaySettingsStore
+        )
+        overlay.start()
+
         self.interceptor = interceptor
+        hoverOverlay = overlay
         isIntercepting = true
         statusMessage = "拦截运行中"
         logger.info("interceptor started; event tap active")
@@ -78,9 +91,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
     func stopInterceptor() {
         interceptor?.stop()
         interceptor = nil
+        hoverOverlay?.stop()
+        hoverOverlay = nil
         isIntercepting = false
         statusMessage = "已暂停"
         logger.info("interceptor stopped")
+    }
+
+    /// Persists hover overlay settings and pushes them to the live overlay
+    /// controller (when running) so visible panels refresh immediately.
+    func applyHoverOverlaySettings(_ settings: HoverOverlaySettings) {
+        guard let hoverOverlay else {
+            hoverOverlaySettingsStore.update(settings)
+            return
+        }
+        hoverOverlay.updateConfiguration(settings)
     }
 
     // MARK: - Permission observation

@@ -8,8 +8,36 @@ them on hover so they are easier to see and click.
 
 - Red button → quit the app instead of closing a window (configurable)
 - Green button → maximize (zoom) instead of fullscreen (configurable)
+- Yellow button and window tiling (left/right half) are remappable too
 - Hover enlargement with action preview and mis-click protection
 - Rules only apply to apps you add; everything else keeps system defaults
+
+### Hover enlargement
+
+When the pointer rests near a window's traffic lights, enlarged button
+overlays appear above them:
+
+- Adjustable size (18–48 pt) and dwell delay (0–800 ms) — the dwell ring
+  must fill before a click registers, so brushing past never triggers
+- Action preview labels ("Quit Safari") show what a click will do
+- Without a rule, an enlarged click still performs the button's native
+  action, so enlargement is useful on its own
+- Scope: all windows, or only apps that have rules
+
+### Settings
+
+The menu bar menu opens the settings window with three sections: the
+per-app rule table (red / green actions as dropdowns), the hover
+enlargement section described above, and status / help notes.
+
+### Known limitations
+
+- Secure Input (e.g. password fields) temporarily disables event
+  interception; buttons fall back to system behavior
+- Apps with fully custom title bars (some Electron apps) may expose no
+  standard accessibility buttons and cannot be intercepted
+- The invisible-hotspot enlargement mode (no visual change) is planned
+  for a future release
 
 Requirements: macOS 15+, Apple Silicon & Intel.
 License: MIT.
@@ -43,8 +71,29 @@ Blinker 是一个原生 macOS 菜单栏应用，可按应用单独重定义窗�
 
 - 红灯 → 退出应用（而非仅关闭窗口），可配置
 - 绿灯 → 最大化（而非全屏），可配置
+- 黄灯与左右半屏动作同样可重映射
 - 悬停放大：动作预览 + 防误触 dwell
 - 规则只对你添加的应用生效，其余保持系统默认
+
+### 悬停放大
+
+鼠标停在窗口红绿灯附近时，按钮上方会出现放大覆盖层：
+
+- 尺寸（18–48 pt）与防误触延迟（0–800 ms）可调——进度环填满才响应点击，路过不会误触
+- 悬停时显示动作预览（如「退出 Safari」），点击前明确后果
+- 未配置规则时，放大的点击执行按钮原生动作，放大本身即有价值
+- 作用范围可选：全部窗口，或仅配置了规则的应用
+
+### 设置
+
+菜单栏菜单打开设置窗口，含三个区块：按应用规则表（红/绿动作下拉）、
+悬停放大区块（如上）、状态与帮助说明。
+
+### 已知限制
+
+- 安全输入激活时（如密码框）事件拦截临时失效，按钮回退系统行为
+- 完全自绘标题栏的应用（部分 Electron 应用）无标准辅助功能按钮，无法拦截
+- 纯热区放大模式（不改变视觉外观）计划在后续版本提供
 
 系统要求：macOS 15+，支持 Apple Silicon 与 Intel。
 开源协议：MIT。

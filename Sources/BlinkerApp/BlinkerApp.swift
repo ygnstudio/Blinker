@@ -23,7 +23,11 @@ struct BlinkerApp: App {
         }
 
         Settings {
-            SettingsScreen(ruleStore: appDelegate.ruleStore)
+            SettingsScreen(
+                ruleStore: appDelegate.ruleStore,
+                hoverSettingsStore: appDelegate.hoverOverlaySettingsStore,
+                onApplyHoverSettings: appDelegate.applyHoverOverlaySettings
+            )
         }
     }
 }

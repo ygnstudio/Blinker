@@ -4,6 +4,8 @@ import SwiftUI
 /// The settings window: per-app remapping of the red and green buttons.
 struct SettingsScreen: View {
     @ObservedObject var ruleStore: RuleStore
+    @ObservedObject var hoverSettingsStore: HoverOverlaySettingsStore
+    let onApplyHoverSettings: (HoverOverlaySettings) -> Void
 
     var body: some View {
         VStack(spacing: 0) {
@@ -13,9 +15,11 @@ struct SettingsScreen: View {
                 ruleList
             }
             Divider()
+            HoverSection(store: hoverSettingsStore, onApply: onApplyHoverSettings)
+            Divider()
             footer
         }
-        .frame(width: 560, height: 380)
+        .frame(width: 560, height: 480)
     }
 
     // MARK: - Sections
@@ -66,9 +70,12 @@ struct SettingsScreen: View {
             }
             .disabled(runningApps.isEmpty)
             Spacer()
-            Text("未列出的应用保持系统默认行为")
-                .font(.caption)
-                .foregroundStyle(.secondary)
+            VStack(alignment: .trailing, spacing: 2) {
+                Text("未列出的应用保持系统默认行为")
+                Text("悬停放大适用于所有窗口的标题栏红绿灯，可在上方调整尺寸与防误触延迟")
+            }
+            .font(.caption)
+            .foregroundStyle(.secondary)
         }
         .padding(12)
     }
@@ -108,9 +115,8 @@ private struct RuleRowView: View {
     static let closeOptions: [ButtonAction?] = [
         nil, .closeWindow, .quitApp, .minimize, .hideApp, ButtonAction.none,
     ]
-    /// Tile actions land in a follow-up release and stay hidden until then.
     static let zoomOptions: [ButtonAction?] = [
-        nil, .maximize, .fullscreen, ButtonAction.none,
+        nil, .maximize, .fullscreen, .tileLeft, .tileRight, ButtonAction.none,
     ]
 
     var body: some View {
@@ -197,5 +203,97 @@ private struct RuleRowView: View {
         case .tileRight: return "右半屏"
         case .none: return "无操作"
         }
+    }
+}
+
+/// Hover overlay configuration block: master switch, enlarged size,
+/// anti-mistouch dwell and scope, bound to `HoverOverlaySettingsStore`.
+private struct HoverSection: View {
+    @ObservedObject var store: HoverOverlaySettingsStore
+    let onApply: (HoverOverlaySettings) -> Void
+
+    private var settings: HoverOverlaySettings {
+        store.settings
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("悬停放大")
+                .font(.headline)
+            Toggle("启用悬停放大", isOn: isEnabledBinding)
+            Text("开启后，鼠标悬停到窗口红绿灯按钮上会临时放大，点击即执行对应动作。")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            HStack(spacing: 8) {
+                Text("放大尺寸")
+                    .frame(width: 76, alignment: .leading)
+                Slider(value: enlargedSizeBinding, in: 18 ... 48, step: 1)
+                    .disabled(!settings.isEnabled)
+                Text("\(Int(settings.enlargedSize)) pt")
+                    .monospacedDigit()
+                    .foregroundStyle(.secondary)
+                    .frame(width: 52, alignment: .trailing)
+            }
+            HStack(spacing: 8) {
+                Text("防误触延迟")
+                    .frame(width: 76, alignment: .leading)
+                Slider(value: dwellBinding, in: 0 ... 800, step: 50)
+                    .disabled(!settings.isEnabled)
+                Text(dwellLabel)
+                    .monospacedDigit()
+                    .foregroundStyle(.secondary)
+                    .frame(width: 52, alignment: .trailing)
+            }
+            HStack(spacing: 8) {
+                Text("作用范围")
+                    .frame(width: 76, alignment: .leading)
+                Picker("作用范围", selection: appliesToAllWindowsBinding) {
+                    Text("全部窗口").tag(true)
+                    Text("仅规则应用").tag(false)
+                }
+                .labelsHidden()
+                .frame(width: 140)
+                Spacer()
+            }
+        }
+        .padding(12)
+    }
+
+    private var dwellLabel: String {
+        settings.dwellMilliseconds == 0 ? "立即响应" : "\(settings.dwellMilliseconds) 毫秒"
+    }
+
+    private var isEnabledBinding: Binding<Bool> {
+        Binding(
+            get: { settings.isEnabled },
+            set: { newValue in update { $0.isEnabled = newValue } }
+        )
+    }
+
+    private var enlargedSizeBinding: Binding<Double> {
+        Binding(
+            get: { Double(settings.enlargedSize) },
+            set: { newValue in update { $0.enlargedSize = CGFloat(newValue) } }
+        )
+    }
+
+    private var dwellBinding: Binding<Double> {
+        Binding(
+            get: { Double(settings.dwellMilliseconds) },
+            set: { newValue in update { $0.dwellMilliseconds = Int(newValue) } }
+        )
+    }
+
+    private var appliesToAllWindowsBinding: Binding<Bool> {
+        Binding(
+            get: { settings.appliesToAllWindows },
+            set: { newValue in update { $0.appliesToAllWindows = newValue } }
+        )
+    }
+
+    private func update(_ mutate: (inout HoverOverlaySettings) -> Void) {
+        var updated = settings
+        mutate(&updated)
+        onApply(updated)
     }
 }

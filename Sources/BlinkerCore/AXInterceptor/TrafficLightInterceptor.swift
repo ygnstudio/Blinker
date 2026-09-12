@@ -12,9 +12,11 @@ import os
 /// 2. Hit-test the exact AX element under the cursor and read its subrole to
 ///    identify close / minimize / zoom buttons.
 /// 3. Ask the `RuleEngine` what to do; `nil` means pass the event through.
-/// 4. Otherwise swallow the event and perform the remapped action instead.
+/// 4. Otherwise swallow the event, resolve the clicked AX window and delegate
+///    the action to the `WindowActionPerformer`.
 public final class TrafficLightInterceptor {
     private let ruleEngine: RuleEngine
+    private let actionPerformer: WindowActionPerforming
     private var eventTap: CFMachPort?
     private var runLoopSource: CFRunLoopSource?
     private let workQueue = DispatchQueue(label: "com.ygnstudio.blinker.interceptor")
@@ -22,8 +24,9 @@ public final class TrafficLightInterceptor {
 
     private static let titleBarBandHeight: CGFloat = 32
 
-    public init(ruleEngine: RuleEngine) {
+    public init(ruleEngine: RuleEngine, actionPerformer: WindowActionPerforming) {
         self.ruleEngine = ruleEngine
+        self.actionPerformer = actionPerformer
     }
 
     public var isRunning: Bool {
@@ -102,8 +105,15 @@ public final class TrafficLightInterceptor {
         }
         guard eventType == .leftMouseDown else { return Unmanaged.passUnretained(event) }
 
+        // A click just consumed by a hover overlay panel must not be
+        // re-interpreted here (the tap fires before window routing).
+        guard !OverlayClickGate.isSuppressed else {
+            logger.debug("click suppressed (consumed by overlay panel); pass-through")
+            return Unmanaged.passUnretained(event)
+        }
+
         let location = event.location
-        guard let window = Self.windowUnderPoint(location) else { return Unmanaged.passUnretained(event) }
+        guard let window = AXQuery.windowUnderPoint(location) else { return Unmanaged.passUnretained(event) }
         guard let decision = resolveDecision(location: location, window: window) else {
             return Unmanaged.passUnretained(event)
         }
@@ -123,7 +133,7 @@ public final class TrafficLightInterceptor {
     /// Logs every rejection reason; returns `nil` for pass-through.
     private func resolveDecision(
         location: CGPoint,
-        window: WindowHit
+        window: AXQuery.WindowHit
     ) -> (button: TrafficButton, action: ButtonAction)? {
         // Coarse rejection: only clicks inside the title bar band reach the
         // (comparatively expensive) AX hit test.
@@ -157,13 +167,10 @@ public final class TrafficLightInterceptor {
         }
 
         guard let action = ruleEngine.action(forBundleIdentifier: bundleIdentifier, button: button) else {
-            logger.debug("\(bundleIdentifier, privacy: .public): \(button.axSubrole) maps to nil")
-            return nil
-        }
-
-        guard action.isImplemented else {
-            let actionName = String(describing: action)
-            logger.info("\(bundleIdentifier, privacy: .public): \(actionName) not implemented")
+            logger
+                .debug(
+                    "\(bundleIdentifier, privacy: .public): \(button.axSubrole, privacy: .public) maps to nil"
+                )
             return nil
         }
 
@@ -176,49 +183,29 @@ public final class TrafficLightInterceptor {
 
     // MARK: - Action execution
 
-    private func perform(_ action: ButtonAction, button: TrafficButton, window hit: WindowHit) {
-        let runningApp = NSRunningApplication(processIdentifier: hit.processIdentifier)
-
+    private func perform(_ action: ButtonAction, button: TrafficButton, window hit: AXQuery.WindowHit) {
         // Resolve the AX window that was actually clicked. The swallowed
         // mouse-down never activates the app, so the focused window can be a
         // different one; matching by frame keeps the action on the right
         // window when several windows of the same app are open.
-        guard let targetWindow = Self.resolveWindow(for: hit) else { return }
-
-        switch (button, action) {
-        case (.close, .closeWindow), (.minimize, .minimize), (.zoom, .fullscreen):
-            // The remapped action equals a native press of the clicked button.
-            Self.pressElement(subrole: button.axSubrole, in: targetWindow)
-        case (_, .quitApp):
-            logger.info("terminating pid \(hit.processIdentifier)")
-            runningApp?.terminate()
-        case (_, .hideApp):
-            logger.info("hiding pid \(hit.processIdentifier)")
-            runningApp?.hide()
-        case (_, .maximize):
-            logger.info("zooming pid \(hit.processIdentifier) window")
-            Self.zoomWindow(targetWindow)
-        case (_, .closeWindow), (_, .minimize), (_, .fullscreen), (_, .none):
-            break
-        case (_, .tileLeft), (_, .tileRight):
-            break // Planned for a follow-up release; treated as pass-through.
+        guard
+            let targetWindow = AXQuery.resolveWindow(
+                processIdentifier: hit.processIdentifier,
+                bounds: hit.bounds
+            )
+        else {
+            logger.warning("no AX window matched the clicked CG window")
+            return
         }
+        actionPerformer.perform(
+            action,
+            button: button,
+            window: targetWindow,
+            processIdentifier: hit.processIdentifier
+        )
     }
 
-    // MARK: - AX helpers
-
-    /// Bounds within this distance (in points) count as the same window when
-    /// matching a `CGWindowList` hit against an AX window frame.
-    private static let frameMatchTolerance: CGFloat = 1
-
-    /// AX calls are synchronous IPC into the target app; a hung app would
-    /// otherwise block the event tap for seconds. Cap every element at 250 ms.
-    private static let messagingTimeout: Float = 0.25
-
-    /// Applies the capped messaging timeout to an element and its descendants.
-    private static func applyMessagingTimeout(_ element: AXUIElement) {
-        AXUIElementSetMessagingTimeout(element, messagingTimeout)
-    }
+    // MARK: - AX hit test
 
     /// Identifies the traffic button under the cursor via an AX hit test.
     private static func trafficButton(
@@ -226,7 +213,7 @@ public final class TrafficLightInterceptor {
         expectedProcessIdentifier processIdentifier: pid_t
     ) -> TrafficButton? {
         let systemWide = AXUIElementCreateSystemWide()
-        applyMessagingTimeout(systemWide)
+        AXQuery.applyMessagingTimeout(systemWide)
         var element: AXUIElement?
         let result = AXUIElementCopyElementAtPosition(systemWide, Float(point.x), Float(point.y), &element)
         guard result == .success, let element else { return nil }
@@ -234,196 +221,7 @@ public final class TrafficLightInterceptor {
         var pid: pid_t = 0
         guard AXUIElementGetPid(element, &pid) == .success, pid == processIdentifier else { return nil }
 
-        guard let subrole = stringAttribute(element, kAXSubroleAttribute) else { return nil }
+        guard let subrole = AXQuery.stringAttribute(element, kAXSubroleAttribute) else { return nil }
         return TrafficButton(axSubrole: subrole)
-    }
-
-    /// Resolves the AX window matching a `CGWindowList` hit by frame, falling
-    /// back to the app's focused window when no frame matches closely.
-    private static func resolveWindow(for hit: WindowHit) -> AXUIElement? {
-        let appElement = AXUIElementCreateApplication(hit.processIdentifier)
-        applyMessagingTimeout(appElement)
-
-        var windowsRef: CFTypeRef?
-        guard
-            AXUIElementCopyAttributeValue(appElement, kAXWindowsAttribute as CFString, &windowsRef) ==
-            .success,
-            let windows = windowsRef as? [AXUIElement]
-        else {
-            return focusedWindowElement(processIdentifier: hit.processIdentifier)
-        }
-
-        let matched = windows.first { window in
-            guard let frame = windowFrame(of: window) else { return false }
-            return abs(frame.minX - hit.bounds.minX) <= frameMatchTolerance
-                && abs(frame.minY - hit.bounds.minY) <= frameMatchTolerance
-                && abs(frame.width - hit.bounds.width) <= frameMatchTolerance
-                && abs(frame.height - hit.bounds.height) <= frameMatchTolerance
-        }
-        return matched ?? focusedWindowElement(processIdentifier: hit.processIdentifier)
-    }
-
-    /// Reads a window's frame in AX (top-left origin) coordinates.
-    private static func windowFrame(of window: AXUIElement) -> CGRect? {
-        var origin = CGPoint.zero
-        var size = CGSize.zero
-        guard readWindowFrame(window, origin: &origin, size: &size) else { return nil }
-        return CGRect(origin: origin, size: size)
-    }
-
-    /// Finds a button by subrole inside the given window and presses it.
-    private static func pressElement(subrole: String, in window: AXUIElement) {
-        var childrenRef: CFTypeRef?
-        guard
-            AXUIElementCopyAttributeValue(window, kAXChildrenAttribute as CFString, &childrenRef) == .success,
-            let children = childrenRef as? [AXUIElement]
-        else { return }
-
-        for child in children {
-            guard stringAttribute(child, kAXSubroleAttribute) == subrole else { continue }
-            AXUIElementPerformAction(child, kAXPressAction as CFString)
-            return
-        }
-    }
-
-    /// Zooms the window to fill the visible frame of the screen it is mostly
-    /// on, without entering fullscreen.
-    ///
-    /// The `AXZoomWindow` attribute is read-only in practice, so the zoom is
-    /// performed by setting the window position and size directly — the same
-    /// approach Rectangle and Magnet use.
-    private static func zoomWindow(_ window: AXUIElement) {
-        var windowOrigin = CGPoint.zero
-        var windowSize = CGSize.zero
-        guard readWindowFrame(window, origin: &windowOrigin, size: &windowSize) else { return }
-
-        let globalMaxY = NSScreen.screens.first?.frame.maxY ?? 0
-        // Convert the AX (top-left origin) frame back to AppKit coordinates
-        // to find the screen the window is mostly on.
-        let appKitFrame = CGRect(
-            x: windowOrigin.x,
-            y: globalMaxY - windowOrigin.y - windowSize.height,
-            width: windowSize.width,
-            height: windowSize.height
-        )
-        let targetScreen = NSScreen.screens.first {
-            $0.frame.contains(
-                CGPoint(
-                    x: appKitFrame.midX,
-                    y: appKitFrame.midY
-                )
-            )
-        } ?? NSScreen.main
-
-        guard let visibleFrame = targetScreen?.visibleFrame else { return }
-        var position = CGPoint(
-            x: visibleFrame.minX,
-            y: globalMaxY - visibleFrame.maxY
-        )
-        var size = CGSize(width: visibleFrame.width, height: visibleFrame.height)
-
-        if let positionValue = AXValueCreate(.cgPoint, &position) {
-            AXUIElementSetAttributeValue(window, kAXPositionAttribute as CFString, positionValue)
-        }
-        if let sizeValue = AXValueCreate(.cgSize, &size) {
-            AXUIElementSetAttributeValue(window, kAXSizeAttribute as CFString, sizeValue)
-        }
-    }
-
-    /// Reads the window frame through the AX attributes (top-left origin).
-    private static func readWindowFrame(
-        _ window: AXUIElement,
-        origin: inout CGPoint,
-        size: inout CGSize
-    ) -> Bool {
-        var originRef: CFTypeRef?
-        var sizeRef: CFTypeRef?
-        guard
-            AXUIElementCopyAttributeValue(window, kAXPositionAttribute as CFString, &originRef) == .success,
-            AXUIElementCopyAttributeValue(window, kAXSizeAttribute as CFString, &sizeRef) == .success,
-            let originValue = originRef, let sizeValue = sizeRef
-        else { return false }
-
-        let originAXValue = unsafeDowncast(originValue, to: AXValue.self)
-        let sizeAXValue = unsafeDowncast(sizeValue, to: AXValue.self)
-        return AXValueGetValue(originAXValue, .cgPoint, &origin)
-            && AXValueGetValue(sizeAXValue, .cgSize, &size)
-    }
-
-    private static func focusedWindowElement(processIdentifier: pid_t) -> AXUIElement? {
-        let appElement = AXUIElementCreateApplication(processIdentifier)
-        applyMessagingTimeout(appElement)
-        var windowRef: CFTypeRef?
-        let focusedWindow = kAXFocusedWindowAttribute as CFString
-        let result = AXUIElementCopyAttributeValue(appElement, focusedWindow, &windowRef)
-        guard result == .success, let window = windowRef else { return nil }
-        return unsafeDowncast(window, to: AXUIElement.self)
-    }
-
-    private static func stringAttribute(_ element: AXUIElement, _ attribute: String) -> String? {
-        var value: CFTypeRef?
-        let result = AXUIElementCopyAttributeValue(element, attribute as CFString, &value)
-        guard result == .success else { return nil }
-        return value as? String
-    }
-
-    // MARK: - Window lookup
-
-    private struct WindowHit {
-        let processIdentifier: pid_t
-        let bounds: CGRect
-    }
-
-    /// Cheaply finds the topmost standard on-screen window containing the point.
-    private static func windowUnderPoint(_ point: CGPoint) -> WindowHit? {
-        let windowList = CGWindowListCopyWindowInfo([.optionOnScreenOnly], kCGNullWindowID)
-            as? [[String: Any]] ?? []
-        for info in windowList {
-            guard info[kCGWindowLayer as String] as? Int == 0 else { continue }
-            guard
-                let boundsDictionary = info[kCGWindowBounds as String],
-                // CGWindowList values are toll-free-bridged CF objects.
-                // swiftlint:disable:next force_cast
-                let bounds = CGRect(dictionaryRepresentation: boundsDictionary as! CFDictionary),
-                bounds.contains(point)
-            else { continue }
-            guard let pid = info[kCGWindowOwnerPID as String] as? pid_t else { continue }
-            return WindowHit(processIdentifier: pid, bounds: bounds)
-        }
-        return nil
-    }
-}
-
-// MARK: - Subrole mapping
-
-private extension TrafficButton {
-    /// The AX subrole that identifies this button inside another app's window.
-    var axSubrole: String {
-        switch self {
-        case .close: "AXCloseButton"
-        case .minimize: "AXMinimizeButton"
-        case .zoom: "AXFullScreenButton"
-        }
-    }
-
-    init?(axSubrole: String) {
-        switch axSubrole {
-        case "AXCloseButton": self = .close
-        case "AXMinimizeButton": self = .minimize
-        case "AXZoomButton", "AXFullScreenButton": self = .zoom
-        default: return nil
-        }
-    }
-}
-
-private extension ButtonAction {
-    /// Actions with a v1 implementation; everything else passes through.
-    var isImplemented: Bool {
-        switch self {
-        case .closeWindow, .quitApp, .minimize, .hideApp, .maximize, .fullscreen, .none:
-            true
-        case .tileLeft, .tileRight:
-            false
-        }
     }
 }
