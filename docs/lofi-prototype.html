@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Blinker · 低保真原型 · 全流程</title>
+<style>
+  :root {
+    --bg: #f5f4f0;
+    --surface: #ffffff;
+    --soft: #efeee8;
+    --ink: #2c2c2a;
+    --muted: #888780;
+    --border: #c9c7bd;
+    --accent: #534ab7;
+    --red: #e24b4a;
+    --amber: #ef9f27;
+    --green: #639922;
+    --dot: #b4b2a9;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #232322;
+      --surface: #2c2c2a;
+      --soft: #383836;
+      --ink: #e8e6df;
+      --muted: #a5a39a;
+      --border: #4a4a47;
+      --accent: #afa9ec;
+      --red: #e24b4a;
+      --amber: #ef9f27;
+      --green: #97c459;
+      --dot: #6a6a66;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: -apple-system, "PingFang SC", "Helvetica Neue", sans-serif;
+    font-size: 13px;
+    line-height: 1.6;
+    padding: 32px 24px 80px;
+  }
+  .wrap { max-width: 860px; margin: 0 auto; }
+  h1 { font-size: 20px; font-weight: 500; margin: 0 0 4px; }
+  .sub { color: var(--muted); margin: 0 0 32px; }
+  .toc { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 40px; }
+  .toc a {
+    text-decoration: none; color: var(--ink);
+    border: 1px solid var(--border); border-radius: 999px;
+    padding: 3px 12px; font-size: 12px; background: var(--surface);
+  }
+  section { margin-bottom: 56px; }
+  .sec-head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 6px; }
+  .sec-no { color: var(--muted); font-size: 12px; }
+  h2 { font-size: 15px; font-weight: 500; margin: 0; }
+  .sec-note { color: var(--muted); margin: 0 0 16px; }
+  .frame {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .titlebar {
+    display: flex; align-items: center; gap: 8px;
+    padding: 9px 14px; border-bottom: 1px solid var(--border);
+    background: var(--soft);
+  }
+  .dots { display: flex; gap: 6px; }
+  .dot { width: 11px; height: 11px; border-radius: 50%; background: var(--dot); }
+  .dot.r { background: var(--red); } .dot.y { background: var(--amber); } .dot.g { background: var(--green); }
+  .titlebar .t { font-size: 12px; color: var(--muted); }
+  .body { padding: 16px; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
+  .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; align-items: start; }
+  table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+  th { text-align: left; font-weight: 400; color: var(--muted); font-size: 12px; padding: 6px 8px; border-bottom: 1px solid var(--border); }
+  td { padding: 7px 8px; border-bottom: 1px solid var(--border); font-size: 12px; }
+  select, input[type="text"], button {
+    font-size: 12px; color: var(--ink); background: var(--surface);
+    border: 1px solid var(--border); border-radius: 6px; padding: 3px 8px;
+  }
+  button.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .notes { margin: 14px 0 0; padding: 0; list-style: none; }
+  .notes li { position: relative; padding-left: 18px; color: var(--muted); font-size: 12px; margin-bottom: 4px; }
+  .notes li::before { content: "·"; position: absolute; left: 4px; color: var(--ink); }
+  .flow { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 8px; }
+  .fbox {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 8px; padding: 10px 14px; font-size: 12px; min-width: 110px;
+  }
+  .fbox b { display: block; font-weight: 500; font-size: 12px; }
+  .fbox span { color: var(--muted); font-size: 11px; }
+  .arrow { color: var(--muted); font-size: 14px; }
+  .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 7px; overflow: hidden; }
+  .seg span { padding: 4px 14px; font-size: 12px; color: var(--muted); border-right: 1px solid var(--border); }
+  .seg span:last-child { border-right: none; }
+  .seg .on { background: var(--soft); color: var(--ink); font-weight: 500; }
+  .banner {
+    display: flex; align-items: center; gap: 10px;
+    background: var(--soft); border: 1px dashed var(--border);
+    border-radius: 8px; padding: 10px 14px; font-size: 12px; margin-bottom: 12px;
+  }
+  .banner.warn { border-style: solid; }
+  .kbd {
+    border: 1px solid var(--border); border-bottom-width: 2px; border-radius: 4px;
+    padding: 0 5px; font-size: 11px; font-family: ui-monospace, monospace;
+  }
+  .muted { color: var(--muted); }
+  .center { text-align: center; }
+  .hoverdot { display: inline-block; width: 22px; height: 22px; border-radius: 50%; position: relative; vertical-align: middle; }
+  .hoverdot::after {
+    content: ""; position: absolute; inset: -6px; border-radius: 50%;
+    border: 2px dashed var(--muted);
+  }
+  .menu { border: 1px solid var(--border); border-radius: 8px; padding: 5px; width: 180px; background: var(--surface); }
+  .menu div { padding: 5px 10px; border-radius: 5px; font-size: 12px; }
+  .menu .hi { background: var(--soft); }
+  .menu hr { border: none; border-top: 1px solid var(--border); margin: 4px 0; }
+  .menubar {
+    display: flex; justify-content: space-between; align-items: center;
+    background: var(--soft); border: 1px solid var(--border);
+    border-radius: 6px; padding: 4px 10px; font-size: 12px; color: var(--muted);
+  }
+  .step { display: flex; gap: 12px; align-items: flex-start; margin-bottom: 10px; }
+  .step .n {
+    width: 22px; height: 22px; border-radius: 50%; flex: none;
+    border: 1px solid var(--border); display: flex; align-items: center; justify-content: center;
+    font-size: 11px; color: var(--muted);
+  }
+  footer { color: var(--muted); font-size: 12px; text-align: center; margin-top: 60px; }
+  @media (max-width: 640px) { .grid2, .grid3 { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Blinker · 低保真原型（全流程）</h1>
+  <p class="sub">macOS 红绿灯增强工具 · v0.1 线框稿 · 覆盖安装授权 → 日常使用 → 异常态 → 更新发布 → 后续版本 · 2026-09-12</p>
+
+  <nav class="toc">
+    <a href="#flow">流程总览</a>
+    <a href="#s1">1 首次启动</a>
+    <a href="#s2">2 菜单栏</a>
+    <a href="#s3">3 规则设置</a>
+    <a href="#s4">4 悬停放大</a>
+    <a href="#s5">5 通用</a>
+    <a href="#s6">6 悬停交互</a>
+    <a href="#s8">7 异常态</a>
+    <a href="#s9">8 更新发布</a>
+    <a href="#s10">9 后续规划</a>
+  </nav>
+
+  <!-- ============ 流程总览 ============ -->
+  <section id="flow">
+    <div class="sec-head"><span class="sec-no">00</span><h2>全流程总览</h2></div>
+    <p class="sec-note">用户视角的完整生命周期，后续每节展开对应环节</p>
+    <div class="flow">
+      <div class="fbox"><b>首次启动</b><span>引导授权</span></div><span class="arrow">→</span>
+      <div class="fbox"><b>常驻监控</b><span>菜单栏静默运行</span></div><span class="arrow">→</span>
+      <div class="fbox"><b>日常点击</b><span>重映射 + 悬停放大</span></div><span class="arrow">→</span>
+      <div class="fbox"><b>调整配置</b><span>按 App 加规则</span></div><span class="arrow">→</span>
+      <div class="fbox"><b>版本更新</b><span>应用内或 brew</span></div>
+    </div>
+  </section>
+
+  <!-- ============ S1 首次启动 ============ -->
+  <section id="s1">
+    <div class="sec-head"><span class="sec-no">01</span><h2>首次启动 · 权限引导</h2></div>
+    <p class="sec-note">无权限时功能不可用，必须先过这一关；引导文案解释「为什么需要」</p>
+    <div class="frame">
+      <div class="titlebar"><span class="dots"><i class="dot"></i><i class="dot"></i><i class="dot"></i></span><span class="t">欢迎使用 Blinker</span></div>
+      <div class="body">
+        <div class="grid2">
+          <div>
+            <div class="center" style="padding: 18px 0;">
+              <span style="display:inline-flex; width:44px; height:22px; gap:4px;">
+                <i class="dot r hoverdot" style="width:16px;height:16px;"></i>
+                <i class="dot y" style="width:16px;height:16px;border-radius:50%;display:inline-block;"></i>
+                <i class="dot g" style="width:16px;height:16px;border-radius:50%;display:inline-block;"></i>
+              </span>
+              <p style="font-weight:500; margin:10px 0 2px;">Blinker 需要辅助功能权限</p>
+              <p class="muted" style="margin:0;">用于识别并改写窗口红绿灯按钮的行为。<br>所有数据仅保存在本机。</p>
+            </div>
+            <button class="primary" style="display:block; margin:0 auto; padding:6px 18px;">打开系统设置…</button>
+          </div>
+          <div>
+            <div class="step"><span class="n">1</span><div>打开 系统设置 → 隐私与安全性 → 辅助功能</div></div>
+            <div class="step"><span class="n">2</span><div>找到 Blinker 并打开开关</div></div>
+            <div class="step"><span class="n">3</span><div>回到这里，Blinker 自动检测并开始工作</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <ul class="notes">
+      <li>授权后此窗口自动关闭，不再出现；设置页顶部横幅同步消失（见 §8）</li>
+      <li>macOS 大版本更新后权限可能失效 → 重新弹出引导，同一路径</li>
+    </ul>
+  </section>
+
+  <!-- ============ S2 菜单栏 ============ -->
+  <section id="s2">
+    <div class="sec-head"><span class="sec-no">02</span><h2>菜单栏常驻 · 下拉菜单</h2></div>
+    <p class="sec-note">日常入口；图标即状态灯：运行中（正常） / 暂停（变灰加斜线）</p>
+    <div class="frame">
+      <div class="body">
+        <div class="menubar">
+          <span>Finder&nbsp;&nbsp;文件&nbsp;&nbsp;编辑&nbsp;&nbsp;…</span>
+          <span><b style="color:var(--ink);">◉</b>&nbsp;&nbsp;⌁&nbsp;&nbsp;🔊&nbsp;&nbsp;🕘</span>
+        </div>
+        <div style="display:flex; gap:20px; margin-top:14px; align-items:flex-start;">
+          <div>
+            <div class="menu">
+              <div class="hi">设置…&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kbd">⌘,</span></div>
+
+              <hr>
+              <div>暂停拦截</div>
+              <hr>
+              <div>检查更新…</div>
+              <div>退出 Blinker</div>
+            </div>
+          </div>
+          <div>
+            <div class="menu" style="width:200px;">
+              <div class="muted" style="font-size:11px;">已暂停（10:32 恢复）</div>
+              <div class="hi">恢复拦截</div>
+              <hr>
+              <div>设置…</div>
+
+            </div>
+            <p class="muted" style="font-size:12px; margin:8px 0 0;">暂停态：图标变灰，点开可立即恢复<br>（支持定时自动恢复，见 §7 说明）</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ S3 规则设置 ============ -->
+  <section id="s3">
+    <div class="sec-head"><span class="sec-no">03</span><h2>设置 · 应用规则</h2></div>
+    <p class="sec-note">核心配置：按 App 定义红灯 / 绿灯行为；未列出的 App 保持系统默认</p>
+    <div class="frame">
+      <div class="titlebar"><span class="dots"><i class="dot r"></i><i class="dot y"></i><i class="dot g"></i></span><span class="t">Blinker 设置 — 应用规则</span></div>
+      <div class="body">
+        <table>
+          <tr><th style="width:32%;">应用</th><th style="width:22%;">红灯动作</th><th style="width:22%;">绿灯动作</th><th style="width:10%;">启用</th><th></th></tr>
+          <tr>
+            <td>Safari</td>
+            <td><select style="width:100%;"><option>退出应用</option><option>关闭窗口</option><option>最小化</option><option>隐藏应用</option><option>无操作</option><option>自定义脚本…</option></select></td>
+            <td><select style="width:100%;"><option>最大化</option><option>全屏</option><option>左半屏</option><option>右半屏</option><option>无操作</option></select></td>
+            <td><input type="checkbox" checked></td><td class="muted">删除</td>
+          </tr>
+          <tr>
+            <td>访达</td>
+            <td><select style="width:100%;"><option>关闭窗口</option></select></td>
+            <td><select style="width:100%;"><option>最大化</option></select></td>
+            <td><input type="checkbox" checked></td><td class="muted">删除</td>
+          </tr>
+          <tr>
+            <td>微信</td>
+            <td class="muted">默认</td><td class="muted">默认</td>
+            <td><input type="checkbox"></td><td class="muted">删除</td>
+          </tr>
+        </table>
+        <div style="margin-top:12px; display:flex; gap:10px; align-items:center;">
+          <button class="primary">＋ 添加应用</button>
+          <span class="muted">从正在运行的应用中选取，或浏览 /Applications</span>
+        </div>
+        <div style="margin-top:14px; border:1px dashed var(--border); border-radius:8px; padding:12px 14px;">
+          <p style="margin:0 0 6px; font-size:12px;"><b style="font-weight:500;">＋ 添加应用（弹层）</b></p>
+          <input type="text" placeholder="搜索应用名称…" style="width:260px;">
+          <div style="margin-top:8px; border:1px solid var(--border); border-radius:6px; padding:4px 0; width:280px; font-size:12px;">
+            <div style="padding:4px 10px;">🔤 备忘录</div>
+            <div style="padding:4px 10px; background:var(--soft);">🌐 Safari</div>
+            <div style="padding:4px 10px;">💬 微信</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <ul class="notes">
+      <li>动作下拉含「自定义脚本…」：选择后填写 Shell 命令，执行前有确认提示</li>
+      <li>规则即时生效；「启用」勾选可临时停用单条规则而不删除</li>
+    </ul>
+  </section>
+
+  <!-- ============ S4 悬停放大设置 ============ -->
+  <section id="s4">
+    <div class="sec-head"><span class="sec-no">04</span><h2>设置 · 悬停放大</h2></div>
+    <p class="sec-note">三种模式 + 两个手感参数，右侧实时预览</p>
+    <div class="frame">
+      <div class="titlebar"><span class="dots"><i class="dot r"></i><i class="dot y"></i><i class="dot g"></i></span><span class="t">Blinker 设置 — 悬停放大</span></div>
+      <div class="body">
+        <div class="grid2">
+          <div>
+            <div class="seg" style="margin-bottom:14px;">
+              <span class="on">覆盖放大</span><span>纯热区</span><span>关闭</span>
+            </div>
+            <p style="margin:0 0 4px;">放大尺寸 <b style="font-weight:500;">32 pt</b></p>
+            <input type="range" min="18" max="48" value="32" style="width:100%;">
+            <p style="margin:10px 0 4px;">防误触 dwell <b style="font-weight:500;">300 ms</b></p>
+            <input type="range" min="0" max="800" step="50" value="300" style="width:100%;">
+            <p style="margin:14px 0 6px; font-weight:500;">行为开关</p>
+            <div style="font-size:12px; display:flex; flex-direction:column; gap:6px;">
+              <label><input type="checkbox" checked> 悬停显示动作预览</label>
+              <label><input type="checkbox" checked> 靠近时放大整组按钮</label>
+              <label><input type="checkbox"> 演示 / 全屏时自动隐藏</label>
+            </div>
+          </div>
+          <div>
+            <div class="frame" style="border-style:dashed;">
+              <div class="titlebar" style="background:transparent;">
+                <span class="dots">
+                  <span style="width:22px;height:22px;border-radius:50%;background:var(--red);position:relative;display:inline-block;"><i style="position:absolute;inset:-5px;border:2px dashed var(--muted);border-radius:50%;"></i></span>
+                  <i class="dot y" style="width:16px;height:16px;"></i>
+                  <i class="dot g" style="width:16px;height:16px;"></i>
+                </span>
+              </div>
+              <div class="body center">
+                <p class="muted" style="margin:6px 0 0;">实时预览区（随左侧参数变化）</p>
+              </div>
+            </div>
+            <p class="muted" style="font-size:12px; margin:10px 0 0;">纯热区模式：外观不变，仅扩大点击范围<br>覆盖放大模式：绘制放大按钮并接管点击</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ S5 通用 ============ -->
+  <section id="s5">
+    <div class="sec-head"><span class="sec-no">05</span><h2>设置 · 通用与关于</h2></div>
+    <p class="sec-note">后台常驻相关的一揽子开关</p>
+    <div class="frame">
+      <div class="titlebar"><span class="dots"><i class="dot r"></i><i class="dot y"></i><i class="dot g"></i></span><span class="t">Blinker 设置 — 通用</span></div>
+      <div class="body">
+        <div class="grid2">
+          <div style="font-size:12px; display:flex; flex-direction:column; gap:8px;">
+            <label><input type="checkbox" checked> 登录时自动启动</label>
+            <label><input type="checkbox"> 隐藏菜单栏图标（<span class="kbd">⌥⌘B</span> 呼出设置）</label>
+            <label><input type="checkbox"> 开机延迟 5 秒启动（避免挤占登录资源）</label>
+          </div>
+          <div style="border-left:1px solid var(--border); padding-left:16px;">
+            <p style="margin:0 0 4px; font-weight:500;">Blinker 1.0.0</p>
+            <p class="muted" style="margin:0 0 8px; font-size:12px;">MIT License · ygnstudio<br>macOS 15+ · Apple Silicon &amp; Intel</p>
+            <button style="font-size:12px;">检查更新…</button>
+            <button style="font-size:12px; margin-left:6px;">开源主页 ↗</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ S6 悬停交互 ============ -->
+  <section id="s6">
+    <div class="sec-head"><span class="sec-no">06</span><h2>悬停交互 · 三态与二级菜单</h2></div>
+    <p class="sec-note">默认 → 悬停（dwell 进行中）→ 激活；红灯点击弹出二级菜单的分支</p>
+    <div class="grid3">
+      <div>
+        <div class="frame">
+          <div class="titlebar" style="justify-content:center;">
+            <span class="dots"><i class="dot r"></i><i class="dot y"></i><i class="dot g"></i></span>
+          </div>
+          <div class="body center muted">默认态</div>
+        </div>
+        <p class="muted" style="font-size:12px; text-align:center; margin-top:6px;">系统原样</p>
+      </div>
+      <div>
+        <div class="frame">
+          <div class="titlebar" style="justify-content:center;">
+            <span class="dots">
+              <span style="width:24px;height:24px;border-radius:50%;background:var(--red);position:relative;display:inline-block;"><i style="position:absolute;inset:-5px;border:2px dashed var(--muted);border-radius:50%;"></i></span>
+              <i class="dot y" style="width:17px;height:17px;"></i>
+              <i class="dot g" style="width:17px;height:17px;"></i>
+            </span>
+          </div>
+          <div class="body center" style="position:relative;">
+            <span style="border:1px solid var(--border); border-radius:6px; padding:2px 8px; font-size:11px; position:absolute; left:8px; top:4px; background:var(--surface);">退出 Safari</span>
+            <span class="muted">dwell 进行中</span>
+          </div>
+        </div>
+        <p class="muted" style="font-size:12px; text-align:center; margin-top:6px;">悬停：放大 + 预览 + dwell 环</p>
+      </div>
+      <div>
+        <div class="frame">
+          <div class="titlebar" style="justify-content:center; position:relative;">
+            <span class="dots">
+              <span style="width:24px;height:24px;border-radius:50%;background:var(--red);display:inline-block;"></span>
+              <i class="dot y" style="width:17px;height:17px;"></i>
+              <i class="dot g" style="width:17px;height:17px;"></i>
+            </span>
+            <div class="menu" style="position:absolute; left:10px; top:26px; z-index:2;">
+              <div class="muted" style="font-size:11px;">Safari · 红灯</div>
+              <div class="hi">退出应用</div>
+              <div>关闭窗口</div>
+              <div>最小化</div>
+              <div>取消（<span class="kbd">esc</span>）</div>
+            </div>
+          </div>
+          <div class="body center muted" style="height:52px;"></div>
+        </div>
+        <p class="muted" style="font-size:12px; text-align:center; margin-top:6px;">二级菜单（可选开启）：一钮多动作</p>
+      </div>
+    </div>
+    <ul class="notes">
+      <li>dwell = 0 时跳过进度环，点击立即生效（老手模式）</li>
+      <li>绿灯悬停同样有预览（「最大化 Safari」）；二级菜单默认只给红灯</li>
+    </ul>
+  </section>
+
+  <!-- ============ S8 异常态 ============ -->
+  <section id="s8">
+    <div class="sec-head"><span class="sec-no">07</span><h2>异常态与降级</h2></div>
+    <p class="sec-note">权限丢失、安全输入、不支持的应用——都给出明确、不打扰的提示</p>
+    <div class="grid2">
+      <div>
+        <div class="frame">
+          <div class="body">
+            <div class="banner">
+              <b style="font-weight:500;">⚠ 权限已失效</b>
+              <span class="muted">macOS 更新后需要重新授权</span>
+              <span style="flex:1;"></span>
+              <button class="primary" style="font-size:12px;">去授权</button>
+            </div>
+            <div class="banner">
+              <span class="muted">🔒 系统处于安全输入状态，红绿灯暂由系统接管（输入密码属正常现象）</span>
+            </div>
+            <div class="banner">
+              <span class="muted">◇ 检测到 自绘标题栏 应用（如部分 Electron 窗口），Blinker 无法接管，已自动跳过</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="frame">
+          <div class="body">
+            <div class="banner">
+              <b style="font-weight:500;">⏸ 已暂停</b>
+              <span class="muted">将于 10:32 自动恢复</span>
+              <span style="flex:1;"></span>
+              <button style="font-size:12px;">立即恢复</button>
+              <button style="font-size:12px;">取消定时</button>
+            </div>
+            <p class="muted" style="font-size:12px; margin:0;">菜单栏「暂停拦截」支持定时恢复：<br>默认 10 分钟，也可选 30 分钟 / 当天 / 手动</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ S9 更新与发布 ============ -->
+  <section id="s9">
+    <div class="sec-head"><span class="sec-no">08</span><h2>更新检查 · 发布流程</h2></div>
+    <p class="sec-note">上：用户侧更新弹窗；下：开发者侧发布流水线（对应仓库 CI）</p>
+    <div class="grid2">
+      <div class="frame">
+        <div class="titlebar"><span class="dots"><i class="dot r"></i><i class="dot y"></i><i class="dot g"></i></span><span class="t">软件更新</span></div>
+        <div class="body">
+          <p style="margin:0 0 2px; font-weight:500;">Blinker 1.1.0 可用</p>
+          <p class="muted" style="margin:0 0 10px; font-size:12px;">新增：窗口级 ⌘Tab、悬停二级菜单自定义<br>当前版本 1.0.0 · <a href="#" style="color:var(--ink);">查看 Release Notes</a></p>
+          <button class="primary">下载并安装…</button>
+          <button style="margin-left:6px;">跳过此版本</button>
+        </div>
+      </div>
+      <div class="fbox" style="flex:1; background:var(--surface);">
+        <b style="font-weight:500;">发布流水线（打 tag 自动触发）</b>
+        <div class="flow" style="margin-top:8px;">
+          <div class="fbox" style="min-width:80px;">git tag</div><span class="arrow">→</span>
+          <div class="fbox" style="min-width:80px;">CI 构建<br><span>universal</span></div><span class="arrow">→</span>
+          <div class="fbox" style="min-width:80px;">签名+公证</div><span class="arrow">→</span>
+          <div class="fbox" style="min-width:80px;">GitHub Release</div><span class="arrow">→</span>
+          <div class="fbox" style="min-width:80px;">brew cask<br><span>homebrew-ygn</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ S10 后续规划 ============ -->
+  <section id="s10">
+    <div class="sec-head"><span class="sec-no">09</span><h2>后续版本规划（v2 线框预留）</h2></div>
+    <p class="sec-note">V1 之外的功能池，本期只做数据与布局预留，不实现</p>
+    <div class="grid2">
+      <div class="frame">
+        <div class="body">
+          <p style="margin:0 0 6px; font-weight:500;">场景模式</p>
+          <div style="font-size:12px; display:flex; flex-direction:column; gap:5px;">
+            <button>▶ 工作（一组窗口排布）</button>
+            <button>▶ 写作</button>
+            <button>▶ 娱乐</button>
+          </div>
+          <p class="muted" style="font-size:11px; margin:6px 0 0;">一键应用窗口布局 + 规则分组</p>
+        </div>
+      </div>
+      <div class="frame">
+        <div class="body">
+          <p style="margin:0 0 6px; font-weight:500;">窗口级切换器</p>
+          <div style="border:1px solid var(--border); border-radius:6px; padding:6px; font-size:12px;">
+            <div style="padding:3px 8px; background:var(--soft); border-radius:4px;">🌐 Safari — 文档</div>
+            <div style="padding:3px 8px;">📝 备忘录 — 草稿</div>
+            <div style="padding:3px 8px;">💬 微信 — 文件传输</div>
+          </div>
+          <p class="muted" style="font-size:11px; margin:6px 0 0;">Windows 风格 ⌘Tab（对标 AltTab）</p>
+        </div>
+      </div>
+    </div>
+    <ul class="notes">
+      <li>v2 顺序建议：场景模式 → 窗口级切换器（依赖递增）</li>
+    </ul>
+  </section>
+
+  <footer>Blinker lo-fi prototype · 灰阶线框仅为布局与流程示意，不代表最终视觉 · ygnstudio · MIT</footer>
+</div>
+</body>
+</html>

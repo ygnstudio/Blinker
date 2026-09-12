@@ -1,0 +1,5 @@
+--swiftversion 5.10
+--maxwidth 110
+--indent 4
+--trimwhitespace always
+--header ignore

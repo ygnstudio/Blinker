@@ -1,0 +1,7 @@
+# macOS
+.DS_Store
+.build/
+.swiftpm/
+*.xcodeproj
+Blinker.app/
+Package.resolved
