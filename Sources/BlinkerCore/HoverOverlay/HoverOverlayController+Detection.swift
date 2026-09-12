@@ -67,12 +67,11 @@ extension HoverOverlayController {
     private func resolveButtons(
         windowHit: AXQuery.WindowHit
     ) -> (buttons: [OverlayButtonInfo], axWindow: AXUIElement?) {
-        if cachedWindowPID == windowHit.processIdentifier,
-           !HoverOverlayGeometry.hasWindowBoundsChanged(
-               previous: cachedWindowBounds,
-               current: windowHit.bounds
-           )
-        {
+        let boundsUnchanged = !HoverOverlayGeometry.hasWindowBoundsChanged(
+            previous: cachedWindowBounds,
+            current: windowHit.bounds
+        )
+        if cachedWindowPID == windowHit.processIdentifier, boundsUnchanged {
             return (cachedButtons, cachedAXWindow)
         }
 
