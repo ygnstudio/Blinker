@@ -82,8 +82,13 @@ public final class DefaultWindowActionPerformer: WindowActionPerforming {
         guard let appKitFrame = Self.appKitFrame(of: window) else { return }
         guard let visibleFrame = Self.screen(containing: appKitFrame)?.visibleFrame else { return }
         let halfWidth = visibleFrame.width / 2
-        let x = side == .left ? visibleFrame.minX : visibleFrame.midX
-        let frame = CGRect(x: x, y: visibleFrame.minY, width: halfWidth, height: visibleFrame.height)
+        let tiledOriginX = side == .left ? visibleFrame.minX : visibleFrame.midX
+        let frame = CGRect(
+            x: tiledOriginX,
+            y: visibleFrame.minY,
+            width: halfWidth,
+            height: visibleFrame.height
+        )
         AXQuery.setWindowFrame(window, appKitFrame: frame, globalMaxY: Self.globalMaxY)
     }
 
