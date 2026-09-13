@@ -28,21 +28,33 @@ jobs:
       - name: Build universal binary
         run: swift build -c release --arch arm64 --arch x86_64
 
-      - name: Assemble and zip Blinker.app
+      - name: Assemble Blinker.app and build DMG
         env:
           VERSION: ${{ github.ref_name }}
         run: |
           APP_VERSION="${VERSION#v}"
           Scripts/package-app.sh .build/apple/Products/Release/Blinker \
             "$APP_VERSION" "${GITHUB_RUN_NUMBER}" "Blinker.app"
-          ditto -c -k --keepParent Blinker.app "Blinker-${VERSION}-universal.zip"
-          shasum -a 256 "Blinker-${VERSION}-universal.zip" > SHA256SUMS.txt
+          mkdir -p dist
+          cp -R Blinker.app dist/
+          ln -s /Applications dist/Applications
+          hdiutil create -volname "Blinker ${VERSION}" -srcfolder dist \
+            -ov -format UDZO "Blinker-${VERSION}.dmg"
+          shasum -a 256 "Blinker-${VERSION}.dmg" > SHA256SUMS.txt
 
       - name: Upload to GitHub Release
         # Pinned to the commit that `v2` pointed at (supply-chain hardening).
         uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65
         with:
           files: |
-            Blinker-*-universal.zip
+            Blinker-*.dmg
             SHA256SUMS.txt
+          body: |
+            ## 安装
+
+            1. 下载下方的 `Blinker-v*.dmg` 并挂载
+            2. 把 `Blinker.app` 拖入 `Applications`
+            3. 首次启动若被 Gatekeeper 拦截：右键 `Blinker.app` → 打开；
+               或终端执行 `xattr -cr /Applications/Blinker.app`
+            4. 启动后按提示授予**辅助功能**权限（系统设置 → 隐私与安全性 → 辅助功能）
           generate_release_notes: true

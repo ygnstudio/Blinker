@@ -5,6 +5,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed
+- Release artifacts are now a `Blinker-vX.Y.Z.dmg` (mount and drag to
+  `/Applications`) plus `SHA256SUMS.txt`, with install steps in the release
+  notes, replacing the universal zip.
+- README restructured around a Chinese front page with an English edition
+  linked from the top ([README.en.md](README.en.md)).
+
 ### Added
 - The mask backdrop is now configurable: **Liquid Glass** (default, no extra
   permission) or **Sampled**, which captures a clean strip of the host

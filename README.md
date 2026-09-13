@@ -1,120 +1,98 @@
 # Blinker
 
-**EN** | [中文](#中文)
+简体中文 | [English](README.en.md)
 
-Blinker is a native macOS menu bar app that remaps the window traffic light
-buttons (close / minimize / zoom) on a per-application basis, and enlarges
-them on hover so they are easier to see and click.
+macOS 菜单栏小工具：按应用重定义窗口红绿灯按钮的行为（如红灯 = 退出应用、绿灯 = 最大化），悬停时按钮放大，更容易看清和点击。规则只对你添加的应用生效，其余保持系统默认。
 
-- Red button → quit the app instead of closing a window (configurable)
-- Green button → maximize (zoom) instead of fullscreen (configurable)
-- Yellow button and window tiling (left/right half) are remappable too
-- Hover enlargement with mis-click (dwell) protection
-- Rules only apply to apps you add; everything else keeps system defaults
+⬇️ **下载地址**：<https://github.com/ygnstudio/Blinker/releases>（`Blinker-vX.Y.Z.dmg`，挂载后拖入 `/Applications`）
 
-### Hover enlargement
+🍺 **Homebrew**：`brew install --cask ygnstudio/ygn/blinker`（见 [homebrew-ygn](https://github.com/ygnstudio/homebrew-ygn)）
 
-When the pointer rests near a window's traffic lights, enlarged button
-overlays appear above them:
+## 功能特性
 
-- Adjustable size (18–48 pt) and dwell delay (0–800 ms) — the dwell ring
-  must fill before a click registers, so brushing past never triggers
-- Without a rule, an enlarged click still performs the button's native
-  action, so enlargement is useful on its own
-- Scope: all windows, or only apps that have rules
-- Two modes: **overlay** (draws enlarged Liquid Glass buttons with a dwell ring)
-  or **hotspot** (invisible enlarged click zones; the title bar keeps its
-  original look and clicks respond immediately)
+- **按应用重映射**：红 / 黄 / 绿三颗灯各自映射 9 种动作——关闭窗口、退出应用、最小化、隐藏应用、最大化、全屏、左半屏、右半屏、无操作（吞掉点击）。
+- **悬停放大**：两种模式。**覆盖放大**绘制液态玻璃大按钮，带防误触进度环（0–800 ms 可调，环填满才响应，路过不误触）；**纯热区**保持标题栏原样，只扩大不可见点击区，点击立即响应。
+- **原生按钮遮挡**：放大时原生按钮被遮罩挡住。默认**液态玻璃**零权限；可选**真实采样**——抓取标题栏干净背景逐列分析后拉伸铺底，视觉上无痕（需屏幕录制权限，无权限或无干净区域自动回退玻璃）。
+- **不越界**：放大面板整组布局并钳制在「窗口 ∩ 屏幕」内，全屏、贴边窗口都不超出。
+- **应用库选择**：添加应用时列出全部已安装应用（支持搜索），不必先启动应用。
+- **未配置规则也有用**：无规则时，放大的点击仍执行按钮原生动作。
+- **本地运行**：无网络请求、无数据收集、无统计。
 
-### Settings
+## 运行要求
 
-The menu bar menu opens the settings window with three sections: the
-per-app rule table (red / green actions as dropdowns), the hover
-enlargement section described above, and status / help notes.
+- macOS 15 及以上，Apple Silicon 与 Intel。
+- **辅助功能**权限（系统设置 → 隐私与安全性 → 辅助功能），用于读取并改写其他应用窗口的按钮。所有处理均在本地完成。
 
-### Known limitations
+## 目录结构
 
-- Secure Input (e.g. password fields) temporarily disables event
-  interception; buttons fall back to system behavior
-- Apps with fully custom title bars (some Electron apps) may expose no
-  standard accessibility buttons and cannot be intercepted
+```
+Blinker/
+├── Package.swift
+├── Scripts/
+│   ├── build-app.sh                # 本地一键打包（产出 Blinker.app）
+│   └── package-app.sh              # CI 打包（版本号注入 + 签名）
+├── Sources/
+│   ├── BlinkerCore/                # 无 UI 的核心逻辑（可独立测试）
+│   │   ├── AXInterceptor/          #   CGEventTap 拦截 + AX 查询 + 动作执行
+│   │   ├── RuleEngine/             #   按应用动作映射（纯查找）
+│   │   ├── HoverOverlay/           #   悬停放大覆盖层（芯片 / 遮罩 / 背景采样）
+│   │   ├── Models/                 #   AppRule / ButtonAction / TrafficButton
+│   │   └── Permission/             #   辅助功能权限检测
+│   └── BlinkerApp/                 # SwiftUI 应用壳（菜单栏 + 设置窗口）
+├── Tests/BlinkerCoreTests/         # 单元测试（36 个）
+├── docs/
+│   ├── ARCHITECTURE.md             # 架构说明（模块地图 / 数据流 / 线程模型）
+│   └── design/                     # 早期设计稿
+└── .github/workflows/
+    ├── ci.yml                      # build + test + lint（strict）
+    └── release.yml                 # tag 触发：构建 → DMG → 发布 Release
+```
 
-Requirements: macOS 15+, Apple Silicon & Intel.
-License: MIT.
+## 工作原理
 
-## Build
+点击拦截是**便宜前置过滤 + 按需 AX 查询**，绝大多数点击在第一步就被丢弃，不会产生辅助功能调用：
+
+```mermaid
+flowchart LR
+    A[CGEventTap<br>捕获鼠标点击] --> B{前置过滤<br>点击在标题栏带?}
+    B -->|否| Z[放行<br>系统默认行为]
+    B -->|是| C[AX 查询<br>命中窗口与按钮]
+    C --> D[RuleEngine<br>按 bundleID 查动作]
+    D --> E[AXPress<br>执行重映射动作]
+```
+
+- **拦截**：CGEventTap 独立线程只做坐标级过滤；AX 查询与动作执行走串行工作队列，不阻塞 tap。
+- **悬停放大**：光标进入按钮组外扩 12pt 的触发区后，先铺原生按钮遮罩，再铺放大芯片；坐标统一换算到屏幕全局坐标，布局钳制在窗口与屏幕交集内。
+- **背景采样**：ScreenCaptureKit 抓取按钮两侧条带 → 逐列分析干净度（排除文字 / 按钮 / 透明像素）→ 最宽干净段拉伸铺底；找不到干净段时用参考色纯色兜底。
+
+## 使用方式
+
+1. 点击菜单栏图标打开设置窗口（**规则 / 悬停放大 / 关于** 三个 tab）。
+2. 在**规则** tab 添加应用（应用库选择器），为红 / 黄 / 绿灯选择动作。
+3. 在**悬停放大** tab 选择模式与尺寸，需要无痕背景时切换到「真实采样」。
+4. 首次启动按提示授予辅助功能权限，之后悬停即见放大效果。
+
+| 操作 | 行为 |
+|------|------|
+| 左键菜单栏图标 | 打开设置窗口 |
+| 悬停红绿灯 | 按钮放大（触发区内生效） |
+| 点击放大按钮 | 执行重映射后的动作 |
+
+## 已知限制
+
+- 安全输入激活时（如密码框）事件拦截临时失效，按钮回退系统行为。
+- 完全自绘标题栏的应用（部分 Electron 应用）无标准辅助功能按钮，无法拦截。
+
+## 从源码构建
 
 ```bash
 git clone https://github.com/ygnstudio/Blinker.git
 cd Blinker
-./Scripts/build-app.sh          # produces Blinker.app
+./Scripts/build-app.sh   # 产出 Blinker.app
 open Blinker.app
 ```
 
-Or run tests:
-
-```bash
-swift test
-```
-
-## Documentation
-
-- [Architecture](docs/ARCHITECTURE.md) — module map, data flows, threading model
-- [Contributing](CONTRIBUTING.md) — build instructions, codebase tour, common tasks
-- [Changelog](CHANGELOG.md)
-- [Code of Conduct](CODE_OF_CONDUCT.md)
-
-## Permissions
-
-Blinker needs **Accessibility** permission (System Settings → Privacy &
-Security → Accessibility) to read and rewrite other apps' window buttons.
-All processing is local; no network requests, no analytics.
-
----
-
-# 中文
-
-Blinker 是一个原生 macOS 菜单栏应用，可按应用单独重定义窗口红绿灯按钮的行为，并在鼠标悬停时放大按钮，让它们更容易看清和点击。
-
-- 红灯 → 退出应用（而非仅关闭窗口），可配置
-- 绿灯 → 最大化（而非全屏），可配置
-- 黄灯与左右半屏动作同样可重映射
-- 悬停放大：防误触 dwell
-- 规则只对你添加的应用生效，其余保持系统默认
-
-### 悬停放大
-
-鼠标停在窗口红绿灯附近时，按钮上方会出现放大覆盖层：
-
-- 尺寸（18–48 pt）与防误触延迟（0–800 ms）可调——进度环填满才响应点击，路过不会误触
-- 未配置规则时，放大的点击执行按钮原生动作，放大本身即有价值
-- 作用范围可选：全部窗口，或仅配置了规则的应用
-- 两种模式：**覆盖放大**（绘制液态玻璃放大按钮，带防误触进度环）或**纯热区**
-  （外观完全不变，仅扩大不可见点击区，点击立即响应）
-
-### 设置
-
-菜单栏菜单打开设置窗口，含三个区块：按应用规则表（红/绿动作下拉）、
-悬停放大区块（如上）、状态与帮助说明。
-
-### 已知限制
-
-- 安全输入激活时（如密码框）事件拦截临时失效，按钮回退系统行为
-- 完全自绘标题栏的应用（部分 Electron 应用）无标准辅助功能按钮，无法拦截
-
-系统要求：macOS 15+，支持 Apple Silicon 与 Intel。
-开源协议：MIT。
-
-## 构建
-
-```bash
-git clone https://github.com/ygnstudio/Blinker.git
-cd Blinker
-./Scripts/build-app.sh          # 产出 Blinker.app
-open Blinker.app
-```
-
-运行测试：
+或运行测试：
 
 ```bash
 swift test
@@ -127,8 +105,6 @@ swift test
 - [更新日志](CHANGELOG.md)
 - [行为准则](CODE_OF_CONDUCT.md)
 
-## 权限说明
+## License
 
-Blinker 需要**辅助功能**权限（系统设置 → 隐私与安全性 → 辅助功能），
-用于读取并改写其他应用窗口的红绿灯按钮。所有处理均在本地完成：
-无网络请求、无数据收集。
+MIT —— 详见 [LICENSE](LICENSE)。
