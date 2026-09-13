@@ -28,7 +28,7 @@ public final class DefaultWindowActionPerformer: WindowActionPerforming {
 
     public func perform(
         _ action: ButtonAction,
-        button: TrafficButton,
+        button _: TrafficButton,
         window: AXUIElement,
         processIdentifier: pid_t
     ) {
