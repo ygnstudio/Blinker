@@ -1,18 +1,28 @@
 import BlinkerCore
 import SwiftUI
 
-/// The settings window, organized into tabs: per-app rules, hover overlay
-/// configuration, general preferences and an about page.
+/// The settings window, organized into tabs: per-app rules, the window
+/// management toolkit, hover overlay configuration, general preferences and
+/// an about page.
 struct SettingsScreen: View {
     @ObservedObject var ruleStore: RuleStore
     @ObservedObject var hoverSettingsStore: HoverOverlaySettingsStore
     let onApplyHoverSettings: (HoverOverlaySettings) -> Void
+    let frontWindowPerformer: FrontWindowActionPerformer
+    @ObservedObject var hotkeyManager: HotkeyManager
+    let onSnapEnabledChange: (Bool) -> Void
     @ObservedObject private var preferences = AppPreferences.shared
 
     var body: some View {
         TabView {
             RulesTab(ruleStore: ruleStore)
                 .tabItem { Label(tr("规则", "Rules"), systemImage: "list.bullet.rectangle") }
+            WindowManagementTab(
+                frontWindowPerformer: frontWindowPerformer,
+                hotkeyManager: hotkeyManager,
+                onSnapEnabledChange: onSnapEnabledChange
+            )
+            .tabItem { Label(tr("窗口管理", "Windows"), systemImage: "rectangle.split.2x2") }
             HoverSettingsTab(store: hoverSettingsStore, onApply: onApplyHoverSettings)
                 .tabItem {
                     Label(
@@ -52,6 +62,19 @@ extension ButtonAction {
         case .almostMaximize: tr("准最大化", "Almost Maximize")
         case .moveToNextDisplay: tr("移到下一显示器", "Next Display")
         case .none: tr("无操作", "Do Nothing")
+        }
+    }
+}
+
+/// Localized label for a click variant, shown in the rules matrix.
+extension ClickVariant {
+    var localizedLabel: String {
+        switch self {
+        case .left: tr("左键", "Left Click")
+        case .right: tr("右键", "Right Click")
+        case .optionLeft: "⌥ " + tr("+ 左键", "+ Left Click")
+        case .globeLeft: "🌐 " + tr("+ 左键", "+ Left Click")
+        case .longPressLeft: tr("长按", "Long Press")
         }
     }
 }
@@ -138,11 +161,14 @@ private struct RulesTab: View {
 }
 
 /// One row of the rule table: app name plus one action picker per traffic
-/// light, each marked with a dot in the button's own color.
+/// light, each marked with a dot in the button's own color. A disclosure
+/// chevron expands the enhanced click-variant matrix (right click, ⌥/🌐
+/// clicks, long press).
 private struct RuleRowView: View {
     let rule: AppRule
     let onUpdate: (AppRule) -> Void
     let onRemove: () -> Void
+    @State private var isExpanded = false
 
     /// Every action is available on every button; the default entry keeps
     /// the system behavior. Menus render grouped window ops first.
@@ -169,72 +195,118 @@ private struct RuleRowView: View {
     ]
 
     var body: some View {
-        HStack(spacing: 12) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(rule.displayName)
-                    .font(.body)
-                Text(rule.bundleIdentifier)
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 12) {
+                disclosureButton
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(rule.displayName)
+                        .font(.body)
+                    Text(rule.bundleIdentifier)
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+                ActionPicker(
+                    dotColor: .systemRed,
+                    options: Self.options,
+                    selection: binding(button: .close, variant: .left)
+                )
+                ActionPicker(
+                    dotColor: .systemYellow,
+                    options: Self.options,
+                    selection: binding(button: .minimize, variant: .left)
+                )
+                ActionPicker(
+                    dotColor: .systemGreen,
+                    options: Self.options,
+                    selection: binding(button: .zoom, variant: .left)
+                )
+
+                Toggle("", isOn: enabledBinding)
+                    .labelsHidden()
+                    .toggleStyle(.checkbox)
+
+                Button(role: .destructive, action: onRemove) {
+                    Image(systemName: "minus.circle")
+                }
+                .buttonStyle(.borderless)
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.vertical, 2)
 
-            ActionPicker(
-                dotColor: .systemRed,
-                options: Self.options,
-                selection: closeBinding
-            )
-            ActionPicker(
-                dotColor: .systemYellow,
-                options: Self.options,
-                selection: minimizeBinding
-            )
-            ActionPicker(
-                dotColor: .systemGreen,
-                options: Self.options,
-                selection: zoomBinding
-            )
-
-            Toggle("", isOn: enabledBinding)
-                .labelsHidden()
-                .toggleStyle(.checkbox)
-
-            Button(role: .destructive, action: onRemove) {
-                Image(systemName: "minus.circle")
+            if isExpanded {
+                variantMatrix
             }
-            .buttonStyle(.borderless)
         }
-        .padding(.vertical, 2)
     }
 
-    private var closeBinding: Binding<ButtonAction?> {
-        Binding(
-            get: { rule.closeAction },
-            set: { newValue in
-                var updated = rule
-                updated.closeAction = newValue
-                onUpdate(updated)
+    /// The enhanced click-variant slots: one row per variant, three compact
+    /// pickers per row (red / yellow / green).
+    private var variantMatrix: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            ForEach(ClickVariant.extraSlots, id: \.rawValue) { variant in
+                HStack(spacing: 12) {
+                    Text(variant.localizedLabel)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .frame(width: 76, alignment: .trailing)
+                    ActionPicker(
+                        dotColor: .systemRed,
+                        options: Self.options,
+                        selection: binding(button: .close, variant: variant),
+                        pickerWidth: 62
+                    )
+                    .controlSize(.small)
+                    ActionPicker(
+                        dotColor: .systemYellow,
+                        options: Self.options,
+                        selection: binding(button: .minimize, variant: variant),
+                        pickerWidth: 62
+                    )
+                    .controlSize(.small)
+                    ActionPicker(
+                        dotColor: .systemGreen,
+                        options: Self.options,
+                        selection: binding(button: .zoom, variant: variant),
+                        pickerWidth: 62
+                    )
+                    .controlSize(.small)
+                }
             }
-        )
+            Text(tr(
+                "留空保持默认；配置长按后，该按钮的普通点击也会由 Blinker 接管。",
+                "Leave empty for defaults; with a long press set, "
+                    + "plain clicks on that button are handled by Blinker too."
+            ))
+            .font(.caption2)
+            .foregroundStyle(.secondary)
+            .padding(.leading, 88)
+        }
+        .padding(.leading, 4)
     }
 
-    private var minimizeBinding: Binding<ButtonAction?> {
-        Binding(
-            get: { rule.minimizeAction },
-            set: { newValue in
-                var updated = rule
-                updated.minimizeAction = newValue
-                onUpdate(updated)
+    private var disclosureButton: some View {
+        Button {
+            withAnimation(.easeInOut(duration: 0.15)) {
+                isExpanded.toggle()
             }
-        )
+        } label: {
+            Image(systemName: "chevron.right")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+                .rotationEffect(.degrees(isExpanded ? 90 : 0))
+        }
+        .buttonStyle(.borderless)
+        .help(tr("更多点击方式", "More click variants"))
     }
 
-    private var zoomBinding: Binding<ButtonAction?> {
+    private func binding(button: TrafficButton, variant: ClickVariant) -> Binding<ButtonAction?> {
         Binding(
-            get: { rule.zoomAction },
+            get: { rule.action(for: button, variant: variant) },
             set: { newValue in
                 var updated = rule
-                updated.zoomAction = newValue
+                updated.setAction(newValue, button: button, variant: variant)
                 onUpdate(updated)
             }
         )
@@ -261,6 +333,8 @@ struct ActionPicker: View {
     /// Label for the `nil` option; traffic rows use "默认", extra-button
     /// rows use "不显示".
     var emptyLabel: String = tr("默认", "Default")
+    /// Menu width; the compact variant matrix uses a narrower value.
+    var pickerWidth: CGFloat = 84
 
     var body: some View {
         HStack(spacing: 5) {
@@ -275,7 +349,7 @@ struct ActionPicker: View {
                 EmptyView()
             }
             .labelsHidden()
-            .frame(width: 84)
+            .frame(width: pickerWidth)
         }
     }
 

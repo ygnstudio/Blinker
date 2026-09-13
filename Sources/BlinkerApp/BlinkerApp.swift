@@ -35,7 +35,10 @@ struct BlinkerApp: App {
             SettingsScreen(
                 ruleStore: appDelegate.ruleStore,
                 hoverSettingsStore: appDelegate.hoverOverlaySettingsStore,
-                onApplyHoverSettings: appDelegate.applyHoverOverlaySettings
+                onApplyHoverSettings: appDelegate.applyHoverOverlaySettings,
+                frontWindowPerformer: appDelegate.frontWindowPerformer,
+                hotkeyManager: appDelegate.hotkeyManager,
+                onSnapEnabledChange: appDelegate.applySnapEnabled
             )
         }
     }

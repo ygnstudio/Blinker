@@ -23,15 +23,26 @@ enum InterceptorStatus {
 }
 
 /// Owns the long-lived app state: the rule store, the event interceptor and
-/// the hover overlay.
+/// the hover overlay, plus the window-management helpers (front-window
+/// executor, drag-to-snap snapper, global hotkeys).
 final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
     let ruleStore = RuleStore()
     let hoverOverlaySettingsStore = HoverOverlaySettingsStore()
+
+    /// Executes window actions on the frontmost window; shared by the
+    /// window-management tab and the global hotkeys.
+    private(set) lazy var frontWindowPerformer = FrontWindowActionPerformer(
+        performer: DefaultWindowActionPerformer()
+    )
+
+    /// Global hotkeys; independent of click interception, always available.
+    private(set) lazy var hotkeyManager = HotkeyManager(frontWindowPerformer: frontWindowPerformer)
 
     @Published private(set) var isIntercepting = false
     @Published private(set) var status: InterceptorStatus = .checking
 
     private var interceptor: TrafficLightInterceptor?
+    private var windowSnapper: WindowSnapper?
     private var hoverOverlay: HoverOverlayController?
     private var retryTimer: Timer?
     private var hasPromptedForPermission = false
@@ -119,11 +130,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
     func stopInterceptor() {
         interceptor?.stop()
         interceptor = nil
+        windowSnapper?.stop()
+        windowSnapper = nil
         hoverOverlay?.stop()
         hoverOverlay = nil
         isIntercepting = false
         status = .paused
         logger.info("interceptor stopped")
+    }
+
+    /// Persists the drag-to-snap toggle and applies it to the live snapper.
+    func applySnapEnabled(_ enabled: Bool) {
+        AppPreferences.shared.isSnapEnabled = enabled
+        windowSnapper?.setEnabled(enabled)
     }
 
     /// Persists hover overlay settings and pushes them to the live overlay

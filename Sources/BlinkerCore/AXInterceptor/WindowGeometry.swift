@@ -89,7 +89,8 @@ public enum WindowGeometry {
 
     /// One half or quadrant of `visibleFrame`, in AppKit's bottom-left-origin
     /// coordinates. The eight tile placements partition the screen exactly.
-    static func tiledFrame(_ placement: WindowPlacement, in visibleFrame: CGRect) -> CGRect {
+    /// Public so the settings UI can reuse the exact math for previews.
+    public static func tiledFrame(_ placement: WindowPlacement, in visibleFrame: CGRect) -> CGRect {
         let halfWidth = visibleFrame.width / 2
         let halfHeight = visibleFrame.height / 2
         switch placement {

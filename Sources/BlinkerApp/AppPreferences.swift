@@ -51,6 +51,11 @@ final class AppPreferences: ObservableObject {
         didSet { defaults.set(appearance.rawValue, forKey: "appAppearance") }
     }
 
+    /// Whether dragging windows to screen edges/corners snaps them.
+    @Published var isSnapEnabled: Bool {
+        didSet { defaults.set(isSnapEnabled, forKey: "isSnapEnabled") }
+    }
+
     private let defaults = UserDefaults.standard
 
     private init() {
@@ -60,6 +65,7 @@ final class AppPreferences: ObservableObject {
         appearance = AppAppearance(
             rawValue: defaults.string(forKey: "appAppearance") ?? ""
         ) ?? .system
+        isSnapEnabled = defaults.object(forKey: "isSnapEnabled") as? Bool ?? true
     }
 
     /// Whether UI text should render in English. `.system` inspects the

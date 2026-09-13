@@ -15,9 +15,20 @@ add; everything else keeps system defaults.
 
 ## Features
 
-- **Per-app remapping**: each of the three buttons maps to any of 9 actions —
-  close window, quit app, minimize, hide app, maximize, fullscreen, tile
-  left, tile right, or none (swallow the click).
+- **Per-app remapping**: each of the three buttons maps to any of 17 actions —
+  close window, quit app, minimize, hide app, maximize, almost maximize,
+  fullscreen, four half-screen tiles, four quarter-screen tiles, center,
+  move to next display, or none (swallow the click).
+- **Click-variant matrix**: beyond a plain left click, each button can also
+  define its own action for right click, ⌥+click, 🌐+click and long press —
+  e.g. red = quit, green = tile left, ⌥+green = quarter tile. Unconfigured
+  variants keep the system default.
+- **Window management**: a dedicated settings page. **Instant actions** tile
+  or place the frontmost window with one click; **drag to snap** shows a
+  preview as you drag a window to a screen edge or corner, snapping on
+  release (halves, top-edge maximize, corner quarters); **global hotkeys**
+  (default ⌃⌥ with arrows and U/I/J/K) work under any app and are fully
+  rebindable.
 - **Hover enlargement**: two modes. **Overlay** draws enlarged Liquid Glass
   buttons with a mis-click dwell ring (0–800 ms; brushing past never
   triggers). **Hotspot** keeps the title bar's original look and only

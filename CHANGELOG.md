@@ -5,6 +5,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+- **Click-variant action matrix**: every traffic button now has five slots —
+  plain left click, right click, ⌥+left click, 🌐+left click and long press
+  (~0.45 s). The rules UI exposes the extra variants in an expandable matrix;
+  existing rules keep working (they map to the plain left-click slots).
+- **Window management page** in Settings: an instant-action panel that
+  applies any placement to the frontmost window, drag-to-snap with a live
+  preview (edge halves, top-edge maximize, corner quadrants) and rebindable
+  global hotkeys (default ⌃⌥ scheme) executed on the frontmost window.
+- Window layout math is shared by all entry points via `WindowGeometry` /
+  `WindowPlacement`, with a pure `SnapZones` hit-tester covered by tests.
+
 ### Changed
 - Release artifacts are now a `Blinker-vX.Y.Z.dmg` (mount and drag to
   `/Applications`) plus `SHA256SUMS.txt`, with install steps in the release

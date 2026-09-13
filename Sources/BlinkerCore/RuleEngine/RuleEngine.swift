@@ -16,11 +16,12 @@ public struct RuleEngine: Sendable {
         rulesProvider().contains { $0.bundleIdentifier == bundleIdentifier && $0.isEnabled }
     }
 
-    /// Returns the remapped action for a button click, or `nil` to pass
-    /// the click through to the system.
+    /// Returns the remapped action for a button click of the given variant,
+    /// or `nil` to pass the click through to the system.
     public func action(
         forBundleIdentifier bundleIdentifier: String,
-        button: TrafficButton
+        button: TrafficButton,
+        variant: ClickVariant = .left
     ) -> ButtonAction? {
         guard
             let rule = rulesProvider().first(where: {
@@ -28,13 +29,6 @@ public struct RuleEngine: Sendable {
             })
         else { return nil }
 
-        switch button {
-        case .close:
-            return rule.closeAction
-        case .minimize:
-            return rule.minimizeAction
-        case .zoom:
-            return rule.zoomAction
-        }
+        return rule.action(for: button, variant: variant)
     }
 }

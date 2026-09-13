@@ -14,9 +14,13 @@ Blinker is a native macOS menu bar app that intercepts clicks on window traffic-
 Sources/
 ├── BlinkerCore/               # 无 UI 的核心逻辑（可独立测试）
 │   ├── AXInterceptor/         # 事件拦截与动作执行
-│   │   ├── TrafficLightInterceptor.swift   # CGEventTap 入口 + 4 步点击管线
+│   │   ├── TrafficLightInterceptor.swift   # CGEventTap 入口 + 4 步点击管线（右键/⌥/🌐/长按）
 │   │   ├── AXWindowQuery.swift             # AXUIElement 查询：命中的窗口/按钮
-│   │   └── WindowActionPerformer.swift     # 通过 AXPress 执行重映射后的动作
+│   │   ├── WindowActionPerformer.swift     # 通过 AXPress/AX 帧写入执行重映射后的动作
+│   │   ├── WindowGeometry.swift            # 纯摆放数学：17 种动作的目标帧
+│   │   ├── WindowSnapper.swift             # 拖拽贴靠：observe-only tap + 预览面板
+│   │   ├── SnapZones.swift                 # 纯命中测试：光标 → 贴靠分区
+│   │   └── FrontWindowActionPerformer.swift # 对最前窗口执行动作（面板/快捷键共用）
 │   ├── RuleEngine/            # 纯查找，无副作用
 │   │   ├── RuleEngine.swift   # (bundleID, 按钮) → ButtonAction?
 │   │   └── RuleStore.swift    # 规则的持久化（UserDefaults）
@@ -24,10 +28,11 @@ Sources/
 │   ├── HoverOverlay/          # 悬停放大覆盖层（10 个文件，见下）
 │   └── Permission/            # 辅助功能权限检测与引导
 └── BlinkerApp/                # SwiftUI 应用壳
-    ├── AppDelegate.swift      # 长生命周期状态：拦截器 + 覆盖层 + 两个 store
+    ├── AppDelegate.swift      # 长生命周期状态：拦截器 + 覆盖层 + 贴靠 + 快捷键 + store
     ├── BlinkerApp.swift       # @main，MenuBarExtra 场景
     ├── Onboarding/            # 首次启动权限引导
-    └── Settings/              # 三 tab 设置页 + 应用库选择器
+    ├── Settings/              # 五 tab 设置页 + 应用库选择器
+    └── WindowManagement/      # 全局快捷键：Carbon 注册 + 录制 + 持久化
 
 Tests/BlinkerCoreTests/         # 仅测 BlinkerCore（纯逻辑，无需沙盒 UI）
 Scripts/                        # build-app.sh / package-app.sh / release 产物
@@ -99,9 +104,13 @@ CGEventTap（独立线程）
 Sources/
 ├── BlinkerCore/               # UI-free core logic (unit-testable in isolation)
 │   ├── AXInterceptor/         # Event tap + action performance
-│   │   ├── TrafficLightInterceptor.swift   # CGEventTap entry + 4-step click pipeline
+│   │   ├── TrafficLightInterceptor.swift   # CGEventTap entry + 4-step click pipeline (right/⌥/🌐/long press)
 │   │   ├── AXWindowQuery.swift             # AXUIElement queries: hit window/button
-│   │   └── WindowActionPerformer.swift     # Performs remapped actions via AXPress
+│   │   ├── WindowActionPerformer.swift     # Performs remapped actions via AXPress / AX frames
+│   │   ├── WindowGeometry.swift            # Pure placement math: target frames for all actions
+│   │   ├── WindowSnapper.swift             # Drag-to-snap: observe-only tap + preview panel
+│   │   ├── SnapZones.swift                 # Pure hit-testing: cursor → snap placement
+│   │   └── FrontWindowActionPerformer.swift # Acts on the frontmost window (panel/hotkeys)
 │   ├── RuleEngine/            # Pure lookup, no side effects
 │   │   ├── RuleEngine.swift   # (bundleID, button) → ButtonAction?
 │   │   └── RuleStore.swift    # Rule persistence (UserDefaults)
@@ -109,10 +118,11 @@ Sources/
 │   ├── HoverOverlay/          # Hover-to-enlarge overlay (see table below)
 │   └── Permission/            # Accessibility permission detection & onboarding
 └── BlinkerApp/                # SwiftUI app shell
-    ├── AppDelegate.swift      # Long-lived state: interceptor + overlay + stores
+    ├── AppDelegate.swift      # Long-lived state: interceptor + overlay + snapper + hotkeys
     ├── BlinkerApp.swift       # @main, MenuBarExtra scene
     ├── Onboarding/            # First-launch permission flow
-    └── Settings/              # Three-tab settings + app library picker
+    ├── Settings/              # Five-tab settings + app library picker
+    └── WindowManagement/      # Global hotkeys: Carbon registration + recorder
 
 Tests/BlinkerCoreTests/         # BlinkerCore only (pure logic, no UI harness)
 Scripts/                        # build-app.sh / package-app.sh / release artifacts
