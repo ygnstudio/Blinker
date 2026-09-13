@@ -1,0 +1,61 @@
+name: Bug report
+description: Report a problem with interception, the hover overlay, or the app itself
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug! Please fill in the details below —
+        they are exactly what interception problems need to debug.
+  - type: input
+    id: macos-version
+    attributes:
+      label: macOS version
+      description: Apple menu → About This Mac
+      placeholder: e.g. macOS 26.1
+    validations:
+      required: true
+  - type: input
+    id: hardware
+    attributes:
+      label: Hardware
+      description: Mac model and chip
+      placeholder: e.g. MacBook Pro M4 Pro
+    validations:
+      required: true
+  - type: input
+    id: bundle-id
+    attributes:
+      label: Target app bundle identifier
+      description: Which app's traffic lights misbehave? Find it with `osascript -e 'id of app "AppName"'`
+      placeholder: e.g. com.apple.finder
+    validations:
+      required: false
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What did you expect to happen instead? Screenshots welcome.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Hover over the traffic lights of …
+        2. …
+    validations:
+      required: false
+  - type: dropdown
+    id: area
+    attributes:
+      label: Which area is affected?
+      options:
+        - Click interception (remapped action not working)
+        - Hover overlay (enlarge layout / mask / sampling)
+        - Settings UI
+        - Permission flow
+        - Other
+    validations:
+      required: true

@@ -57,6 +57,13 @@ Or run tests:
 swift test
 ```
 
+## Documentation
+
+- [Architecture](docs/ARCHITECTURE.md) — module map, data flows, threading model
+- [Contributing](CONTRIBUTING.md) — build instructions, codebase tour, common tasks
+- [Changelog](CHANGELOG.md)
+- [Code of Conduct](CODE_OF_CONDUCT.md)
+
 ## Permissions
 
 Blinker needs **Accessibility** permission (System Settings → Privacy &
@@ -112,6 +119,13 @@ open Blinker.app
 ```bash
 swift test
 ```
+
+## 文档
+
+- [架构说明](docs/ARCHITECTURE.md) — 模块地图、数据流、线程模型
+- [参与贡献](CONTRIBUTING.md) — 构建方式、代码导览、常见任务指南
+- [更新日志](CHANGELOG.md)
+- [行为准则](CODE_OF_CONDUCT.md)
 
 ## 权限说明
 
