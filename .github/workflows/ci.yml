@@ -7,7 +7,7 @@ on:
 
 jobs:
   test:
-    runs-on: macos-15
+    runs-on: macos-26
     steps:
       - uses: actions/checkout@v4
 
@@ -21,7 +21,7 @@ jobs:
         run: swift test
 
   lint:
-    runs-on: macos-15
+    runs-on: macos-26
     env:
       SWIFTFORMAT_VERSION: 0.63.0
       SWIFTLINT_VERSION: 0.62.2

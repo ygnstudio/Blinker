@@ -44,15 +44,15 @@ public enum HoverOverlayGeometry {
         let groupBounds = buttonFrames.dropFirst().reduce(first) { $0.union($1) }
         let totalWidth = CGFloat(buttonFrames.count) * enlargedSize
             + CGFloat(buttonFrames.count - 1) * minimumGap
-        var x = groupBounds.midX - totalWidth / 2
+        var nextPanelMinX = groupBounds.midX - totalWidth / 2
         return buttonFrames.map { _ in
             let frame = CGRect(
-                x: x,
+                x: nextPanelMinX,
                 y: groupBounds.midY - enlargedSize / 2,
                 width: enlargedSize,
                 height: enlargedSize
             )
-            x += enlargedSize + minimumGap
+            nextPanelMinX += enlargedSize + minimumGap
             return frame
         }
     }
