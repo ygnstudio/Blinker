@@ -47,6 +47,16 @@ cat > "$APP_DIR/Contents/Info.plist" <<PLIST
 </plist>
 PLIST
 
-codesign --force --sign - "$APP_DIR" 2>/dev/null || true
+# Sign with the local BlinkerDev development certificate when available;
+# fall back to ad-hoc signing (e.g. on CI runners without the certificate).
+# A stable certificate keeps TCC permission grants (Accessibility) valid
+# across rebuilds, unlike ad-hoc signing.
+SIGN_IDENTITY="${CODESIGN_IDENTITY:-BlinkerDev}"
+if ! security find-identity -v -p codesigning 2>/dev/null | grep -q "\"$SIGN_IDENTITY\""; then
+  SIGN_IDENTITY="-"
+fi
+codesign --force --sign "$SIGN_IDENTITY" "$APP_DIR" 2>/dev/null \
+  || codesign --force --sign - "$APP_DIR" 2>/dev/null \
+  || true
 
-echo "packaged: $APP_DIR ($APP_VERSION build $BUNDLE_VERSION)"
+echo "packaged: $APP_DIR ($APP_VERSION build $BUNDLE_VERSION, signed: $SIGN_IDENTITY)"
