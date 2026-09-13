@@ -5,28 +5,15 @@ import CoreGraphics
 // MARK: - Panels and dwell (main thread only)
 
 extension HoverOverlayController {
-    func syncPanels(
-        buttons: [OverlayButtonInfo],
-        axWindow: AXUIElement,
-        target: HoverTarget,
-        hoveredIndex: Int?,
-        panelFrames: [CGRect],
-        settings: HoverOverlaySettings
-    ) {
-        let signature = buttons.map(\.frame)
-        let pid = target.hit.processIdentifier
+    func syncPanels(layout: OverlayLayout, hoveredIndex: Int?, settings: HoverOverlaySettings) {
+        let signature = layout.buttons.map(\.frame)
+        let pid = layout.target.hit.processIdentifier
         isOverlayVisible = true
 
         DispatchQueue.main.async { [weak self] in
             guard let self else { return }
-            if signature != panelSignature || pid != panelPID || panels.count != buttons.count {
-                rebuildPanels(
-                    buttons: buttons,
-                    axWindow: axWindow,
-                    target: target,
-                    panelFrames: panelFrames,
-                    isHotspot: settings.mode == .hotspot
-                )
+            if signature != panelSignature || pid != panelPID || panels.count != layout.buttons.count {
+                rebuildPanels(layout: layout, isHotspot: settings.mode == .hotspot)
             } else {
                 panels.forEach { $0.orderFrontRegardless() }
                 maskPanel?.orderFrontRegardless()
@@ -38,22 +25,16 @@ extension HoverOverlayController {
         }
     }
 
-    private func rebuildPanels(
-        buttons: [OverlayButtonInfo],
-        axWindow: AXUIElement,
-        target: HoverTarget,
-        panelFrames: [CGRect],
-        isHotspot: Bool
-    ) {
+    private func rebuildPanels(layout: OverlayLayout, isHotspot: Bool) {
         hidePanels()
         // The mask goes in first so the enlarged chips stack above it; it
         // hides the small native buttons peeking between the chips.
-        if !isHotspot, let maskFrame = HoverOverlayMaskPanel.frame(forButtonFrames: buttons.map(\.frame)) {
+        if !isHotspot, let maskFrame = HoverOverlayMaskPanel.frame(forButtonFrames: layout.buttons.map(\.frame)) {
             let mask = HoverOverlayMaskPanel(maskFrame: maskFrame)
             mask.orderFrontRegardless()
             maskPanel = mask
         }
-        panels = zip(buttons, panelFrames).map { info, panelFrame in
+        panels = zip(layout.buttons, layout.panelFrames).map { info, panelFrame in
             HoverOverlayPanel(
                 panelFrame: panelFrame,
                 info: info,
@@ -61,14 +42,14 @@ extension HoverOverlayController {
             ) { [weak self] in
                 self?.activate(
                     info: info,
-                    axWindow: axWindow,
-                    processIdentifier: target.hit.processIdentifier,
-                    bundleIdentifier: target.bundleIdentifier
+                    axWindow: layout.axWindow,
+                    processIdentifier: layout.target.hit.processIdentifier,
+                    bundleIdentifier: layout.target.bundleIdentifier
                 )
             }
         }
-        panelSignature = buttons.map(\.frame)
-        panelPID = target.hit.processIdentifier
+        panelSignature = layout.buttons.map(\.frame)
+        panelPID = layout.target.hit.processIdentifier
         panels.forEach { $0.orderFrontRegardless() }
     }
 
