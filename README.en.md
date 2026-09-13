@@ -23,18 +23,14 @@ add; everything else keeps system defaults.
   define its own action for right click, ⌥+click, 🌐+click and long press —
   e.g. red = quit, green = tile left, ⌥+green = quarter tile. Unconfigured
   variants keep the system default.
-- **Scenario profiles**: save the whole rule table as a named preset
-  (work / meeting / personal…) and switch all rules at once from the menu
-  bar or the rules tab; existing configs migrate into a "Default" profile.
 - **Workspaces & desktop switching**: save the current window arrangement
-  as a named workspace and restore it in one click; switch macOS desktops
-  via the simulated ⌃←/⌃→ shortcut, available in the window management page.
-- **Window management**: a dedicated settings page. **Instant actions** tile
-  or place the frontmost window with one click; **drag to snap** shows a
-  preview as you drag a window to a screen edge or corner, snapping on
-  release (halves, top-edge maximize, corner quarters); **global hotkeys**
-  (default ⌃⌥ with arrows and U/I/J/K) work under any app and are fully
-  rebindable.
+  as a named workspace and restore it in one click (settings page or the
+  hover chip); switch macOS desktops via the simulated ⌃←/⌃→ shortcut.
+- **Window management**: hover the traffic lights and click the
+  window-manager chip — a compact placement grid plus one-tap workspace
+  restore, always acting on the hovered window. Settings additionally offer
+  **drag to snap** (edge/corner preview, snapping on release) and **global
+  hotkeys** (default ⌃⌥ with arrows and U/I/J/K, fully rebindable).
 - **Hover enlargement**: two modes. **Overlay** draws enlarged Liquid Glass
   buttons with a mis-click dwell ring (0–800 ms; brushing past never
   triggers). **Hotspot** keeps the title bar's original look and only

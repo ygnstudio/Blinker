@@ -6,17 +6,10 @@ struct BlinkerApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @Environment(\.openSettings) private var openSettings
     @ObservedObject private var preferences = AppPreferences.shared
-    @ObservedObject private var ruleStore: RuleStore
-
-    init() {
-        ruleStore = AppDelegate.sharedRuleStore
-    }
 
     var body: some Scene {
         MenuBarExtra("Blinker", systemImage: "circle.circle") {
             InterceptorStatusRow(appDelegate: appDelegate)
-            Divider()
-            ruleSection
             Divider()
             Button(tr("设置…", "Settings…")) {
                 appDelegate.bringToFront()
@@ -43,32 +36,10 @@ struct BlinkerApp: App {
                 ruleStore: appDelegate.ruleStore,
                 hoverSettingsStore: appDelegate.hoverOverlaySettingsStore,
                 onApplyHoverSettings: appDelegate.applyHoverOverlaySettings,
-                frontWindowPerformer: appDelegate.frontWindowPerformer,
                 hotkeyManager: appDelegate.hotkeyManager,
                 workspaceStore: appDelegate.workspaceStore,
                 onSnapEnabledChange: appDelegate.applySnapEnabled
             )
-        }
-    }
-
-    /// Quick profile switcher: one entry per rule profile, checkmark on the
-    /// active one. Switching here also reflects in the settings rules tab.
-    @ViewBuilder
-    private var ruleSection: some View {
-        if ruleStore.profiles.count > 1 {
-            ForEach(ruleStore.profiles) { profile in
-                if profile.id == ruleStore.activeProfileID {
-                    Button {
-                        // Already active; no-op but keeps the menu row tappable.
-                    } label: {
-                        Label(profile.name, systemImage: "checkmark")
-                    }
-                } else {
-                    Button(profile.name) {
-                        ruleStore.switchProfile(to: profile.id)
-                    }
-                }
-            }
         }
     }
 }

@@ -16,11 +16,3 @@ public struct RuleProfile: Identifiable, Codable, Equatable, Hashable, Sendable 
         self.rules = rules
     }
 }
-
-/// The persisted archive format for `RuleStore`: every profile plus which
-/// one is active. Encoded as a single `UserDefaults` blob so the two never
-/// drift apart.
-struct ProfileArchive: Codable, Equatable, Sendable {
-    var profiles: [RuleProfile]
-    var activeProfileID: UUID
-}

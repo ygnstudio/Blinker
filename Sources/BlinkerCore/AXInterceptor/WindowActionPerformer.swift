@@ -45,7 +45,8 @@ public final class DefaultWindowActionPerformer: WindowActionPerforming {
         case .hideApp:
             logger.info("hiding pid \(processIdentifier)")
             runningApp?.hide()
-        case .none:
+        case .none, .windowManagerPanel:
+            // `.windowManagerPanel` is overlay-only and never routed here.
             break
         default:
             performGeometry(action, window: window, processIdentifier: processIdentifier)

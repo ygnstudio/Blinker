@@ -7,15 +7,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 - **Workspaces**: capture every visible window's position and size as a
-  named layout from the window-management tab and restore it in one click
-  (per-app largest-window capture, skipped apps reported). Saving under an
-  existing name overwrites.
+  named layout and restore it in one click (per-app largest-window capture,
+  skipped apps reported). Saving under an existing name overwrites.
 - **Desktop switching** buttons that synthesize the system ⌃← / ⌃→ shortcut.
-- **Scenario rule profiles**: the rule table can be saved as named presets
-  and switched as a whole from the menu bar or the rules tab (new /
-  duplicate / rename / delete). Legacy single-table configs migrate into a
-  "Default" profile automatically; the rule engine and event tap are
-  unchanged and always read the active profile.
+- **Window-manager hover chip**: the traffic-light overlay gains a chip that
+  opens a compact HUD (placement grid + workspace restore) acting on the
+  hovered window. The settings instant-action panel was removed — actions
+  always target the hovered window, never the frontmost one.
+- **Click variants work through the hover overlay**: right click, ⌥/🌐
+  clicks and long press now resolve on the enlarged buttons, matching the
+  interceptor's behavior for clicks on the real ones.
+
+### Removed
+- **Scenario rule profiles**: the rules tab returns to a single flat table;
+  any profile-era data migrates back automatically.
 - **Click-variant action matrix**: every traffic button now has five slots —
   plain left click, right click, ⌥+left click, 🌐+left click and long press
   (~0.45 s). The rules UI exposes the extra variants in an expandable matrix;

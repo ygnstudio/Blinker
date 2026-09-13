@@ -38,4 +38,9 @@ public enum ButtonAction: String, Codable, CaseIterable, Sendable {
     case moveToNextDisplay
     /// Swallow the click and do nothing.
     case none
+    /// Overlay-only: opens the window-management HUD (placement grid +
+    /// workspace restore) anchored to the enlarged traffic lights. Not
+    /// offered in rule pickers; acts on the hovered window, never the
+    /// frontmost one.
+    case windowManagerPanel
 }

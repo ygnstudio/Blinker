@@ -24,9 +24,9 @@ Sources/
 │   │   ├── WorkspaceManager.swift          # 工作区：CGWindowList 采集 + AX 恢复
 │   │   ├── WorkspaceStore.swift            # 工作区持久化（UserDefaults）
 │   │   └── SpaceSwitcher.swift             # 模拟 ⌃←/⌃→ 切换桌面
-│   ├── RuleEngine/            # 规则查找与场景规则集
+│   ├── RuleEngine/            # 纯查找，无副作用
 │   │   ├── RuleEngine.swift   # (bundleID, 按钮) → ButtonAction?
-│   │   └── RuleStore.swift    # 规则持久化：多套命名规则集 + 激活切换（UserDefaults）
+│   │   └── RuleStore.swift    # 规则的持久化（UserDefaults）
 │   ├── Models/                # AppRule / ButtonAction / TrafficButton 值类型
 │   ├── HoverOverlay/          # 悬停放大覆盖层（10 个文件，见下）
 │   └── Permission/            # 辅助功能权限检测与引导
@@ -117,9 +117,9 @@ Sources/
 │   │   ├── WorkspaceManager.swift          # Workspaces: CGWindowList capture + AX restore
 │   │   ├── WorkspaceStore.swift            # Workspace persistence (UserDefaults)
 │   │   └── SpaceSwitcher.swift             # Simulated ⌃←/⌃→ desktop switching
-│   ├── RuleEngine/            # Rule lookup + scenario profiles
+│   ├── RuleEngine/            # Pure lookup, no side effects
 │   │   ├── RuleEngine.swift   # (bundleID, button) → ButtonAction?
-│   │   └── RuleStore.swift    # Rule persistence: named profiles + active switch (UserDefaults)
+│   │   └── RuleStore.swift    # Rule persistence (UserDefaults)
 │   ├── Models/                # AppRule / ButtonAction / TrafficButton value types
 │   ├── HoverOverlay/          # Hover-to-enlarge overlay (see table below)
 │   └── Permission/            # Accessibility permission detection & onboarding

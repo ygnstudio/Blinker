@@ -5,12 +5,10 @@ import SwiftUI
 /// frontmost window right away, plus the drag-to-snap and global hotkey
 /// configuration.
 struct WindowManagementTab: View {
-    let frontWindowPerformer: FrontWindowActionPerformer
     @ObservedObject var hotkeyManager: HotkeyManager
     @ObservedObject var workspaceStore: WorkspaceStore
     let onSnapEnabledChange: (Bool) -> Void
     @ObservedObject private var preferences = AppPreferences.shared
-    @State private var frontAppName = ""
     @State private var showingSaveWorkspaceAlert = false
     @State private var draftWorkspaceName = ""
 
@@ -23,58 +21,12 @@ struct WindowManagementTab: View {
 
     var body: some View {
         Form {
-            instantPanelSection
             workspaceSection
             spaceSection
             snapSection
             hotkeySection
         }
         .formStyle(.grouped)
-        .onAppear(perform: refreshFrontAppName)
-        .onReceive(
-            NSWorkspace.shared.notificationCenter
-                .publisher(for: NSWorkspace.didActivateApplicationNotification)
-        ) { _ in
-            refreshFrontAppName()
-        }
-    }
-
-    // MARK: - Instant panel
-
-    private var instantPanelSection: some View {
-        Section {
-            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: 3), spacing: 10) {
-                ForEach(Self.gridPlacements, id: \.self) { placement in
-                    PlacementTile(placement: placement) {
-                        frontWindowPerformer.perform(placement.action)
-                    }
-                }
-            }
-            HStack(spacing: 10) {
-                panelButton(tr("最大化", "Maximize"), icon: "arrow.up.backward.and.arrow.down.forward") {
-                    frontWindowPerformer.perform(.maximize)
-                }
-                panelButton(tr("准最大化", "Almost Maximize"), icon: "rectangle.compress.vertical") {
-                    frontWindowPerformer.perform(.almostMaximize)
-                }
-                panelButton(tr("下一显示器", "Next Display"), icon: "display.2") {
-                    frontWindowPerformer.perform(.moveToNextDisplay)
-                }
-            }
-        } header: {
-            HStack(spacing: 4) {
-                Text(tr("即时操作", "Instant Actions"))
-                if !frontAppName.isEmpty {
-                    Text("· \(frontAppName)")
-                        .foregroundStyle(.secondary)
-                }
-            }
-        } footer: {
-            Text(tr(
-                "点击立即对最前面的窗口生效，无需配置规则。",
-                "Clicks act on the frontmost window immediately — no rules needed."
-            ))
-        }
     }
 
     private func panelButton(_ label: String, icon: String, action: @escaping () -> Void) -> some View {
@@ -125,9 +77,9 @@ struct WindowManagementTab: View {
             Text(tr("工作区", "Workspaces"))
         } footer: {
             Text(tr(
-                "把当前窗口排布存成命名预设，点「恢复」一键还原。已退出的应用会被跳过，重新打开后恢复即生效。",
-                "Save the current window arrangement as a named preset and restore it in one click. "
-                    + "Apps that are not running are skipped."
+                "把当前窗口排布存成命名预设，点「恢复」一键还原；也可通过悬停红绿灯旁的「窗口管理」按钮快速恢复。已退出的应用会被跳过。",
+                "Save the current window arrangement as a named preset and restore it in one click — "
+                    + "also from the hover window-manager chip. Apps that are not running are skipped."
             ))
         }
     }
@@ -217,61 +169,6 @@ struct WindowManagementTab: View {
             set: { hotkeyManager.setEnabled($0) }
         )
     }
-
-    private func refreshFrontAppName() {
-        frontAppName = NSWorkspace.shared.frontmostApplication?.localizedName ?? ""
-    }
-}
-
-// MARK: - Placement tile
-
-/// One grid button: a mini screen with the target region highlighted.
-private struct PlacementTile: View {
-    let placement: BlinkerCore.WindowPlacement
-    let onPerform: () -> Void
-
-    var body: some View {
-        Button(action: onPerform) {
-            VStack(spacing: 5) {
-                miniScreen
-                Text(placement.action.localizedLabel)
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
-            }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 8)
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-    }
-
-    private var miniScreen: some View {
-        let frame = WindowGeometry.tiledFrame(placement, in: CGRect(x: 0, y: 0, width: 1, height: 1))
-        return ZStack(alignment: alignment(for: placement)) {
-            RoundedRectangle(cornerRadius: 5)
-                .strokeBorder(Color.secondary.opacity(0.5), lineWidth: 1)
-            RoundedRectangle(cornerRadius: 3)
-                .fill(Color.accentColor.opacity(0.75))
-                .frame(width: max(8, frame.width * 44), height: max(6, frame.height * 30))
-        }
-        .frame(width: 46, height: 32)
-    }
-
-    private func alignment(for placement: BlinkerCore.WindowPlacement) -> Alignment {
-        switch placement {
-        case .topLeft: .topLeading
-        case .top: .top
-        case .topRight: .topTrailing
-        case .left: .leading
-        case .center: .center
-        case .right: .trailing
-        case .bottomLeft: .bottomLeading
-        case .bottom: .bottom
-        case .bottomRight: .bottomTrailing
-        case .maximize, .almostMaximize: .center
-        }
-    }
 }
 
 // MARK: - Workspace row
@@ -357,27 +254,6 @@ private struct HotkeyRowView: View {
             Text(warning)
                 .font(.caption2)
                 .foregroundStyle(.orange)
-        }
-    }
-}
-
-// MARK: - Mapping helpers
-
-extension BlinkerCore.WindowPlacement {
-    /// The window action that performs this placement.
-    var action: ButtonAction {
-        switch self {
-        case .maximize: .maximize
-        case .almostMaximize: .almostMaximize
-        case .left: .tileLeft
-        case .right: .tileRight
-        case .top: .tileTop
-        case .bottom: .tileBottom
-        case .topLeft: .tileTopLeft
-        case .topRight: .tileTopRight
-        case .bottomLeft: .tileBottomLeft
-        case .bottomRight: .tileBottomRight
-        case .center: .centerWindow
         }
     }
 }

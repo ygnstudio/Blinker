@@ -144,6 +144,19 @@ public final class HoverOverlaySettingsStore: ObservableObject {
         self.storageKey = storageKey
         storage = Self.load(defaults: defaults, key: storageKey)
         settings = storage
+        // One-time migration: surface the window-management chip so the
+        // hover button exists without a settings trip. Only fires when the
+        // user never configured any extra chip.
+        let migrationKey = "com.ygnstudio.blinker.hud-chip-migrated"
+        let allSlotsEmpty = storage.extraButtonActions.allSatisfy { $0 == nil }
+        if allSlotsEmpty, !defaults.bool(forKey: migrationKey) {
+            if storage.extraButtonActions.indices.contains(0) {
+                storage.extraButtonActions[0] = .windowManagerPanel
+            }
+            settings = storage
+            defaults.set(true, forKey: migrationKey)
+            persist(storage)
+        }
     }
 
     /// Thread-safe copy of the current settings.

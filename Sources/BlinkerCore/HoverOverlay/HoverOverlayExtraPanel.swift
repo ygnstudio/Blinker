@@ -23,6 +23,7 @@ extension ButtonAction {
         case .centerWindow: "rectangle.center.inset.filled"
         case .moveToNextDisplay: "display.2"
         case .none: nil
+        case .windowManagerPanel: "rectangle.grid.3x3"
         }
     }
 }

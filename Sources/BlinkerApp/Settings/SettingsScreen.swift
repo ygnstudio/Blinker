@@ -8,7 +8,6 @@ struct SettingsScreen: View {
     @ObservedObject var ruleStore: RuleStore
     @ObservedObject var hoverSettingsStore: HoverOverlaySettingsStore
     let onApplyHoverSettings: (HoverOverlaySettings) -> Void
-    let frontWindowPerformer: FrontWindowActionPerformer
     @ObservedObject var hotkeyManager: HotkeyManager
     @ObservedObject var workspaceStore: WorkspaceStore
     let onSnapEnabledChange: (Bool) -> Void
@@ -19,7 +18,6 @@ struct SettingsScreen: View {
             RulesTab(ruleStore: ruleStore)
                 .tabItem { Label(tr("规则", "Rules"), systemImage: "list.bullet.rectangle") }
             WindowManagementTab(
-                frontWindowPerformer: frontWindowPerformer,
                 hotkeyManager: hotkeyManager,
                 workspaceStore: workspaceStore,
                 onSnapEnabledChange: onSnapEnabledChange
@@ -64,6 +62,7 @@ extension ButtonAction {
         case .almostMaximize: tr("准最大化", "Almost Maximize")
         case .moveToNextDisplay: tr("移到下一显示器", "Next Display")
         case .none: tr("无操作", "Do Nothing")
+        case .windowManagerPanel: tr("窗口管理", "Window Manager")
         }
     }
 }
@@ -83,21 +82,14 @@ extension ClickVariant {
 
 // MARK: - Rules tab
 
-/// Per-app remapping of the traffic light buttons, organized into named
-/// scenario profiles ("工作", "个人", …) that switch the whole rule table.
+/// Per-app remapping of the traffic light buttons.
 private struct RulesTab: View {
     @ObservedObject var ruleStore: RuleStore
     @ObservedObject private var preferences = AppPreferences.shared
     @State private var showingAppLibrary = false
-    @State private var showingNewProfileAlert = false
-    @State private var showingRenameAlert = false
-    @State private var showingDeleteConfirmation = false
-    @State private var draftProfileName = ""
 
     var body: some View {
         VStack(spacing: 0) {
-            profileBar
-            Divider()
             if ruleStore.rules.isEmpty {
                 emptyState
             } else {
@@ -106,113 +98,6 @@ private struct RulesTab: View {
             Divider()
             footerBar
         }
-    }
-
-    // MARK: Profile switcher bar
-
-    private var activeProfileBinding: Binding<UUID?> {
-        Binding(
-            get: { ruleStore.activeProfileID },
-            set: { id in
-                if let id {
-                    ruleStore.switchProfile(to: id)
-                }
-            }
-        )
-    }
-
-    private var profileBar: some View {
-        HStack(spacing: 8) {
-            Image(systemName: "square.stack.3d.up")
-                .foregroundStyle(.secondary)
-            Picker(tr("规则集", "Profile"), selection: activeProfileBinding) {
-                ForEach(ruleStore.profiles) { profile in
-                    Text(profile.name).tag(profile.id as UUID?)
-                }
-            }
-            .labelsHidden()
-            .frame(width: 170)
-            Spacer()
-            Menu {
-                Button(tr("新建规则集…", "New Profile…")) {
-                    draftProfileName = ""
-                    showingNewProfileAlert = true
-                }
-                Button(tr("复制当前规则集", "Duplicate Current")) {
-                    ruleStore.duplicateProfile()
-                }
-                Button(tr("重命名当前规则集…", "Rename Current…")) {
-                    draftProfileName = ruleStore.profiles
-                        .first { $0.id == ruleStore.activeProfileID }?.name ?? ""
-                    showingRenameAlert = true
-                }
-                Divider()
-                Button(
-                    tr("删除当前规则集", "Delete Current"),
-                    role: .destructive,
-                    action: { showingDeleteConfirmation = true }
-                )
-                .disabled(ruleStore.profiles.count <= 1)
-            } label: {
-                Image(systemName: "ellipsis.circle")
-            }
-            .menuStyle(.borderlessButton)
-            .fixedSize()
-        }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 8)
-        .alert(
-            tr("新建规则集", "New Profile"),
-            isPresented: $showingNewProfileAlert
-        ) {
-            TextField(tr("名称", "Name"), text: $draftProfileName)
-            Button(tr("创建", "Create")) {
-                let name = draftProfileName.trimmingCharacters(in: .whitespaces)
-                ruleStore.createProfile(named: name.isEmpty ? untitledName : name)
-            }
-            Button(tr("取消", "Cancel"), role: .cancel) {}
-        } message: {
-            Text(
-                tr(
-                    "创建一个空的规则集并切换过去，然后按场景配置规则。",
-                    "Creates an empty profile and switches to it; configure rules per scenario."
-                )
-            )
-        }
-        .alert(
-            tr("重命名规则集", "Rename Profile"),
-            isPresented: $showingRenameAlert
-        ) {
-            TextField(tr("名称", "Name"), text: $draftProfileName)
-            Button(tr("好", "OK")) {
-                if let id = ruleStore.activeProfileID {
-                    ruleStore.renameProfile(id: id, to: draftProfileName)
-                }
-            }
-            Button(tr("取消", "Cancel"), role: .cancel) {}
-        }
-        .confirmationDialog(
-            tr("删除当前规则集？", "Delete Current Profile?"),
-            isPresented: $showingDeleteConfirmation,
-            titleVisibility: .visible
-        ) {
-            Button(tr("删除", "Delete"), role: .destructive) {
-                if let id = ruleStore.activeProfileID {
-                    ruleStore.deleteProfile(id: id)
-                }
-            }
-        } message: {
-            Text(
-                tr(
-                    "该规则集里的所有规则都会被删除，且无法恢复。",
-                    "Every rule inside this profile will be removed permanently."
-                )
-            )
-        }
-    }
-
-    private var untitledName: String {
-        tr("未命名规则集", "Untitled Profile")
     }
 
     private var ruleList: some View {

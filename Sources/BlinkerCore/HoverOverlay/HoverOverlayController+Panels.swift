@@ -40,38 +40,30 @@ extension HoverOverlayController {
 
     private func rebuildPanels(layout: OverlayLayout, isHotspot: Bool, maskStyle: HoverOverlayMaskStyle) {
         hidePanels()
-        // The mask goes in first so the enlarged chips stack above it; it
-        // hides the small native buttons peeking between the chips. In
-        // sampled mode it shows the host title bar itself; without sampling
-        // (no permission, no clean strip) it falls back to glass.
-        if !isHotspot {
-            let buttonFrames = layout.buttons.map(\.frame)
-            if let maskFrame = HoverOverlayMaskPanel.frame(forButtonFrames: buttonFrames) {
-                let mask = HoverOverlayMaskPanel(maskFrame: maskFrame)
-                mask.orderFrontRegardless()
-                maskPanel = mask
-                if maskStyle == .sampled {
-                    scheduleSampledBackdrop(
-                        hit: layout.target.hit,
-                        maskFrame: maskFrame,
-                        buttonFrames: buttonFrames
-                    )
-                }
-            }
-        }
+        installMaskPanel(layout: layout, isHotspot: isHotspot, maskStyle: maskStyle)
         panels = zip(layout.buttons, layout.panelFrames).map { info, panelFrame in
             HoverOverlayPanel(
                 panelFrame: panelFrame,
                 info: info,
-                isHotspot: isHotspot
-            ) { [weak self] in
-                self?.activate(
-                    info: info,
-                    axWindow: layout.axWindow,
-                    processIdentifier: layout.target.hit.processIdentifier,
-                    bundleIdentifier: layout.target.bundleIdentifier
-                )
-            }
+                isHotspot: isHotspot,
+                onActivate: { [weak self] variant in
+                    self?.activate(
+                        info: info,
+                        axWindow: layout.axWindow,
+                        processIdentifier: layout.target.hit.processIdentifier,
+                        bundleIdentifier: layout.target.bundleIdentifier,
+                        variant: variant
+                    )
+                },
+                onLongPress: { [weak self] in
+                    self?.activateLongPress(
+                        axWindow: layout.axWindow,
+                        processIdentifier: layout.target.hit.processIdentifier,
+                        bundleIdentifier: layout.target.bundleIdentifier,
+                        button: info.button
+                    )
+                }
+            )
         }
         panelSignature = layout.buttons.map(\.frame)
         panelPID = layout.target.hit.processIdentifier
@@ -82,15 +74,44 @@ extension HoverOverlayController {
                 panelFrame: layout.extraPanelFrames[index],
                 action: action
             ) { [weak self] in
-                self?.activateExtra(
-                    action,
+                self?.activateExtra(ExtraChipContext(
+                    action: action,
                     axWindow: layout.axWindow,
-                    processIdentifier: layout.target.hit.processIdentifier
-                )
+                    processIdentifier: layout.target.hit.processIdentifier,
+                    anchorFrame: layout.extraPanelFrames[index],
+                    buttonFrames: layout.buttons.map(\.frame),
+                    windowBounds: layout.target.hit.bounds,
+                    appName: layout.target.appName
+                ))
             }
         }
         panels.forEach { $0.orderFrontRegardless() }
         extraPanels.forEach { $0.orderFrontRegardless() }
+    }
+
+    /// Installs the backdrop mask covering the native buttons. It goes in
+    /// first so the enlarged chips stack above it; in sampled mode it shows
+    /// the host title bar itself, falling back to glass without sampling.
+    private func installMaskPanel(
+        layout: OverlayLayout,
+        isHotspot: Bool,
+        maskStyle: HoverOverlayMaskStyle
+    ) {
+        guard !isHotspot else { return }
+        let buttonFrames = layout.buttons.map(\.frame)
+        guard let maskFrame = HoverOverlayMaskPanel.frame(forButtonFrames: buttonFrames) else {
+            return
+        }
+        let mask = HoverOverlayMaskPanel(maskFrame: maskFrame)
+        mask.orderFrontRegardless()
+        maskPanel = mask
+        if maskStyle == .sampled {
+            scheduleSampledBackdrop(
+                hit: layout.target.hit,
+                maskFrame: maskFrame,
+                buttonFrames: buttonFrames
+            )
+        }
     }
 
     /// Kicks off the async title-bar sampling and swaps the mask to the
@@ -126,6 +147,7 @@ extension HoverOverlayController {
     }
 
     func hidePanels() {
+        closeHUD()
         stopDwell()
         panels.forEach { $0.orderOut(nil) }
         panels = []
@@ -147,13 +169,16 @@ extension HoverOverlayController {
         info: OverlayButtonInfo,
         axWindow: AXUIElement,
         processIdentifier: pid_t,
-        bundleIdentifier: String?
+        bundleIdentifier: String?,
+        variant: ClickVariant
     ) {
-        logger.info("overlay button activated: \(info.axSubrole, privacy: .public)")
-        if let action = bundleIdentifier.flatMap({ ruleEngine.action(
-            forBundleIdentifier: $0,
-            button: info.button
-        ) }) {
+        let summary = "\(info.axSubrole) as \(String(describing: variant))"
+        logger.info("overlay button activated: \(summary, privacy: .public)")
+        let action = bundleIdentifier.flatMap {
+            ruleEngine.action(forBundleIdentifier: $0, button: info.button, variant: variant)
+        }
+        switch (action, variant) {
+        case let (.some(action), _):
             workQueue.async { [actionPerformer] in
                 actionPerformer.perform(
                     action,
@@ -162,7 +187,7 @@ extension HoverOverlayController {
                     processIdentifier: processIdentifier
                 )
             }
-        } else {
+        case (.none, .left):
             workQueue.async { [weak self] in
                 // The click was swallowed by the panel; log a failed press so
                 // the user's dead click is at least diagnosable.
@@ -172,6 +197,10 @@ extension HoverOverlayController {
                     )
                 }
             }
+        case (.none, _):
+            // Unconfigured enhanced variant: nothing to do (the click is
+            // already consumed by the enlarged panel), just stand down.
+            logger.debug("no action configured for this variant; standing down")
         }
         // Deferred so the view survives the ongoing mouseDown dispatch.
         DispatchQueue.main.async { [weak self] in
@@ -179,26 +208,127 @@ extension HoverOverlayController {
         }
     }
 
-    /// Performs an extra chip's configured action and hides the overlay.
-    /// Runs on the main thread.
-    private func activateExtra(
-        _ action: ButtonAction,
+    /// Fires the long-press slot of a button (no-op when unconfigured).
+    private func activateLongPress(
         axWindow: AXUIElement,
-        processIdentifier: pid_t
+        processIdentifier: pid_t,
+        bundleIdentifier: String?,
+        button: TrafficButton
     ) {
-        logger.info("extra chip activated: \(String(describing: action), privacy: .public)")
+        guard
+            let action = bundleIdentifier.flatMap({
+                ruleEngine.action(forBundleIdentifier: $0, button: button, variant: .longPressLeft)
+            })
+        else {
+            logger.debug("long press not configured; standing down")
+            return
+        }
+        logger.info("overlay long press activated: \(String(describing: action), privacy: .public)")
         workQueue.async { [actionPerformer] in
             actionPerformer.perform(
                 action,
-                button: .zoom,
+                button: button,
                 window: axWindow,
                 processIdentifier: processIdentifier
+            )
+        }
+        DispatchQueue.main.async { [weak self] in
+            self?.hidePanels()
+        }
+    }
+
+    /// Performs an extra chip's configured action and hides the overlay.
+    /// The management chip opens the HUD instead (and keeps the overlay up).
+    /// Runs on the main thread.
+    private func activateExtra(_ context: ExtraChipContext) {
+        let actionName = String(describing: context.action)
+        logger.info("extra chip activated: \(actionName, privacy: .public)")
+        if context.action == .windowManagerPanel {
+            openHUD(context)
+            return
+        }
+        workQueue.async { [actionPerformer] in
+            actionPerformer.perform(
+                context.action,
+                button: .zoom,
+                window: context.axWindow,
+                processIdentifier: context.processIdentifier
             )
         }
         // Deferred so the view survives the ongoing mouseDown dispatch.
         DispatchQueue.main.async { [weak self] in
             self?.hidePanels()
         }
+    }
+
+    // MARK: - Management HUD
+
+    /// The placement grid shown in the HUD, in reading order.
+    private static let hudPlacements: [ButtonAction] = [
+        .tileTopLeft, .tileTop, .tileTopRight,
+        .tileLeft, .centerWindow, .tileRight,
+        .tileBottomLeft, .tileBottom, .tileBottomRight,
+        .maximize, .almostMaximize, .moveToNextDisplay,
+    ]
+
+    /// Opens the management HUD below the enlarged group. All actions act on
+    /// the hovered window (`axWindow`) — never on the frontmost one.
+    private func openHUD(_ context: ExtraChipContext) {
+        closeHUD()
+
+        let width: CGFloat = 252
+        let workspaces = workspacesProvider()
+        let gridRows = CGFloat(Self.hudPlacements.count / 3)
+        let height = 18 + 10 + gridRows * 54 + 12 + CGFloat(min(workspaces.count, 6)) * 26 + 24
+
+        // Anchor below the triggering chip, clamped into the window ∩ screen
+        // container so the HUD never drifts off-screen.
+        let container = Self.overlayContainerBounds(
+            forButtonFrames: context.buttonFrames,
+            windowBounds: context.windowBounds
+        ) ?? context.windowBounds
+        var originX = context.anchorFrame.minX
+        originX = min(max(originX, container.minX + 4), container.maxX - width - 4)
+        var originY = context.anchorFrame.maxY + 6
+        originY = min(originY, container.maxY - height - 4)
+
+        let axFrame = CGRect(x: originX, y: originY, width: width, height: height)
+        let content = HoverOverlayHUDContent(
+            appName: context.appName,
+            placements: Self.hudPlacements,
+            workspaces: workspaces,
+            onAction: { [weak self] action in
+                guard let self else { return }
+                workQueue.async { [actionPerformer] in
+                    actionPerformer.perform(
+                        action,
+                        button: .zoom,
+                        window: context.axWindow,
+                        processIdentifier: context.processIdentifier
+                    )
+                }
+                closeHUD()
+            },
+            onRestore: { [weak self] id in
+                guard let self else { return }
+                workspaceRestorer(id)
+                closeHUD()
+            },
+            onClose: { [weak self] in
+                self?.closeHUD()
+            }
+        )
+        hudPanel = HoverOverlayHUDPanel(axFrame: axFrame, content: content)
+        hudPanel?.orderFrontRegardless()
+        hudStateLock.withLock { hudKeepAliveFrameAX = axFrame }
+        logger.info("management HUD opened")
+    }
+
+    /// Closes the management HUD (idempotent).
+    func closeHUD() {
+        hudStateLock.withLock { hudKeepAliveFrameAX = .null }
+        hudPanel?.orderOut(nil)
+        hudPanel = nil
     }
 
     // MARK: - Dwell
@@ -283,4 +413,16 @@ extension HoverOverlayController {
             self?.hidePanels()
         }
     }
+}
+
+/// Everything an extra-chip click needs: which action it maps to and the
+/// hovered window it should act on (plus HUD anchoring geometry).
+struct ExtraChipContext {
+    let action: ButtonAction
+    let axWindow: AXUIElement
+    let processIdentifier: pid_t
+    let anchorFrame: CGRect
+    let buttonFrames: [CGRect]
+    let windowBounds: CGRect
+    let appName: String?
 }

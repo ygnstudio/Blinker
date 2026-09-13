@@ -25,12 +25,16 @@ final class HoverOverlayPanel: NSPanel {
     ///   - info: The overlayed button's metadata.
     ///   - isHotspot: When `true` the panel draws nothing and activates
     ///     immediately (invisible click zone).
-    ///   - onActivate: Called when the user clicks after dwell completion.
+    ///   - onActivate: Called with the click's variant when the user clicks
+    ///     after dwell completion (long presses report through `onLongPress`).
+    ///   - onLongPress: Called when a plain left click is held past the
+    ///     long-press threshold.
     init(
         panelFrame: CGRect,
         info: OverlayButtonInfo,
         isHotspot: Bool = false,
-        onActivate: @escaping () -> Void
+        onActivate: @escaping (ClickVariant) -> Void,
+        onLongPress: @escaping () -> Void
     ) {
         let globalMaxY = NSScreen.screens.map(\.frame.maxY).max() ?? 0
         // Convert the AX (top-left origin) panel frame to AppKit coordinates.
@@ -49,7 +53,8 @@ final class HoverOverlayPanel: NSPanel {
             info: info,
             isHotspot: isHotspot,
             usesSystemGlass: usesSystemGlass,
-            onActivate: onActivate
+            onActivate: onActivate,
+            onLongPress: onLongPress
         )
         super.init(
             contentRect: appKitFrame,
@@ -85,21 +90,29 @@ final class HoverOverlayButtonView: NSView {
     /// When `true` the panel wraps this view in `NSGlassEffectView`, so the
     /// view only draws circle, symbol and text — the chip is system glass.
     private let usesSystemGlass: Bool
-    private let onActivate: () -> Void
+    private let onActivate: (ClickVariant) -> Void
+    private let onLongPress: () -> Void
     private var dwellProgress: Double = 0
     private var isActivated = false
+    /// Pending plain left click waiting to resolve as a quick click (mouse
+    /// up) or a long press (timer). Mirrors the interceptor's behavior for
+    /// buttons whose long-press slot is configured.
+    private var pressStartedAt: Date?
+    private var longPressTimer: Timer?
 
     init(
         frame: NSRect,
         info: OverlayButtonInfo,
         isHotspot: Bool = false,
         usesSystemGlass: Bool = false,
-        onActivate: @escaping () -> Void
+        onActivate: @escaping (ClickVariant) -> Void,
+        onLongPress: @escaping () -> Void
     ) {
         self.info = info
         self.isHotspot = isHotspot
         self.usesSystemGlass = usesSystemGlass
         self.onActivate = onActivate
+        self.onLongPress = onLongPress
         super.init(frame: frame)
     }
 
@@ -131,13 +144,65 @@ final class HoverOverlayButtonView: NSView {
         needsDisplay = true
     }
 
-    override func mouseDown(with _: NSEvent) {
+    override func mouseDown(with event: NSEvent) {
         // This click is consumed here, but the interceptor's tap sees the raw
         // event first; arm the gate so it passes the click through instead of
         // performing the mapped action a second time.
         OverlayClickGate.suppressFor(milliseconds: 500)
         guard isActivated || isHotspot else { return }
-        onActivate()
+
+        let variant = Self.variant(of: event)
+        guard variant == .left else {
+            onActivate(variant)
+            return
+        }
+        // Plain left click: wait for release — a hold past the threshold is
+        // a long press instead. The controller ignores `onLongPress` when no
+        // long-press slot is configured, so scheduling unconditionally is safe.
+        pressStartedAt = Date()
+        let threshold = TrafficLightInterceptor.longPressThreshold
+        let timer = Timer(timeInterval: threshold, repeats: false) { [weak self] _ in
+            self?.fireLongPress()
+        }
+        longPressTimer = timer
+        RunLoop.main.add(timer, forMode: .common)
+    }
+
+    /// Fires when a left click stays held past the long-press threshold.
+    private func fireLongPress() {
+        guard pressStartedAt != nil else { return }
+        pressStartedAt = nil
+        longPressTimer = nil
+        onLongPress()
+    }
+
+    override func mouseUp(with _: NSEvent) {
+        // A click that outlived the threshold already fired as a long press
+        // (fireLongPress clears the pending state before this runs).
+        guard pressStartedAt != nil else { return }
+        pressStartedAt = nil
+        longPressTimer?.invalidate()
+        longPressTimer = nil
+        onActivate(.left)
+    }
+
+    override func rightMouseDown(with _: NSEvent) {
+        OverlayClickGate.suppressFor(milliseconds: 500)
+        guard isActivated || isHotspot else { return }
+        onActivate(.right)
+    }
+
+    /// Maps an NSEvent's modifiers to a click variant (⌥ first, then 🌐),
+    /// matching the interceptor's `CGEventFlags` logic.
+    private static func variant(of event: NSEvent) -> ClickVariant {
+        let flags = event.modifierFlags
+        if flags.contains(.option) {
+            return .optionLeft
+        }
+        if flags.contains(.function) {
+            return .globeLeft
+        }
+        return .left
     }
 
     override func draw(_: NSRect) {

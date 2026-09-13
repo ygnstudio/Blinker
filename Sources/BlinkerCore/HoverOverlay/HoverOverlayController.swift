@@ -20,6 +20,11 @@ public final class HoverOverlayController {
     let ruleEngine: RuleEngine
     let actionPerformer: WindowActionPerforming
     let settingsStore: HoverOverlaySettingsStore
+    /// Snapshot of saved workspaces for the management HUD, taken when the
+    /// HUD opens.
+    let workspacesProvider: () -> [HUDWorkspaceItem]
+    /// Restores a workspace; wired to the app's `WorkspaceStore`.
+    let workspaceRestorer: (UUID) -> Void
     let logger = Logger(subsystem: "com.ygnstudio.blinker", category: "hover-overlay")
 
     var eventTap: CFMachPort?
@@ -54,15 +59,34 @@ public final class HoverOverlayController {
     var dwellStartedAt: Date?
     var activeDwellMilliseconds = 0
     var workspaceObserver: NSObjectProtocol?
+    /// The open management HUD, if any. Main-thread owned.
+    var hudPanel: HoverOverlayHUDPanel?
+    /// Guards the keep-alive frame below, read from the work queue's cursor
+    /// detection while the main thread opens/closes the HUD.
+    let hudStateLock = NSLock()
+    var hudKeepAliveFrameAX: CGRect = .null
+
+    /// Whether the cursor is inside the open HUD (work-queue safe).
+    func hudContains(_ point: CGPoint) -> Bool {
+        hudStateLock.withLock { hudKeepAliveFrameAX.contains(point) }
+    }
+
+    var isHUDOpen: Bool {
+        hudStateLock.withLock { !hudKeepAliveFrameAX.isNull }
+    }
 
     public init(
         ruleEngine: RuleEngine,
         actionPerformer: WindowActionPerforming,
-        settingsStore: HoverOverlaySettingsStore
+        settingsStore: HoverOverlaySettingsStore,
+        workspacesProvider: @escaping () -> [HUDWorkspaceItem] = { [] },
+        workspaceRestorer: @escaping (UUID) -> Void = { _ in }
     ) {
         self.ruleEngine = ruleEngine
         self.actionPerformer = actionPerformer
         self.settingsStore = settingsStore
+        self.workspacesProvider = workspacesProvider
+        self.workspaceRestorer = workspaceRestorer
     }
 
     public var isRunning: Bool {

@@ -1,5 +1,6 @@
 import AppKit
 import CoreGraphics
+import os
 import ScreenCaptureKit
 
 /// Captures a pixel-accurate backdrop for the mask from the host window's
@@ -19,6 +20,8 @@ import ScreenCaptureKit
 /// Sampling uses `SCScreenshotManager` one-shot captures (macOS 14+); the
 /// legacy `CGWindowListCreateImage` is hard-unavailable in recent SDKs.
 public enum TitlebarSampler {
+    private static let logger = Logger(subsystem: "com.ygnstudio.blinker", category: "titlebar-sampler")
+
     /// Minimum width (pt) of a clean run worth using as the backdrop strip.
     private static let minimumStripWidth: CGFloat = 12
     /// Clearance (pt) kept from the window edges and the button group so
@@ -53,14 +56,22 @@ public enum TitlebarSampler {
         maskFrame: CGRect,
         scale: CGFloat
     ) async -> NSImage? {
+        guard hasScreenCapturePermission() else {
+            logger.error("sampled mask skipped: Screen Recording permission missing")
+            return nil
+        }
         let spans = spanFrames(windowBounds: windowBounds, maskFrame: maskFrame)
-        guard !spans.isEmpty else { return nil }
+        guard !spans.isEmpty else {
+            logger.info("sampled mask skipped: no capturable span beside the button group")
+            return nil
+        }
 
         let shareable = try? await SCShareableContent.excludingDesktopWindows(
             false,
             onScreenWindowsOnly: true
         )
         guard let scWindow = shareable?.windows.first(where: { $0.windowID == windowID }) else {
+            logger.error("sampled mask skipped: window \(windowID) not found in SCShareableContent")
             return nil
         }
 
@@ -68,7 +79,11 @@ public enum TitlebarSampler {
         if let crop = sample.crop {
             return stretchedImage(from: crop, size: maskFrame.size)
         }
-        guard let color = sample.referenceColor else { return nil }
+        guard let color = sample.referenceColor else {
+            logger.error("sampled mask skipped: no span captured (capture error?)")
+            return nil
+        }
+        logger.info("sampled mask: no clean run; falling back to reference color")
         return solidImage(color: color, size: maskFrame.size)
     }
 
@@ -179,10 +194,15 @@ public enum TitlebarSampler {
         configuration.captureResolution = .best
 
         let filter = SCContentFilter(desktopIndependentWindow: scWindow)
-        return try? await SCScreenshotManager.captureImage(
-            contentFilter: filter,
-            configuration: configuration
-        )
+        do {
+            return try await SCScreenshotManager.captureImage(
+                contentFilter: filter,
+                configuration: configuration
+            )
+        } catch {
+            logger.error("span capture failed: \(String(describing: error), privacy: .public)")
+            return nil
+        }
     }
 
     private static func croppedImage(
