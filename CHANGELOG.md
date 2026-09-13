@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Fixed
+- The titlebar-material backdrop now sits one window level below the
+  enlarged chips, so it can never cover the enlarged buttons (it previously
+  jumped above them when the overlay was re-synced during hover).
+- The enlarged size minimum is raised from 18 pt to 28 pt: after the chip's
+  inner padding the smallest circle (20 pt) is still clearly larger than a
+  native traffic light, instead of smaller.
 - The enlarged overlay group is now clamped to the window's bounds
   intersected with its screen, so windowed windows no longer let the chips
   spill past the window edges (fullscreen stays covered too).

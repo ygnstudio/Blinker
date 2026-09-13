@@ -32,7 +32,10 @@ final class HoverOverlayMaskPanel: NSPanel {
         )
         isOpaque = false
         backgroundColor = .clear
-        level = .popUpMenu
+        // One level below the enlarged chips: the backdrop must never cover
+        // them, no matter the fronting order, while staying above regular
+        // app windows.
+        level = NSWindow.Level(NSWindow.Level.popUpMenu.rawValue - 1)
         collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         hidesOnDeactivate = false
         hasShadow = false

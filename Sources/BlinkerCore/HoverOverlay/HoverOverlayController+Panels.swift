@@ -15,8 +15,11 @@ extension HoverOverlayController {
             if signature != panelSignature || pid != panelPID || panels.count != layout.buttons.count {
                 rebuildPanels(layout: layout, isHotspot: settings.mode == .hotspot)
             } else {
-                panels.forEach { $0.orderFrontRegardless() }
+                // The mask is fronted before the panels so the enlarged
+                // chips always stack above it (belt and braces: the mask
+                // also sits one window level below the chips).
                 maskPanel?.orderFrontRegardless()
+                panels.forEach { $0.orderFrontRegardless() }
             }
             applyHoverTransition(
                 hoveredIndex: hoveredIndex,

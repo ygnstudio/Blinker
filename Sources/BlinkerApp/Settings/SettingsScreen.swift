@@ -279,7 +279,7 @@ private struct HoverSettingsTab: View {
         HStack(spacing: 8) {
             Text("放大尺寸")
                 .frame(width: 76, alignment: .leading)
-            Slider(value: enlargedSizeBinding, in: 18 ... 48, step: 1)
+            Slider(value: enlargedSizeBinding, in: 28 ... 48, step: 1)
                 .disabled(!settings.isEnabled)
             Text("\(Int(settings.enlargedSize)) pt")
                 .monospacedDigit()

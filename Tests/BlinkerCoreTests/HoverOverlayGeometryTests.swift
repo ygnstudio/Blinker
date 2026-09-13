@@ -223,8 +223,10 @@ final class HoverOverlayGeometryTests: XCTestCase {
         XCTAssertEqual(settings.enlargedSize, 48)
         XCTAssertEqual(settings.dwellMilliseconds, 800)
 
+        // The minimum keeps the enlarged circle larger than the native
+        // buttons after the chip's inner padding.
         let tiny = HoverOverlaySettings(enlargedSize: 2, dwellMilliseconds: -5)
-        XCTAssertEqual(tiny.enlargedSize, 18)
+        XCTAssertEqual(tiny.enlargedSize, 28)
         XCTAssertEqual(tiny.dwellMilliseconds, 0)
     }
 }

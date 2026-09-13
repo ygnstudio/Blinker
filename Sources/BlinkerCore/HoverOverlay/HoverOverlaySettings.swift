@@ -14,7 +14,11 @@ public enum HoverOverlayMode: String, Codable, Sendable, Hashable {
 public struct HoverOverlaySettings: Codable, Hashable, Sendable {
     /// Master switch; when `false` the overlay never appears.
     public var isEnabled: Bool
-    /// Enlarged button diameter in points, clamped to 18...48.
+    /// Enlarged button diameter in points, clamped to 28...48.
+    ///
+    /// The lower bound keeps the enlarged circle visibly larger than the
+    /// native buttons even after the chip's inner padding (8 pt): 28 - 8
+    /// = 20 pt is comfortably above a native traffic light.
     public var enlargedSize: CGFloat
     /// Dwell time in milliseconds before a hover click is accepted,
     /// clamped to 0...800. `0` activates immediately. Ignored in hotspot
@@ -33,7 +37,7 @@ public struct HoverOverlaySettings: Codable, Hashable, Sendable {
         mode: HoverOverlayMode = .overlay
     ) {
         self.isEnabled = isEnabled
-        self.enlargedSize = min(max(enlargedSize, 18), 48)
+        self.enlargedSize = min(max(enlargedSize, 28), 48)
         self.dwellMilliseconds = min(max(dwellMilliseconds, 0), 800)
         self.appliesToAllWindows = appliesToAllWindows
         self.mode = mode
