@@ -95,7 +95,7 @@ final class HoverOverlayGeometryTests: XCTestCase {
             CGRect(x: 22, y: 8, width: 14, height: 14),
             CGRect(x: 36, y: 8, width: 14, height: 14),
         ]
-        let container = CGRect(x: 0, y: 0, width: 1_440, height: 900)
+        let container = CGRect(x: 0, y: 0, width: 1440, height: 900)
         let panels = HoverOverlayGeometry.panelFrames(
             forButtonFrames: frames,
             enlargedSize: 40,
@@ -126,7 +126,7 @@ final class HoverOverlayGeometryTests: XCTestCase {
             CGRect(x: 300, y: 300, width: 14, height: 14),
             CGRect(x: 314, y: 300, width: 14, height: 14),
         ]
-        let container = CGRect(x: 0, y: 0, width: 1_440, height: 900)
+        let container = CGRect(x: 0, y: 0, width: 1440, height: 900)
         XCTAssertEqual(
             HoverOverlayGeometry.panelFrames(
                 forButtonFrames: frames,
