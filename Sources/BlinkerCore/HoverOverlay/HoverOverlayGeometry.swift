@@ -21,7 +21,8 @@ public enum HoverOverlayGeometry {
         padding: CGFloat = triggerPadding
     ) -> Bool {
         if let group = unionedBounds(of: buttonFrames),
-           group.insetBy(dx: -padding, dy: -padding).contains(cursor) {
+           group.insetBy(dx: -padding, dy: -padding).contains(cursor)
+        {
             return true
         }
         return panelFrames.contains { isCursorInPanel(cursor: cursor, panelFrame: $0) }
