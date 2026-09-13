@@ -70,7 +70,7 @@ final class HoverOverlayPanel: NSPanel {
         isReleasedWhenClosed = false
         if #available(macOS 26.0, *), !isHotspot {
             let glassView = NSGlassEffectView(frame: appKitFrame)
-            glassView.cornerRadius = 16
+            glassView.cornerRadius = min(18, panelFrame.width * 0.3)
             glassView.tintColor = buttonView.accentColor
             glassView.contentView = buttonView
             contentView = glassView
@@ -152,8 +152,20 @@ final class HoverOverlayButtonView: NSView {
         if !usesSystemGlass {
             drawBackdropChip()
         }
-        drawTitle()
-        let circleRect = CGRect(x: 2, y: 1, width: bounds.width - 4, height: bounds.height - 15)
+        // The title band is always reserved so the circle never shifts; the
+        // label itself only appears on the hovered panel.
+        let titleBand: CGFloat = 14
+        let horizontalInset: CGFloat = 4
+        let diameter = min(bounds.width, bounds.height - titleBand) - horizontalInset * 2
+        let circleRect = CGRect(
+            x: (bounds.width - diameter) / 2,
+            y: (bounds.height - titleBand - diameter) / 2,
+            width: diameter,
+            height: diameter
+        )
+        if dwellProgress > 0 {
+            drawTitle()
+        }
         drawProgressRing(around: circleRect)
         drawCircle(in: circleRect)
         drawSymbol(in: circleRect)
@@ -175,16 +187,16 @@ final class HoverOverlayButtonView: NSView {
 
     private func drawTitle() {
         let attributes: [NSAttributedString.Key: Any] = [
-            .font: NSFont.systemFont(ofSize: 8.5, weight: .medium),
+            .font: NSFont.systemFont(ofSize: 9, weight: .medium),
             .foregroundColor: NSColor.labelColor.withAlphaComponent(0.85),
         ]
         let text = NSAttributedString(string: title, attributes: attributes)
-        text.draw(in: CGRect(x: 0, y: bounds.height - 12, width: bounds.width, height: 11))
+        text.draw(in: CGRect(x: 0, y: bounds.height - 13, width: bounds.width, height: 12))
     }
 
     private func drawProgressRing(around circleRect: NSRect) {
         guard dwellProgress > 0 else { return }
-        let ringRect = circleRect.insetBy(dx: -1.5, dy: -1.5)
+        let ringRect = circleRect.insetBy(dx: -2, dy: -2)
         let path = NSBezierPath()
         path.appendArc(
             withCenter: NSPoint(x: ringRect.midX, y: ringRect.midY),
@@ -208,46 +220,53 @@ final class HoverOverlayButtonView: NSView {
         symbolColor.setStroke()
         symbolColor.setFill()
         let path = NSBezierPath()
-        path.lineWidth = 1.6
+        // Symbols scale with the circle; the constants below were designed
+        // for a 28 pt diameter.
+        let scale = circleRect.width / 28
+        path.lineWidth = max(1.4, 1.6 * scale)
         path.lineCapStyle = .round
 
         switch info.button {
         case .close:
-            drawCloseCross(into: path, circleRect: circleRect)
+            drawCloseCross(into: path, circleRect: circleRect, scale: scale)
             path.stroke()
         case .minimize:
-            drawMinusLine(into: path, circleRect: circleRect)
+            drawMinusLine(into: path, circleRect: circleRect, scale: scale)
             path.stroke()
         case .zoom:
-            drawFullscreenTriangles(into: path, circleRect: circleRect)
+            drawFullscreenTriangles(into: path, circleRect: circleRect, scale: scale)
             path.fill()
         }
     }
 
-    private func drawCloseCross(into path: NSBezierPath, circleRect: NSRect) {
-        path.move(to: NSPoint(x: circleRect.midX - 3, y: circleRect.midY - 3))
-        path.line(to: NSPoint(x: circleRect.midX + 3, y: circleRect.midY + 3))
-        path.move(to: NSPoint(x: circleRect.midX - 3, y: circleRect.midY + 3))
-        path.line(to: NSPoint(x: circleRect.midX + 3, y: circleRect.midY - 3))
+    private func drawCloseCross(into path: NSBezierPath, circleRect: NSRect, scale: CGFloat) {
+        let halfExtent = 3 * scale
+        path.move(to: NSPoint(x: circleRect.midX - halfExtent, y: circleRect.midY - halfExtent))
+        path.line(to: NSPoint(x: circleRect.midX + halfExtent, y: circleRect.midY + halfExtent))
+        path.move(to: NSPoint(x: circleRect.midX - halfExtent, y: circleRect.midY + halfExtent))
+        path.line(to: NSPoint(x: circleRect.midX + halfExtent, y: circleRect.midY - halfExtent))
     }
 
-    private func drawMinusLine(into path: NSBezierPath, circleRect: NSRect) {
-        path.move(to: NSPoint(x: circleRect.midX - 3.5, y: circleRect.midY))
-        path.line(to: NSPoint(x: circleRect.midX + 3.5, y: circleRect.midY))
+    private func drawMinusLine(into path: NSBezierPath, circleRect: NSRect, scale: CGFloat) {
+        let halfExtent = 3.5 * scale
+        path.move(to: NSPoint(x: circleRect.midX - halfExtent, y: circleRect.midY))
+        path.line(to: NSPoint(x: circleRect.midX + halfExtent, y: circleRect.midY))
     }
 
     /// Adds the two outward-pointing triangles used as the fullscreen symbol.
-    private func drawFullscreenTriangles(into path: NSBezierPath, circleRect: NSRect) {
+    private func drawFullscreenTriangles(into path: NSBezierPath, circleRect: NSRect, scale: CGFloat) {
         let midY = circleRect.midY
-        let leftX = circleRect.midX - 5.5
-        let rightX = circleRect.midX + 5.5
+        let leftX = circleRect.midX - 5.5 * scale
+        let rightX = circleRect.midX + 5.5 * scale
+        let halfHeight = 3 * scale
+        let depth = 4.5 * scale
         path.move(to: NSPoint(x: leftX, y: midY))
-        path.line(to: NSPoint(x: leftX + 4.5, y: midY - 3))
-        path.line(to: NSPoint(x: leftX + 4.5, y: midY + 3))
+        path.line(to: NSPoint(x: leftX + depth, y: midY - halfHeight))
+        path.line(to: NSPoint(x: leftX + depth, y: midY + halfHeight))
         path.close()
         path.move(to: NSPoint(x: rightX, y: midY))
-        path.line(to: NSPoint(x: rightX - 4.5, y: midY - 3))
-        path.line(to: NSPoint(x: rightX - 4.5, y: midY + 3))
+        path.line(to: NSPoint(x: rightX - depth, y: midY - halfHeight))
+        path.line(to: NSPoint(x: rightX - depth, y: midY + halfHeight))
         path.close()
     }
 }

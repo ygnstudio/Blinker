@@ -35,7 +35,7 @@ public enum HoverOverlayGeometry {
     public static func panelFrames(
         forButtonFrames buttonFrames: [CGRect],
         enlargedSize: CGFloat,
-        minimumGap: CGFloat = 6
+        minimumGap: CGFloat = 10
     ) -> [CGRect] {
         guard let first = buttonFrames.first else { return [] }
         guard buttonFrames.count > 1 else {

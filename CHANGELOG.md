@@ -18,6 +18,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   laid out as a group (original left-to-right order, centered on the native
   buttons' bounding box, minimum gap enforced) instead of each panel being
   centered on its own button, which overlapped heavily at larger sizes.
+- Enlarged buttons are drawn as perfect circles instead of vertically
+  squashed ellipses; symbols now scale with the button size, the preview
+  label only appears on the hovered panel, and neighboring chips get a
+  wider minimum gap with an adaptive glass corner radius.
 
 ## [0.2.1] - 2026-09-13
 
