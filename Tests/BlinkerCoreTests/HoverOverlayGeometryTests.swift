@@ -87,6 +87,72 @@ final class HoverOverlayGeometryTests: XCTestCase {
         XCTAssertTrue(HoverOverlayGeometry.panelFrames(forButtonFrames: [], enlargedSize: 28).isEmpty)
     }
 
+    func testGroupLayoutClampsIntoContainerOnEdgeAnchoredWindows() {
+        // Buttons at the very top-left corner of the screen: the centered
+        // group would overflow past both edges and get clipped.
+        let frames = [
+            CGRect(x: 8, y: 8, width: 14, height: 14),
+            CGRect(x: 22, y: 8, width: 14, height: 14),
+            CGRect(x: 36, y: 8, width: 14, height: 14),
+        ]
+        let container = CGRect(x: 0, y: 0, width: 1_440, height: 900)
+        let panels = HoverOverlayGeometry.panelFrames(
+            forButtonFrames: frames,
+            enlargedSize: 40,
+            minimumGap: 4,
+            containerBounds: container
+        )
+
+        for panel in panels {
+            XCTAssertTrue(
+                container.contains(panel),
+                "panel \(panel) escapes the screen container"
+            )
+        }
+        // The group is shifted right/down, but order and spacing are kept.
+        for index in 0 ..< panels.count - 1 {
+            XCTAssertEqual(
+                panels[index + 1].minX - panels[index].maxX,
+                4,
+                accuracy: 0.001
+            )
+        }
+        XCTAssertTrue(panels[0].midX < panels[1].midX)
+        XCTAssertTrue(panels[1].midX < panels[2].midX)
+    }
+
+    func testGroupLayoutUnchangedWhenGroupFitsContainer() {
+        let frames = [
+            CGRect(x: 300, y: 300, width: 14, height: 14),
+            CGRect(x: 314, y: 300, width: 14, height: 14),
+        ]
+        let container = CGRect(x: 0, y: 0, width: 1_440, height: 900)
+        XCTAssertEqual(
+            HoverOverlayGeometry.panelFrames(
+                forButtonFrames: frames,
+                enlargedSize: 40,
+                containerBounds: container
+            ),
+            HoverOverlayGeometry.panelFrames(forButtonFrames: frames, enlargedSize: 40)
+        )
+    }
+
+    func testGroupLayoutClampsWhenGroupWiderThanContainer() {
+        let frames = [
+            CGRect(x: 8, y: 8, width: 14, height: 14),
+            CGRect(x: 22, y: 8, width: 14, height: 14),
+        ]
+        let tinyContainer = CGRect(x: 0, y: 0, width: 30, height: 900)
+        let panels = HoverOverlayGeometry.panelFrames(
+            forButtonFrames: frames,
+            enlargedSize: 40,
+            containerBounds: tinyContainer
+        )
+
+        // Degenerate container: prefer the leading edge instead of NaN math.
+        XCTAssertEqual(panels[0].minX, 0)
+    }
+
     func testCursorInPanelHitTest() {
         let panel = CGRect(x: 0, y: 0, width: 28, height: 28)
 

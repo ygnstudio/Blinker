@@ -5,6 +5,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Fixed
+- Enlarged overlay panels are clamped to the screen containing the native
+  buttons, so edge-anchored windows (fullscreen, tiled to a corner) no longer
+  clip half of the enlarged group off-screen. Hit testing uses the same
+  clamped layout. Multi-display coordinate conversion now uses the global
+  screen bounds instead of the main display only.
+
 ## [0.2.2] - 2026-09-13
 
 ### Added

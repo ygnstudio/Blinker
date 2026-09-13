@@ -44,9 +44,11 @@ extension HoverOverlayController {
         isHotspot: Bool
     ) {
         hidePanels()
+        let frames = buttons.map(\.frame)
         let panelFrames = HoverOverlayGeometry.panelFrames(
-            forButtonFrames: buttons.map(\.frame),
-            enlargedSize: enlargedSize
+            forButtonFrames: frames,
+            enlargedSize: enlargedSize,
+            containerBounds: Self.overlayContainerBounds(forButtonFrames: frames)
         )
         panels = zip(buttons, panelFrames).map { info, panelFrame in
             HoverOverlayPanel(

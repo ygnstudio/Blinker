@@ -122,6 +122,34 @@ public final class HoverOverlayController {
         }
     }
 
+    // MARK: - Screen container
+
+    /// Keep enlarged panels this far away from the screen edges.
+    static let screenEdgeMargin: CGFloat = 4
+
+    /// The screen (in AX top-left coordinates) containing the center of the
+    /// given button frames, inset by the edge margin. Used to clamp the
+    /// enlarged group layout so edge-anchored windows don't clip the panels.
+    static func overlayContainerBounds(forButtonFrames buttonFrames: [CGRect]) -> CGRect? {
+        guard let groupBounds = HoverOverlayGeometry.unionedBounds(of: buttonFrames) else {
+            return nil
+        }
+        let screens = NSScreen.screens
+        guard !screens.isEmpty else { return nil }
+        let globalMaxY = screens.map(\.frame.maxY).max() ?? 0
+        let axFrame: (NSScreen) -> CGRect = { screen in
+            CGRect(
+                x: screen.frame.minX,
+                y: globalMaxY - screen.frame.maxY,
+                width: screen.frame.width,
+                height: screen.frame.height
+            )
+        }
+        let center = CGPoint(x: groupBounds.midX, y: groupBounds.midY)
+        let screen = screens.first { axFrame($0).contains(center) } ?? screens[0]
+        return axFrame(screen).insetBy(dx: screenEdgeMargin, dy: screenEdgeMargin)
+    }
+
     // MARK: - Tap installation
 
     private func installTap(on runLoop: CFRunLoop) {

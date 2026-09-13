@@ -138,9 +138,11 @@ extension HoverOverlayController {
         buttons: [OverlayButtonInfo],
         enlargedSize: CGFloat
     ) -> Int? {
+        let frames = buttons.map(\.frame)
         let panelFrames = HoverOverlayGeometry.panelFrames(
-            forButtonFrames: buttons.map(\.frame),
-            enlargedSize: enlargedSize
+            forButtonFrames: frames,
+            enlargedSize: enlargedSize,
+            containerBounds: Self.overlayContainerBounds(forButtonFrames: frames)
         )
         return panelFrames.firstIndex {
             HoverOverlayGeometry.isCursorInPanel(cursor: cursor, panelFrame: $0)

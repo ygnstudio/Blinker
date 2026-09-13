@@ -32,7 +32,7 @@ final class HoverOverlayPanel: NSPanel {
         isHotspot: Bool = false,
         onActivate: @escaping () -> Void
     ) {
-        let globalMaxY = NSScreen.screens.first?.frame.maxY ?? 0
+        let globalMaxY = NSScreen.screens.map(\.frame.maxY).max() ?? 0
         // Convert the AX (top-left origin) panel frame to AppKit coordinates.
         let appKitFrame = CGRect(
             x: panelFrame.minX,

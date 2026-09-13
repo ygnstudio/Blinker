@@ -32,29 +32,65 @@ public enum HoverOverlayGeometry {
     /// overlap heavily. Instead the enlarged buttons are laid out left to
     /// right in their original order, centered as a group on the original
     /// buttons' bounding box, with a minimum gap between neighbors.
+    ///
+    /// When `containerBounds` is given (the screen in AX coordinates), the
+    /// whole group is shifted to stay inside it so edge-anchored windows
+    /// (fullscreen, tiled) don't clip the enlarged buttons.
     public static func panelFrames(
         forButtonFrames buttonFrames: [CGRect],
         enlargedSize: CGFloat,
-        minimumGap: CGFloat = 4
+        minimumGap: CGFloat = 4,
+        containerBounds: CGRect? = nil
     ) -> [CGRect] {
         guard let first = buttonFrames.first else { return [] }
-        guard buttonFrames.count > 1 else {
-            return [panelFrame(forButtonFrame: first, enlargedSize: enlargedSize)]
+        let groupBounds = unionedBounds(of: buttonFrames) ?? first
+        let count = CGFloat(buttonFrames.count)
+        let totalWidth = count * enlargedSize + (count - 1) * minimumGap
+        var originX = groupBounds.midX - totalWidth / 2
+        var originY = groupBounds.midY - enlargedSize / 2
+        if let container = containerBounds {
+            originX = clampedOrigin(
+                originX,
+                length: totalWidth,
+                lowerBound: container.minX,
+                upperBound: container.maxX
+            )
+            originY = clampedOrigin(
+                originY,
+                length: enlargedSize,
+                lowerBound: container.minY,
+                upperBound: container.maxY
+            )
         }
-        let groupBounds = buttonFrames.dropFirst().reduce(first) { $0.union($1) }
-        let totalWidth = CGFloat(buttonFrames.count) * enlargedSize
-            + CGFloat(buttonFrames.count - 1) * minimumGap
-        var nextPanelMinX = groupBounds.midX - totalWidth / 2
         return buttonFrames.map { _ in
             let frame = CGRect(
-                x: nextPanelMinX,
-                y: groupBounds.midY - enlargedSize / 2,
+                x: originX,
+                y: originY,
                 width: enlargedSize,
                 height: enlargedSize
             )
-            nextPanelMinX += enlargedSize + minimumGap
+            originX += enlargedSize + minimumGap
             return frame
         }
+    }
+
+    /// The bounding box union of the given frames, or `nil` when empty.
+    public static func unionedBounds(of frames: [CGRect]) -> CGRect? {
+        guard let first = frames.first else { return nil }
+        return frames.dropFirst().reduce(first) { $0.union($1) }
+    }
+
+    /// Clamps a layout origin of the given length into `[lower, upper]`,
+    /// preferring the leading edge when the length exceeds the container.
+    private static func clampedOrigin(
+        _ origin: CGFloat,
+        length: CGFloat,
+        lowerBound: CGFloat,
+        upperBound: CGFloat
+    ) -> CGFloat {
+        let maxOrigin = upperBound - length
+        guard maxOrigin >= lowerBound else { return lowerBound }
+        return min(max(origin, lowerBound), maxOrigin)
     }
 
     /// Returns `true` when the cursor lies within the enlarged panel frame.
