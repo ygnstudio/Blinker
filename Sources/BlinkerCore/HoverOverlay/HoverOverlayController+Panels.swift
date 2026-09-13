@@ -14,6 +14,8 @@ extension HoverOverlayController {
             guard let self else { return }
             let needsRebuild = signature != panelSignature || pid != panelPID
                 || panels.count != layout.buttons.count
+                || extraPanels.count != layout.extraActions.count
+                || layout.extraActions != panelExtraActions
                 || panelMaskStyle != settings.maskStyle
             if needsRebuild {
                 rebuildPanels(
@@ -27,6 +29,7 @@ extension HoverOverlayController {
                 // also sits one window level below the chips).
                 maskPanel?.orderFrontRegardless()
                 panels.forEach { $0.orderFrontRegardless() }
+                extraPanels.forEach { $0.orderFrontRegardless() }
             }
             applyHoverTransition(
                 hoveredIndex: hoveredIndex,
@@ -73,7 +76,21 @@ extension HoverOverlayController {
         panelSignature = layout.buttons.map(\.frame)
         panelPID = layout.target.hit.processIdentifier
         panelMaskStyle = maskStyle
+        panelExtraActions = layout.extraActions
+        extraPanels = layout.extraActions.enumerated().map { index, action in
+            HoverOverlayExtraPanel(
+                panelFrame: layout.extraPanelFrames[index],
+                action: action
+            ) { [weak self] in
+                self?.activateExtra(
+                    action,
+                    axWindow: layout.axWindow,
+                    processIdentifier: layout.target.hit.processIdentifier
+                )
+            }
+        }
         panels.forEach { $0.orderFrontRegardless() }
+        extraPanels.forEach { $0.orderFrontRegardless() }
     }
 
     /// Kicks off the async title-bar sampling and swaps the mask to the
@@ -112,6 +129,9 @@ extension HoverOverlayController {
         stopDwell()
         panels.forEach { $0.orderOut(nil) }
         panels = []
+        extraPanels.forEach { $0.orderOut(nil) }
+        extraPanels = []
+        panelExtraActions = []
         maskPanel?.orderOut(nil)
         maskPanel = nil
         panelSignature = []
@@ -159,23 +179,52 @@ extension HoverOverlayController {
         }
     }
 
+    /// Performs an extra chip's configured action and hides the overlay.
+    /// Runs on the main thread.
+    private func activateExtra(
+        _ action: ButtonAction,
+        axWindow: AXUIElement,
+        processIdentifier: pid_t
+    ) {
+        logger.info("extra chip activated: \(String(describing: action), privacy: .public)")
+        workQueue.async { [actionPerformer] in
+            actionPerformer.perform(
+                action,
+                button: .zoom,
+                window: axWindow,
+                processIdentifier: processIdentifier
+            )
+        }
+        // Deferred so the view survives the ongoing mouseDown dispatch.
+        DispatchQueue.main.async { [weak self] in
+            self?.hidePanels()
+        }
+    }
+
     // MARK: - Dwell
+
+    /// All dwell-capable chips, in display order (traffic lights, then the
+    /// extra action chips).
+    private var allDwellPanels: [any OverlayDwellPanel] {
+        panels + extraPanels
+    }
 
     /// Applies a hover transition: resets the previous panel's dwell and
     /// starts (or skips, when dwell is 0 ms) dwell on the newly hovered one.
     private func applyHoverTransition(hoveredIndex: Int?, dwellMilliseconds: Int) {
-        guard let index = hoveredIndex, panels.indices.contains(index) else {
+        let dwellPanels = allDwellPanels
+        guard let index = hoveredIndex, dwellPanels.indices.contains(index) else {
             stopDwell()
             return
         }
-        let panel = panels[index]
+        let panel = dwellPanels[index]
         guard panel !== hoveredPanel else { return }
-        hoveredPanel?.buttonView.resetDwell()
+        hoveredPanel?.resetDwell()
         hoveredPanel = panel
         activeDwellMilliseconds = dwellMilliseconds
         dwellStartedAt = Date()
         if dwellMilliseconds <= 0 {
-            panel.buttonView.setDwellProgress(1)
+            panel.setDwellProgress(1)
             stopDwellTimer()
         } else {
             startDwellTimer()
@@ -183,7 +232,7 @@ extension HoverOverlayController {
     }
 
     func stopDwell() {
-        hoveredPanel?.buttonView.resetDwell()
+        hoveredPanel?.resetDwell()
         hoveredPanel = nil
         dwellStartedAt = nil
         stopDwellTimer()
@@ -214,7 +263,7 @@ extension HoverOverlayController {
             elapsedMilliseconds: elapsedMilliseconds,
             dwellMilliseconds: activeDwellMilliseconds
         )
-        panel.buttonView.setDwellProgress(progress)
+        panel.setDwellProgress(progress)
         if progress >= 1 {
             stopDwellTimer()
         }

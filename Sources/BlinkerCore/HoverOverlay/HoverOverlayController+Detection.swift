@@ -11,12 +11,24 @@ struct HoverTarget {
 }
 
 /// One detection pass's resolved overlay layout: the native buttons, the
-/// window element to act on, the app identity and the enlarged panel frames.
+/// window element to act on, the app identity, the enlarged panel frames and
+/// the extra action chips appended after them.
 struct OverlayLayout {
     let buttons: [OverlayButtonInfo]
     let axWindow: AXUIElement
     let target: HoverTarget
     let panelFrames: [CGRect]
+    /// Actions of the extra chips, in display order (left to right, after
+    /// the last traffic chip).
+    let extraActions: [ButtonAction]
+    /// Panel frames of the extra chips, aligned with `extraActions`.
+    let extraPanelFrames: [CGRect]
+
+    /// Every chip frame (traffic then extras); drives trigger-zone and
+    /// hover hit-testing.
+    var allPanelFrames: [CGRect] {
+        panelFrames + extraPanelFrames
+    }
 }
 
 // MARK: - Cursor tracking and AX detection (work queue only)
@@ -45,7 +57,7 @@ extension HoverOverlayController {
         let layout = resolveWindowLayout(
             windowHit: hit,
             target: target,
-            enlargedSize: settings.enlargedSize
+            settings: settings
         )
         guard let layout else {
             resetDetectionAndHide()
@@ -56,41 +68,48 @@ extension HoverOverlayController {
         guard HoverOverlayGeometry.isCursorInTriggerZone(
             cursor: location,
             buttonFrames: layout.buttons.map(\.frame),
-            panelFrames: layout.panelFrames
+            panelFrames: layout.allPanelFrames
         ) else {
             resetDetectionAndHide()
             return
         }
-        let hoveredIndex = layout.panelFrames.firstIndex {
+        let hoveredIndex = layout.allPanelFrames.firstIndex {
             HoverOverlayGeometry.isCursorInPanel(cursor: location, panelFrame: $0)
         }
         syncPanels(layout: layout, hoveredIndex: hoveredIndex, settings: settings)
     }
 
     /// Resolves the traffic buttons for the window under the cursor and lays
-    /// out the enlarged panels (clamped to the window ∩ screen container).
-    /// Returns `nil` when the window exposes no traffic buttons.
+    /// out the enlarged panels plus extra action chips (clamped to the
+    /// window ∩ screen container). Returns `nil` when the window exposes no
+    /// traffic buttons.
     private func resolveWindowLayout(
         windowHit: AXQuery.WindowHit,
         target: HoverTarget,
-        enlargedSize: CGFloat
+        settings: HoverOverlaySettings
     ) -> OverlayLayout? {
         let resolved = resolveButtons(windowHit: windowHit)
         guard !resolved.buttons.isEmpty, let axWindow = resolved.axWindow else { return nil }
         let frames = resolved.buttons.map(\.frame)
-        let panelFrames = HoverOverlayGeometry.panelFrames(
+        let extraActions = settings.enabledExtraActions
+        let allFrames = HoverOverlayGeometry.panelFrames(
             forButtonFrames: frames,
-            enlargedSize: enlargedSize,
+            enlargedSize: settings.enlargedSize,
             containerBounds: Self.overlayContainerBounds(
                 forButtonFrames: frames,
                 windowBounds: windowHit.bounds
-            )
+            ),
+            extraCount: extraActions.count
         )
+        let panelFrames = Array(allFrames.prefix(frames.count))
+        let extraPanelFrames = Array(allFrames.dropFirst(frames.count))
         return OverlayLayout(
             buttons: resolved.buttons,
             axWindow: axWindow,
             target: target,
-            panelFrames: panelFrames
+            panelFrames: panelFrames,
+            extraActions: extraActions,
+            extraPanelFrames: extraPanelFrames
         )
     }
 

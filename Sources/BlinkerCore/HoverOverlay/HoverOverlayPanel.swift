@@ -143,55 +143,15 @@ final class HoverOverlayButtonView: NSView {
     override func draw(_: NSRect) {
         guard !isHotspot else { return }
         if !usesSystemGlass {
-            drawBackdropChip()
+            OverlayChipDrawing.drawBackdropChip(in: bounds)
         }
-        let inset: CGFloat = 4
-        let diameter = min(bounds.width, bounds.height) - inset * 2
-        let circleRect = CGRect(
-            x: (bounds.width - diameter) / 2,
-            y: (bounds.height - diameter) / 2,
-            width: diameter,
-            height: diameter
-        )
-        drawProgressRing(around: circleRect)
-        drawCircle(in: circleRect)
+        let circleRect = OverlayChipDrawing.circleRect(in: bounds)
+        OverlayChipDrawing.drawProgressRing(around: circleRect, progress: dwellProgress)
+        OverlayChipDrawing.drawCircle(in: circleRect, color: accentColor)
         drawSymbol(in: circleRect)
     }
 
     // MARK: - Drawing
-
-    /// Pre-macOS 26 fallback for the glass chip: a translucent rounded
-    /// backdrop so the enlarged button reads on any wallpaper.
-    private func drawBackdropChip() {
-        let chipRect = bounds.insetBy(dx: 1, dy: 1)
-        NSColor.windowBackgroundColor.withAlphaComponent(0.65).setFill()
-        NSBezierPath(roundedRect: chipRect, xRadius: 15, yRadius: 15).fill()
-        NSColor.separatorColor.withAlphaComponent(0.7).setStroke()
-        let border = NSBezierPath(roundedRect: chipRect, xRadius: 15, yRadius: 15)
-        border.lineWidth = 1
-        border.stroke()
-    }
-
-    private func drawProgressRing(around circleRect: NSRect) {
-        guard dwellProgress > 0 else { return }
-        let ringRect = circleRect.insetBy(dx: -2, dy: -2)
-        let path = NSBezierPath()
-        path.appendArc(
-            withCenter: NSPoint(x: ringRect.midX, y: ringRect.midY),
-            radius: ringRect.width / 2,
-            startAngle: 90,
-            endAngle: 90 - 360 * dwellProgress,
-            clockwise: true
-        )
-        path.lineWidth = 1.5
-        NSColor.controlAccentColor.setStroke()
-        path.stroke()
-    }
-
-    private func drawCircle(in circleRect: NSRect) {
-        accentColor.withAlphaComponent(0.9).setFill()
-        NSBezierPath(ovalIn: circleRect).fill()
-    }
 
     private func drawSymbol(in circleRect: NSRect) {
         let symbolColor = NSColor.black.withAlphaComponent(0.55)
@@ -246,5 +206,17 @@ final class HoverOverlayButtonView: NSView {
         path.line(to: NSPoint(x: rightX - depth, y: midY - halfHeight))
         path.line(to: NSPoint(x: rightX - depth, y: midY + halfHeight))
         path.close()
+    }
+}
+
+// MARK: - Dwell panel conformance
+
+extension HoverOverlayPanel: OverlayDwellPanel {
+    func setDwellProgress(_ progress: Double) {
+        buttonView.setDwellProgress(progress)
+    }
+
+    func resetDwell() {
+        buttonView.resetDwell()
     }
 }

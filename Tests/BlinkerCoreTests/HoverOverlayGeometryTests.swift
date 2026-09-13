@@ -147,6 +147,61 @@ final class HoverOverlayGeometryTests: XCTestCase {
         )
     }
 
+    func testExtraChipsAppendRightOfNativeGroup() {
+        let frames = [
+            CGRect(x: 100, y: 500, width: 14, height: 14),
+            CGRect(x: 114, y: 500, width: 14, height: 14),
+            CGRect(x: 128, y: 500, width: 14, height: 14),
+        ]
+        let native = HoverOverlayGeometry.panelFrames(forButtonFrames: frames, enlargedSize: 40)
+        let withExtras = HoverOverlayGeometry.panelFrames(
+            forButtonFrames: frames,
+            enlargedSize: 40,
+            minimumGap: 4,
+            extraCount: 2
+        )
+
+        XCTAssertEqual(withExtras.count, 5)
+        // The native chips keep their centered positions.
+        XCTAssertEqual(Array(withExtras.prefix(3)), native)
+        // Extras continue to the right with the minimum gap.
+        XCTAssertEqual(withExtras[3].minX - withExtras[2].maxX, 4, accuracy: 0.001)
+        XCTAssertEqual(withExtras[4].minX - withExtras[3].maxX, 4, accuracy: 0.001)
+        for frame in withExtras.dropFirst(3) {
+            XCTAssertEqual(frame.width, 40)
+            XCTAssertEqual(frame.midY, withExtras[2].midY, accuracy: 0.001)
+        }
+    }
+
+    func testExtraChipsShiftWholeGroupIntoContainer() {
+        // The group sits close to the screen's right edge: appending chips
+        // must shift everything left so nothing clips.
+        let frames = [
+            CGRect(x: 1300, y: 500, width: 14, height: 14),
+            CGRect(x: 1314, y: 500, width: 14, height: 14),
+        ]
+        let container = CGRect(x: 0, y: 0, width: 1440, height: 900)
+        let panels = HoverOverlayGeometry.panelFrames(
+            forButtonFrames: frames,
+            enlargedSize: 40,
+            minimumGap: 4,
+            containerBounds: container,
+            extraCount: 2
+        )
+
+        XCTAssertEqual(panels.count, 4)
+        for panel in panels {
+            XCTAssertTrue(container.contains(panel), "panel \(panel) escapes the container")
+        }
+        for index in 0 ..< panels.count - 1 {
+            XCTAssertEqual(
+                panels[index + 1].minX - panels[index].maxX,
+                4,
+                accuracy: 0.001
+            )
+        }
+    }
+
     func testGroupLayoutClampsWhenGroupWiderThanContainer() {
         let frames = [
             CGRect(x: 8, y: 8, width: 14, height: 14),
@@ -228,5 +283,51 @@ final class HoverOverlayGeometryTests: XCTestCase {
         let tiny = HoverOverlaySettings(enlargedSize: 2, dwellMilliseconds: -5)
         XCTAssertEqual(tiny.enlargedSize, 28)
         XCTAssertEqual(tiny.dwellMilliseconds, 0)
+    }
+
+    func testExtraActionsNormalizeAndCompact() {
+        // Defaults: all slots empty, no chips rendered.
+        let defaults = HoverOverlaySettings()
+        XCTAssertEqual(defaults.extraButtonActions.count, HoverOverlaySettings.extraSlotCount)
+        XCTAssertTrue(defaults.enabledExtraActions.isEmpty)
+
+        // Configured slots surface in order; empty slots are skipped.
+        var configured = HoverOverlaySettings()
+        configured.extraButtonActions[0] = .tileLeft
+        configured.extraButtonActions[2] = .centerWindow
+        XCTAssertEqual(configured.enabledExtraActions, [.tileLeft, .centerWindow])
+
+        // Oversized payloads are trimmed to the slot count.
+        let oversized = HoverOverlaySettings(
+            extraButtonActions: Array(repeating: ButtonAction.maximize, count: 9)
+        )
+        XCTAssertEqual(oversized.extraButtonActions.count, HoverOverlaySettings.extraSlotCount)
+        XCTAssertEqual(oversized.enabledExtraActions.count, HoverOverlaySettings.extraSlotCount)
+    }
+
+    func testSettingsDecodeWithoutExtraActionsKey() {
+        // A payload persisted by an older version carries no extra-button
+        // key and must still load (defaults, not a reset).
+        let oldPayload = """
+        {"isEnabled":true,"enlargedSize":36,"dwellMilliseconds":150,\
+        "appliesToAllWindows":true,"mode":"overlay","maskStyle":"glass"}
+        """
+        let decoded = try? JSONDecoder().decode(
+            HoverOverlaySettings.self,
+            from: Data(oldPayload.utf8)
+        )
+        XCTAssertNotNil(decoded)
+        XCTAssertEqual(decoded?.enlargedSize, 36)
+        XCTAssertEqual(decoded?.extraButtonActions.count, HoverOverlaySettings.extraSlotCount)
+        XCTAssertTrue(decoded?.enabledExtraActions.isEmpty ?? false)
+    }
+
+    func testSettingsRoundTripsExtraActions() throws {
+        var settings = HoverOverlaySettings()
+        settings.extraButtonActions = [.tileLeft, nil, .quitApp, nil]
+        let data = try JSONEncoder().encode(settings)
+        let decoded = try JSONDecoder().decode(HoverOverlaySettings.self, from: data)
+        XCTAssertEqual(decoded.extraButtonActions, settings.extraButtonActions)
+        XCTAssertEqual(decoded.enabledExtraActions, [.tileLeft, .quitApp])
     }
 }

@@ -48,6 +48,10 @@ public enum HoverOverlayGeometry {
     /// right in their original order, centered as a group on the original
     /// buttons' bounding box, with a minimum gap between neighbors.
     ///
+    /// `extraCount` appends that many same-sized chips after the last traffic
+    /// button (the user-configured extra buttons); the native chips keep
+    /// their centered anchor and the group simply grows to the right.
+    ///
     /// When `containerBounds` is given (the screen in AX coordinates), the
     /// whole group is shifted to stay inside it so edge-anchored windows
     /// (fullscreen, tiled) don't clip the enlarged buttons.
@@ -55,38 +59,48 @@ public enum HoverOverlayGeometry {
         forButtonFrames buttonFrames: [CGRect],
         enlargedSize: CGFloat,
         minimumGap: CGFloat = 4,
-        containerBounds: CGRect? = nil
+        containerBounds: CGRect? = nil,
+        extraCount: Int = 0
     ) -> [CGRect] {
         guard let first = buttonFrames.first else { return [] }
         let groupBounds = unionedBounds(of: buttonFrames) ?? first
-        let count = CGFloat(buttonFrames.count)
-        let totalWidth = count * enlargedSize + (count - 1) * minimumGap
-        var originX = groupBounds.midX - totalWidth / 2
-        var originY = groupBounds.midY - enlargedSize / 2
-        if let container = containerBounds {
-            originX = clampedOrigin(
-                originX,
-                length: totalWidth,
-                lowerBound: container.minX,
-                upperBound: container.maxX
-            )
-            originY = clampedOrigin(
-                originY,
-                length: enlargedSize,
-                lowerBound: container.minY,
-                upperBound: container.maxY
-            )
-        }
-        return buttonFrames.map { _ in
-            let frame = CGRect(
-                x: originX,
-                y: originY,
-                width: enlargedSize,
-                height: enlargedSize
-            )
+        let nativeCount = CGFloat(buttonFrames.count)
+        let totalCount = nativeCount + CGFloat(extraCount)
+        // The native chips stay centered on the native buttons; extra chips
+        // continue after them, so enabling extras never displaces the
+        // traffic lights themselves.
+        let nativeWidth = nativeCount * enlargedSize + (nativeCount - 1) * minimumGap
+        var originX = groupBounds.midX - nativeWidth / 2
+        let originY = groupBounds.midY - enlargedSize / 2
+        var frames: [CGRect] = []
+        frames.reserveCapacity(Int(totalCount))
+        for _ in 0 ..< Int(totalCount) {
+            frames.append(CGRect(x: originX, y: originY, width: enlargedSize, height: enlargedSize))
             originX += enlargedSize + minimumGap
-            return frame
         }
+        guard let container = containerBounds else { return frames }
+        // Shift the whole assembly (natives included) to stay inside; the
+        // two passes mirror `clampedOrigin` for the leading and trailing
+        // edges respectively.
+        if let lastMaxX = frames.last?.maxX, lastMaxX > container.maxX {
+            let delta = container.maxX - lastMaxX
+            frames = frames.map { $0.offsetBy(dx: delta, dy: 0) }
+        }
+        if let firstMinX = frames.first?.minX, firstMinX < container.minX {
+            let delta = container.minX - firstMinX
+            frames = frames.map { $0.offsetBy(dx: delta, dy: 0) }
+        }
+        let clampedY = clampedOrigin(
+            originY,
+            length: enlargedSize,
+            lowerBound: container.minY,
+            upperBound: container.maxY
+        )
+        if clampedY != originY {
+            let delta = clampedY - originY
+            frames = frames.map { $0.offsetBy(dx: 0, dy: delta) }
+        }
+        return frames
     }
 
     /// The bounding box union of the given frames, or `nil` when empty.

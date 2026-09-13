@@ -35,15 +35,21 @@ public final class HoverOverlayController {
     var cachedWindowBounds: CGRect?
     var isOverlayVisible = false
 
-    // UI state; only touched on the main thread.
+    /// UI state; only touched on the main thread.
     var panels: [HoverOverlayPanel] = []
+    /// Extra action chips appended after `panels`; the combined array order
+    /// matches `OverlayLayout.allPanelFrames`.
+    var extraPanels: [HoverOverlayExtraPanel] = []
     var panelSignature: [CGRect] = []
     var panelPID: pid_t = 0
     var maskPanel: HoverOverlayMaskPanel?
     /// The mask style the current panels were built with, so a settings
     /// change triggers a rebuild; `nil` after hiding (fresh sample next show).
     var panelMaskStyle: HoverOverlayMaskStyle?
-    var hoveredPanel: HoverOverlayPanel?
+    /// The extra actions the current chips were built with; a change also
+    /// triggers a rebuild.
+    var panelExtraActions: [ButtonAction] = []
+    var hoveredPanel: (any OverlayDwellPanel)?
     var dwellTimer: Timer?
     var dwellStartedAt: Date?
     var activeDwellMilliseconds = 0

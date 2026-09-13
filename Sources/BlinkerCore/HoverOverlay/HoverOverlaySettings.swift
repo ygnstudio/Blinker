@@ -21,6 +21,10 @@ public enum HoverOverlayMaskStyle: String, Codable, Sendable, Hashable {
 
 /// User-facing configuration for the hover overlay feature.
 public struct HoverOverlaySettings: Codable, Hashable, Sendable {
+    /// Number of configurable extra-button slots shown to the right of the
+    /// traffic lights.
+    public static let extraSlotCount = 4
+
     /// Master switch; when `false` the overlay never appears.
     public var isEnabled: Bool
     /// Enlarged button diameter in points, clamped to 28...48.
@@ -39,6 +43,10 @@ public struct HoverOverlaySettings: Codable, Hashable, Sendable {
     public var mode: HoverOverlayMode
     /// Backdrop rendering; see `HoverOverlayMaskStyle`.
     public var maskStyle: HoverOverlayMaskStyle
+    /// Extra-button slots to the right of the traffic lights, in display
+    /// order. A `nil` slot renders no chip; non-nil slots render a chip that
+    /// performs the mapped action on click.
+    public var extraButtonActions: [ButtonAction?]
 
     public init(
         isEnabled: Bool = true,
@@ -46,7 +54,8 @@ public struct HoverOverlaySettings: Codable, Hashable, Sendable {
         dwellMilliseconds: Int = 150,
         appliesToAllWindows: Bool = true,
         mode: HoverOverlayMode = .overlay,
-        maskStyle: HoverOverlayMaskStyle = .glass
+        maskStyle: HoverOverlayMaskStyle = .glass,
+        extraButtonActions: [ButtonAction?] = []
     ) {
         self.isEnabled = isEnabled
         self.enlargedSize = min(max(enlargedSize, 28), 48)
@@ -54,6 +63,25 @@ public struct HoverOverlaySettings: Codable, Hashable, Sendable {
         self.appliesToAllWindows = appliesToAllWindows
         self.mode = mode
         self.maskStyle = maskStyle
+        self.extraButtonActions = Self.normalizedExtraActions(extraButtonActions)
+    }
+
+    /// The non-nil extra actions in slot order — the chips actually rendered.
+    public var enabledExtraActions: [ButtonAction] {
+        extraButtonActions.compactMap { $0 }
+    }
+
+    /// Pads or trims the slot list to exactly `extraSlotCount` entries so a
+    /// decoded payload can never desync the settings UI or layout.
+    private static func normalizedExtraActions(_ actions: [ButtonAction?]) -> [ButtonAction?] {
+        var normalized = actions
+        if normalized.count > extraSlotCount {
+            normalized = Array(normalized.prefix(extraSlotCount))
+        }
+        while normalized.count < extraSlotCount {
+            normalized.append(nil)
+        }
+        return normalized
     }
 
     /// Dwell that applies to the active mode: hotspot mode is always
@@ -64,10 +92,12 @@ public struct HoverOverlaySettings: Codable, Hashable, Sendable {
 
     private enum CodingKeys: String, CodingKey {
         case isEnabled, enlargedSize, dwellMilliseconds, appliesToAllWindows, mode, maskStyle
+        case extraButtonActions
     }
 
     /// Decodes leniently so settings persisted by older versions (without a
-    /// `mode` or `maskStyle` key) still load instead of resetting to defaults.
+    /// `mode`, `maskStyle` or `extraButtonActions` key) still load instead of
+    /// resetting to defaults.
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         let fallback = HoverOverlaySettings()
@@ -81,6 +111,10 @@ public struct HoverOverlaySettings: Codable, Hashable, Sendable {
         mode = try container.decodeIfPresent(HoverOverlayMode.self, forKey: .mode) ?? fallback.mode
         maskStyle = try container
             .decodeIfPresent(HoverOverlayMaskStyle.self, forKey: .maskStyle) ?? fallback.maskStyle
+        extraButtonActions = try Self.normalizedExtraActions(
+            container.decodeIfPresent([ButtonAction?].self, forKey: .extraButtonActions)
+                ?? fallback.extraButtonActions
+        )
     }
 }
 
