@@ -3,6 +3,25 @@ import BlinkerCore
 import os
 import SwiftUI
 
+/// Lifecycle state of the click interceptor, shown in the menu bar menu.
+enum InterceptorStatus {
+    case checking
+    case running
+    case noPermission
+    case tapFailed
+    case paused
+
+    var localizedLabel: String {
+        switch self {
+        case .checking: tr("检查辅助功能权限…", "Checking accessibility permission…")
+        case .running: tr("拦截运行中", "Interception running")
+        case .noPermission: tr("未授权辅助功能", "Accessibility not granted")
+        case .tapFailed: tr("事件监听启动失败", "Event tap failed to start")
+        case .paused: tr("已暂停", "Paused")
+        }
+    }
+}
+
 /// Owns the long-lived app state: the rule store, the event interceptor and
 /// the hover overlay.
 final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
@@ -10,7 +29,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
     let hoverOverlaySettingsStore = HoverOverlaySettingsStore()
 
     @Published private(set) var isIntercepting = false
-    @Published private(set) var statusMessage = "检查辅助功能权限…"
+    @Published private(set) var status: InterceptorStatus = .checking
 
     private var interceptor: TrafficLightInterceptor?
     private var hoverOverlay: HoverOverlayController?
@@ -49,11 +68,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
     func attemptStartInterceptor() {
         guard interceptor == nil else {
             // Already running; still refresh the visible status.
-            statusMessage = "拦截运行中"
+            status = .running
             return
         }
         guard AccessibilityPermission.isTrusted else {
-            statusMessage = "未授权辅助功能"
+            status = .noPermission
             logger.error("accessibility permission missing")
             if !hasPromptedForPermission {
                 hasPromptedForPermission = true
@@ -67,7 +86,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
         let performer = DefaultWindowActionPerformer()
         let interceptor = TrafficLightInterceptor(ruleEngine: engine, actionPerformer: performer)
         guard interceptor.start() else {
-            statusMessage = "事件监听启动失败"
+            status = .tapFailed
             logger.error("event tap creation failed")
             schedulePermissionRetry()
             return
@@ -84,7 +103,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
         self.interceptor = interceptor
         hoverOverlay = overlay
         isIntercepting = true
-        statusMessage = "拦截运行中"
+        status = .running
         logger.info("interceptor started; event tap active")
     }
 
@@ -94,7 +113,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
         hoverOverlay?.stop()
         hoverOverlay = nil
         isIntercepting = false
-        statusMessage = "已暂停"
+        status = .paused
         logger.info("interceptor stopped")
     }
 
@@ -144,13 +163,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
 /// Live status row shown at the top of the menu bar menu.
 struct InterceptorStatusRow: View {
     @ObservedObject var appDelegate: AppDelegate
+    @ObservedObject private var preferences = AppPreferences.shared
 
     var body: some View {
         HStack(spacing: 6) {
             Circle()
                 .fill(appDelegate.isIntercepting ? Color.green : Color.orange)
                 .frame(width: 8, height: 8)
-            Text(appDelegate.statusMessage)
+            Text(appDelegate.status.localizedLabel)
                 .font(.callout)
         }
     }

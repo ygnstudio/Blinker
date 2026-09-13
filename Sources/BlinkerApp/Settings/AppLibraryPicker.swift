@@ -64,6 +64,7 @@ struct AppLibraryPicker: View {
     /// Called with the picked app; the sheet closes afterwards.
     let onSelect: (InstalledApp) -> Void
     @Environment(\.dismiss) private var dismiss
+    @ObservedObject private var preferences = AppPreferences.shared
 
     @State private var installedApps: [InstalledApp] = []
     @State private var searchText = ""
@@ -87,11 +88,15 @@ struct AppLibraryPicker: View {
                     appList
                 }
             }
-            .navigationTitle("应用库")
-            .searchable(text: $searchText, placement: .toolbar, prompt: "搜索应用名称或 Bundle ID")
+            .navigationTitle(tr("应用库", "App Library"))
+            .searchable(
+                text: $searchText,
+                placement: .toolbar,
+                prompt: tr("搜索应用名称或 Bundle ID", "Search apps or bundle IDs")
+            )
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("取消") { dismiss() }
+                    Button(tr("取消", "Cancel")) { dismiss() }
                 }
             }
         }

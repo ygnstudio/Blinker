@@ -2,22 +2,48 @@ import BlinkerCore
 import SwiftUI
 
 /// The settings window, organized into tabs: per-app rules, hover overlay
-/// configuration and an about page.
+/// configuration, general preferences and an about page.
 struct SettingsScreen: View {
     @ObservedObject var ruleStore: RuleStore
     @ObservedObject var hoverSettingsStore: HoverOverlaySettingsStore
     let onApplyHoverSettings: (HoverOverlaySettings) -> Void
+    @ObservedObject private var preferences = AppPreferences.shared
 
     var body: some View {
         TabView {
             RulesTab(ruleStore: ruleStore)
-                .tabItem { Label("规则", systemImage: "list.bullet.rectangle") }
+                .tabItem { Label(tr("规则", "Rules"), systemImage: "list.bullet.rectangle") }
             HoverSettingsTab(store: hoverSettingsStore, onApply: onApplyHoverSettings)
-                .tabItem { Label("悬停放大", systemImage: "arrow.up.left.and.arrow.down.right") }
+                .tabItem {
+                    Label(
+                        tr("悬停放大", "Hover"),
+                        systemImage: "arrow.up.left.and.arrow.down.right"
+                    )
+                }
+            GeneralTab()
+                .tabItem { Label(tr("通用", "General"), systemImage: "gearshape") }
             AboutTab()
-                .tabItem { Label("关于", systemImage: "info.circle") }
+                .tabItem { Label(tr("关于", "About"), systemImage: "info.circle") }
         }
-        .frame(width: 560, height: 440)
+        .frame(width: 560, height: 480)
+        .preferredColorScheme(preferences.appearance.resolvedScheme)
+    }
+}
+
+/// Localized label for a remappable action, shared by every picker.
+extension ButtonAction {
+    var localizedLabel: String {
+        switch self {
+        case .closeWindow: tr("关闭窗口", "Close Window")
+        case .quitApp: tr("退出应用", "Quit App")
+        case .minimize: tr("最小化", "Minimize")
+        case .hideApp: tr("隐藏应用", "Hide App")
+        case .maximize: tr("最大化", "Maximize")
+        case .fullscreen: tr("全屏", "Fullscreen")
+        case .tileLeft: tr("左半屏", "Tile Left")
+        case .tileRight: tr("右半屏", "Tile Right")
+        case .none: tr("无操作", "Do Nothing")
+        }
     }
 }
 
@@ -26,19 +52,19 @@ struct SettingsScreen: View {
 /// Per-app remapping of the traffic light buttons.
 private struct RulesTab: View {
     @ObservedObject var ruleStore: RuleStore
+    @ObservedObject private var preferences = AppPreferences.shared
     @State private var showingAppLibrary = false
 
     var body: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: 0) {
             if ruleStore.rules.isEmpty {
                 emptyState
             } else {
                 ruleList
             }
+            Divider()
             footerBar
-                .liquidGlassCard()
         }
-        .padding(12)
     }
 
     private var ruleList: some View {
@@ -51,8 +77,7 @@ private struct RulesTab: View {
                 )
             }
         }
-        .listStyle(.inset)
-        .clipShape(RoundedRectangle(cornerRadius: 10))
+        .listStyle(.inset(alternatesRowBackgrounds: true))
     }
 
     private var emptyState: some View {
@@ -61,12 +86,17 @@ private struct RulesTab: View {
             Image(systemName: "circle.circle")
                 .font(.system(size: 32))
                 .foregroundStyle(.secondary)
-            Text("还没有配置任何应用")
+            Text(tr("还没有配置任何应用", "No apps configured yet"))
                 .font(.headline)
-            Text("添加应用后，即可单独定义它的红绿灯行为；\n未添加的应用保持系统默认。")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
+            Text(
+                tr(
+                    "添加应用后，即可单独定义它的红绿灯行为；\n未添加的应用保持系统默认。",
+                    "Add an app to remap its traffic lights;\neverything else keeps system defaults."
+                )
+            )
+            .font(.caption)
+            .foregroundStyle(.secondary)
+            .multilineTextAlignment(.center)
             Spacer()
         }
         .frame(maxWidth: .infinity)
@@ -77,16 +107,16 @@ private struct RulesTab: View {
             Button {
                 showingAppLibrary = true
             } label: {
-                Label("添加应用", systemImage: "plus")
+                Label(tr("添加应用", "Add App"), systemImage: "plus")
             }
             .fixedSize()
             Spacer()
-            Text("未列出的应用保持系统默认行为")
+            Text(tr("未列出的应用保持系统默认行为", "Apps not listed keep system defaults"))
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
         .padding(.horizontal, 12)
-        .padding(.vertical, 8)
+        .padding(.vertical, 10)
         .sheet(isPresented: $showingAppLibrary) {
             AppLibraryPicker { app in
                 ruleStore.upsert(AppRule(
@@ -197,21 +227,6 @@ private struct RuleRowView: View {
             }
         )
     }
-
-    private static func label(for action: ButtonAction?) -> String {
-        guard let action else { return "默认" }
-        switch action {
-        case .closeWindow: return "关闭窗口"
-        case .quitApp: return "退出应用"
-        case .minimize: return "最小化"
-        case .hideApp: return "隐藏应用"
-        case .maximize: return "最大化"
-        case .fullscreen: return "全屏"
-        case .tileLeft: return "左半屏"
-        case .tileRight: return "右半屏"
-        case .none: return "无操作"
-        }
-    }
 }
 
 /// A traffic-light action picker: a dot in the button's color followed by
@@ -239,18 +254,8 @@ private struct ActionPicker: View {
     }
 
     private static func label(for action: ButtonAction?) -> String {
-        guard let action else { return "默认" }
-        switch action {
-        case .closeWindow: return "关闭窗口"
-        case .quitApp: return "退出应用"
-        case .minimize: return "最小化"
-        case .hideApp: return "隐藏应用"
-        case .maximize: return "最大化"
-        case .fullscreen: return "全屏"
-        case .tileLeft: return "左半屏"
-        case .tileRight: return "右半屏"
-        case .none: return "无操作"
-        }
+        guard let action else { return tr("默认", "Default") }
+        return action.localizedLabel
     }
 }
 
@@ -261,136 +266,139 @@ private struct ActionPicker: View {
 private struct HoverSettingsTab: View {
     @ObservedObject var store: HoverOverlaySettingsStore
     let onApply: (HoverOverlaySettings) -> Void
+    @ObservedObject private var preferences = AppPreferences.shared
 
     private var settings: HoverOverlaySettings {
         store.settings
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Toggle("启用悬停放大", isOn: isEnabledBinding)
-            Text("开启后，鼠标悬停到窗口红绿灯按钮上会临时放大，点击即执行对应动作。")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-
-            modeRow
-            Text(modeHint)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-            sizeRow
-            dwellRow
-            maskStyleRow
-            Text(maskStyleHint)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-            scopeRow
-        }
-        .padding(16)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        .liquidGlassCard()
-        .padding(12)
-    }
-
-    private var modeRow: some View {
-        HStack(spacing: 8) {
-            Text("模式")
-                .frame(width: 76, alignment: .leading)
-            Picker("模式", selection: modeBinding) {
-                Text("覆盖放大").tag(HoverOverlayMode.overlay)
-                Text("纯热区").tag(HoverOverlayMode.hotspot)
+        Form {
+            Section {
+                Toggle(tr("启用悬停放大", "Enable Hover Enlargement"), isOn: isEnabledBinding)
+                modePicker
+            } header: {
+                Text(tr("模式与尺寸", "Mode & Size"))
+            } footer: {
+                Text(tr(
+                    "开启后，鼠标悬停到窗口红绿灯按钮上会临时放大，点击即执行对应动作。",
+                    "When enabled, hovering a window's traffic lights enlarges them;"
+                        + " clicking performs the mapped action."
+                ))
+                Text(modeHint)
             }
-            .labelsHidden()
-            .pickerStyle(.segmented)
-            .frame(width: 180)
-            .disabled(!settings.isEnabled)
-            Spacer()
+
+            Section {
+                sizeSlider
+                dwellSlider
+            } header: {
+                Text(tr("放大参数", "Enlargement"))
+            }
+
+            Section {
+                maskStylePicker
+                scopePicker
+            } header: {
+                Text(tr("遮挡与范围", "Mask & Scope"))
+            } footer: {
+                Text(maskStyleHint)
+            }
         }
+        .formStyle(.grouped)
+        .disabled(!settings.isEnabled)
     }
 
-    private var sizeRow: some View {
-        HStack(spacing: 8) {
-            Text("放大尺寸")
-                .frame(width: 76, alignment: .leading)
+    private var modePicker: some View {
+        Picker(tr("模式", "Mode"), selection: modeBinding) {
+            Text(tr("覆盖放大", "Overlay")).tag(HoverOverlayMode.overlay)
+            Text(tr("纯热区", "Hotspot")).tag(HoverOverlayMode.hotspot)
+        }
+        .pickerStyle(.segmented)
+    }
+
+    private var sizeSlider: some View {
+        LabeledContent(tr("放大尺寸", "Enlarged Size")) {
             Slider(value: enlargedSizeBinding, in: 28 ... 48, step: 1)
-                .disabled(!settings.isEnabled)
+                .frame(width: 200)
             Text("\(Int(settings.enlargedSize)) pt")
                 .monospacedDigit()
                 .foregroundStyle(.secondary)
-                .frame(width: 52, alignment: .trailing)
+                .frame(width: 56, alignment: .trailing)
         }
     }
 
-    private var dwellRow: some View {
-        HStack(spacing: 8) {
-            Text("防误触延迟")
-                .frame(width: 76, alignment: .leading)
+    private var dwellSlider: some View {
+        LabeledContent(tr("防误触延迟", "Dwell Delay")) {
             Slider(value: dwellBinding, in: 0 ... 800, step: 50)
-                .disabled(!settings.isEnabled || settings.mode == .hotspot)
+                .frame(width: 200)
+                .disabled(settings.mode == .hotspot)
             Text(dwellLabel)
                 .monospacedDigit()
                 .foregroundStyle(.secondary)
-                .frame(width: 52, alignment: .trailing)
+                .frame(width: 56, alignment: .trailing)
         }
     }
 
-    private var maskStyleRow: some View {
-        HStack(spacing: 8) {
-            Text("按钮遮挡")
-                .frame(width: 76, alignment: .leading)
-            Picker("按钮遮挡", selection: maskStyleBinding) {
-                Text("液态玻璃").tag(HoverOverlayMaskStyle.glass)
-                Text("真实采样").tag(HoverOverlayMaskStyle.sampled)
-            }
-            .labelsHidden()
-            .pickerStyle(.segmented)
-            .frame(width: 180)
-            .disabled(!settings.isEnabled || settings.mode == .hotspot)
-            Spacer()
+    private var maskStylePicker: some View {
+        Picker(tr("按钮遮挡", "Button Mask"), selection: maskStyleBinding) {
+            Text(tr("液态玻璃", "Liquid Glass")).tag(HoverOverlayMaskStyle.glass)
+            Text(tr("真实采样", "Sampled")).tag(HoverOverlayMaskStyle.sampled)
         }
+        .disabled(settings.mode == .hotspot)
     }
 
-    private var scopeRow: some View {
-        HStack(spacing: 8) {
-            Text("作用范围")
-                .frame(width: 76, alignment: .leading)
-            Picker("作用范围", selection: appliesToAllWindowsBinding) {
-                Text("全部窗口").tag(true)
-                Text("仅规则应用").tag(false)
-            }
-            .labelsHidden()
-            .frame(width: 140)
-            Spacer()
+    private var scopePicker: some View {
+        Picker(tr("作用范围", "Scope"), selection: appliesToAllWindowsBinding) {
+            Text(tr("全部窗口", "All Windows")).tag(true)
+            Text(tr("仅规则应用", "Rule Apps Only")).tag(false)
         }
     }
 
     private var dwellLabel: String {
         if settings.mode == .hotspot {
-            return "不适用"
+            return tr("不适用", "N/A")
         }
-        return settings.dwellMilliseconds == 0 ? "立即响应" : "\(settings.dwellMilliseconds) 毫秒"
+        return settings.dwellMilliseconds == 0
+            ? tr("立即响应", "Immediate")
+            : "\(settings.dwellMilliseconds) ms"
     }
 
     private var modeHint: String {
         switch settings.mode {
         case .overlay:
-            "覆盖放大：红绿灯上方绘制液态玻璃质感的放大按钮，带防误触进度环。"
+            tr(
+                "覆盖放大：红绿灯上方绘制液态玻璃质感的放大按钮，带防误触进度环。",
+                "Overlay draws Liquid Glass buttons above the traffic lights with a dwell ring."
+            )
         case .hotspot:
-            "纯热区：界面外观完全不变，仅在按钮周围扩大不可见点击区，点击立即响应。"
+            tr(
+                "纯热区：界面外观完全不变，仅在按钮周围扩大不可见点击区，点击立即响应。",
+                "Hotspot keeps the title bar unchanged and only enlarges the invisible click zones."
+            )
         }
     }
 
     private var maskStyleHint: String {
-        guard settings.isEnabled, settings.mode == .overlay else {
-            return "纯热区模式不显示遮罩。"
+        guard settings.mode == .overlay else {
+            return tr("纯热区模式不显示遮罩。", "Hotspot mode shows no mask.")
         }
         switch settings.maskStyle {
         case .glass:
-            return "液态玻璃：以系统玻璃模糊遮挡原生按钮，无需额外权限。"
+            return tr(
+                "液态玻璃：以系统玻璃模糊遮挡原生按钮，无需额外权限。",
+                "Liquid Glass covers the native buttons with a system blur; no extra permission."
+            )
         case .sampled:
             if TitlebarSampler.hasScreenCapturePermission() {
-                return "真实采样：遮挡区域显示窗口标题栏的真实背景，效果完全隐形。"
+                return tr(
+                    "真实采样：遮挡区域显示窗口标题栏的真实背景，效果完全隐形。",
+                    "Sampled shows the real title-bar backdrop — fully invisible."
+                )
             }
-            return "真实采样需要「屏幕录制」权限：授权后自动生效，未授权时回退液态玻璃。"
+            return tr(
+                "真实采样需要「屏幕录制」权限：授权后自动生效，未授权时回退液态玻璃。",
+                "Sampled needs Screen Recording permission; without it the glass mask is used."
+            )
         }
     }
 
