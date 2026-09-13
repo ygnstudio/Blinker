@@ -4,6 +4,10 @@
 disabled_rules:
   - trailing_comma
 
+# Generated sources (SPM test runner) must never be linted.
+excluded:
+  - .build
+
 opt_in_rules:
   - empty_count
   - explicit_init
