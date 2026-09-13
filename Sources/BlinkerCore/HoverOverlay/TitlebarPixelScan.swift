@@ -76,13 +76,15 @@ enum TitlebarPixelScan {
     private static let cleanThreshold: Double = 12
 
     /// Decodes `image` into RGBA8 pixels and derives per-column statistics.
+    /// Returns `nil` when the capture has no usable (opaque) columns at all,
+    /// e.g. a span entirely outside the window shape.
     static func analyze(_ image: CGImage) -> ColumnAnalysis? {
         let width = image.width
         let height = image.height
         guard width > 0, height > 0, let pixels = pixelBuffer(from: image) else { return nil }
         let means = columnMeans(in: pixels, width: width, height: height)
         let deviations = columnDeviations(in: pixels, width: width, height: height, means: means)
-        let reference = referenceColor(means: means, deviations: deviations)
+        guard let reference = referenceColor(means: means, deviations: deviations) else { return nil }
         return ColumnAnalysis(
             pixelHeight: height,
             means: means,
@@ -171,13 +173,17 @@ enum TitlebarPixelScan {
         return deviations
     }
 
-    /// Mean color of the cleanest quarter of columns — robust against a
-    /// minority of text/button pixels skewing a plain average.
+    /// Mean color of the cleanest quarter of the opaque columns — robust
+    /// against a minority of text/button pixels skewing a plain average, and
+    /// immune to transparent pixels (premultiplied RGB would read as black).
+    /// Returns `nil` when no column is opaque.
     private static func referenceColor(
         means: [RGBColor],
         deviations: [Double]
-    ) -> RGBColor {
-        let order = means.indices.sorted { deviations[$0] < deviations[$1] }
+    ) -> RGBColor? {
+        let opaqueIndices = means.indices.filter { deviations[$0] < .greatestFiniteMagnitude }
+        guard !opaqueIndices.isEmpty else { return nil }
+        let order = opaqueIndices.sorted { deviations[$0] < deviations[$1] }
         let sampleCount = max(order.count / 4, 1)
         var total = RGBColor()
         for index in order.prefix(sampleCount) {

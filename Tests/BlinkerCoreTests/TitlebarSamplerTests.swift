@@ -101,23 +101,22 @@ final class TitlebarSamplerTests: XCTestCase {
     }
 
     func testNoRunWhenEverythingIsDirty() {
+        // Alternating solid black/white columns: every column is internally
+        // uniform but the column means sit far from the bar-wide reference
+        // (mid-gray), so no column can be clean.
         let image = makeImage(width: 40, height: 8) { column in
-            SamplePixel(
-                red: UInt8((column * 41) % 255),
-                green: 0,
-                blue: 0,
-                alpha: 255
-            )
+            column.isMultiple(of: 2) ? .dark : SamplePixel(red: 255, green: 255, blue: 255, alpha: 255)
         }
         let analysis = TitlebarPixelScan.analyze(image)
-        let run = analysis?.cleanestRun(minimumWidth: 4, preferHigh: false)
 
-        // Noisy pixels: either no run at all, or a run that stays clean.
-        if let run {
-            for column in run {
-                XCTAssertTrue(analysis?.isCleanColumn(column) ?? false)
-            }
-        }
+        XCTAssertEqual(analysis?.cleanestRun(minimumWidth: 4, preferHigh: false), nil)
+    }
+
+    func testFullyTransparentCaptureYieldsNoAnalysis() {
+        // A span entirely outside the window shape: nothing usable.
+        let image = makeImage(width: 20, height: 8) { _ in .transparent }
+
+        XCTAssertNil(TitlebarPixelScan.analyze(image))
     }
 
     // MARK: - Span selection

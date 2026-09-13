@@ -190,6 +190,8 @@ public enum TitlebarSampler {
         run: Range<Int>,
         height: Int
     ) -> CGImage? {
+        // Trim only runs comfortably wider than the trims themselves, so the
+        // crop can never collapse toward zero width.
         let inset = run.count > runInsetPixels * 4 ? runInsetPixels : 0
         let cropRect = CGRect(
             x: run.lowerBound + inset,
