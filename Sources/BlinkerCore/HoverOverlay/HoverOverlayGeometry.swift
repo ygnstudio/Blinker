@@ -20,10 +20,11 @@ public enum HoverOverlayGeometry {
         panelFrames: [CGRect],
         padding: CGFloat = triggerPadding
     ) -> Bool {
-        if let group = unionedBounds(of: buttonFrames),
-           group.insetBy(dx: -padding, dy: -padding).contains(cursor)
-        {
-            return true
+        if let group = unionedBounds(of: buttonFrames) {
+            let triggerBounds = group.insetBy(dx: -padding, dy: -padding)
+            if triggerBounds.contains(cursor) {
+                return true
+            }
         }
         return panelFrames.contains { isCursorInPanel(cursor: cursor, panelFrame: $0) }
     }
