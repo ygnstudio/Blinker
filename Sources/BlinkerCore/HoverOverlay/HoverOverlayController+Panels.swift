@@ -12,8 +12,16 @@ extension HoverOverlayController {
 
         DispatchQueue.main.async { [weak self] in
             guard let self else { return }
-            if signature != panelSignature || pid != panelPID || panels.count != layout.buttons.count {
-                rebuildPanels(layout: layout, isHotspot: settings.mode == .hotspot)
+            if
+                signature != panelSignature || pid != panelPID
+                || panels.count != layout.buttons.count
+                || panelMaskStyle != settings.maskStyle
+            {
+                rebuildPanels(
+                    layout: layout,
+                    isHotspot: settings.mode == .hotspot,
+                    maskStyle: settings.maskStyle
+                )
             } else {
                 // The mask is fronted before the panels so the enlarged
                 // chips always stack above it (belt and braces: the mask
@@ -28,16 +36,25 @@ extension HoverOverlayController {
         }
     }
 
-    private func rebuildPanels(layout: OverlayLayout, isHotspot: Bool) {
+    private func rebuildPanels(layout: OverlayLayout, isHotspot: Bool, maskStyle: HoverOverlayMaskStyle) {
         hidePanels()
         // The mask goes in first so the enlarged chips stack above it; it
-        // hides the small native buttons peeking between the chips.
+        // hides the small native buttons peeking between the chips. In
+        // sampled mode it shows the host title bar itself; without sampling
+        // (no permission, no clean strip) it falls back to glass.
         if !isHotspot {
             let buttonFrames = layout.buttons.map(\.frame)
             if let maskFrame = HoverOverlayMaskPanel.frame(forButtonFrames: buttonFrames) {
                 let mask = HoverOverlayMaskPanel(maskFrame: maskFrame)
                 mask.orderFrontRegardless()
                 maskPanel = mask
+                if maskStyle == .sampled {
+                    scheduleSampledBackdrop(
+                        hit: layout.target.hit,
+                        maskFrame: maskFrame,
+                        buttonFrames: buttonFrames
+                    )
+                }
             }
         }
         panels = zip(layout.buttons, layout.panelFrames).map { info, panelFrame in
@@ -56,7 +73,40 @@ extension HoverOverlayController {
         }
         panelSignature = layout.buttons.map(\.frame)
         panelPID = layout.target.hit.processIdentifier
+        panelMaskStyle = maskStyle
         panels.forEach { $0.orderFrontRegardless() }
+    }
+
+    /// Kicks off the async title-bar sampling and swaps the mask to the
+    /// sampled backdrop when it lands. Guards against staleness: if the
+    /// overlay moved on to another window or was hidden meanwhile, the
+    /// image is discarded.
+    private func scheduleSampledBackdrop(
+        hit: AXQuery.WindowHit,
+        maskFrame: CGRect,
+        buttonFrames: [CGRect]
+    ) {
+        guard hit.windowID != 0 else { return }
+        let scale = NSScreen.main?.backingScaleFactor ?? 2
+        Task(priority: .userInitiated) { [weak self] in
+            let image = await TitlebarSampler.maskImage(
+                windowID: hit.windowID,
+                windowBounds: hit.bounds,
+                maskFrame: maskFrame,
+                scale: scale
+            )
+            guard let image else { return }
+            DispatchQueue.main.async { [weak self] in
+                guard
+                    let self,
+                    isOverlayVisible,
+                    panelPID == hit.processIdentifier,
+                    panelSignature == buttonFrames,
+                    let maskPanel
+                else { return }
+                maskPanel.setSampledImage(image)
+            }
+        }
     }
 
     func hidePanels() {
@@ -67,6 +117,9 @@ extension HoverOverlayController {
         maskPanel = nil
         panelSignature = []
         panelPID = 0
+        // Force a fresh rebuild (and re-sample) on the next show, since the
+        // host title bar content may have changed while hidden.
+        panelMaskStyle = nil
     }
 
     /// Performs the rule action (or a native AXPress when no rule applies)

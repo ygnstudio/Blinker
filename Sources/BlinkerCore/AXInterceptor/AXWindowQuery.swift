@@ -9,6 +9,8 @@ enum AXQuery {
     struct WindowHit {
         let processIdentifier: pid_t
         let bounds: CGRect
+        /// The CG window number, used for screen-capture sampling.
+        var windowID: CGWindowID = 0
     }
 
     /// Bounds within this distance (in points) count as the same window when
@@ -146,7 +148,8 @@ enum AXQuery {
                 // behind it.
                 return nil
             }
-            return WindowHit(processIdentifier: pid, bounds: bounds)
+            let windowID = info[kCGWindowNumber as String] as? CGWindowID ?? 0
+            return WindowHit(processIdentifier: pid, bounds: bounds, windowID: windowID)
         }
         return nil
     }

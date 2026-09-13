@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- The mask backdrop is now configurable: **Liquid Glass** (default, no extra
+  permission) or **Sampled**, which captures a clean strip of the host
+  window's title bar via ScreenCaptureKit and stretches it across the mask
+  so the backdrop is pixel-identical to the real background. Selecting
+  sampled prompts for Screen Recording permission once; without it the
+  overlay falls back to glass automatically.
 - The yellow (minimize) button is now remappable per app, alongside the red
   and green buttons. Cross-button native remaps (e.g. red → minimize,
   yellow → close window) now actually press the corresponding native button;

@@ -17,9 +17,14 @@ final class HoverOverlayMaskPanel: NSPanel {
     /// originals are fully hidden, not just their exact frames.
     static let padding: CGFloat = 4
 
-    /// - Parameter maskFrame: The frame to cover, in AX coordinates — the
-    ///   native buttons' bounding box inflated by `padding`.
-    init(maskFrame: CGRect) {
+    /// - Parameters:
+    ///   - maskFrame: The frame to cover, in AX coordinates — the native
+    ///     buttons' bounding box inflated by `padding`.
+    ///   - sampledImage: Pixel-accurate backdrop sampled from the host
+    ///     window's title bar (`TitlebarSampler`); when `nil` (sampling
+    ///     disabled, no permission, or no clean strip) the panel falls back
+    ///     to the glass/material backdrop.
+    init(maskFrame: CGRect, sampledImage: NSImage? = nil) {
         let globalMaxY = NSScreen.screens.map(\.frame.maxY).max() ?? 0
         let appKitFrame = CGRect(
             x: maskFrame.minX,
@@ -45,6 +50,11 @@ final class HoverOverlayMaskPanel: NSPanel {
         isReleasedWhenClosed = false
         acceptsMouseMovedEvents = false
 
+        if let sampledImage {
+            contentView = Self.imageView(image: sampledImage, size: appKitFrame.size)
+            return
+        }
+
         let size = appKitFrame.size
         // Pill shape: the corner radius is derived from the frame height.
         let radius = size.height / 2
@@ -60,6 +70,19 @@ final class HoverOverlayMaskPanel: NSPanel {
             backdrop.maskImage = Self.pillMaskImage(size: size, radius: radius)
             contentView = backdrop
         }
+    }
+
+    /// Swaps the panel to the sampled backdrop once the async capture lands.
+    func setSampledImage(_ image: NSImage) {
+        guard let size = contentView?.frame.size else { return }
+        contentView = Self.imageView(image: image, size: size)
+    }
+
+    private static func imageView(image: NSImage, size: CGSize) -> NSImageView {
+        let imageView = NSImageView(frame: NSRect(origin: .zero, size: size))
+        imageView.image = image
+        imageView.imageScaling = .scaleAxesIndependently
+        return imageView
     }
 
     /// The native buttons' bounding box inflated by the mask padding, or

@@ -40,6 +40,9 @@ public final class HoverOverlayController {
     var panelSignature: [CGRect] = []
     var panelPID: pid_t = 0
     var maskPanel: HoverOverlayMaskPanel?
+    /// The mask style the current panels were built with, so a settings
+    /// change triggers a rebuild; `nil` after hiding (fresh sample next show).
+    var panelMaskStyle: HoverOverlayMaskStyle?
     var hoveredPanel: HoverOverlayPanel?
     var dwellTimer: Timer?
     var dwellStartedAt: Date?

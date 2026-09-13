@@ -87,6 +87,19 @@ final class RuleEngineTests: XCTestCase {
         XCTAssertNil(decoded.first?.minimizeAction)
     }
 
+    /// Settings persisted without a `maskStyle` key decode with the default.
+    func testLegacyHoverSettingsWithoutMaskStyleDecode() throws {
+        let legacyJSON = """
+        {"isEnabled":true,"enlargedSize":36,"dwellMilliseconds":200,
+         "appliesToAllWindows":true,"mode":"overlay"}
+        """
+        let data = try XCTUnwrap(legacyJSON.data(using: .utf8))
+        let decoded = try JSONDecoder().decode(HoverOverlaySettings.self, from: data)
+
+        XCTAssertEqual(decoded.mode, .overlay)
+        XCTAssertEqual(decoded.maskStyle, .glass)
+    }
+
     func testRuleStoreRoundTripsThroughDefaults() throws {
         let suiteName = "RuleStoreTests.\(UUID().uuidString)"
         let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))

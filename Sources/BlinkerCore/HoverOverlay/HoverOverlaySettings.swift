@@ -10,6 +10,15 @@ public enum HoverOverlayMode: String, Codable, Sendable, Hashable {
     case hotspot
 }
 
+/// How the backdrop covering the native buttons is rendered in overlay mode.
+public enum HoverOverlayMaskStyle: String, Codable, Sendable, Hashable {
+    /// System Liquid Glass backdrop; no extra permission needed.
+    case glass
+    /// Pixel-accurate backdrop sampled from the window's own title bar.
+    /// Requires Screen Recording permission; falls back to glass without it.
+    case sampled
+}
+
 /// User-facing configuration for the hover overlay feature.
 public struct HoverOverlaySettings: Codable, Hashable, Sendable {
     /// Master switch; when `false` the overlay never appears.
@@ -28,19 +37,23 @@ public struct HoverOverlaySettings: Codable, Hashable, Sendable {
     public var appliesToAllWindows: Bool
     /// Visual model; see `HoverOverlayMode`.
     public var mode: HoverOverlayMode
+    /// Backdrop rendering; see `HoverOverlayMaskStyle`.
+    public var maskStyle: HoverOverlayMaskStyle
 
     public init(
         isEnabled: Bool = true,
         enlargedSize: CGFloat = 28,
         dwellMilliseconds: Int = 150,
         appliesToAllWindows: Bool = true,
-        mode: HoverOverlayMode = .overlay
+        mode: HoverOverlayMode = .overlay,
+        maskStyle: HoverOverlayMaskStyle = .glass
     ) {
         self.isEnabled = isEnabled
         self.enlargedSize = min(max(enlargedSize, 28), 48)
         self.dwellMilliseconds = min(max(dwellMilliseconds, 0), 800)
         self.appliesToAllWindows = appliesToAllWindows
         self.mode = mode
+        self.maskStyle = maskStyle
     }
 
     /// Dwell that applies to the active mode: hotspot mode is always
@@ -50,11 +63,11 @@ public struct HoverOverlaySettings: Codable, Hashable, Sendable {
     }
 
     private enum CodingKeys: String, CodingKey {
-        case isEnabled, enlargedSize, dwellMilliseconds, appliesToAllWindows, mode
+        case isEnabled, enlargedSize, dwellMilliseconds, appliesToAllWindows, mode, maskStyle
     }
 
     /// Decodes leniently so settings persisted by older versions (without a
-    /// `mode` key) still load instead of resetting to defaults.
+    /// `mode` or `maskStyle` key) still load instead of resetting to defaults.
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         let fallback = HoverOverlaySettings()
@@ -66,6 +79,8 @@ public struct HoverOverlaySettings: Codable, Hashable, Sendable {
         appliesToAllWindows = try container
             .decodeIfPresent(Bool.self, forKey: .appliesToAllWindows) ?? fallback.appliesToAllWindows
         mode = try container.decodeIfPresent(HoverOverlayMode.self, forKey: .mode) ?? fallback.mode
+        maskStyle = try container
+            .decodeIfPresent(HoverOverlayMaskStyle.self, forKey: .maskStyle) ?? fallback.maskStyle
     }
 }
 

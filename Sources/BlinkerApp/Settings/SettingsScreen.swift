@@ -279,6 +279,10 @@ private struct HoverSettingsTab: View {
                 .foregroundStyle(.secondary)
             sizeRow
             dwellRow
+            maskStyleRow
+            Text(maskStyleHint)
+                .font(.caption)
+                .foregroundStyle(.secondary)
             scopeRow
         }
         .padding(16)
@@ -329,6 +333,22 @@ private struct HoverSettingsTab: View {
         }
     }
 
+    private var maskStyleRow: some View {
+        HStack(spacing: 8) {
+            Text("按钮遮挡")
+                .frame(width: 76, alignment: .leading)
+            Picker("按钮遮挡", selection: maskStyleBinding) {
+                Text("液态玻璃").tag(HoverOverlayMaskStyle.glass)
+                Text("真实采样").tag(HoverOverlayMaskStyle.sampled)
+            }
+            .labelsHidden()
+            .pickerStyle(.segmented)
+            .frame(width: 180)
+            .disabled(!settings.isEnabled || settings.mode == .hotspot)
+            Spacer()
+        }
+    }
+
     private var scopeRow: some View {
         HStack(spacing: 8) {
             Text("作用范围")
@@ -359,6 +379,21 @@ private struct HoverSettingsTab: View {
         }
     }
 
+    private var maskStyleHint: String {
+        guard settings.isEnabled, settings.mode == .overlay else {
+            return "纯热区模式不显示遮罩。"
+        }
+        switch settings.maskStyle {
+        case .glass:
+            return "液态玻璃：以系统玻璃模糊遮挡原生按钮，无需额外权限。"
+        case .sampled:
+            if TitlebarSampler.hasScreenCapturePermission() {
+                return "真实采样：遮挡区域显示窗口标题栏的真实背景，效果完全隐形。"
+            }
+            return "真实采样需要「屏幕录制」权限：授权后自动生效，未授权时回退液态玻璃。"
+        }
+    }
+
     private var isEnabledBinding: Binding<Bool> {
         Binding(
             get: { settings.isEnabled },
@@ -370,6 +405,19 @@ private struct HoverSettingsTab: View {
         Binding(
             get: { settings.mode },
             set: { newValue in update { $0.mode = newValue } }
+        )
+    }
+
+    private var maskStyleBinding: Binding<HoverOverlayMaskStyle> {
+        Binding(
+            get: { settings.maskStyle },
+            set: { newValue in
+                if newValue == .sampled, !TitlebarSampler.hasScreenCapturePermission() {
+                    // Only prompt when the user opts in to sampling.
+                    TitlebarSampler.requestScreenCapturePermission()
+                }
+                update { $0.maskStyle = newValue }
+            }
         )
     }
 
