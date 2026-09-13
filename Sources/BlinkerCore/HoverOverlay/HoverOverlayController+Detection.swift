@@ -42,7 +42,12 @@ extension HoverOverlayController {
         }
         let target = HoverTarget(hit: hit, bundleIdentifier: bundleIdentifier, appName: app.localizedName)
 
-        guard let layout = resolveWindowLayout(windowHit: hit, target: target, enlargedSize: settings.enlargedSize) else {
+        let layout = resolveWindowLayout(
+            windowHit: hit,
+            target: target,
+            enlargedSize: settings.enlargedSize
+        )
+        guard let layout else {
             resetDetectionAndHide()
             return
         }

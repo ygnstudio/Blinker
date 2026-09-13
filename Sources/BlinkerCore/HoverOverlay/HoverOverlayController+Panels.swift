@@ -29,10 +29,13 @@ extension HoverOverlayController {
         hidePanels()
         // The mask goes in first so the enlarged chips stack above it; it
         // hides the small native buttons peeking between the chips.
-        if !isHotspot, let maskFrame = HoverOverlayMaskPanel.frame(forButtonFrames: layout.buttons.map(\.frame)) {
-            let mask = HoverOverlayMaskPanel(maskFrame: maskFrame)
-            mask.orderFrontRegardless()
-            maskPanel = mask
+        if !isHotspot {
+            let buttonFrames = layout.buttons.map(\.frame)
+            if let maskFrame = HoverOverlayMaskPanel.frame(forButtonFrames: buttonFrames) {
+                let mask = HoverOverlayMaskPanel(maskFrame: maskFrame)
+                mask.orderFrontRegardless()
+                maskPanel = mask
+            }
         }
         panels = zip(layout.buttons, layout.panelFrames).map { info, panelFrame in
             HoverOverlayPanel(
