@@ -6,6 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- **Workspaces**: capture every visible window's position and size as a
+  named layout from the window-management tab and restore it in one click
+  (per-app largest-window capture, skipped apps reported). Saving under an
+  existing name overwrites.
+- **Desktop switching** buttons that synthesize the system ⌃← / ⌃→ shortcut.
 - **Scenario rule profiles**: the rule table can be saved as named presets
   and switched as a whole from the menu bar or the rules tab (new /
   duplicate / rename / delete). Legacy single-table configs migrate into a

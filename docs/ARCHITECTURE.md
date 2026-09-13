@@ -20,7 +20,10 @@ Sources/
 │   │   ├── WindowGeometry.swift            # 纯摆放数学：17 种动作的目标帧
 │   │   ├── WindowSnapper.swift             # 拖拽贴靠：observe-only tap + 预览面板
 │   │   ├── SnapZones.swift                 # 纯命中测试：光标 → 贴靠分区
-│   │   └── FrontWindowActionPerformer.swift # 对最前窗口执行动作（面板/快捷键共用）
+│   │   ├── FrontWindowActionPerformer.swift # 对最前窗口执行动作（面板/快捷键共用）
+│   │   ├── WorkspaceManager.swift          # 工作区：CGWindowList 采集 + AX 恢复
+│   │   ├── WorkspaceStore.swift            # 工作区持久化（UserDefaults）
+│   │   └── SpaceSwitcher.swift             # 模拟 ⌃←/⌃→ 切换桌面
 │   ├── RuleEngine/            # 规则查找与场景规则集
 │   │   ├── RuleEngine.swift   # (bundleID, 按钮) → ButtonAction?
 │   │   └── RuleStore.swift    # 规则持久化：多套命名规则集 + 激活切换（UserDefaults）
@@ -110,7 +113,10 @@ Sources/
 │   │   ├── WindowGeometry.swift            # Pure placement math: target frames for all actions
 │   │   ├── WindowSnapper.swift             # Drag-to-snap: observe-only tap + preview panel
 │   │   ├── SnapZones.swift                 # Pure hit-testing: cursor → snap placement
-│   │   └── FrontWindowActionPerformer.swift # Acts on the frontmost window (panel/hotkeys)
+│   │   ├── FrontWindowActionPerformer.swift # Acts on the frontmost window (panel/hotkeys)
+│   │   ├── WorkspaceManager.swift          # Workspaces: CGWindowList capture + AX restore
+│   │   ├── WorkspaceStore.swift            # Workspace persistence (UserDefaults)
+│   │   └── SpaceSwitcher.swift             # Simulated ⌃←/⌃→ desktop switching
 │   ├── RuleEngine/            # Rule lookup + scenario profiles
 │   │   ├── RuleEngine.swift   # (bundleID, button) → ButtonAction?
 │   │   └── RuleStore.swift    # Rule persistence: named profiles + active switch (UserDefaults)

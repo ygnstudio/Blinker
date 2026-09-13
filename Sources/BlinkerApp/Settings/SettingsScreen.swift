@@ -10,6 +10,7 @@ struct SettingsScreen: View {
     let onApplyHoverSettings: (HoverOverlaySettings) -> Void
     let frontWindowPerformer: FrontWindowActionPerformer
     @ObservedObject var hotkeyManager: HotkeyManager
+    @ObservedObject var workspaceStore: WorkspaceStore
     let onSnapEnabledChange: (Bool) -> Void
     @ObservedObject private var preferences = AppPreferences.shared
 
@@ -20,6 +21,7 @@ struct SettingsScreen: View {
             WindowManagementTab(
                 frontWindowPerformer: frontWindowPerformer,
                 hotkeyManager: hotkeyManager,
+                workspaceStore: workspaceStore,
                 onSnapEnabledChange: onSnapEnabledChange
             )
             .tabItem { Label(tr("窗口管理", "Windows"), systemImage: "rectangle.split.2x2") }

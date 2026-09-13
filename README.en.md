@@ -26,6 +26,9 @@ add; everything else keeps system defaults.
 - **Scenario profiles**: save the whole rule table as a named preset
   (work / meeting / personal…) and switch all rules at once from the menu
   bar or the rules tab; existing configs migrate into a "Default" profile.
+- **Workspaces & desktop switching**: save the current window arrangement
+  as a named workspace and restore it in one click; switch macOS desktops
+  via the simulated ⌃←/⌃→ shortcut, available in the window management page.
 - **Window management**: a dedicated settings page. **Instant actions** tile
   or place the frontmost window with one click; **drag to snap** shows a
   preview as you drag a window to a screen edge or corner, snapping on

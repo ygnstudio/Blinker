@@ -31,6 +31,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
     static let sharedRuleStore = RuleStore(defaultProfileName: tr("默认", "Default"))
     let ruleStore = AppDelegate.sharedRuleStore
     let hoverOverlaySettingsStore = HoverOverlaySettingsStore()
+    /// Named window-layout workspaces for the window-management tab.
+    let workspaceStore = WorkspaceStore()
 
     /// Executes window actions on the frontmost window; shared by the
     /// window-management tab and the global hotkeys.

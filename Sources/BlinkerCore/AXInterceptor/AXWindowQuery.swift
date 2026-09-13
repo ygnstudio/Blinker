@@ -123,6 +123,20 @@ enum AXQuery {
         }
     }
 
+    /// Moves and resizes a window to a frame already in AX (top-left origin)
+    /// coordinates — the space `CGWindowList` reports and `elementFrame`
+    /// reads, so workspace capture/restore round-trips without conversion.
+    static func setWindowFrame(axFrame frame: CGRect, of window: AXUIElement) {
+        var position = CGPoint(x: frame.minX, y: frame.minY)
+        var size = CGSize(width: frame.width, height: frame.height)
+        if let positionValue = AXValueCreate(.cgPoint, &position) {
+            AXUIElementSetAttributeValue(window, kAXPositionAttribute as CFString, positionValue)
+        }
+        if let sizeValue = AXValueCreate(.cgSize, &size) {
+            AXUIElementSetAttributeValue(window, kAXSizeAttribute as CFString, sizeValue)
+        }
+    }
+
     /// Cheaply finds the topmost standard (layer 0) on-screen window containing
     /// the point. `excludingProcessIdentifier` skips windows of a given app,
     /// e.g. Blinker's own settings window.
