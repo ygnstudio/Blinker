@@ -6,6 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- **Scenario rule profiles**: the rule table can be saved as named presets
+  and switched as a whole from the menu bar or the rules tab (new /
+  duplicate / rename / delete). Legacy single-table configs migrate into a
+  "Default" profile automatically; the rule engine and event tap are
+  unchanged and always read the active profile.
 - **Click-variant action matrix**: every traffic button now has five slots —
   plain left click, right click, ⌥+left click, 🌐+left click and long press
   (~0.45 s). The rules UI exposes the extra variants in an expandable matrix;

@@ -23,6 +23,9 @@ add; everything else keeps system defaults.
   define its own action for right click, ⌥+click, 🌐+click and long press —
   e.g. red = quit, green = tile left, ⌥+green = quarter tile. Unconfigured
   variants keep the system default.
+- **Scenario profiles**: save the whole rule table as a named preset
+  (work / meeting / personal…) and switch all rules at once from the menu
+  bar or the rules tab; existing configs migrate into a "Default" profile.
 - **Window management**: a dedicated settings page. **Instant actions** tile
   or place the frontmost window with one click; **drag to snap** shows a
   preview as you drag a window to a screen edge or corner, snapping on

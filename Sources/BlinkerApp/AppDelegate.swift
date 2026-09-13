@@ -26,7 +26,10 @@ enum InterceptorStatus {
 /// the hover overlay, plus the window-management helpers (front-window
 /// executor, drag-to-snap snapper, global hotkeys).
 final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
-    let ruleStore = RuleStore()
+    /// Shared so both the app delegate and the `BlinkerApp` scene observe
+    /// the same store (the menu bar needs profile observation).
+    static let sharedRuleStore = RuleStore(defaultProfileName: tr("默认", "Default"))
+    let ruleStore = AppDelegate.sharedRuleStore
     let hoverOverlaySettingsStore = HoverOverlaySettingsStore()
 
     /// Executes window actions on the frontmost window; shared by the
