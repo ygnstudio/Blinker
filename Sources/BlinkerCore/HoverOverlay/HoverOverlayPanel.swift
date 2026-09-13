@@ -23,15 +23,12 @@ final class HoverOverlayPanel: NSPanel {
     ///   - panelFrame: The panel's frame in AX coordinates (from the group
     ///     layout).
     ///   - info: The overlayed button's metadata.
-    ///   - title: Hover preview text drawn above the button; ignored in
-    ///     hotspot mode.
     ///   - isHotspot: When `true` the panel draws nothing and activates
     ///     immediately (invisible click zone).
     ///   - onActivate: Called when the user clicks after dwell completion.
     init(
         panelFrame: CGRect,
         info: OverlayButtonInfo,
-        title: String,
         isHotspot: Bool = false,
         onActivate: @escaping () -> Void
     ) {
@@ -50,7 +47,6 @@ final class HoverOverlayPanel: NSPanel {
         buttonView = HoverOverlayButtonView(
             frame: NSRect(origin: .zero, size: appKitFrame.size),
             info: info,
-            title: title,
             isHotspot: isHotspot,
             usesSystemGlass: usesSystemGlass,
             onActivate: onActivate
@@ -80,12 +76,11 @@ final class HoverOverlayPanel: NSPanel {
     }
 }
 
-/// Draws one enlarged traffic-light button: colored circle, symbol, dwell
-/// progress ring and the hover preview text above the circle. In hotspot
-/// mode the view is fully invisible and always activated.
+/// Draws one enlarged traffic-light button: colored circle, symbol and dwell
+/// progress ring. In hotspot mode the view is fully invisible and always
+/// activated.
 final class HoverOverlayButtonView: NSView {
     private let info: OverlayButtonInfo
-    private let title: String
     private let isHotspot: Bool
     /// When `true` the panel wraps this view in `NSGlassEffectView`, so the
     /// view only draws circle, symbol and text — the chip is system glass.
@@ -97,13 +92,11 @@ final class HoverOverlayButtonView: NSView {
     init(
         frame: NSRect,
         info: OverlayButtonInfo,
-        title: String,
         isHotspot: Bool = false,
         usesSystemGlass: Bool = false,
         onActivate: @escaping () -> Void
     ) {
         self.info = info
-        self.title = title
         self.isHotspot = isHotspot
         self.usesSystemGlass = usesSystemGlass
         self.onActivate = onActivate
@@ -152,20 +145,14 @@ final class HoverOverlayButtonView: NSView {
         if !usesSystemGlass {
             drawBackdropChip()
         }
-        // The title band is always reserved so the circle never shifts; the
-        // label itself only appears on the hovered panel.
-        let titleBand: CGFloat = 14
-        let horizontalInset: CGFloat = 4
-        let diameter = min(bounds.width, bounds.height - titleBand) - horizontalInset * 2
+        let inset: CGFloat = 4
+        let diameter = min(bounds.width, bounds.height) - inset * 2
         let circleRect = CGRect(
             x: (bounds.width - diameter) / 2,
-            y: (bounds.height - titleBand - diameter) / 2,
+            y: (bounds.height - diameter) / 2,
             width: diameter,
             height: diameter
         )
-        if dwellProgress > 0 {
-            drawTitle()
-        }
         drawProgressRing(around: circleRect)
         drawCircle(in: circleRect)
         drawSymbol(in: circleRect)
@@ -183,15 +170,6 @@ final class HoverOverlayButtonView: NSView {
         let border = NSBezierPath(roundedRect: chipRect, xRadius: 15, yRadius: 15)
         border.lineWidth = 1
         border.stroke()
-    }
-
-    private func drawTitle() {
-        let attributes: [NSAttributedString.Key: Any] = [
-            .font: NSFont.systemFont(ofSize: 9, weight: .medium),
-            .foregroundColor: NSColor.labelColor.withAlphaComponent(0.85),
-        ]
-        let text = NSAttributedString(string: title, attributes: attributes)
-        text.draw(in: CGRect(x: 0, y: bounds.height - 13, width: bounds.width, height: 12))
     }
 
     private func drawProgressRing(around circleRect: NSRect) {

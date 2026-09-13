@@ -325,7 +325,7 @@ private struct HoverSettingsTab: View {
     private var modeHint: String {
         switch settings.mode {
         case .overlay:
-            "覆盖放大：红绿灯上方绘制放大按钮（液态玻璃质感），带动作预览与防误触进度环。"
+            "覆盖放大：红绿灯上方绘制液态玻璃质感的放大按钮，带防误触进度环。"
         case .hotspot:
             "纯热区：界面外观完全不变，仅在按钮周围扩大不可见点击区，点击立即响应。"
         }

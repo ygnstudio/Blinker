@@ -2,7 +2,7 @@ import AppKit
 import ApplicationServices
 import CoreGraphics
 
-// MARK: - Panels, dwell and preview (main thread only)
+// MARK: - Panels and dwell (main thread only)
 
 extension HoverOverlayController {
     func syncPanels(
@@ -49,15 +49,9 @@ extension HoverOverlayController {
             enlargedSize: enlargedSize
         )
         panels = zip(buttons, panelFrames).map { info, panelFrame in
-            let title = isHotspot ? "" : previewTitle(
-                button: info.button,
-                bundleIdentifier: target.bundleIdentifier,
-                appName: target.appName
-            )
-            return HoverOverlayPanel(
+            HoverOverlayPanel(
                 panelFrame: panelFrame,
                 info: info,
-                title: title,
                 isHotspot: isHotspot
             ) { [weak self] in
                 self?.activate(
@@ -177,43 +171,6 @@ extension HoverOverlayController {
         panel.buttonView.setDwellProgress(progress)
         if progress >= 1 {
             stopDwellTimer()
-        }
-    }
-
-    // MARK: - Preview text
-
-    /// Builds the hover preview text, e.g. "退出 Safari". Uses the rule action
-    /// when configured, otherwise the native action name.
-    private func previewTitle(button: TrafficButton, bundleIdentifier: String, appName: String?) -> String {
-        let action = ruleEngine.action(forBundleIdentifier: bundleIdentifier, button: button)
-        let verb = action.map(Self.ruleActionName) ?? Self.nativeActionName(button)
-        switch action {
-        case .quitApp, .hideApp:
-            return appName.map { "\(verb) \($0)" } ?? verb
-        default:
-            return verb
-        }
-    }
-
-    private static func ruleActionName(_ action: ButtonAction) -> String {
-        switch action {
-        case .closeWindow: "关闭窗口"
-        case .quitApp: "退出"
-        case .minimize: "最小化"
-        case .hideApp: "隐藏"
-        case .maximize: "最大化"
-        case .fullscreen: "全屏"
-        case .tileLeft: "窗口居左"
-        case .tileRight: "窗口居右"
-        case .none: "无操作"
-        }
-    }
-
-    private static func nativeActionName(_ button: TrafficButton) -> String {
-        switch button {
-        case .close: "关闭窗口"
-        case .minimize: "最小化"
-        case .zoom: "进入全屏"
         }
     }
 

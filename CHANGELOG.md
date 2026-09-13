@@ -19,9 +19,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   buttons' bounding box, minimum gap enforced) instead of each panel being
   centered on its own button, which overlapped heavily at larger sizes.
 - Enlarged buttons are drawn as perfect circles instead of vertically
-  squashed ellipses; symbols now scale with the button size, the preview
-  label only appears on the hovered panel, and neighboring chips get a
-  wider minimum gap with an adaptive glass corner radius.
+  squashed ellipses; symbols now scale with the button size, neighboring
+  chips use a tight minimum gap so the native buttons stay covered, and
+  the glass corner radius adapts to the panel size.
+- Removed the hover preview labels: the enlarged panels were too small
+  for readable four-character titles and the text overflowed the glass
+  chips.
 
 ## [0.2.1] - 2026-09-13
 

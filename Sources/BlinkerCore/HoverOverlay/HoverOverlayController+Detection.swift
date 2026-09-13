@@ -3,7 +3,7 @@ import ApplicationServices
 import CoreGraphics
 
 /// The window currently under the cursor, with the identity information the
-/// overlays need to resolve rules and build preview titles.
+/// overlays need to resolve rules.
 struct HoverTarget {
     let hit: AXQuery.WindowHit
     let bundleIdentifier: String

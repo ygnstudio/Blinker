@@ -9,7 +9,7 @@ them on hover so they are easier to see and click.
 - Red button → quit the app instead of closing a window (configurable)
 - Green button → maximize (zoom) instead of fullscreen (configurable)
 - Yellow button and window tiling (left/right half) are remappable too
-- Hover enlargement with action preview and mis-click protection
+- Hover enlargement with mis-click (dwell) protection
 - Rules only apply to apps you add; everything else keeps system defaults
 
 ### Hover enlargement
@@ -19,11 +19,10 @@ overlays appear above them:
 
 - Adjustable size (18–48 pt) and dwell delay (0–800 ms) — the dwell ring
   must fill before a click registers, so brushing past never triggers
-- Action preview labels ("Quit Safari") show what a click will do
 - Without a rule, an enlarged click still performs the button's native
   action, so enlargement is useful on its own
 - Scope: all windows, or only apps that have rules
-- Two modes: **overlay** (draws enlarged buttons with preview and dwell)
+- Two modes: **overlay** (draws enlarged Liquid Glass buttons with a dwell ring)
   or **hotspot** (invisible enlarged click zones; the title bar keeps its
   original look and clicks respond immediately)
 
@@ -73,7 +72,7 @@ Blinker 是一个原生 macOS 菜单栏应用，可按应用单独重定义窗�
 - 红灯 → 退出应用（而非仅关闭窗口），可配置
 - 绿灯 → 最大化（而非全屏），可配置
 - 黄灯与左右半屏动作同样可重映射
-- 悬停放大：动作预览 + 防误触 dwell
+- 悬停放大：防误触 dwell
 - 规则只对你添加的应用生效，其余保持系统默认
 
 ### 悬停放大
@@ -81,10 +80,9 @@ Blinker 是一个原生 macOS 菜单栏应用，可按应用单独重定义窗�
 鼠标停在窗口红绿灯附近时，按钮上方会出现放大覆盖层：
 
 - 尺寸（18–48 pt）与防误触延迟（0–800 ms）可调——进度环填满才响应点击，路过不会误触
-- 悬停时显示动作预览（如「退出 Safari」），点击前明确后果
 - 未配置规则时，放大的点击执行按钮原生动作，放大本身即有价值
 - 作用范围可选：全部窗口，或仅配置了规则的应用
-- 两种模式：**覆盖放大**（绘制放大按钮，带预览与防误触）或**纯热区**
+- 两种模式：**覆盖放大**（绘制液态玻璃放大按钮，带防误触进度环）或**纯热区**
   （外观完全不变，仅扩大不可见点击区，点击立即响应）
 
 ### 设置

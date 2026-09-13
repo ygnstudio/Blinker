@@ -2,7 +2,7 @@ import Foundation
 
 /// Visual model of the hover enlargement.
 public enum HoverOverlayMode: String, Codable, Sendable, Hashable {
-    /// Draws enlarged buttons (circle, symbol, dwell ring, preview text)
+    /// Draws enlarged buttons (circle, symbol, dwell ring)
     /// above the native ones.
     case overlay
     /// Invisible enlarged click zones around the native buttons; the

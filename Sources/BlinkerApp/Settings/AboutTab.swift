@@ -43,7 +43,7 @@ struct AboutTab: View {
         VStack(alignment: .leading, spacing: 8) {
             featureRow(icon: "circle.fill", color: .red, text: "红灯重定义：退出应用或关闭窗口")
             featureRow(icon: "circle.fill", color: .green, text: "绿灯重定义：最大化、全屏或左右半屏")
-            featureRow(icon: "hand.point.up.left", color: .accentColor, text: "悬停放大与纯热区点击，带动作预览与防误触")
+            featureRow(icon: "hand.point.up.left", color: .accentColor, text: "悬停放大与纯热区点击，防误触进度环")
             featureRow(icon: "sparkles", color: .accentColor, text: "macOS 26+ 原生液态玻璃质感")
         }
         .padding(14)

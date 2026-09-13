@@ -15,8 +15,7 @@ import os
 ///
 /// The implementation is split across extensions in the same module:
 /// `HoverOverlayController+Detection.swift` (work-queue detection) and
-/// `HoverOverlayController+Panels.swift` (main-thread panels, dwell and
-/// preview).
+/// `HoverOverlayController+Panels.swift` (main-thread panels and dwell).
 public final class HoverOverlayController {
     let ruleEngine: RuleEngine
     let actionPerformer: WindowActionPerforming
