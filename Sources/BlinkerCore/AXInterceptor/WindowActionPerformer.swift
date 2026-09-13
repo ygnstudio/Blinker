@@ -45,18 +45,28 @@ public final class DefaultWindowActionPerformer: WindowActionPerforming {
         case .hideApp:
             logger.info("hiding pid \(processIdentifier)")
             runningApp?.hide()
-        case .maximize:
-            logger.info("zooming pid \(processIdentifier) window")
-            maximize(window)
-        case .tileLeft:
-            logger.info("tiling pid \(processIdentifier) window left")
-            tile(window, side: .left)
-        case .tileRight:
-            logger.info("tiling pid \(processIdentifier) window right")
-            tile(window, side: .right)
         case .none:
             break
+        default:
+            performGeometry(action, window: window, processIdentifier: processIdentifier)
         }
+    }
+
+    /// Handles the frame-manipulation actions; the screen is chosen by the
+    /// window center and the target frame math lives in `WindowGeometry`.
+    private func performGeometry(
+        _ action: ButtonAction,
+        window: AXUIElement,
+        processIdentifier: pid_t
+    ) {
+        if action == .moveToNextDisplay {
+            logger.info("moving pid \(processIdentifier) window to next display")
+            moveToNextDisplay(window)
+            return
+        }
+        guard let placement = WindowPlacement(action: action) else { return }
+        logger.info("placing pid \(processIdentifier) window: \(String(describing: placement))")
+        place(window, placement: placement)
     }
 
     /// The AX subrole of the button whose native behavior matches `action`.
@@ -71,35 +81,43 @@ public final class DefaultWindowActionPerformer: WindowActionPerforming {
 
     // MARK: - Geometry actions
 
-    private enum TileSide {
-        case left
-        case right
-    }
-
     /// Zooms the window to fill the visible frame of the screen it is mostly
     /// on, without entering fullscreen.
     ///
     /// The `AXZoomWindow` attribute is read-only in practice, so the zoom is
     /// performed by setting the window position and size directly — the same
     /// approach Rectangle and Magnet use.
-    private func maximize(_ window: AXUIElement) {
+    private func place(_ window: AXUIElement, placement: WindowPlacement) {
         guard let appKitFrame = Self.appKitFrame(of: window) else { return }
         guard let visibleFrame = Self.screen(containing: appKitFrame)?.visibleFrame else { return }
-        AXQuery.setWindowFrame(window, appKitFrame: visibleFrame, globalMaxY: Self.globalMaxY)
+        let target = WindowGeometry.targetFrame(
+            for: placement,
+            originalFrame: appKitFrame,
+            in: visibleFrame
+        )
+        AXQuery.setWindowFrame(window, appKitFrame: target, globalMaxY: Self.globalMaxY)
     }
 
-    /// Tiles the window to the left or right half of its screen's visible
-    /// frame; the screen is chosen by the window center.
-    private func tile(_ window: AXUIElement, side: TileSide) {
-        guard let appKitFrame = Self.appKitFrame(of: window) else { return }
-        guard let visibleFrame = Self.screen(containing: appKitFrame)?.visibleFrame else { return }
-        let halfWidth = visibleFrame.width / 2
-        let tiledOriginX = side == .left ? visibleFrame.minX : visibleFrame.midX
-        let frame = CGRect(
-            x: tiledOriginX,
-            y: visibleFrame.minY,
-            width: halfWidth,
-            height: visibleFrame.height
+    /// Moves the window to the next display (wrapping around), keeping its
+    /// size and centering it in the target screen's visible frame.
+    private func moveToNextDisplay(_ window: AXUIElement) {
+        guard NSScreen.screens.count > 1,
+              let appKitFrame = Self.appKitFrame(of: window),
+              let current = Self.screen(containing: appKitFrame),
+              let index = NSScreen.screens.firstIndex(of: current)
+        else { return }
+        let target = NSScreen.screens[(index + 1) % NSScreen.screens.count]
+        let visible = target.visibleFrame
+        var frame = appKitFrame
+        if frame.width > visible.width {
+            frame.size.width = visible.width
+        }
+        if frame.height > visible.height {
+            frame.size.height = visible.height
+        }
+        frame.origin = CGPoint(
+            x: visible.midX - frame.width / 2,
+            y: visible.midY - frame.height / 2
         )
         AXQuery.setWindowFrame(window, appKitFrame: frame, globalMaxY: Self.globalMaxY)
     }

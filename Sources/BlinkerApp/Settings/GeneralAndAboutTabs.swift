@@ -1,13 +1,14 @@
 import BlinkerCore
+import ServiceManagement
 import SwiftUI
-
-// MARK: - General tab
 
 // MARK: - General tab
 
 /// Language and appearance preferences; both default to following the system.
 struct GeneralTab: View {
     @ObservedObject private var preferences = AppPreferences.shared
+    @State private var launchAtLogin = false
+    @State private var launchAtLoginError = false
 
     var body: some View {
         Form {
@@ -30,8 +31,51 @@ struct GeneralTab: View {
                     "Follow System reads the system language and appearance; changes apply immediately."
                 ))
             }
+
+            Section {
+                Toggle(
+                    tr("登录时启动 Blinker", "Launch Blinker at Login"),
+                    isOn: $launchAtLogin
+                )
+                .onChange(of: launchAtLogin) { _, newValue in
+                    updateLaunchAtLogin(newValue)
+                }
+            } header: {
+                Text(tr("启动", "Startup"))
+            } footer: {
+                if launchAtLoginError {
+                    Text(tr(
+                        "注册登录自启失败，请重试或检查系统设置 → 通用 → 登录项。",
+                        "Could not update the login item; retry or check System Settings"
+                            + " → General → Login Items."
+                    ))
+                    .foregroundStyle(.red)
+                } else {
+                    Text(tr(
+                        "开启后 Blinker 随系统登录自动启动，常驻菜单栏。",
+                        "Blinker starts automatically when you log in and lives in the menu bar."
+                    ))
+                }
+            }
         }
         .formStyle(.grouped)
+        .onAppear {
+            launchAtLogin = SMAppService.mainApp.status == .enabled
+        }
+    }
+
+    private func updateLaunchAtLogin(_ enabled: Bool) {
+        do {
+            if enabled {
+                try SMAppService.mainApp.register()
+            } else {
+                try SMAppService.mainApp.unregister()
+            }
+            launchAtLoginError = false
+        } catch {
+            launchAtLogin = SMAppService.mainApp.status == .enabled
+            launchAtLoginError = true
+        }
     }
 }
 

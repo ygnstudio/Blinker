@@ -15,6 +15,14 @@ struct BlinkerApp: App {
                 appDelegate.bringToFront()
                 openSettings()
             }
+            Button(
+                appDelegate.isIntercepting
+                    ? tr("暂停拦截", "Pause Interception")
+                    : tr("恢复拦截", "Resume Interception")
+            ) {
+                appDelegate.toggleInterception()
+            }
+            .disabled(!appDelegate.isIntercepting && appDelegate.status == .noPermission)
             Button(tr("重新检查权限", "Re-check Permission")) {
                 appDelegate.attemptStartInterceptor()
             }

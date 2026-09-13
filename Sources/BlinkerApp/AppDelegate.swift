@@ -107,6 +107,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
         logger.info("interceptor started; event tap active")
     }
 
+    /// Pauses or resumes click interception from the menu bar toggle.
+    func toggleInterception() {
+        if isIntercepting {
+            stopInterceptor()
+        } else {
+            attemptStartInterceptor()
+        }
+    }
+
     func stopInterceptor() {
         interceptor?.stop()
         interceptor = nil

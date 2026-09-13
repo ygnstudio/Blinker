@@ -42,6 +42,15 @@ extension ButtonAction {
         case .fullscreen: tr("全屏", "Fullscreen")
         case .tileLeft: tr("左半屏", "Tile Left")
         case .tileRight: tr("右半屏", "Tile Right")
+        case .tileTop: tr("上半屏", "Tile Top")
+        case .tileBottom: tr("下半屏", "Tile Bottom")
+        case .tileTopLeft: tr("左上屏", "Tile Top Left")
+        case .tileTopRight: tr("右上屏", "Tile Top Right")
+        case .tileBottomLeft: tr("左下屏", "Tile Bottom Left")
+        case .tileBottomRight: tr("右下屏", "Tile Bottom Right")
+        case .centerWindow: tr("窗口居中", "Center")
+        case .almostMaximize: tr("准最大化", "Almost Maximize")
+        case .moveToNextDisplay: tr("移到下一显示器", "Next Display")
         case .none: tr("无操作", "Do Nothing")
         }
     }
@@ -135,14 +144,28 @@ private struct RuleRowView: View {
     let onUpdate: (AppRule) -> Void
     let onRemove: () -> Void
 
-    static let closeOptions: [ButtonAction?] = [
-        nil, .closeWindow, .quitApp, .minimize, .hideApp, ButtonAction.none,
-    ]
-    static let minimizeOptions: [ButtonAction?] = [
-        nil, .minimize, .hideApp, .closeWindow, .tileLeft, .tileRight, ButtonAction.none,
-    ]
-    static let zoomOptions: [ButtonAction?] = [
-        nil, .maximize, .fullscreen, .tileLeft, .tileRight, ButtonAction.none,
+    /// Every action is available on every button; the default entry keeps
+    /// the system behavior. Menus render grouped window ops first.
+    static let options: [ButtonAction?] = [
+        nil,
+        .closeWindow,
+        .quitApp,
+        .minimize,
+        .hideApp,
+        .maximize,
+        .almostMaximize,
+        .fullscreen,
+        .tileLeft,
+        .tileRight,
+        .tileTop,
+        .tileBottom,
+        .tileTopLeft,
+        .tileTopRight,
+        .tileBottomLeft,
+        .tileBottomRight,
+        .centerWindow,
+        .moveToNextDisplay,
+        ButtonAction.none,
     ]
 
     var body: some View {
@@ -158,17 +181,17 @@ private struct RuleRowView: View {
 
             ActionPicker(
                 dotColor: .systemRed,
-                options: Self.closeOptions,
+                options: Self.options,
                 selection: closeBinding
             )
             ActionPicker(
                 dotColor: .systemYellow,
-                options: Self.minimizeOptions,
+                options: Self.options,
                 selection: minimizeBinding
             )
             ActionPicker(
                 dotColor: .systemGreen,
-                options: Self.zoomOptions,
+                options: Self.options,
                 selection: zoomBinding
             )
 

@@ -18,6 +18,24 @@ public enum ButtonAction: String, Codable, CaseIterable, Sendable {
     case tileLeft
     /// Tile the window to the right half of the screen.
     case tileRight
+    /// Tile the window to the top half of the screen.
+    case tileTop
+    /// Tile the window to the bottom half of the screen.
+    case tileBottom
+    /// Tile the window to the top-left quarter of the screen.
+    case tileTopLeft
+    /// Tile the window to the top-right quarter of the screen.
+    case tileTopRight
+    /// Tile the window to the bottom-left quarter of the screen.
+    case tileBottomLeft
+    /// Tile the window to the bottom-right quarter of the screen.
+    case tileBottomRight
+    /// Center the window on its screen, keeping its current size.
+    case centerWindow
+    /// Zoom the window to nearly fill the screen, leaving a breathing margin.
+    case almostMaximize
+    /// Move the window to the next display, keeping its size.
+    case moveToNextDisplay
     /// Swallow the click and do nothing.
     case none
 }
