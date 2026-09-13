@@ -12,33 +12,29 @@ struct OverlayButtonInfo {
 
 /// Borderless, non-activating panel showing one enlarged traffic-light button.
 ///
-/// The panel is sized to the configured enlarged diameter and centered on the
-/// original button's position, so it swallows clicks aimed at the real button
-/// and hands them to the controller after the dwell gate passes.
+/// The panel frame comes from the group layout (`HoverOverlayGeometry
+/// .panelFrames`) so enlarged neighbors never overlap. On macOS 26+ the chip
+/// behind the button is a system Liquid Glass effect view; earlier systems
+/// fall back to a translucent backdrop drawn by the button view itself.
 final class HoverOverlayPanel: NSPanel {
     let buttonView: HoverOverlayButtonView
 
     /// - Parameters:
-    ///   - buttonFrame: The original button's frame in AX coordinates.
+    ///   - panelFrame: The panel's frame in AX coordinates (from the group
+    ///     layout).
     ///   - info: The overlayed button's metadata.
     ///   - title: Hover preview text drawn above the button; ignored in
     ///     hotspot mode.
-    ///   - enlargedSize: The square panel edge length in points.
     ///   - isHotspot: When `true` the panel draws nothing and activates
     ///     immediately (invisible click zone).
     ///   - onActivate: Called when the user clicks after dwell completion.
     init(
-        buttonFrame: CGRect,
+        panelFrame: CGRect,
         info: OverlayButtonInfo,
         title: String,
-        enlargedSize: CGFloat,
         isHotspot: Bool = false,
         onActivate: @escaping () -> Void
     ) {
-        let panelFrame = HoverOverlayGeometry.panelFrame(
-            forButtonFrame: buttonFrame,
-            enlargedSize: enlargedSize
-        )
         let globalMaxY = NSScreen.screens.first?.frame.maxY ?? 0
         // Convert the AX (top-left origin) panel frame to AppKit coordinates.
         let appKitFrame = CGRect(
@@ -47,11 +43,16 @@ final class HoverOverlayPanel: NSPanel {
             width: panelFrame.width,
             height: panelFrame.height
         )
+        var usesSystemGlass = false
+        if #available(macOS 26.0, *), !isHotspot {
+            usesSystemGlass = true
+        }
         buttonView = HoverOverlayButtonView(
             frame: NSRect(origin: .zero, size: appKitFrame.size),
             info: info,
             title: title,
             isHotspot: isHotspot,
+            usesSystemGlass: usesSystemGlass,
             onActivate: onActivate
         )
         super.init(
@@ -67,7 +68,15 @@ final class HoverOverlayPanel: NSPanel {
         hidesOnDeactivate = false
         hasShadow = false
         isReleasedWhenClosed = false
-        contentView = buttonView
+        if #available(macOS 26.0, *), !isHotspot {
+            let glassView = NSGlassEffectView(frame: appKitFrame)
+            glassView.cornerRadius = 16
+            glassView.tintColor = buttonView.accentColor
+            glassView.contentView = buttonView
+            contentView = glassView
+        } else {
+            contentView = buttonView
+        }
     }
 }
 
@@ -78,6 +87,9 @@ final class HoverOverlayButtonView: NSView {
     private let info: OverlayButtonInfo
     private let title: String
     private let isHotspot: Bool
+    /// When `true` the panel wraps this view in `NSGlassEffectView`, so the
+    /// view only draws circle, symbol and text — the chip is system glass.
+    private let usesSystemGlass: Bool
     private let onActivate: () -> Void
     private var dwellProgress: Double = 0
     private var isActivated = false
@@ -87,11 +99,13 @@ final class HoverOverlayButtonView: NSView {
         info: OverlayButtonInfo,
         title: String,
         isHotspot: Bool = false,
+        usesSystemGlass: Bool = false,
         onActivate: @escaping () -> Void
     ) {
         self.info = info
         self.title = title
         self.isHotspot = isHotspot
+        self.usesSystemGlass = usesSystemGlass
         self.onActivate = onActivate
         super.init(frame: frame)
     }
@@ -99,6 +113,15 @@ final class HoverOverlayButtonView: NSView {
     @available(*, unavailable)
     required init?(coder _: NSCoder) {
         fatalError("init(coder:) is not supported")
+    }
+
+    /// The button's semantic color, also used as the glass tint on macOS 26+.
+    var accentColor: NSColor {
+        switch info.button {
+        case .close: .systemRed
+        case .minimize: .systemYellow
+        case .zoom: .systemGreen
+        }
     }
 
     /// Updates the dwell progress (0...1); the button becomes clickable at 1.
@@ -126,6 +149,9 @@ final class HoverOverlayButtonView: NSView {
 
     override func draw(_: NSRect) {
         guard !isHotspot else { return }
+        if !usesSystemGlass {
+            drawBackdropChip()
+        }
         drawTitle()
         let circleRect = CGRect(x: 2, y: 1, width: bounds.width - 4, height: bounds.height - 15)
         drawProgressRing(around: circleRect)
@@ -135,12 +161,16 @@ final class HoverOverlayButtonView: NSView {
 
     // MARK: - Drawing
 
-    private var buttonColor: NSColor {
-        switch info.button {
-        case .close: .systemRed
-        case .minimize: .systemYellow
-        case .zoom: .systemGreen
-        }
+    /// Pre-macOS 26 fallback for the glass chip: a translucent rounded
+    /// backdrop so the enlarged button reads on any wallpaper.
+    private func drawBackdropChip() {
+        let chipRect = bounds.insetBy(dx: 1, dy: 1)
+        NSColor.windowBackgroundColor.withAlphaComponent(0.65).setFill()
+        NSBezierPath(roundedRect: chipRect, xRadius: 15, yRadius: 15).fill()
+        NSColor.separatorColor.withAlphaComponent(0.7).setStroke()
+        let border = NSBezierPath(roundedRect: chipRect, xRadius: 15, yRadius: 15)
+        border.lineWidth = 1
+        border.stroke()
     }
 
     private func drawTitle() {
@@ -169,7 +199,7 @@ final class HoverOverlayButtonView: NSView {
     }
 
     private func drawCircle(in circleRect: NSRect) {
-        buttonColor.withAlphaComponent(0.9).setFill()
+        accentColor.withAlphaComponent(0.9).setFill()
         NSBezierPath(ovalIn: circleRect).fill()
     }
 

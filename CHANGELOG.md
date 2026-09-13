@@ -5,6 +5,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+- Liquid Glass styling: overlay panels render on a system `NSGlassEffectView`
+  chip tinted per button on macOS 26+ (translucent backdrop fallback on older
+  systems), and the settings window uses native `glassEffect` cards with a
+  graceful fallback below macOS 26.
+- Settings window is now organized into tabs — Rules, Hover Enlargement and
+  an About page with version and project links.
+
+### Fixed
+- Enlarged overlay buttons no longer stack on top of each other: panels are
+  laid out as a group (original left-to-right order, centered on the native
+  buttons' bounding box, minimum gap enforced) instead of each panel being
+  centered on its own button, which overlapped heavily at larger sizes.
+
 ## [0.2.1] - 2026-09-13
 
 ### Added

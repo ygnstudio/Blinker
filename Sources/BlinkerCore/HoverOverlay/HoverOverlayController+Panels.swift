@@ -44,17 +44,20 @@ extension HoverOverlayController {
         isHotspot: Bool
     ) {
         hidePanels()
-        panels = buttons.map { info in
+        let panelFrames = HoverOverlayGeometry.panelFrames(
+            forButtonFrames: buttons.map(\.frame),
+            enlargedSize: enlargedSize
+        )
+        panels = zip(buttons, panelFrames).map { info, panelFrame in
             let title = isHotspot ? "" : previewTitle(
                 button: info.button,
                 bundleIdentifier: target.bundleIdentifier,
                 appName: target.appName
             )
             return HoverOverlayPanel(
-                buttonFrame: info.frame,
+                panelFrame: panelFrame,
                 info: info,
                 title: title,
-                enlargedSize: enlargedSize,
                 isHotspot: isHotspot
             ) { [weak self] in
                 self?.activate(

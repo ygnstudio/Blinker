@@ -25,6 +25,38 @@ public enum HoverOverlayGeometry {
         )
     }
 
+    /// Computes non-overlapping panel frames for a group of traffic buttons.
+    ///
+    /// Real traffic lights sit only ~12–16 pt apart, far tighter than any
+    /// enlarged diameter, so per-button centering makes enlarged panels
+    /// overlap heavily. Instead the enlarged buttons are laid out left to
+    /// right in their original order, centered as a group on the original
+    /// buttons' bounding box, with a minimum gap between neighbors.
+    public static func panelFrames(
+        forButtonFrames buttonFrames: [CGRect],
+        enlargedSize: CGFloat,
+        minimumGap: CGFloat = 6
+    ) -> [CGRect] {
+        guard let first = buttonFrames.first else { return [] }
+        guard buttonFrames.count > 1 else {
+            return [panelFrame(forButtonFrame: first, enlargedSize: enlargedSize)]
+        }
+        let groupBounds = buttonFrames.dropFirst().reduce(first) { $0.union($1) }
+        let totalWidth = CGFloat(buttonFrames.count) * enlargedSize
+            + CGFloat(buttonFrames.count - 1) * minimumGap
+        var x = groupBounds.midX - totalWidth / 2
+        return buttonFrames.map { _ in
+            let frame = CGRect(
+                x: x,
+                y: groupBounds.midY - enlargedSize / 2,
+                width: enlargedSize,
+                height: enlargedSize
+            )
+            x += enlargedSize + minimumGap
+            return frame
+        }
+    }
+
     /// Returns `true` when the cursor lies within the enlarged panel frame.
     public static func isCursorInPanel(cursor: CGPoint, panelFrame: CGRect) -> Bool {
         panelFrame.contains(cursor)

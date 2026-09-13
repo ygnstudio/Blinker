@@ -1,28 +1,44 @@
 import BlinkerCore
 import SwiftUI
 
-/// The settings window: per-app remapping of the red and green buttons.
+/// The settings window, organized into tabs: per-app rules, hover overlay
+/// configuration and an about page.
 struct SettingsScreen: View {
     @ObservedObject var ruleStore: RuleStore
     @ObservedObject var hoverSettingsStore: HoverOverlaySettingsStore
     let onApplyHoverSettings: (HoverOverlaySettings) -> Void
 
     var body: some View {
-        VStack(spacing: 0) {
+        TabView {
+            RulesTab(ruleStore: ruleStore)
+                .tabItem { Label("规则", systemImage: "list.bullet.rectangle") }
+            HoverSettingsTab(store: hoverSettingsStore, onApply: onApplyHoverSettings)
+                .tabItem { Label("悬停放大", systemImage: "arrow.up.left.and.arrow.down.right") }
+            AboutTab()
+                .tabItem { Label("关于", systemImage: "info.circle") }
+        }
+        .frame(width: 560, height: 440)
+    }
+}
+
+// MARK: - Rules tab
+
+/// Per-app remapping of the red and green buttons.
+private struct RulesTab: View {
+    @ObservedObject var ruleStore: RuleStore
+
+    var body: some View {
+        VStack(spacing: 12) {
             if ruleStore.rules.isEmpty {
                 emptyState
             } else {
                 ruleList
             }
-            Divider()
-            HoverSection(store: hoverSettingsStore, onApply: onApplyHoverSettings)
-            Divider()
-            footer
+            footerBar
+                .liquidGlassCard()
         }
-        .frame(width: 560, height: 480)
+        .padding(12)
     }
-
-    // MARK: - Sections
 
     private var ruleList: some View {
         List {
@@ -35,6 +51,7 @@ struct SettingsScreen: View {
             }
         }
         .listStyle(.inset)
+        .clipShape(RoundedRectangle(cornerRadius: 10))
     }
 
     private var emptyState: some View {
@@ -54,30 +71,33 @@ struct SettingsScreen: View {
         .frame(maxWidth: .infinity)
     }
 
-    private var footer: some View {
+    private var footerBar: some View {
         HStack {
-            Menu {
-                ForEach(runningApps, id: \.bundleIdentifier) { app in
-                    Button(app.name) {
-                        ruleStore.upsert(AppRule(
-                            bundleIdentifier: app.bundleIdentifier,
-                            displayName: app.name
-                        ))
-                    }
-                }
-            } label: {
-                Label("添加应用", systemImage: "plus")
-            }
-            .disabled(runningApps.isEmpty)
+            addAppMenu
             Spacer()
-            VStack(alignment: .trailing, spacing: 2) {
-                Text("未列出的应用保持系统默认行为")
-                Text("悬停放大适用于所有窗口的标题栏红绿灯，可在上方调整尺寸与防误触延迟")
-            }
-            .font(.caption)
-            .foregroundStyle(.secondary)
+            Text("未列出的应用保持系统默认行为")
+                .font(.caption)
+                .foregroundStyle(.secondary)
         }
-        .padding(12)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+    }
+
+    private var addAppMenu: some View {
+        Menu {
+            ForEach(runningApps, id: \.bundleIdentifier) { app in
+                Button(app.name) {
+                    ruleStore.upsert(AppRule(
+                        bundleIdentifier: app.bundleIdentifier,
+                        displayName: app.name
+                    ))
+                }
+            }
+        } label: {
+            Label("添加应用", systemImage: "plus")
+        }
+        .fixedSize()
+        .disabled(runningApps.isEmpty)
     }
 
     private struct RunningApp: Identifiable {
@@ -92,7 +112,7 @@ struct SettingsScreen: View {
     private var runningApps: [RunningApp] {
         NSWorkspace.shared.runningApplications
             .filter { $0.activationPolicy == .regular && $0.bundleIdentifier != nil }
-            .compactMap { app in
+            .compactMap { app -> RunningApp? in
                 guard
                     let bundleIdentifier = app.bundleIdentifier,
                     bundleIdentifier != Bundle.main.bundleIdentifier
@@ -206,9 +226,11 @@ private struct RuleRowView: View {
     }
 }
 
-/// Hover overlay configuration block: master switch, enlarged size,
+// MARK: - Hover tab
+
+/// Hover overlay configuration: master switch, mode, enlarged size,
 /// anti-mistouch dwell and scope, bound to `HoverOverlaySettingsStore`.
-private struct HoverSection: View {
+private struct HoverSettingsTab: View {
     @ObservedObject var store: HoverOverlaySettingsStore
     let onApply: (HoverOverlaySettings) -> Void
 
@@ -217,62 +239,80 @@ private struct HoverSection: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("悬停放大")
-                .font(.headline)
+        VStack(alignment: .leading, spacing: 10) {
             Toggle("启用悬停放大", isOn: isEnabledBinding)
             Text("开启后，鼠标悬停到窗口红绿灯按钮上会临时放大，点击即执行对应动作。")
                 .font(.caption)
                 .foregroundStyle(.secondary)
-            HStack(spacing: 8) {
-                Text("模式")
-                    .frame(width: 76, alignment: .leading)
-                Picker("模式", selection: modeBinding) {
-                    Text("覆盖放大").tag(HoverOverlayMode.overlay)
-                    Text("纯热区").tag(HoverOverlayMode.hotspot)
-                }
-                .labelsHidden()
-                .pickerStyle(.segmented)
-                .frame(width: 180)
-                .disabled(!settings.isEnabled)
-                Spacer()
-            }
+
+            modeRow
             Text(modeHint)
                 .font(.caption)
                 .foregroundStyle(.secondary)
-            HStack(spacing: 8) {
-                Text("放大尺寸")
-                    .frame(width: 76, alignment: .leading)
-                Slider(value: enlargedSizeBinding, in: 18 ... 48, step: 1)
-                    .disabled(!settings.isEnabled)
-                Text("\(Int(settings.enlargedSize)) pt")
-                    .monospacedDigit()
-                    .foregroundStyle(.secondary)
-                    .frame(width: 52, alignment: .trailing)
-            }
-            HStack(spacing: 8) {
-                Text("防误触延迟")
-                    .frame(width: 76, alignment: .leading)
-                Slider(value: dwellBinding, in: 0 ... 800, step: 50)
-                    .disabled(!settings.isEnabled || settings.mode == .hotspot)
-                Text(dwellLabel)
-                    .monospacedDigit()
-                    .foregroundStyle(.secondary)
-                    .frame(width: 52, alignment: .trailing)
-            }
-            HStack(spacing: 8) {
-                Text("作用范围")
-                    .frame(width: 76, alignment: .leading)
-                Picker("作用范围", selection: appliesToAllWindowsBinding) {
-                    Text("全部窗口").tag(true)
-                    Text("仅规则应用").tag(false)
-                }
-                .labelsHidden()
-                .frame(width: 140)
-                Spacer()
-            }
+            sizeRow
+            dwellRow
+            scopeRow
         }
+        .padding(16)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .liquidGlassCard()
         .padding(12)
+    }
+
+    private var modeRow: some View {
+        HStack(spacing: 8) {
+            Text("模式")
+                .frame(width: 76, alignment: .leading)
+            Picker("模式", selection: modeBinding) {
+                Text("覆盖放大").tag(HoverOverlayMode.overlay)
+                Text("纯热区").tag(HoverOverlayMode.hotspot)
+            }
+            .labelsHidden()
+            .pickerStyle(.segmented)
+            .frame(width: 180)
+            .disabled(!settings.isEnabled)
+            Spacer()
+        }
+    }
+
+    private var sizeRow: some View {
+        HStack(spacing: 8) {
+            Text("放大尺寸")
+                .frame(width: 76, alignment: .leading)
+            Slider(value: enlargedSizeBinding, in: 18 ... 48, step: 1)
+                .disabled(!settings.isEnabled)
+            Text("\(Int(settings.enlargedSize)) pt")
+                .monospacedDigit()
+                .foregroundStyle(.secondary)
+                .frame(width: 52, alignment: .trailing)
+        }
+    }
+
+    private var dwellRow: some View {
+        HStack(spacing: 8) {
+            Text("防误触延迟")
+                .frame(width: 76, alignment: .leading)
+            Slider(value: dwellBinding, in: 0 ... 800, step: 50)
+                .disabled(!settings.isEnabled || settings.mode == .hotspot)
+            Text(dwellLabel)
+                .monospacedDigit()
+                .foregroundStyle(.secondary)
+                .frame(width: 52, alignment: .trailing)
+        }
+    }
+
+    private var scopeRow: some View {
+        HStack(spacing: 8) {
+            Text("作用范围")
+                .frame(width: 76, alignment: .leading)
+            Picker("作用范围", selection: appliesToAllWindowsBinding) {
+                Text("全部窗口").tag(true)
+                Text("仅规则应用").tag(false)
+            }
+            .labelsHidden()
+            .frame(width: 140)
+            Spacer()
+        }
     }
 
     private var dwellLabel: String {
@@ -285,7 +325,7 @@ private struct HoverSection: View {
     private var modeHint: String {
         switch settings.mode {
         case .overlay:
-            "覆盖放大：红绿灯上方绘制放大按钮，带动作预览与防误触进度环。"
+            "覆盖放大：红绿灯上方绘制放大按钮（液态玻璃质感），带动作预览与防误触进度环。"
         case .hotspot:
             "纯热区：界面外观完全不变，仅在按钮周围扩大不可见点击区，点击立即响应。"
         }

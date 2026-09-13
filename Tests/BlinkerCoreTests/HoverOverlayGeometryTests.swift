@@ -37,6 +37,56 @@ final class HoverOverlayGeometryTests: XCTestCase {
         XCTAssertEqual(panel.height, 28)
     }
 
+    func testSingleButtonGroupMatchesPanelFrame() {
+        let frames = [CGRect(x: 200, y: 300, width: 14, height: 14)]
+        let panels = HoverOverlayGeometry.panelFrames(forButtonFrames: frames, enlargedSize: 28)
+
+        XCTAssertEqual(panels, [HoverOverlayGeometry.panelFrame(
+            forButtonFrame: frames[0],
+            enlargedSize: 28
+        )])
+    }
+
+    func testGroupLayoutSpreadsEnlargedPanelsWithoutOverlap() {
+        // Real traffic lights sit ~12 pt apart; enlarging to 40 pt per button
+        // must not stack the panels on top of each other.
+        let frames = [
+            CGRect(x: 100, y: 500, width: 14, height: 14),
+            CGRect(x: 114, y: 500, width: 14, height: 14),
+            CGRect(x: 128, y: 500, width: 14, height: 14),
+        ]
+        let panels = HoverOverlayGeometry.panelFrames(
+            forButtonFrames: frames,
+            enlargedSize: 40,
+            minimumGap: 6
+        )
+
+        XCTAssertEqual(panels.count, 3)
+        // No horizontal overlap between neighbors.
+        for index in 0 ..< panels.count - 1 {
+            XCTAssertLessThanOrEqual(
+                panels[index].maxX,
+                panels[index + 1].minX,
+                "panel \(index) overlaps panel \(index + 1)"
+            )
+        }
+        // The group stays centered on the original buttons' bounding box.
+        let groupCenterX = frames.dropFirst().reduce(frames[0]) { $0.union($1) }.midX
+        let laidOutCenterX = (panels[0].minX + panels[2].maxX) / 2
+        XCTAssertEqual(laidOutCenterX, groupCenterX, accuracy: 0.001)
+        // Order is preserved (close / minimize / zoom left to right).
+        XCTAssertTrue(panels[0].midX < panels[1].midX)
+        XCTAssertTrue(panels[1].midX < panels[2].midX)
+        // Vertical centering follows the original group.
+        for panel in panels {
+            XCTAssertEqual(panel.midY, 507, accuracy: 0.001)
+        }
+    }
+
+    func testGroupLayoutWithEmptyInput() {
+        XCTAssertTrue(HoverOverlayGeometry.panelFrames(forButtonFrames: [], enlargedSize: 28).isEmpty)
+    }
+
     func testCursorInPanelHitTest() {
         let panel = CGRect(x: 0, y: 0, width: 28, height: 28)
 
