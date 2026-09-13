@@ -4,11 +4,14 @@ import AppKit
 /// enlarged overlay is visible, so the small originals don't peek through
 /// the gaps between enlarged chips.
 ///
-/// The backdrop uses the titlebar material so it blends with the host
-/// window's chrome, shaped as a pill matching the chip aesthetics. It sits
-/// at the same level as the enlarged panels but is ordered first, so the
-/// enlarged chips render on top. The panel is created only in overlay mode;
-/// hotspot mode keeps the title bar untouched.
+/// On macOS 26+ the backdrop is a system Liquid Glass effect view with no
+/// tint: its heavy blur smears the native buttons into whatever is behind
+/// the window, so the pill blends with the real background instead of
+/// looking like a flat gray capsule. Earlier systems fall back to a neutral
+/// `underWindowBackground` material pill. The panel sits one window level
+/// below the enlarged chips and is ordered before them, so the chips always
+/// render on top. It is created only in overlay mode; hotspot mode keeps
+/// the title bar untouched.
 final class HoverOverlayMaskPanel: NSPanel {
     /// Extra coverage (pt) around the native buttons' bounding box so the
     /// originals are fully hidden, not just their exact frames.
@@ -42,15 +45,21 @@ final class HoverOverlayMaskPanel: NSPanel {
         isReleasedWhenClosed = false
         acceptsMouseMovedEvents = false
 
-        let backdrop = NSVisualEffectView(frame: NSRect(origin: .zero, size: appKitFrame.size))
-        backdrop.material = .titlebar
-        backdrop.blendingMode = .behindWindow
-        backdrop.state = .active
-        // Pill shape: the mask image stretches with the (per-rebuild fixed)
-        // size, so the corner radius is derived from the frame height.
-        let radius = appKitFrame.height / 2
-        backdrop.maskImage = Self.pillMaskImage(size: appKitFrame.size, radius: radius)
-        contentView = backdrop
+        let size = appKitFrame.size
+        // Pill shape: the corner radius is derived from the frame height.
+        let radius = size.height / 2
+        if #available(macOS 26.0, *) {
+            let glass = NSGlassEffectView(frame: NSRect(origin: .zero, size: size))
+            glass.cornerRadius = radius
+            contentView = glass
+        } else {
+            let backdrop = NSVisualEffectView(frame: NSRect(origin: .zero, size: size))
+            backdrop.material = .underWindowBackground
+            backdrop.blendingMode = .behindWindow
+            backdrop.state = .active
+            backdrop.maskImage = Self.pillMaskImage(size: size, radius: radius)
+            contentView = backdrop
+        }
     }
 
     /// The native buttons' bounding box inflated by the mask padding, or

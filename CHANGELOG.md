@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Fixed
+- The backdrop pill is now a tint-free Liquid Glass view on macOS 26+ whose
+  heavy blur smears the native buttons into the real background behind the
+  window, replacing the flat gray titlebar-material capsule. Older systems
+  fall back to a neutral `underWindowBackground` material pill.
 - The titlebar-material backdrop now sits one window level below the
   enlarged chips, so it can never cover the enlarged buttons (it previously
   jumped above them when the overlay was re-synced during hover).
