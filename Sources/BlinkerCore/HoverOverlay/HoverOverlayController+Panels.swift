@@ -12,11 +12,10 @@ extension HoverOverlayController {
 
         DispatchQueue.main.async { [weak self] in
             guard let self else { return }
-            if
-                signature != panelSignature || pid != panelPID
+            let needsRebuild = signature != panelSignature || pid != panelPID
                 || panels.count != layout.buttons.count
                 || panelMaskStyle != settings.maskStyle
-            {
+            if needsRebuild {
                 rebuildPanels(
                     layout: layout,
                     isHotspot: settings.mode == .hotspot,
