@@ -1,7 +1,7 @@
 /// A per-application remapping of the traffic light buttons.
 ///
-/// `closeAction` maps the red button, `zoomAction` maps the green button.
-/// A `nil` action means "keep the system default behavior" for that button.
+/// Each action maps one button; a `nil` action means "keep the system
+/// default behavior" for that button.
 public struct AppRule: Identifiable, Codable, Hashable, Sendable {
     public var id: String {
         bundleIdentifier
@@ -13,6 +13,8 @@ public struct AppRule: Identifiable, Codable, Hashable, Sendable {
     public var displayName: String
     /// Remapping for the red (close) button. `nil` keeps the default.
     public var closeAction: ButtonAction?
+    /// Remapping for the yellow (minimize) button. `nil` keeps the default.
+    public var minimizeAction: ButtonAction?
     /// Remapping for the green (zoom) button. `nil` keeps the default.
     public var zoomAction: ButtonAction?
     /// Disabled rules are ignored by the engine but kept in storage.
@@ -22,12 +24,14 @@ public struct AppRule: Identifiable, Codable, Hashable, Sendable {
         bundleIdentifier: String,
         displayName: String,
         closeAction: ButtonAction? = nil,
+        minimizeAction: ButtonAction? = nil,
         zoomAction: ButtonAction? = nil,
         isEnabled: Bool = true
     ) {
         self.bundleIdentifier = bundleIdentifier
         self.displayName = displayName
         self.closeAction = closeAction
+        self.minimizeAction = minimizeAction
         self.zoomAction = zoomAction
         self.isEnabled = isEnabled
     }

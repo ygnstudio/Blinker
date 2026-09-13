@@ -23,9 +23,10 @@ struct SettingsScreen: View {
 
 // MARK: - Rules tab
 
-/// Per-app remapping of the red and green buttons.
+/// Per-app remapping of the traffic light buttons.
 private struct RulesTab: View {
     @ObservedObject var ruleStore: RuleStore
+    @State private var showingAppLibrary = false
 
     var body: some View {
         VStack(spacing: 12) {
@@ -73,7 +74,12 @@ private struct RulesTab: View {
 
     private var footerBar: some View {
         HStack {
-            addAppMenu
+            Button {
+                showingAppLibrary = true
+            } label: {
+                Label("添加应用", systemImage: "plus")
+            }
+            .fixedSize()
             Spacer()
             Text("未列出的应用保持系统默认行为")
                 .font(.caption)
@@ -81,48 +87,14 @@ private struct RulesTab: View {
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
-    }
-
-    private var addAppMenu: some View {
-        Menu {
-            ForEach(runningApps, id: \.bundleIdentifier) { app in
-                Button(app.name) {
-                    ruleStore.upsert(AppRule(
-                        bundleIdentifier: app.bundleIdentifier,
-                        displayName: app.name
-                    ))
-                }
+        .sheet(isPresented: $showingAppLibrary) {
+            AppLibraryPicker { app in
+                ruleStore.upsert(AppRule(
+                    bundleIdentifier: app.bundleIdentifier,
+                    displayName: app.name
+                ))
             }
-        } label: {
-            Label("添加应用", systemImage: "plus")
         }
-        .fixedSize()
-        .disabled(runningApps.isEmpty)
-    }
-
-    private struct RunningApp: Identifiable {
-        var id: String {
-            bundleIdentifier
-        }
-
-        let bundleIdentifier: String
-        let name: String
-    }
-
-    private var runningApps: [RunningApp] {
-        NSWorkspace.shared.runningApplications
-            .filter { $0.activationPolicy == .regular && $0.bundleIdentifier != nil }
-            .compactMap { app -> RunningApp? in
-                guard
-                    let bundleIdentifier = app.bundleIdentifier,
-                    bundleIdentifier != Bundle.main.bundleIdentifier
-                else { return nil }
-                return RunningApp(
-                    bundleIdentifier: bundleIdentifier,
-                    name: app.localizedName ?? bundleIdentifier
-                )
-            }
-            .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
     }
 }
 
@@ -183,6 +155,17 @@ private struct RuleRowView: View {
             set: { newValue in
                 var updated = rule
                 updated.closeAction = newValue
+                onUpdate(updated)
+            }
+        )
+    }
+
+    private var minimizeBinding: Binding<ButtonAction?> {
+        Binding(
+            get: { rule.minimizeAction },
+            set: { newValue in
+                var updated = rule
+                updated.minimizeAction = newValue
                 onUpdate(updated)
             }
         )

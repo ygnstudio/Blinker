@@ -5,6 +5,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+- The yellow (minimize) button is now remappable per app, alongside the red
+  and green buttons. Cross-button native remaps (e.g. red → minimize,
+  yellow → close window) now actually press the corresponding native button;
+  they previously did nothing.
+- "Add App" now opens an application library picker listing every installed
+  app (with search), instead of only running apps.
+
 ### Fixed
 - The backdrop pill is now a tint-free Liquid Glass view on macOS 26+ whose
   heavy blur smears the native buttons into the real background behind the

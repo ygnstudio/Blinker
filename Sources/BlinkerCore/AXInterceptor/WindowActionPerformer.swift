@@ -33,27 +33,39 @@ public final class DefaultWindowActionPerformer: WindowActionPerforming {
         processIdentifier: pid_t
     ) {
         let runningApp = NSRunningApplication(processIdentifier: processIdentifier)
-        switch (button, action) {
-        case (.close, .closeWindow), (.minimize, .minimize), (.zoom, .fullscreen):
-            // The remapped action equals a native press of the clicked button.
-            AXQuery.pressButton(subrole: button.axSubrole, in: window)
-        case (_, .quitApp):
+        switch action {
+        case .closeWindow, .minimize, .fullscreen:
+            // The remap equals a native press — possibly of a *different*
+            // button than the one clicked (e.g. red → minimize), so the
+            // press targets the action's native button, not the clicked one.
+            AXQuery.pressButton(subrole: Self.nativeSubrole(for: action), in: window)
+        case .quitApp:
             logger.info("terminating pid \(processIdentifier)")
             runningApp?.terminate()
-        case (_, .hideApp):
+        case .hideApp:
             logger.info("hiding pid \(processIdentifier)")
             runningApp?.hide()
-        case (_, .maximize):
+        case .maximize:
             logger.info("zooming pid \(processIdentifier) window")
             maximize(window)
-        case (_, .tileLeft):
+        case .tileLeft:
             logger.info("tiling pid \(processIdentifier) window left")
             tile(window, side: .left)
-        case (_, .tileRight):
+        case .tileRight:
             logger.info("tiling pid \(processIdentifier) window right")
             tile(window, side: .right)
-        case (_, .closeWindow), (_, .minimize), (_, .fullscreen), (_, .none):
+        case .none:
             break
+        }
+    }
+
+    /// The AX subrole of the button whose native behavior matches `action`.
+    private static func nativeSubrole(for action: ButtonAction) -> String {
+        switch action {
+        case .closeWindow: TrafficButton.close.axSubrole
+        case .minimize: TrafficButton.minimize.axSubrole
+        case .fullscreen: TrafficButton.zoom.axSubrole
+        default: TrafficButton.close.axSubrole
         }
     }
 

@@ -48,7 +48,21 @@ final class RuleEngineTests: XCTestCase {
         XCTAssertNil(engine.action(forBundleIdentifier: "com.apple.Safari", button: .close))
     }
 
-    func testMinimizeButtonIsNotRemappableInV1() {
+    func testMinimizeButtonRespectsRule() {
+        let rules = [
+            AppRule(
+                bundleIdentifier: "com.apple.Safari",
+                displayName: "Safari",
+                closeAction: .quitApp,
+                minimizeAction: .hideApp
+            ),
+        ]
+        let engine = RuleEngine(rulesProvider: { rules })
+
+        XCTAssertEqual(engine.action(forBundleIdentifier: "com.apple.Safari", button: .minimize), .hideApp)
+    }
+
+    func testMinimizeButtonPassthroughWithoutRule() {
         let rules = [
             AppRule(
                 bundleIdentifier: "com.apple.Safari",
@@ -58,6 +72,19 @@ final class RuleEngineTests: XCTestCase {
         ]
         let engine = RuleEngine(rulesProvider: { rules })
         XCTAssertNil(engine.action(forBundleIdentifier: "com.apple.Safari", button: .minimize))
+    }
+
+    /// Rules persisted by versions without `minimizeAction` must still load.
+    func testLegacyRuleWithoutMinimizeActionDecodes() throws {
+        let legacyJSON = """
+        [{"bundleIdentifier":"com.apple.Safari","displayName":"Safari",
+          "closeAction":"quitApp","zoomAction":null,"isEnabled":true}]
+        """
+        let data = try XCTUnwrap(legacyJSON.data(using: .utf8))
+        let decoded = try JSONDecoder().decode([AppRule].self, from: data)
+
+        XCTAssertEqual(decoded.first?.closeAction, .quitApp)
+        XCTAssertNil(decoded.first?.minimizeAction)
     }
 
     func testRuleStoreRoundTripsThroughDefaults() throws {

@@ -31,11 +31,10 @@ public struct RuleEngine: Sendable {
         switch button {
         case .close:
             return rule.closeAction
+        case .minimize:
+            return rule.minimizeAction
         case .zoom:
             return rule.zoomAction
-        case .minimize:
-            // The yellow button is not remappable in v1.
-            return nil
         }
     }
 }
