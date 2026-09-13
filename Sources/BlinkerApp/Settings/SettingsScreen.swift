@@ -225,6 +225,22 @@ private struct HoverSection: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
             HStack(spacing: 8) {
+                Text("模式")
+                    .frame(width: 76, alignment: .leading)
+                Picker("模式", selection: modeBinding) {
+                    Text("覆盖放大").tag(HoverOverlayMode.overlay)
+                    Text("纯热区").tag(HoverOverlayMode.hotspot)
+                }
+                .labelsHidden()
+                .pickerStyle(.segmented)
+                .frame(width: 180)
+                .disabled(!settings.isEnabled)
+                Spacer()
+            }
+            Text(modeHint)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            HStack(spacing: 8) {
                 Text("放大尺寸")
                     .frame(width: 76, alignment: .leading)
                 Slider(value: enlargedSizeBinding, in: 18 ... 48, step: 1)
@@ -238,7 +254,7 @@ private struct HoverSection: View {
                 Text("防误触延迟")
                     .frame(width: 76, alignment: .leading)
                 Slider(value: dwellBinding, in: 0 ... 800, step: 50)
-                    .disabled(!settings.isEnabled)
+                    .disabled(!settings.isEnabled || settings.mode == .hotspot)
                 Text(dwellLabel)
                     .monospacedDigit()
                     .foregroundStyle(.secondary)
@@ -260,13 +276,32 @@ private struct HoverSection: View {
     }
 
     private var dwellLabel: String {
-        settings.dwellMilliseconds == 0 ? "立即响应" : "\(settings.dwellMilliseconds) 毫秒"
+        if settings.mode == .hotspot {
+            return "不适用"
+        }
+        return settings.dwellMilliseconds == 0 ? "立即响应" : "\(settings.dwellMilliseconds) 毫秒"
+    }
+
+    private var modeHint: String {
+        switch settings.mode {
+        case .overlay:
+            "覆盖放大：红绿灯上方绘制放大按钮，带动作预览与防误触进度环。"
+        case .hotspot:
+            "纯热区：界面外观完全不变，仅在按钮周围扩大不可见点击区，点击立即响应。"
+        }
     }
 
     private var isEnabledBinding: Binding<Bool> {
         Binding(
             get: { settings.isEnabled },
             set: { newValue in update { $0.isEnabled = newValue } }
+        )
+    }
+
+    private var modeBinding: Binding<HoverOverlayMode> {
+        Binding(
+            get: { settings.mode },
+            set: { newValue in update { $0.mode = newValue } }
         )
     }
 

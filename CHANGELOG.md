@@ -5,6 +5,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-09-13
+
+### Added
+- Hotspot mode for hover enlargement: invisible enlarged click zones
+  around the native buttons — the title bar keeps its original look and
+  clicks respond immediately (dwell does not apply). Selected in Settings
+  next to the overlay mode.
+- Legacy hover settings (v0.2.0, without a mode key) decode with defaults
+  instead of resetting.
+
 ## [0.2.0] - 2026-09-13
 
 ### Added

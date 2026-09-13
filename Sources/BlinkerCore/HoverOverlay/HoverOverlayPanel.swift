@@ -21,14 +21,18 @@ final class HoverOverlayPanel: NSPanel {
     /// - Parameters:
     ///   - buttonFrame: The original button's frame in AX coordinates.
     ///   - info: The overlayed button's metadata.
-    ///   - title: Hover preview text drawn above the button.
+    ///   - title: Hover preview text drawn above the button; ignored in
+    ///     hotspot mode.
     ///   - enlargedSize: The square panel edge length in points.
+    ///   - isHotspot: When `true` the panel draws nothing and activates
+    ///     immediately (invisible click zone).
     ///   - onActivate: Called when the user clicks after dwell completion.
     init(
         buttonFrame: CGRect,
         info: OverlayButtonInfo,
         title: String,
         enlargedSize: CGFloat,
+        isHotspot: Bool = false,
         onActivate: @escaping () -> Void
     ) {
         let panelFrame = HoverOverlayGeometry.panelFrame(
@@ -47,6 +51,7 @@ final class HoverOverlayPanel: NSPanel {
             frame: NSRect(origin: .zero, size: appKitFrame.size),
             info: info,
             title: title,
+            isHotspot: isHotspot,
             onActivate: onActivate
         )
         super.init(
@@ -67,17 +72,26 @@ final class HoverOverlayPanel: NSPanel {
 }
 
 /// Draws one enlarged traffic-light button: colored circle, symbol, dwell
-/// progress ring and the hover preview text above the circle.
+/// progress ring and the hover preview text above the circle. In hotspot
+/// mode the view is fully invisible and always activated.
 final class HoverOverlayButtonView: NSView {
     private let info: OverlayButtonInfo
     private let title: String
+    private let isHotspot: Bool
     private let onActivate: () -> Void
     private var dwellProgress: Double = 0
     private var isActivated = false
 
-    init(frame: NSRect, info: OverlayButtonInfo, title: String, onActivate: @escaping () -> Void) {
+    init(
+        frame: NSRect,
+        info: OverlayButtonInfo,
+        title: String,
+        isHotspot: Bool = false,
+        onActivate: @escaping () -> Void
+    ) {
         self.info = info
         self.title = title
+        self.isHotspot = isHotspot
         self.onActivate = onActivate
         super.init(frame: frame)
     }
@@ -106,11 +120,12 @@ final class HoverOverlayButtonView: NSView {
         // event first; arm the gate so it passes the click through instead of
         // performing the mapped action a second time.
         OverlayClickGate.suppressFor(milliseconds: 500)
-        guard isActivated else { return }
+        guard isActivated || isHotspot else { return }
         onActivate()
     }
 
     override func draw(_: NSRect) {
+        guard !isHotspot else { return }
         drawTitle()
         let circleRect = CGRect(x: 2, y: 1, width: bounds.width - 4, height: bounds.height - 15)
         drawProgressRing(around: circleRect)

@@ -23,6 +23,9 @@ overlays appear above them:
 - Without a rule, an enlarged click still performs the button's native
   action, so enlargement is useful on its own
 - Scope: all windows, or only apps that have rules
+- Two modes: **overlay** (draws enlarged buttons with preview and dwell)
+  or **hotspot** (invisible enlarged click zones; the title bar keeps its
+  original look and clicks respond immediately)
 
 ### Settings
 
@@ -36,8 +39,6 @@ enlargement section described above, and status / help notes.
   interception; buttons fall back to system behavior
 - Apps with fully custom title bars (some Electron apps) may expose no
   standard accessibility buttons and cannot be intercepted
-- The invisible-hotspot enlargement mode (no visual change) is planned
-  for a future release
 
 Requirements: macOS 15+, Apple Silicon & Intel.
 License: MIT.
@@ -83,6 +84,8 @@ Blinker 是一个原生 macOS 菜单栏应用，可按应用单独重定义窗�
 - 悬停时显示动作预览（如「退出 Safari」），点击前明确后果
 - 未配置规则时，放大的点击执行按钮原生动作，放大本身即有价值
 - 作用范围可选：全部窗口，或仅配置了规则的应用
+- 两种模式：**覆盖放大**（绘制放大按钮，带预览与防误触）或**纯热区**
+  （外观完全不变，仅扩大不可见点击区，点击立即响应）
 
 ### 设置
 
@@ -93,7 +96,6 @@ Blinker 是一个原生 macOS 菜单栏应用，可按应用单独重定义窗�
 
 - 安全输入激活时（如密码框）事件拦截临时失效，按钮回退系统行为
 - 完全自绘标题栏的应用（部分 Electron 应用）无标准辅助功能按钮，无法拦截
-- 纯热区放大模式（不改变视觉外观）计划在后续版本提供
 
 系统要求：macOS 15+，支持 Apple Silicon 与 Intel。
 开源协议：MIT。

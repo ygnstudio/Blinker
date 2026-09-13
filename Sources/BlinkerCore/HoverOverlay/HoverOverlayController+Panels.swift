@@ -23,12 +23,16 @@ extension HoverOverlayController {
                     buttons: buttons,
                     axWindow: axWindow,
                     target: target,
-                    enlargedSize: settings.enlargedSize
+                    enlargedSize: settings.enlargedSize,
+                    isHotspot: settings.mode == .hotspot
                 )
             } else {
                 panels.forEach { $0.orderFrontRegardless() }
             }
-            applyHoverTransition(hoveredIndex: hoveredIndex, dwellMilliseconds: settings.dwellMilliseconds)
+            applyHoverTransition(
+                hoveredIndex: hoveredIndex,
+                dwellMilliseconds: settings.effectiveDwellMilliseconds
+            )
         }
     }
 
@@ -36,11 +40,12 @@ extension HoverOverlayController {
         buttons: [OverlayButtonInfo],
         axWindow: AXUIElement,
         target: HoverTarget,
-        enlargedSize: CGFloat
+        enlargedSize: CGFloat,
+        isHotspot: Bool
     ) {
         hidePanels()
         panels = buttons.map { info in
-            let title = previewTitle(
+            let title = isHotspot ? "" : previewTitle(
                 button: info.button,
                 bundleIdentifier: target.bundleIdentifier,
                 appName: target.appName
@@ -49,7 +54,8 @@ extension HoverOverlayController {
                 buttonFrame: info.frame,
                 info: info,
                 title: title,
-                enlargedSize: enlargedSize
+                enlargedSize: enlargedSize,
+                isHotspot: isHotspot
             ) { [weak self] in
                 self?.activate(
                     info: info,
