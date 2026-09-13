@@ -98,7 +98,8 @@ private struct RulesTab: View {
     }
 }
 
-/// One row of the rule table: app name plus the two action pickers.
+/// One row of the rule table: app name plus one action picker per traffic
+/// light, each marked with a dot in the button's own color.
 private struct RuleRowView: View {
     let rule: AppRule
     let onUpdate: (AppRule) -> Void
@@ -106,6 +107,9 @@ private struct RuleRowView: View {
 
     static let closeOptions: [ButtonAction?] = [
         nil, .closeWindow, .quitApp, .minimize, .hideApp, ButtonAction.none,
+    ]
+    static let minimizeOptions: [ButtonAction?] = [
+        nil, .minimize, .hideApp, .closeWindow, .tileLeft, .tileRight, ButtonAction.none,
     ]
     static let zoomOptions: [ButtonAction?] = [
         nil, .maximize, .fullscreen, .tileLeft, .tileRight, ButtonAction.none,
@@ -122,24 +126,25 @@ private struct RuleRowView: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
 
-            Picker("红灯", selection: closeBinding) {
-                ForEach(Array(Self.closeOptions.enumerated()), id: \.offset) { _, action in
-                    Text(Self.label(for: action)).tag(action)
-                }
-            }
-            .labelsHidden()
-            .frame(width: 110)
-
-            Picker("绿灯", selection: zoomBinding) {
-                ForEach(Array(Self.zoomOptions.enumerated()), id: \.offset) { _, action in
-                    Text(Self.label(for: action)).tag(action)
-                }
-            }
-            .labelsHidden()
-            .frame(width: 110)
+            ActionPicker(
+                dotColor: .systemRed,
+                options: Self.closeOptions,
+                selection: closeBinding
+            )
+            ActionPicker(
+                dotColor: .systemYellow,
+                options: Self.minimizeOptions,
+                selection: minimizeBinding
+            )
+            ActionPicker(
+                dotColor: .systemGreen,
+                options: Self.zoomOptions,
+                selection: zoomBinding
+            )
 
             Toggle("", isOn: enabledBinding)
                 .labelsHidden()
+                .toggleStyle(.checkbox)
 
             Button(role: .destructive, action: onRemove) {
                 Image(systemName: "minus.circle")
@@ -191,6 +196,46 @@ private struct RuleRowView: View {
                 onUpdate(updated)
             }
         )
+    }
+
+    private static func label(for action: ButtonAction?) -> String {
+        guard let action else { return "默认" }
+        switch action {
+        case .closeWindow: return "关闭窗口"
+        case .quitApp: return "退出应用"
+        case .minimize: return "最小化"
+        case .hideApp: return "隐藏应用"
+        case .maximize: return "最大化"
+        case .fullscreen: return "全屏"
+        case .tileLeft: return "左半屏"
+        case .tileRight: return "右半屏"
+        case .none: return "无操作"
+        }
+    }
+}
+
+/// A traffic-light action picker: a dot in the button's color followed by
+/// the action menu, so each row's three pickers are self-explanatory.
+private struct ActionPicker: View {
+    let dotColor: NSColor
+    let options: [ButtonAction?]
+    @Binding var selection: ButtonAction?
+
+    var body: some View {
+        HStack(spacing: 5) {
+            Circle()
+                .fill(Color(nsColor: dotColor))
+                .frame(width: 9, height: 9)
+            Picker(selection: $selection) {
+                ForEach(Array(options.enumerated()), id: \.offset) { _, action in
+                    Text(Self.label(for: action)).tag(action)
+                }
+            } label: {
+                EmptyView()
+            }
+            .labelsHidden()
+            .frame(width: 84)
+        }
     }
 
     private static func label(for action: ButtonAction?) -> String {
