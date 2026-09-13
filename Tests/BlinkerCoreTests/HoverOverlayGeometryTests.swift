@@ -3,27 +3,37 @@ import CoreGraphics
 import XCTest
 
 final class HoverOverlayGeometryTests: XCTestCase {
-    func testCursorInTitleBarBand() {
-        let window = CGRect(x: 100, y: 500, width: 800, height: 600)
+    func testCursorInTriggerZone() {
+        let buttons = [
+            CGRect(x: 100, y: 500, width: 14, height: 14),
+            CGRect(x: 114, y: 500, width: 14, height: 14),
+        ]
+        let panels = [CGRect(x: 90, y: 485, width: 40, height: 40)]
 
-        // Inside the band, near the top and at the band edge.
-        XCTAssertTrue(HoverOverlayGeometry.isCursorInTitleBarBand(
-            cursor: CGPoint(x: 150, y: 510),
-            windowBounds: window
+        // Right at the buttons.
+        XCTAssertTrue(HoverOverlayGeometry.isCursorInTriggerZone(
+            cursor: CGPoint(x: 107, y: 507),
+            buttonFrames: buttons,
+            panelFrames: panels
         ))
-        XCTAssertTrue(HoverOverlayGeometry.isCursorInTitleBarBand(
-            cursor: CGPoint(x: 150, y: 548),
-            windowBounds: window
+        // Within the padding around the group.
+        XCTAssertTrue(HoverOverlayGeometry.isCursorInTriggerZone(
+            cursor: CGPoint(x: 122, y: 507),
+            buttonFrames: buttons,
+            panelFrames: panels
         ))
-        // Below the band.
-        XCTAssertFalse(HoverOverlayGeometry.isCursorInTitleBarBand(
-            cursor: CGPoint(x: 150, y: 560),
-            windowBounds: window
+        // Away from the buttons but on an enlarged panel: the overlay must
+        // stay alive to avoid a hide/flicker loop.
+        XCTAssertTrue(HoverOverlayGeometry.isCursorInTriggerZone(
+            cursor: CGPoint(x: 95, y: 490),
+            buttonFrames: buttons,
+            panelFrames: panels
         ))
-        // Outside the window entirely.
-        XCTAssertFalse(HoverOverlayGeometry.isCursorInTitleBarBand(
-            cursor: CGPoint(x: 50, y: 510),
-            windowBounds: window
+        // Far away on the title bar: no trigger.
+        XCTAssertFalse(HoverOverlayGeometry.isCursorInTriggerZone(
+            cursor: CGPoint(x: 400, y: 507),
+            buttonFrames: buttons,
+            panelFrames: panels
         ))
     }
 

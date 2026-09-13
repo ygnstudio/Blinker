@@ -6,11 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Fixed
-- Enlarged overlay panels are clamped to the screen containing the native
-  buttons, so edge-anchored windows (fullscreen, tiled to a corner) no longer
-  clip half of the enlarged group off-screen. Hit testing uses the same
-  clamped layout. Multi-display coordinate conversion now uses the global
-  screen bounds instead of the main display only.
+- The enlarged overlay group is now clamped to the window's bounds
+  intersected with its screen, so windowed windows no longer let the chips
+  spill past the window edges (fullscreen stays covered too).
+- The overlay only wakes up near the native traffic lights (or on top of an
+  already-enlarged panel) instead of anywhere in the title bar band.
+- A titlebar-material backdrop panel now covers the native buttons while the
+  overlay is visible, so the small originals no longer peek through the gaps
+  between enlarged chips. Hotspot mode keeps the title bar untouched.
 
 ## [0.2.2] - 2026-09-13
 

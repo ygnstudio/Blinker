@@ -15,50 +15,61 @@ struct HoverTarget {
 extension HoverOverlayController {
     func handleCursorMove(to location: CGPoint) {
         let settings = settingsStore.snapshot
-        guard settings.isEnabled, let target = allowedTarget(at: location, settings: settings) else {
+        guard
+            settings.isEnabled,
+            let hit = AXQuery.windowUnderPoint(
+                location,
+                excludingProcessIdentifier: ProcessInfo.processInfo.processIdentifier
+            ),
+            let app = NSRunningApplication(processIdentifier: hit.processIdentifier),
+            let bundleIdentifier = app.bundleIdentifier
+        else {
             resetDetectionAndHide()
             return
         }
+        if !settings.appliesToAllWindows, !ruleEngine.hasRule(forBundleIdentifier: bundleIdentifier) {
+            resetDetectionAndHide()
+            return
+        }
+        let target = HoverTarget(hit: hit, bundleIdentifier: bundleIdentifier, appName: app.localizedName)
 
-        let resolved = resolveButtons(windowHit: target.hit)
+        let resolved = resolveButtons(windowHit: hit)
         guard !resolved.buttons.isEmpty, let axWindow = resolved.axWindow else {
             resetDetectionAndHide()
             return
         }
 
-        let hoveredIndex = hoveredPanelIndex(
-            cursor: location,
-            buttons: resolved.buttons,
-            enlargedSize: settings.enlargedSize
+        let frames = resolved.buttons.map(\.frame)
+        let panelFrames = HoverOverlayGeometry.panelFrames(
+            forButtonFrames: frames,
+            enlargedSize: settings.enlargedSize,
+            containerBounds: Self.overlayContainerBounds(
+                forButtonFrames: frames,
+                windowBounds: hit.bounds
+            )
         )
+        // Only wake up near the traffic lights themselves (or on top of an
+        // already-enlarged panel) — not across the whole title bar band.
+        guard HoverOverlayGeometry.isCursorInTriggerZone(
+            cursor: location,
+            buttonFrames: frames,
+            panelFrames: panelFrames
+        ) else {
+            resetDetectionAndHide()
+            return
+        }
+
+        let hoveredIndex = panelFrames.firstIndex {
+            HoverOverlayGeometry.isCursorInPanel(cursor: location, panelFrame: $0)
+        }
         syncPanels(
             buttons: resolved.buttons,
             axWindow: axWindow,
             target: target,
             hoveredIndex: hoveredIndex,
+            panelFrames: panelFrames,
             settings: settings
         )
-    }
-
-    /// Cheap pass/fail checks before any AX work: window under cursor, title
-    /// bar band, and (when `appliesToAllWindows` is off) rule existence.
-    private func allowedTarget(
-        at location: CGPoint,
-        settings: HoverOverlaySettings
-    ) -> HoverTarget? {
-        guard
-            let hit = AXQuery.windowUnderPoint(
-                location,
-                excludingProcessIdentifier: ProcessInfo.processInfo.processIdentifier
-            ),
-            HoverOverlayGeometry.isCursorInTitleBarBand(cursor: location, windowBounds: hit.bounds),
-            let app = NSRunningApplication(processIdentifier: hit.processIdentifier),
-            let bundleIdentifier = app.bundleIdentifier
-        else { return nil }
-        if !settings.appliesToAllWindows, !ruleEngine.hasRule(forBundleIdentifier: bundleIdentifier) {
-            return nil
-        }
-        return HoverTarget(hit: hit, bundleIdentifier: bundleIdentifier, appName: app.localizedName)
     }
 
     /// Returns the traffic buttons of the window under the cursor, re-reading
@@ -131,21 +142,5 @@ extension HoverOverlayController {
             buttons.append(OverlayButtonInfo(button: button, axSubrole: subrole, frame: frame))
         }
         return buttons.sorted { $0.frame.minX < $1.frame.minX }
-    }
-
-    private func hoveredPanelIndex(
-        cursor: CGPoint,
-        buttons: [OverlayButtonInfo],
-        enlargedSize: CGFloat
-    ) -> Int? {
-        let frames = buttons.map(\.frame)
-        let panelFrames = HoverOverlayGeometry.panelFrames(
-            forButtonFrames: frames,
-            enlargedSize: enlargedSize,
-            containerBounds: Self.overlayContainerBounds(forButtonFrames: frames)
-        )
-        return panelFrames.firstIndex {
-            HoverOverlayGeometry.isCursorInPanel(cursor: cursor, panelFrame: $0)
-        }
     }
 }

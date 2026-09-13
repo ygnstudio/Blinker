@@ -39,6 +39,7 @@ public final class HoverOverlayController {
     var panels: [HoverOverlayPanel] = []
     var panelSignature: [CGRect] = []
     var panelPID: pid_t = 0
+    var maskPanel: HoverOverlayMaskPanel?
     var hoveredPanel: HoverOverlayPanel?
     var dwellTimer: Timer?
     var dwellStartedAt: Date?
@@ -128,14 +129,19 @@ public final class HoverOverlayController {
     static let screenEdgeMargin: CGFloat = 4
 
     /// The screen (in AX top-left coordinates) containing the center of the
-    /// given button frames, inset by the edge margin. Used to clamp the
-    /// enlarged group layout so edge-anchored windows don't clip the panels.
-    static func overlayContainerBounds(forButtonFrames buttonFrames: [CGRect]) -> CGRect? {
+    /// given button frames, intersected with the window's own bounds and inset
+    /// by the edge margin. Clamping to the window keeps the enlarged group
+    /// inside windowed windows; intersecting with the screen additionally
+    /// covers edge-anchored (fullscreen, tiled) windows.
+    static func overlayContainerBounds(
+        forButtonFrames buttonFrames: [CGRect],
+        windowBounds: CGRect
+    ) -> CGRect? {
         guard let groupBounds = HoverOverlayGeometry.unionedBounds(of: buttonFrames) else {
             return nil
         }
         let screens = NSScreen.screens
-        guard !screens.isEmpty else { return nil }
+        guard !screens.isEmpty else { return windowBounds }
         let globalMaxY = screens.map(\.frame.maxY).max() ?? 0
         let axFrame: (NSScreen) -> CGRect = { screen in
             CGRect(
@@ -147,7 +153,10 @@ public final class HoverOverlayController {
         }
         let center = CGPoint(x: groupBounds.midX, y: groupBounds.midY)
         let screen = screens.first { axFrame($0).contains(center) } ?? screens[0]
-        return axFrame(screen).insetBy(dx: screenEdgeMargin, dy: screenEdgeMargin)
+        let container = axFrame(screen).intersection(windowBounds)
+        return container.isNull
+            ? axFrame(screen).insetBy(dx: screenEdgeMargin, dy: screenEdgeMargin)
+            : container.insetBy(dx: screenEdgeMargin, dy: screenEdgeMargin)
     }
 
     // MARK: - Tap installation

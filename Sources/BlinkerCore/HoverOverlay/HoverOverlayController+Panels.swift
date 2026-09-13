@@ -10,6 +10,7 @@ extension HoverOverlayController {
         axWindow: AXUIElement,
         target: HoverTarget,
         hoveredIndex: Int?,
+        panelFrames: [CGRect],
         settings: HoverOverlaySettings
     ) {
         let signature = buttons.map(\.frame)
@@ -23,11 +24,12 @@ extension HoverOverlayController {
                     buttons: buttons,
                     axWindow: axWindow,
                     target: target,
-                    enlargedSize: settings.enlargedSize,
+                    panelFrames: panelFrames,
                     isHotspot: settings.mode == .hotspot
                 )
             } else {
                 panels.forEach { $0.orderFrontRegardless() }
+                maskPanel?.orderFrontRegardless()
             }
             applyHoverTransition(
                 hoveredIndex: hoveredIndex,
@@ -40,16 +42,17 @@ extension HoverOverlayController {
         buttons: [OverlayButtonInfo],
         axWindow: AXUIElement,
         target: HoverTarget,
-        enlargedSize: CGFloat,
+        panelFrames: [CGRect],
         isHotspot: Bool
     ) {
         hidePanels()
-        let frames = buttons.map(\.frame)
-        let panelFrames = HoverOverlayGeometry.panelFrames(
-            forButtonFrames: frames,
-            enlargedSize: enlargedSize,
-            containerBounds: Self.overlayContainerBounds(forButtonFrames: frames)
-        )
+        // The mask goes in first so the enlarged chips stack above it; it
+        // hides the small native buttons peeking between the chips.
+        if !isHotspot, let maskFrame = HoverOverlayMaskPanel.frame(forButtonFrames: buttons.map(\.frame)) {
+            let mask = HoverOverlayMaskPanel(maskFrame: maskFrame)
+            mask.orderFrontRegardless()
+            maskPanel = mask
+        }
         panels = zip(buttons, panelFrames).map { info, panelFrame in
             HoverOverlayPanel(
                 panelFrame: panelFrame,
@@ -73,6 +76,8 @@ extension HoverOverlayController {
         stopDwell()
         panels.forEach { $0.orderOut(nil) }
         panels = []
+        maskPanel?.orderOut(nil)
+        maskPanel = nil
         panelSignature = []
         panelPID = 0
     }

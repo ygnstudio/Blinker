@@ -5,13 +5,26 @@ import CoreGraphics
 /// origin) global coordinates; the only AppKit conversion happens when panels
 /// are created.
 public enum HoverOverlayGeometry {
-    /// Height of the band at the top of a window inside which the overlay
-    /// reacts to the cursor.
-    public static let titleBarBandHeight: CGFloat = 48
+    /// How far (pt) beyond the native buttons' bounding box the cursor may
+    /// travel before the overlay hides. Tight on purpose: the overlay should
+    /// only wake up near the traffic lights, not across the whole title bar.
+    public static let triggerPadding: CGFloat = 12
 
-    /// Returns `true` when the cursor lies inside the window's top band.
-    public static func isCursorInTitleBarBand(cursor: CGPoint, windowBounds: CGRect) -> Bool {
-        windowBounds.contains(cursor) && cursor.y - windowBounds.minY <= titleBarBandHeight
+    /// Returns `true` when the cursor is close enough to the native buttons
+    /// — or already over one of the enlarged panels — to keep the overlay
+    /// alive. Including the panels prevents a hide/flicker loop when the
+    /// cursor moves from a native button onto its enlarged neighbor.
+    public static func isCursorInTriggerZone(
+        cursor: CGPoint,
+        buttonFrames: [CGRect],
+        panelFrames: [CGRect],
+        padding: CGFloat = triggerPadding
+    ) -> Bool {
+        if let group = unionedBounds(of: buttonFrames),
+           group.insetBy(dx: -padding, dy: -padding).contains(cursor) {
+            return true
+        }
+        return panelFrames.contains { isCursorInPanel(cursor: cursor, panelFrame: $0) }
     }
 
     /// The frame of the enlarged overlay panel centered on the original
