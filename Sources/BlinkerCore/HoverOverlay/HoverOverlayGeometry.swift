@@ -127,6 +127,42 @@ public enum HoverOverlayGeometry {
         panelFrame.contains(cursor)
     }
 
+    /// Amazon-style "safe triangle", generalized to a corridor: the region
+    /// between the chip that opened a popup panel and the panel itself. The
+    /// straight path from the chip to the panel crosses open space where the
+    /// normal detection would read a hover-out and tear everything down
+    /// mid-move; while the cursor travels through this corridor the popup
+    /// must stay open. The corridor is the quadrilateral from the anchor's
+    /// bottom edge to the panel's top edge (both in AX top-left coordinates,
+    /// so "bottom" is `maxY` and "top" is `minY`); it stays convex even when
+    /// the panel was clamped horizontally away from the chip.
+    public static func safeCorridorContains(cursor: CGPoint, anchor: CGRect, panel: CGRect) -> Bool {
+        let corners = [
+            CGPoint(x: anchor.minX, y: anchor.maxY),
+            CGPoint(x: anchor.maxX, y: anchor.maxY),
+            CGPoint(x: panel.maxX, y: panel.minY),
+            CGPoint(x: panel.minX, y: panel.minY)
+        ]
+        return Self.polygonContains(cursor, corners)
+    }
+
+    /// Even-odd ray-casting point-in-polygon test.
+    private static func polygonContains(_ point: CGPoint, _ vertices: [CGPoint]) -> Bool {
+        var inside = false
+        var previous = vertices.count - 1
+        for index in 0 ..< vertices.count {
+            let a = vertices[index]
+            let b = vertices[previous]
+            let crossesHorizontally = (a.y > point.y) != (b.y > point.y)
+            if crossesHorizontally,
+                point.x < (b.x - a.x) * (point.y - a.y) / (b.y - a.y) + a.x {
+                inside.toggle()
+            }
+            previous = index
+        }
+        return inside
+    }
+
     /// Dwell progress (0...1) after `elapsedMilliseconds`; a dwell of `0` ms
     /// means immediate activation.
     public static func dwellProgress(elapsedMilliseconds: Double, dwellMilliseconds: Int) -> Double {

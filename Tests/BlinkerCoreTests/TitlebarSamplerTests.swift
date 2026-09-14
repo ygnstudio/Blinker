@@ -142,3 +142,126 @@ final class TitlebarSamplerTests: XCTestCase {
         XCTAssertTrue(spans.isEmpty)
     }
 }
+
+/// Repeat hovers must reuse the sampled backdrop so the mask pill shows
+/// its final look without the async capture's grey-glass interim.
+final class TitlebarSamplerCacheTests: XCTestCase {
+    private let windowBounds = CGRect(x: 100, y: 200, width: 800, height: 600)
+    private let maskFrame = CGRect(x: 130, y: 210, width: 60, height: 24)
+    private let scale: CGFloat = 2
+    private let appearance = "NSAppearanceNameDarkAqua"
+
+    private func seedCache(windowID: CGWindowID = 42) -> NSImage {
+        let image = NSImage(size: NSSize(width: 4, height: 4))
+        TitlebarSampler.storeCachedMaskImage(
+            image: image,
+            windowID: windowID,
+            windowBounds: windowBounds,
+            maskFrame: maskFrame,
+            scale: scale,
+            appearance: appearance
+        )
+        return image
+    }
+
+    override func tearDown() {
+        // The cache is process-global; a fresh entry per test keeps runs
+        // independent (windowID 42 + variants are unique per test anyway,
+        // but expire the seeded entry explicitly via a far-future lookup).
+        _ = TitlebarSampler.cachedMaskImage(
+            windowID: 42,
+            windowBounds: windowBounds,
+            maskFrame: maskFrame,
+            scale: scale,
+            appearance: appearance,
+            now: Date.distantFuture
+        )
+        super.tearDown()
+    }
+
+    func testCachedBackdropIsReturnedForSameWindowGeometryAndAppearance() {
+        let seeded = seedCache()
+        let cached = TitlebarSampler.cachedMaskImage(
+            windowID: 42,
+            windowBounds: windowBounds,
+            maskFrame: maskFrame,
+            scale: scale,
+            appearance: appearance
+        )
+        XCTAssertTrue(cached === seeded)
+    }
+
+    func testAppearanceChangeInvalidatesCache() {
+        seedCache()
+        XCTAssertNil(TitlebarSampler.cachedMaskImage(
+            windowID: 42,
+            windowBounds: windowBounds,
+            maskFrame: maskFrame,
+            scale: scale,
+            appearance: "NSAppearanceNameAqua"
+        ))
+    }
+
+    func testGeometryChangeInvalidatesCache() {
+        seedCache()
+        let movedFrame = maskFrame.offsetBy(dx: 10, dy: 0)
+        XCTAssertNil(TitlebarSampler.cachedMaskImage(
+            windowID: 42,
+            windowBounds: windowBounds,
+            maskFrame: movedFrame,
+            scale: scale,
+            appearance: appearance
+        ))
+    }
+
+    func testDifferentWindowMissesCache() {
+        seedCache()
+        XCTAssertNil(TitlebarSampler.cachedMaskImage(
+            windowID: 43,
+            windowBounds: windowBounds,
+            maskFrame: maskFrame,
+            scale: scale,
+            appearance: appearance
+        ))
+    }
+
+    func testEntryExpiresAfterTTL() {
+        seedCache()
+        let later = Date().addingTimeInterval(61)
+        XCTAssertNil(TitlebarSampler.cachedMaskImage(
+            windowID: 42,
+            windowBounds: windowBounds,
+            maskFrame: maskFrame,
+            scale: scale,
+            appearance: appearance,
+            now: later
+        ))
+        // After expiry the entry is evicted, not resurrected.
+        XCTAssertNil(TitlebarSampler.cachedMaskImage(
+            windowID: 42,
+            windowBounds: windowBounds,
+            maskFrame: maskFrame,
+            scale: scale,
+            appearance: appearance
+        ))
+    }
+}
+
+extension TitlebarSamplerCacheTests {
+    /// Electron hosts report AX frames with sub-point jitter; the cache key
+    /// must collapse it so repeat hovers still hit the cache.
+    func testSubPointJitterStillHitsCache() {
+        let seeded = seedCache(windowID: 77)
+        let jitteredFrame = maskFrame.offsetBy(dx: 0.3, dy: -0.2)
+            .insetBy(dx: -0.1, dy: 0.15)
+        let jitteredBounds = windowBounds.offsetBy(dx: -0.25, dy: 0.2)
+        let cached = TitlebarSampler.cachedMaskImage(
+            windowID: 77,
+            windowBounds: jitteredBounds,
+            maskFrame: jitteredFrame,
+            scale: scale,
+            appearance: appearance
+        )
+        XCTAssertTrue(cached === seeded)
+    }
+}

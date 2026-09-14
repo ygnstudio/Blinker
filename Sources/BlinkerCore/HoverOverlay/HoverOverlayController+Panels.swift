@@ -102,14 +102,31 @@ extension HoverOverlayController {
         guard let maskFrame = HoverOverlayMaskPanel.frame(forButtonFrames: buttonFrames) else {
             return
         }
-        let mask = HoverOverlayMaskPanel(maskFrame: maskFrame)
+        let hit = layout.target.hit
+        let scale = NSScreen.main?.backingScaleFactor ?? 2
+        let appearance = NSApp.effectiveAppearance.name.rawValue
+        // Repeat hovers reuse the cached backdrop so the pill shows its
+        // final look immediately; only the first hover per window/geometry
+        // goes through the async capture (with the glass interim state).
+        let cached = maskStyle == .sampled
+            ? TitlebarSampler.cachedMaskImage(
+                windowID: hit.windowID,
+                windowBounds: hit.bounds,
+                maskFrame: maskFrame,
+                scale: scale,
+                appearance: appearance
+            )
+            : nil
+        let mask = HoverOverlayMaskPanel(maskFrame: maskFrame, sampledImage: cached)
         mask.orderFrontRegardless()
         maskPanel = mask
-        if maskStyle == .sampled {
+        if maskStyle == .sampled, cached == nil {
             scheduleSampledBackdrop(
-                hit: layout.target.hit,
+                hit: hit,
                 maskFrame: maskFrame,
-                buttonFrames: buttonFrames
+                buttonFrames: buttonFrames,
+                scale: scale,
+                appearance: appearance
             )
         }
     }
@@ -121,16 +138,18 @@ extension HoverOverlayController {
     private func scheduleSampledBackdrop(
         hit: AXQuery.WindowHit,
         maskFrame: CGRect,
-        buttonFrames: [CGRect]
+        buttonFrames: [CGRect],
+        scale: CGFloat,
+        appearance: String
     ) {
         guard hit.windowID != 0 else { return }
-        let scale = NSScreen.main?.backingScaleFactor ?? 2
         Task(priority: .userInitiated) { [weak self] in
             let image = await TitlebarSampler.maskImage(
                 windowID: hit.windowID,
                 windowBounds: hit.bounds,
                 maskFrame: maskFrame,
-                scale: scale
+                scale: scale,
+                appearance: appearance
             )
             guard let image else { return }
             DispatchQueue.main.async { [weak self] in
@@ -320,13 +339,19 @@ extension HoverOverlayController {
         )
         hudPanel = HoverOverlayHUDPanel(axFrame: axFrame, content: content)
         hudPanel?.orderFrontRegardless()
-        hudStateLock.withLock { hudKeepAliveFrameAX = axFrame }
+        hudStateLock.withLock {
+            hudKeepAliveFrameAX = axFrame
+            hudAnchorFrameAX = context.anchorFrame
+        }
         logger.info("management HUD opened")
     }
 
     /// Closes the management HUD (idempotent).
     func closeHUD() {
-        hudStateLock.withLock { hudKeepAliveFrameAX = .null }
+        hudStateLock.withLock {
+            hudKeepAliveFrameAX = .null
+            hudAnchorFrameAX = .null
+        }
         hudPanel?.orderOut(nil)
         hudPanel = nil
     }

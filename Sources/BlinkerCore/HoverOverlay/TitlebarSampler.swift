@@ -48,14 +48,32 @@ public enum TitlebarSampler {
     /// capture is unavailable (no permission, window gone, no sample) —
     /// callers fall back to the material backdrop.
     ///
+    /// Successful results are cached (see `cachedMaskImage`) so repeat hovers
+    /// on the same window show the sampled pill immediately, without waiting
+    /// for the async capture chain again.
+    ///
     /// - Parameter scale: Backing scale factor for the output pixel size;
     ///   read `NSScreen.backingScaleFactor` on the main thread and pass it in.
+    /// - Parameter appearance: Name of the current system appearance; a
+    ///   light/dark switch invalidates cached backdrops. Read on the main
+    ///   thread and pass it in.
     static func maskImage(
         windowID: CGWindowID,
         windowBounds: CGRect,
         maskFrame: CGRect,
-        scale: CGFloat
+        scale: CGFloat,
+        appearance: String
     ) async -> NSImage? {
+        let cacheKey = BackdropCacheKey(
+            windowID: windowID,
+            windowBounds: windowBounds,
+            maskFrame: maskFrame,
+            scale: scale,
+            appearance: appearance
+        )
+        if let cached = cachedBackdrop(for: cacheKey) {
+            return cached
+        }
         guard hasScreenCapturePermission() else {
             logger.error("sampled mask skipped: Screen Recording permission missing")
             return nil
@@ -77,14 +95,127 @@ public enum TitlebarSampler {
 
         let sample = await sampleBackdrop(spans: spans, scWindow: scWindow, scale: scale)
         if let crop = sample.crop {
-            return stretchedImage(from: crop, size: maskFrame.size)
+            let image = stretchedImage(from: crop, size: maskFrame.size)
+            storeCachedBackdrop(image, for: cacheKey)
+            return image
         }
         guard let color = sample.referenceColor else {
             logger.error("sampled mask skipped: no span captured (capture error?)")
             return nil
         }
         logger.info("sampled mask: no clean run; falling back to reference color")
-        return solidImage(color: color, size: maskFrame.size)
+        let image = solidImage(color: color, size: maskFrame.size)
+        storeCachedBackdrop(image, for: cacheKey)
+        return image
+    }
+
+    // MARK: - Backdrop cache
+
+    /// How long a sampled backdrop stays valid: repeat hovers within this
+    /// window reuse the cached image and show the sampled pill instantly,
+    /// without the grey-glass interim of the async capture chain. After it
+    /// expires the next hover re-samples and picks up appearance or
+    /// title-bar content changes.
+    private static let backdropCacheTTL: TimeInterval = 60
+    private static let backdropCacheLock = NSLock()
+    private static var backdropCache:
+        [BackdropCacheKey: (image: NSImage, sampledAt: Date)] = [:]
+
+    /// Identity of a cached backdrop: same window, same geometry (so moving
+    /// or resizing the host window misses), same display scale, and same
+    /// system appearance. Geometry is quantized to whole points because some
+    /// hosts (notably Electron apps) report AX frames with sub-point jitter;
+    /// exact-rect keys would miss on every hover and the cache would be
+    /// useless there.
+    private struct BackdropCacheKey: Hashable {
+        let windowID: CGWindowID
+        let windowBounds: CGRect
+        let maskFrame: CGRect
+        let scale: CGFloat
+        let appearance: String
+
+        init(
+            windowID: CGWindowID,
+            windowBounds: CGRect,
+            maskFrame: CGRect,
+            scale: CGFloat,
+            appearance: String
+        ) {
+            self.windowID = windowID
+            self.windowBounds = Self.quantized(windowBounds)
+            self.maskFrame = Self.quantized(maskFrame)
+            self.scale = scale
+            self.appearance = appearance
+        }
+
+        /// Rounds a rect's components to whole points, collapsing sub-point
+        /// jitter while still distinguishing real geometry changes.
+        private static func quantized(_ rect: CGRect) -> CGRect {
+            CGRect(
+                x: rect.origin.x.rounded(),
+                y: rect.origin.y.rounded(),
+                width: rect.size.width.rounded(),
+                height: rect.size.height.rounded()
+            )
+        }
+    }
+
+    /// Returns the cached backdrop for this window/geometry/appearance when
+    /// a fresh one exists, else `nil`. Call on the main thread while
+    /// building the mask panel to skip the async capture entirely.
+    static func cachedMaskImage(
+        windowID: CGWindowID,
+        windowBounds: CGRect,
+        maskFrame: CGRect,
+        scale: CGFloat,
+        appearance: String,
+        now: Date = Date()
+    ) -> NSImage? {
+        let key = BackdropCacheKey(
+            windowID: windowID,
+            windowBounds: windowBounds,
+            maskFrame: maskFrame,
+            scale: scale,
+            appearance: appearance
+        )
+        return cachedBackdrop(for: key, now: now)
+    }
+
+    /// Stores a backdrop for later cache hits. Internal so tests can seed
+    /// the cache; production callers store via `maskImage`.
+    static func storeCachedMaskImage(
+        image: NSImage,
+        windowID: CGWindowID,
+        windowBounds: CGRect,
+        maskFrame: CGRect,
+        scale: CGFloat,
+        appearance: String
+    ) {
+        let key = BackdropCacheKey(
+            windowID: windowID,
+            windowBounds: windowBounds,
+            maskFrame: maskFrame,
+            scale: scale,
+            appearance: appearance
+        )
+        storeCachedBackdrop(image, for: key)
+    }
+
+    private static func cachedBackdrop(for key: BackdropCacheKey, now: Date = Date()) -> NSImage? {
+        backdropCacheLock.withLock {
+            guard let entry = backdropCache[key] else { return nil }
+            guard now.timeIntervalSince(entry.sampledAt) < backdropCacheTTL else {
+                backdropCache.removeValue(forKey: key)
+                return nil
+            }
+            return entry.image
+        }
+    }
+
+    private static func storeCachedBackdrop(_ image: NSImage, for key: BackdropCacheKey) {
+        backdropCacheLock.withLock {
+            backdropCache[key] = (image, Date())
+        }
     }
 
     // MARK: - Span selection

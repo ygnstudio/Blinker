@@ -36,10 +36,11 @@ struct OverlayLayout {
 extension HoverOverlayController {
     func handleCursorMove(to location: CGPoint) {
         // While the management HUD is open the overlay must not fight it:
-        // inside the HUD everything stays as-is, outside it the HUD closes
-        // and normal detection resumes.
+        // inside the HUD — or the safe corridor between the HUD and the
+        // chip that opened it — everything stays as-is; outside it the HUD
+        // closes and normal detection resumes.
         if isHUDOpen {
-            if hudContains(location) {
+            if hudSafeZoneContains(location) {
                 return
             }
             DispatchQueue.main.async { [weak self] in

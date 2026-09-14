@@ -65,10 +65,26 @@ public final class HoverOverlayController {
     /// detection while the main thread opens/closes the HUD.
     let hudStateLock = NSLock()
     var hudKeepAliveFrameAX: CGRect = .null
+    /// The chip frame that opened the HUD; anchors the safe corridor.
+    var hudAnchorFrameAX: CGRect = .null
 
-    /// Whether the cursor is inside the open HUD (work-queue safe).
-    func hudContains(_ point: CGPoint) -> Bool {
-        hudStateLock.withLock { hudKeepAliveFrameAX.contains(point) }
+    /// Whether the cursor is inside the open HUD or the safe corridor
+    /// between the HUD and the chip that opened it (work-queue safe).
+    /// Inside this zone the HUD stays open while the cursor travels from
+    /// the chip to the panel.
+    func hudSafeZoneContains(_ point: CGPoint) -> Bool {
+        hudStateLock.withLock {
+            guard !hudKeepAliveFrameAX.isNull else { return false }
+            if hudKeepAliveFrameAX.contains(point) { return true }
+            guard !hudAnchorFrameAX.isNull else { return false }
+            // Still hovering the chip that opened the HUD: safe.
+            if hudAnchorFrameAX.contains(point) { return true }
+            return HoverOverlayGeometry.safeCorridorContains(
+                cursor: point,
+                anchor: hudAnchorFrameAX,
+                panel: hudKeepAliveFrameAX
+            )
+        }
     }
 
     var isHUDOpen: Bool {
@@ -204,7 +220,10 @@ public final class HoverOverlayController {
             return Unmanaged.passUnretained(event)
         }
         let mask = CGEventMask(
-            1 << CGEventType.mouseMoved.rawValue | 1 << CGEventType.leftMouseDragged.rawValue
+            (1 << CGEventType.mouseMoved.rawValue)
+                | (1 << CGEventType.leftMouseDown.rawValue)
+                | (1 << CGEventType.leftMouseDragged.rawValue)
+                | (1 << CGEventType.leftMouseUp.rawValue)
         )
         guard
             let tap = CGEvent.tapCreate(
@@ -228,6 +247,14 @@ public final class HoverOverlayController {
         logger.info("listen-only mouse-move tap installed")
     }
 
+    /// Left-button drag lifecycle plus latest-wins coalescing for cursor
+    /// detection. The tap callback runs on the tap thread and detection on
+    /// `workQueue`; both touch these fields through `moveStateLock`.
+    private let moveStateLock = NSLock()
+    private var isDragging = false
+    private var isDetecting = false
+    private var pendingMoveLocation: CGPoint?
+
     private func handleTapEvent(eventType: CGEventType, event: CGEvent) {
         switch eventType {
         case .tapDisabledByTimeout, .tapDisabledByUserInput:
@@ -235,13 +262,83 @@ public final class HoverOverlayController {
             if let tap = eventTap {
                 CGEvent.tapEnable(tap: tap, enable: true)
             }
-        case .mouseMoved, .leftMouseDragged:
-            let location = event.location
-            workQueue.async { [weak self] in
-                self?.handleCursorMove(to: location)
+        case .leftMouseDown:
+            moveStateLock.lock()
+            isDragging = false
+            moveStateLock.unlock()
+        case .leftMouseUp:
+            moveStateLock.lock()
+            isDragging = false
+            moveStateLock.unlock()
+        case .leftMouseDragged:
+            moveStateLock.lock()
+            let startedDragging = !isDragging
+            isDragging = true
+            moveStateLock.unlock()
+            // While a window drags, its bounds change with every event, so
+            // cursor detection would re-resolve AX frames and rebuild the
+            // panels at drag frequency — pure churn that stutters the drag
+            // itself. Stand down once and wait for the mouse up.
+            if startedDragging {
+                DispatchQueue.main.async { [weak self] in
+                    self?.hidePanels()
+                }
             }
+        case .mouseMoved:
+            scheduleCursorMove(event.location)
         default:
             break
+        }
+    }
+
+    /// Enqueues one cursor move for detection, dropping intermediate events
+    /// while a detection pass is already running (latest-wins): mouse moves
+    /// arrive faster than AX work can complete, and a serial queue would
+    /// otherwise accumulate backlog that lags the overlay behind the cursor.
+    private func scheduleCursorMove(_ location: CGPoint) {
+        moveStateLock.lock()
+        if isDragging {
+            moveStateLock.unlock()
+            return
+        }
+        if isDetecting {
+            pendingMoveLocation = location
+            moveStateLock.unlock()
+            return
+        }
+        isDetecting = true
+        moveStateLock.unlock()
+        workQueue.async { [weak self] in
+            self?.drainCursorMoves(from: location)
+        }
+    }
+
+    /// Processes one cursor move, then keeps draining the newest queued
+    /// location until none is left, finally releasing the detecting slot.
+    /// `workQueue` is serial, so the detection passes themselves never
+    /// overlap; the flags only decide whether a new drain gets scheduled.
+    private func drainCursorMoves(from location: CGPoint) {
+        var current = location
+        while true {
+            moveStateLock.lock()
+            if isDragging {
+                // A drag started mid-drain: abandon the stale positions.
+                pendingMoveLocation = nil
+                isDetecting = false
+                moveStateLock.unlock()
+                return
+            }
+            if let pending = pendingMoveLocation {
+                pendingMoveLocation = nil
+                moveStateLock.unlock()
+                current = pending
+            } else {
+                isDetecting = false
+                moveStateLock.unlock()
+                handleCursorMove(to: current)
+                return
+            }
+            handleCursorMove(to: current)
         }
     }
 }

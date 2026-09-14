@@ -331,3 +331,70 @@ final class HoverOverlayGeometryTests: XCTestCase {
         XCTAssertEqual(decoded.enabledExtraActions, [.tileLeft, .quitApp])
     }
 }
+
+final class SafeCorridorTests: XCTestCase {
+    // Chip at (200, 500, 40, 40); HUD directly below with a 6 pt gap.
+    private let anchor = CGRect(x: 200, y: 500, width: 40, height: 40)
+    private let panel = CGRect(x: 200, y: 546, width: 252, height: 220)
+
+    func testStraightDownPathStaysInsideCorridor() {
+        // Every sample along the straight path from the chip's bottom edge
+        // to the HUD's top edge — including the gap itself — is safe. The
+        // endpoint `panel.minY` itself is half-open (covered by the HUD
+        // rect hit-test in the caller).
+        for y in stride(from: CGFloat(540), through: CGFloat(545.5), by: 0.5) {
+            XCTAssertTrue(
+                HoverOverlayGeometry.safeCorridorContains(
+                    cursor: CGPoint(x: 220, y: y),
+                    anchor: anchor,
+                    panel: panel
+                ),
+                "cursor at y=\(y) should stay inside the corridor"
+            )
+        }
+    }
+
+    func testDiagonalPathTowardClampedPanelStaysInside() {
+        // The HUD clamped far to the right: the straight path slants, and
+        // the corridor must still cover it.
+        let clamped = CGRect(x: 400, y: 546, width: 252, height: 220)
+        for fraction in stride(from: CGFloat(0.1), through: CGFloat(0.9), by: 0.1) {
+            let start = CGPoint(x: anchor.midX, y: anchor.maxY)
+            let end = CGPoint(x: clamped.midX, y: clamped.minY)
+            let cursor = CGPoint(
+                x: start.x + (end.x - start.x) * fraction,
+                y: start.y + (end.y - start.y) * fraction
+            )
+            XCTAssertTrue(
+                HoverOverlayGeometry.safeCorridorContains(cursor: cursor, anchor: anchor, panel: clamped),
+                "slanted path at fraction \(fraction) should stay safe"
+            )
+        }
+    }
+
+    func testHorizontalEscapeClosesTheCorridor() {
+        // Moving sideways away from the chip → HUD axis is outside the
+        // corridor: the HUD may close.
+        XCTAssertFalse(HoverOverlayGeometry.safeCorridorContains(
+            cursor: CGPoint(x: 150, y: 543),
+            anchor: anchor,
+            panel: panel
+        ))
+    }
+
+    func testPointsOutsideTheVerticalSpanAreNotCorridor() {
+        // Above the chip's bottom edge (the chip itself) and below the
+        // HUD's top edge (the HUD body) are handled by rect hit-tests,
+        // not the corridor.
+        XCTAssertFalse(HoverOverlayGeometry.safeCorridorContains(
+            cursor: CGPoint(x: 220, y: 520),
+            anchor: anchor,
+            panel: panel
+        ))
+        XCTAssertFalse(HoverOverlayGeometry.safeCorridorContains(
+            cursor: CGPoint(x: 220, y: 600),
+            anchor: anchor,
+            panel: panel
+        ))
+    }
+}
