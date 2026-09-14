@@ -26,18 +26,6 @@ enum OverlayChipDrawing {
         }
     }
 
-    /// Pre-macOS 26 fallback for the glass chip: a translucent rounded
-    /// backdrop so the chip reads on any wallpaper.
-    static func drawBackdropChip(in bounds: NSRect) {
-        let chipRect = bounds.insetBy(dx: 1, dy: 1)
-        NSColor.windowBackgroundColor.withAlphaComponent(0.65).setFill()
-        NSBezierPath(roundedRect: chipRect, xRadius: 15, yRadius: 15).fill()
-        NSColor.separatorColor.withAlphaComponent(0.7).setStroke()
-        let border = NSBezierPath(roundedRect: chipRect, xRadius: 15, yRadius: 15)
-        border.lineWidth = 1
-        border.stroke()
-    }
-
     /// The dwell progress arc drawn just outside the circle.
     static func drawProgressRing(around circleRect: NSRect, progress: Double) {
         guard progress > 0 else { return }

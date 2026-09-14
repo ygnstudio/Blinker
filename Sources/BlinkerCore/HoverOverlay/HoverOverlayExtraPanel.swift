@@ -30,8 +30,9 @@ extension ButtonAction {
 
 /// Borderless, non-activating panel showing one user-configured extra action
 /// chip to the right of the traffic lights. Rendering mirrors
-/// `HoverOverlayPanel`: system glass on macOS 26+, colored circle, dwell ring
-/// and an action symbol.
+/// `HoverOverlayPanel`: an opaque accent circle, dwell ring and an action
+/// symbol drawn directly on the glass tray — no glass wrapper of its own, so
+/// the chip language matches the enlarged dots exactly.
 final class HoverOverlayExtraPanel: NSPanel {
     let buttonView: HoverOverlayExtraButtonView
 
@@ -53,14 +54,9 @@ final class HoverOverlayExtraPanel: NSPanel {
             width: panelFrame.width,
             height: panelFrame.height
         )
-        var usesSystemGlass = false
-        if #available(macOS 26.0, *) {
-            usesSystemGlass = true
-        }
         buttonView = HoverOverlayExtraButtonView(
             frame: NSRect(origin: .zero, size: appKitFrame.size),
             action: action,
-            usesSystemGlass: usesSystemGlass,
             onActivate: onActivate
         )
         super.init(
@@ -76,15 +72,7 @@ final class HoverOverlayExtraPanel: NSPanel {
         hidesOnDeactivate = false
         hasShadow = false
         isReleasedWhenClosed = false
-        if #available(macOS 26.0, *) {
-            let glassView = NSGlassEffectView(frame: appKitFrame)
-            glassView.cornerRadius = min(18, panelFrame.width * 0.3)
-            glassView.tintColor = buttonView.accentColor
-            glassView.contentView = buttonView
-            contentView = glassView
-        } else {
-            contentView = buttonView
-        }
+        contentView = buttonView
     }
 }
 
@@ -92,7 +80,6 @@ final class HoverOverlayExtraPanel: NSPanel {
 /// ring — the same chip language as the enlarged traffic lights.
 final class HoverOverlayExtraButtonView: NSView {
     private let action: ButtonAction
-    private let usesSystemGlass: Bool
     private let onActivate: () -> Void
     private var dwellProgress: Double = 0
     private var isActivated = false
@@ -100,11 +87,9 @@ final class HoverOverlayExtraButtonView: NSView {
     init(
         frame: NSRect,
         action: ButtonAction,
-        usesSystemGlass: Bool,
         onActivate: @escaping () -> Void
     ) {
         self.action = action
-        self.usesSystemGlass = usesSystemGlass
         self.onActivate = onActivate
         super.init(frame: frame)
     }
@@ -114,7 +99,8 @@ final class HoverOverlayExtraButtonView: NSView {
         fatalError("init(coder:) is not supported")
     }
 
-    /// The chip's semantic color, also used as the glass tint on macOS 26+.
+    /// The chip's semantic color — the same accent used for the dwell ring,
+    /// drawn as an opaque circle exactly like the enlarged traffic dots.
     var accentColor: NSColor {
         .controlAccentColor
     }
@@ -140,9 +126,6 @@ final class HoverOverlayExtraButtonView: NSView {
     }
 
     override func draw(_: NSRect) {
-        if !usesSystemGlass {
-            OverlayChipDrawing.drawBackdropChip(in: bounds)
-        }
         let circleRect = OverlayChipDrawing.circleRect(in: bounds)
         OverlayChipDrawing.drawProgressRing(around: circleRect, progress: dwellProgress)
         OverlayChipDrawing.drawCircle(in: circleRect, color: accentColor)
