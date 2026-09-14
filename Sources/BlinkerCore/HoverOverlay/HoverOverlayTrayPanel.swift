@@ -1,0 +1,170 @@
+import AppKit
+
+/// Click-through glass capsule tray sitting behind the enlarged chips while
+/// the overlay is visible.
+///
+/// The tray is the single "base" of the whole hover group: a system Liquid
+/// Glass pill (neutral `underWindowBackground` material before macOS 26)
+/// spanning the enlarged traffic lights and the extra chips, plus a bounded
+/// radial glow behind each traffic dot. The glass is composited live by the
+/// system, so the tray adapts to any title-bar content with no sampling and
+/// no Screen Recording permission.
+///
+/// The glow exists because the glass smears the native traffic buttons into
+/// soft color ghosts that the enlarged dots cannot fully cover; each glow
+/// fades from the dot's edge to zero within `0.32 × dot` width, so it always
+/// stays inside the tray margins and can never be clipped by the panel frame.
+/// It sits one window level below the chip panels and ignores mouse events,
+/// so clicks fall through to the enlarged chips above.
+final class HoverOverlayTrayPanel: NSPanel {
+    /// Horizontal tray margin around the displayed chips' bounding box (pt).
+    static let horizontalMargin: CGFloat = 16
+    /// Vertical tray margin around the displayed chips' bounding box (pt).
+    static let verticalMargin: CGFloat = 12
+
+    /// One traffic dot's glow descriptor.
+    struct Glow {
+        /// The dot's circle rect in tray-local (AppKit, bottom-left origin)
+        /// coordinates.
+        let rect: CGRect
+        /// The dot's vivid fill color.
+        let color: NSColor
+    }
+
+    /// - Parameters:
+    ///   - trayFrame: The capsule frame, in AX (top-left origin) global
+    ///     coordinates — the displayed chips' bounding box inflated by the
+    ///     tray margins.
+    ///   - glows: The per-dot glows drawn on the glass, in tray-local
+    ///     coordinates.
+    init(trayFrame: CGRect, glows: [Glow]) {
+        let globalMaxY = NSScreen.screens.map(\.frame.maxY).max() ?? 0
+        let appKitFrame = CGRect(
+            x: trayFrame.minX,
+            y: globalMaxY - trayFrame.maxY,
+            width: trayFrame.width,
+            height: trayFrame.height
+        )
+        super.init(
+            contentRect: appKitFrame,
+            styleMask: [.borderless, .nonactivatingPanel],
+            backing: .buffered,
+            defer: false
+        )
+        isOpaque = false
+        backgroundColor = .clear
+        // One level below the enlarged chips: the tray must never cover
+        // them, no matter the fronting order, while staying above regular
+        // app windows.
+        level = NSWindow.Level(NSWindow.Level.popUpMenu.rawValue - 1)
+        collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
+        hidesOnDeactivate = false
+        hasShadow = false
+        isReleasedWhenClosed = false
+        acceptsMouseMovedEvents = false
+        ignoresMouseEvents = true
+
+        let size = appKitFrame.size
+        let container = NSView(frame: NSRect(origin: .zero, size: size))
+        // Pill shape: the corner radius is derived from the frame height.
+        let radius = size.height / 2
+        if #available(macOS 26.0, *) {
+            let glass = NSGlassEffectView(frame: NSRect(origin: .zero, size: size))
+            glass.cornerRadius = radius
+            container.addSubview(glass)
+        } else {
+            let backdrop = NSVisualEffectView(frame: NSRect(origin: .zero, size: size))
+            backdrop.material = .underWindowBackground
+            backdrop.blendingMode = .behindWindow
+            backdrop.state = .active
+            backdrop.maskImage = Self.pillMaskImage(size: size, radius: radius)
+            container.addSubview(backdrop)
+        }
+        let glowView = TrayGlowView(frame: NSRect(origin: .zero, size: size))
+        glowView.glows = glows
+        container.addSubview(glowView)
+        contentView = container
+    }
+
+    /// The displayed chips' bounding box inflated by the tray margins, or
+    /// `nil` when there is nothing to sit behind.
+    static func frame(forDisplayFrames displayFrames: [CGRect]) -> CGRect? {
+        guard let group = HoverOverlayGeometry.unionedBounds(of: displayFrames) else {
+            return nil
+        }
+        return CGRect(
+            x: group.minX - horizontalMargin,
+            y: group.minY - verticalMargin,
+            width: group.width + horizontalMargin * 2,
+            height: group.height + verticalMargin * 2
+        )
+    }
+
+    /// Converts an AX-space rect into tray-local AppKit coordinates for the
+    /// given tray frame.
+    static func localRect(forAXRect rect: CGRect, inTray trayFrame: CGRect) -> CGRect {
+        let globalMaxY = NSScreen.screens.map(\.frame.maxY).max() ?? 0
+        let appKitRect = CGRect(
+            x: rect.minX,
+            y: globalMaxY - rect.maxY,
+            width: rect.width,
+            height: rect.height
+        )
+        return CGRect(
+            x: appKitRect.minX - trayFrame.minX,
+            y: appKitRect.minY - (globalMaxY - trayFrame.maxY),
+            width: appKitRect.width,
+            height: appKitRect.height
+        )
+    }
+
+    private static func pillMaskImage(size: NSSize, radius: CGFloat) -> NSImage {
+        NSImage(size: size, flipped: false) { rect in
+            NSColor.white.setFill()
+            NSBezierPath(roundedRect: rect, xRadius: radius, yRadius: radius).fill()
+            return true
+        }
+    }
+}
+
+/// Draws the bounded radial glows behind the traffic dots on the glass tray.
+final class TrayGlowView: NSView {
+    var glows: [HoverOverlayTrayPanel.Glow] = []
+
+    override func draw(_: NSRect) {
+        guard let cg = NSGraphicsContext.current?.cgContext else { return }
+        for glow in glows {
+            let dotRect = glow.rect
+            let srgb = glow.color.usingColorSpace(.sRGB) ?? glow.color
+            // The halo extends 0.32 × dot width past the dot edge and fades
+            // to zero exactly at the halo's boundary, so the glow always
+            // decays fully inside the tray margins.
+            let haloRect = dotRect.insetBy(
+                dx: -dotRect.width * 0.32,
+                dy: -dotRect.height * 0.32
+            )
+            cg.saveGState()
+            NSBezierPath(ovalIn: haloRect).addClip()
+            let components: [CGFloat] = [
+                srgb.redComponent, srgb.greenComponent, srgb.blueComponent, 0.45,
+                srgb.redComponent, srgb.greenComponent, srgb.blueComponent, 0
+            ]
+            if let gradient = CGGradient(
+                colorSpace: CGColorSpaceCreateDeviceRGB(),
+                colorComponents: components,
+                locations: [0, 1],
+                count: 2
+            ) {
+                cg.drawRadialGradient(
+                    gradient,
+                    startCenter: CGPoint(x: dotRect.midX, y: dotRect.midY),
+                    startRadius: dotRect.width * 0.38,
+                    endCenter: CGPoint(x: dotRect.midX, y: dotRect.midY),
+                    endRadius: haloRect.width / 2,
+                    options: []
+                )
+            }
+            cg.restoreGState()
+        }
+    }
+}

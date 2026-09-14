@@ -38,12 +38,15 @@ struct HoverSettingsTab: View {
             }
 
             Section {
-                maskStylePicker
                 scopePicker
             } header: {
-                Text(tr("遮挡与范围", "Mask & Scope"))
+                Text(tr("作用范围", "Scope"))
             } footer: {
-                Text(maskStyleHint)
+                Text(tr(
+                    "悬停时以一块液态玻璃托盘衬托放大按钮与扩展按钮，随背景自动融合，无需任何额外权限。",
+                    "On hover, a Liquid Glass tray sits behind the enlarged buttons and extra chips,"
+                        + " blending with any background. No extra permission required."
+                ))
             }
 
             Section {
@@ -108,14 +111,6 @@ struct HoverSettingsTab: View {
         }
     }
 
-    private var maskStylePicker: some View {
-        Picker(tr("按钮遮挡", "Button Mask"), selection: maskStyleBinding) {
-            Text(tr("液态玻璃", "Liquid Glass")).tag(HoverOverlayMaskStyle.glass)
-            Text(tr("真实采样", "Sampled")).tag(HoverOverlayMaskStyle.sampled)
-        }
-        .disabled(settings.mode == .hotspot)
-    }
-
     private var scopePicker: some View {
         Picker(tr("作用范围", "Scope"), selection: appliesToAllWindowsBinding) {
             Text(tr("全部窗口", "All Windows")).tag(true)
@@ -143,30 +138,6 @@ struct HoverSettingsTab: View {
             tr(
                 "纯热区：界面外观完全不变，仅在按钮周围扩大不可见点击区，点击立即响应。",
                 "Hotspot keeps the title bar unchanged and only enlarges the invisible click zones."
-            )
-        }
-    }
-
-    private var maskStyleHint: String {
-        guard settings.mode == .overlay else {
-            return tr("纯热区模式不显示遮罩。", "Hotspot mode shows no mask.")
-        }
-        switch settings.maskStyle {
-        case .glass:
-            return tr(
-                "液态玻璃：以系统玻璃模糊遮挡原生按钮，无需额外权限。",
-                "Liquid Glass covers the native buttons with a system blur; no extra permission."
-            )
-        case .sampled:
-            if TitlebarSampler.hasScreenCapturePermission() {
-                return tr(
-                    "真实采样：遮挡区域显示窗口标题栏的真实背景，效果完全隐形。",
-                    "Sampled shows the real title-bar backdrop — fully invisible."
-                )
-            }
-            return tr(
-                "真实采样需要「屏幕录制」权限：授权后自动生效，未授权时回退液态玻璃。",
-                "Sampled needs Screen Recording permission; without it the glass mask is used."
             )
         }
     }
@@ -199,19 +170,6 @@ struct HoverSettingsTab: View {
                         settings.extraButtonActions[index] = newValue
                     }
                 }
-            }
-        )
-    }
-
-    private var maskStyleBinding: Binding<HoverOverlayMaskStyle> {
-        Binding(
-            get: { settings.maskStyle },
-            set: { newValue in
-                if newValue == .sampled, !TitlebarSampler.hasScreenCapturePermission() {
-                    // Only prompt when the user opts in to sampling.
-                    TitlebarSampler.requestScreenCapturePermission()
-                }
-                update { $0.maskStyle = newValue }
             }
         )
     }

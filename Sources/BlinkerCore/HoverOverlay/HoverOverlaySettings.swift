@@ -10,15 +10,6 @@ public enum HoverOverlayMode: String, Codable, Sendable, Hashable {
     case hotspot
 }
 
-/// How the backdrop covering the native buttons is rendered in overlay mode.
-public enum HoverOverlayMaskStyle: String, Codable, Sendable, Hashable {
-    /// System Liquid Glass backdrop; no extra permission needed.
-    case glass
-    /// Pixel-accurate backdrop sampled from the window's own title bar.
-    /// Requires Screen Recording permission; falls back to glass without it.
-    case sampled
-}
-
 /// User-facing configuration for the hover overlay feature.
 public struct HoverOverlaySettings: Codable, Hashable, Sendable {
     /// Number of configurable extra-button slots shown to the right of the
@@ -41,8 +32,6 @@ public struct HoverOverlaySettings: Codable, Hashable, Sendable {
     public var appliesToAllWindows: Bool
     /// Visual model; see `HoverOverlayMode`.
     public var mode: HoverOverlayMode
-    /// Backdrop rendering; see `HoverOverlayMaskStyle`.
-    public var maskStyle: HoverOverlayMaskStyle
     /// Extra-button slots to the right of the traffic lights, in display
     /// order. A `nil` slot renders no chip; non-nil slots render a chip that
     /// performs the mapped action on click.
@@ -54,7 +43,6 @@ public struct HoverOverlaySettings: Codable, Hashable, Sendable {
         dwellMilliseconds: Int = 150,
         appliesToAllWindows: Bool = true,
         mode: HoverOverlayMode = .overlay,
-        maskStyle: HoverOverlayMaskStyle = .glass,
         extraButtonActions: [ButtonAction?] = []
     ) {
         self.isEnabled = isEnabled
@@ -62,7 +50,6 @@ public struct HoverOverlaySettings: Codable, Hashable, Sendable {
         self.dwellMilliseconds = min(max(dwellMilliseconds, 0), 800)
         self.appliesToAllWindows = appliesToAllWindows
         self.mode = mode
-        self.maskStyle = maskStyle
         self.extraButtonActions = Self.normalizedExtraActions(extraButtonActions)
     }
 
@@ -91,13 +78,14 @@ public struct HoverOverlaySettings: Codable, Hashable, Sendable {
     }
 
     private enum CodingKeys: String, CodingKey {
-        case isEnabled, enlargedSize, dwellMilliseconds, appliesToAllWindows, mode, maskStyle
+        case isEnabled, enlargedSize, dwellMilliseconds, appliesToAllWindows, mode
         case extraButtonActions
     }
 
     /// Decodes leniently so settings persisted by older versions (without a
     /// `mode`, `maskStyle` or `extraButtonActions` key) still load instead of
-    /// resetting to defaults.
+    /// resetting to defaults. A persisted `maskStyle` from versions that
+    /// sampled the title bar is ignored — the glass tray replaced sampling.
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         let fallback = HoverOverlaySettings()
@@ -109,8 +97,6 @@ public struct HoverOverlaySettings: Codable, Hashable, Sendable {
         appliesToAllWindows = try container
             .decodeIfPresent(Bool.self, forKey: .appliesToAllWindows) ?? fallback.appliesToAllWindows
         mode = try container.decodeIfPresent(HoverOverlayMode.self, forKey: .mode) ?? fallback.mode
-        maskStyle = try container
-            .decodeIfPresent(HoverOverlayMaskStyle.self, forKey: .maskStyle) ?? fallback.maskStyle
         extraButtonActions = try Self.normalizedExtraActions(
             container.decodeIfPresent([ButtonAction?].self, forKey: .extraButtonActions)
                 ?? fallback.extraButtonActions

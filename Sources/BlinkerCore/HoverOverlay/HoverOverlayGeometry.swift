@@ -29,28 +29,27 @@ public enum HoverOverlayGeometry {
         return panelFrames.contains { isCursorInPanel(cursor: cursor, panelFrame: $0) }
     }
 
-    /// The frame of the enlarged overlay panel centered on the original
-    /// button frame.
-    public static func panelFrame(forButtonFrame buttonFrame: CGRect, enlargedSize: CGFloat) -> CGRect {
-        CGRect(
-            x: buttonFrame.midX - enlargedSize / 2,
-            y: buttonFrame.midY - enlargedSize / 2,
-            width: enlargedSize,
-            height: enlargedSize
-        )
-    }
+    /// How far (pt) the enlarged group's leading edge sits left of the
+    /// native buttons' leading edge. The glass tray smears the leftmost
+    /// native button into a soft ghost; anchoring slightly past it keeps
+    /// that ghost fully covered by the first enlarged dot.
+    public static let leadingAnchorInset: CGFloat = 6
 
     /// Computes non-overlapping panel frames for a group of traffic buttons.
     ///
     /// Real traffic lights sit only ~12–16 pt apart, far tighter than any
     /// enlarged diameter, so per-button centering makes enlarged panels
     /// overlap heavily. Instead the enlarged buttons are laid out left to
-    /// right in their original order, centered as a group on the original
-    /// buttons' bounding box, with a minimum gap between neighbors.
+    /// right in their original order, anchored at the native group's leading
+    /// edge (offset by `leadingAnchorInset`) and growing to the right, with a
+    /// minimum gap between neighbors. Leading-edge anchoring — rather than
+    /// group-center alignment — keeps the leftmost enlarged dot covering the
+    /// native red button's glass-blurred ghost, and never pushes the group
+    /// past the window's left edge.
     ///
     /// `extraCount` appends that many same-sized chips after the last traffic
     /// button (the user-configured extra buttons); the native chips keep
-    /// their centered anchor and the group simply grows to the right.
+    /// their leading anchor and the group simply grows to the right.
     ///
     /// When `containerBounds` is given (the screen in AX coordinates), the
     /// whole group is shifted to stay inside it so edge-anchored windows
@@ -66,11 +65,10 @@ public enum HoverOverlayGeometry {
         let groupBounds = unionedBounds(of: buttonFrames) ?? first
         let nativeCount = CGFloat(buttonFrames.count)
         let totalCount = nativeCount + CGFloat(extraCount)
-        // The native chips stay centered on the native buttons; extra chips
-        // continue after them, so enabling extras never displaces the
-        // traffic lights themselves.
-        let nativeWidth = nativeCount * enlargedSize + (nativeCount - 1) * minimumGap
-        var originX = groupBounds.midX - nativeWidth / 2
+        // The native chips stay anchored to the native group's leading edge;
+        // extra chips continue after them, so enabling extras never
+        // displaces the traffic lights themselves.
+        var originX = groupBounds.minX - leadingAnchorInset
         let originY = groupBounds.midY - enlargedSize / 2
         var frames: [CGRect] = []
         frames.reserveCapacity(Int(totalCount))

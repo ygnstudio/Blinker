@@ -25,7 +25,7 @@ model, and why key decisions were made. Quick reference:
 | `Sources/BlinkerCore/AXInterceptor` | CGEventTap entry, AX hit-testing, action performance |
 | `Sources/BlinkerCore/RuleEngine` | Pure `(bundleID, button) → action` lookup + persistence |
 | `Sources/BlinkerCore/Models` | Value types: `AppRule`, `ButtonAction`, `TrafficButton` |
-| `Sources/BlinkerCore/HoverOverlay` | Hover-to-enlarge overlay: geometry, panels, mask, sampling |
+| `Sources/BlinkerCore/HoverOverlay` | Hover-to-enlarge overlay: geometry, chips, glass tray |
 | `Sources/BlinkerCore/Permission` | Accessibility permission detection & onboarding |
 | `Sources/BlinkerApp` | SwiftUI shell: menu bar, onboarding, three-tab settings |
 | `Tests/BlinkerCoreTests` | Unit tests for core logic (no UI harness needed) |

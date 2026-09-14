@@ -13,9 +13,9 @@ struct OverlayButtonInfo {
 /// Borderless, non-activating panel showing one enlarged traffic-light button.
 ///
 /// The panel frame comes from the group layout (`HoverOverlayGeometry
-/// .panelFrames`) so enlarged neighbors never overlap. On macOS 26+ the chip
-/// behind the button is a system Liquid Glass effect view; earlier systems
-/// fall back to a translucent backdrop drawn by the button view itself.
+/// .panelFrames`) so enlarged neighbors never overlap. The dot is an opaque
+/// vivid circle with a hairline rim; the glass capsule tray behind it
+/// (`HoverOverlayTrayPanel`) provides the chip's backdrop on every OS.
 final class HoverOverlayPanel: NSPanel {
     let buttonView: HoverOverlayButtonView
 
@@ -44,15 +44,10 @@ final class HoverOverlayPanel: NSPanel {
             width: panelFrame.width,
             height: panelFrame.height
         )
-        var usesSystemGlass = false
-        if #available(macOS 26.0, *), !isHotspot {
-            usesSystemGlass = true
-        }
         buttonView = HoverOverlayButtonView(
             frame: NSRect(origin: .zero, size: appKitFrame.size),
             info: info,
             isHotspot: isHotspot,
-            usesSystemGlass: usesSystemGlass,
             onActivate: onActivate,
             onLongPress: onLongPress
         )
@@ -69,27 +64,16 @@ final class HoverOverlayPanel: NSPanel {
         hidesOnDeactivate = false
         hasShadow = false
         isReleasedWhenClosed = false
-        if #available(macOS 26.0, *), !isHotspot {
-            let glassView = NSGlassEffectView(frame: appKitFrame)
-            glassView.cornerRadius = min(18, panelFrame.width * 0.3)
-            glassView.tintColor = buttonView.accentColor
-            glassView.contentView = buttonView
-            contentView = glassView
-        } else {
-            contentView = buttonView
-        }
+        contentView = buttonView
     }
 }
 
-/// Draws one enlarged traffic-light button: colored circle, symbol and dwell
-/// progress ring. In hotspot mode the view is fully invisible and always
-/// activated.
+/// Draws one enlarged traffic-light button: opaque vivid circle, symbol and
+/// dwell progress ring. In hotspot mode the view is fully invisible and
+/// always activated.
 final class HoverOverlayButtonView: NSView {
     private let info: OverlayButtonInfo
     private let isHotspot: Bool
-    /// When `true` the panel wraps this view in `NSGlassEffectView`, so the
-    /// view only draws circle, symbol and text — the chip is system glass.
-    private let usesSystemGlass: Bool
     private let onActivate: (ClickVariant) -> Void
     private let onLongPress: () -> Void
     private var dwellProgress: Double = 0
@@ -104,13 +88,11 @@ final class HoverOverlayButtonView: NSView {
         frame: NSRect,
         info: OverlayButtonInfo,
         isHotspot: Bool = false,
-        usesSystemGlass: Bool = false,
         onActivate: @escaping (ClickVariant) -> Void,
         onLongPress: @escaping () -> Void
     ) {
         self.info = info
         self.isHotspot = isHotspot
-        self.usesSystemGlass = usesSystemGlass
         self.onActivate = onActivate
         self.onLongPress = onLongPress
         super.init(frame: frame)
@@ -121,13 +103,9 @@ final class HoverOverlayButtonView: NSView {
         fatalError("init(coder:) is not supported")
     }
 
-    /// The button's semantic color, also used as the glass tint on macOS 26+.
+    /// The button's semantic color, also used for the tray glow behind it.
     var accentColor: NSColor {
-        switch info.button {
-        case .close: .systemRed
-        case .minimize: .systemYellow
-        case .zoom: .systemGreen
-        }
+        OverlayChipDrawing.vividColor(for: info.button)
     }
 
     /// Updates the dwell progress (0...1); the button becomes clickable at 1.
@@ -207,9 +185,6 @@ final class HoverOverlayButtonView: NSView {
 
     override func draw(_: NSRect) {
         guard !isHotspot else { return }
-        if !usesSystemGlass {
-            OverlayChipDrawing.drawBackdropChip(in: bounds)
-        }
         let circleRect = OverlayChipDrawing.circleRect(in: bounds)
         OverlayChipDrawing.drawProgressRing(around: circleRect, progress: dwellProgress)
         OverlayChipDrawing.drawCircle(in: circleRect, color: accentColor)

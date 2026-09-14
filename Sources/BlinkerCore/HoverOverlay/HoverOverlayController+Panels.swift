@@ -16,18 +16,16 @@ extension HoverOverlayController {
                 || panels.count != layout.buttons.count
                 || extraPanels.count != layout.extraActions.count
                 || layout.extraActions != panelExtraActions
-                || panelMaskStyle != settings.maskStyle
             if needsRebuild {
                 rebuildPanels(
                     layout: layout,
-                    isHotspot: settings.mode == .hotspot,
-                    maskStyle: settings.maskStyle
+                    isHotspot: settings.mode == .hotspot
                 )
             } else {
-                // The mask is fronted before the panels so the enlarged
-                // chips always stack above it (belt and braces: the mask
+                // The tray is fronted before the panels so the enlarged
+                // chips always stack above it (belt and braces: the tray
                 // also sits one window level below the chips).
-                maskPanel?.orderFrontRegardless()
+                trayPanel?.orderFrontRegardless()
                 panels.forEach { $0.orderFrontRegardless() }
                 extraPanels.forEach { $0.orderFrontRegardless() }
             }
@@ -38,9 +36,9 @@ extension HoverOverlayController {
         }
     }
 
-    private func rebuildPanels(layout: OverlayLayout, isHotspot: Bool, maskStyle: HoverOverlayMaskStyle) {
+    private func rebuildPanels(layout: OverlayLayout, isHotspot: Bool) {
         hidePanels()
-        installMaskPanel(layout: layout, isHotspot: isHotspot, maskStyle: maskStyle)
+        installTrayPanel(layout: layout, isHotspot: isHotspot)
         panels = zip(layout.buttons, layout.panelFrames).map { info, panelFrame in
             HoverOverlayPanel(
                 panelFrame: panelFrame,
@@ -67,7 +65,6 @@ extension HoverOverlayController {
         }
         panelSignature = layout.buttons.map(\.frame)
         panelPID = layout.target.hit.processIdentifier
-        panelMaskStyle = maskStyle
         panelExtraActions = layout.extraActions
         extraPanels = layout.extraActions.enumerated().map { index, action in
             HoverOverlayExtraPanel(
@@ -89,80 +86,33 @@ extension HoverOverlayController {
         extraPanels.forEach { $0.orderFrontRegardless() }
     }
 
-    /// Installs the backdrop mask covering the native buttons. It goes in
-    /// first so the enlarged chips stack above it; in sampled mode it shows
-    /// the host title bar itself, falling back to glass without sampling.
-    private func installMaskPanel(
-        layout: OverlayLayout,
-        isHotspot: Bool,
-        maskStyle: HoverOverlayMaskStyle
-    ) {
+    /// Installs the glass capsule tray behind the whole displayed group
+    /// (enlarged traffic dots and extra chips). It goes in first so the
+    /// chips stack above it; each traffic dot additionally gets a bounded
+    /// radial glow on the glass that absorbs the native button's blurred
+    /// ghost. Hotspot mode keeps the title bar untouched.
+    private func installTrayPanel(layout: OverlayLayout, isHotspot: Bool) {
         guard !isHotspot else { return }
-        let buttonFrames = layout.buttons.map(\.frame)
-        guard let maskFrame = HoverOverlayMaskPanel.frame(forButtonFrames: buttonFrames) else {
-            return
-        }
-        let hit = layout.target.hit
-        let scale = NSScreen.main?.backingScaleFactor ?? 2
-        let appearance = NSApp.effectiveAppearance.name.rawValue
-        // Repeat hovers reuse the cached backdrop so the pill shows its
-        // final look immediately; only the first hover per window/geometry
-        // goes through the async capture (with the glass interim state).
-        let cached = maskStyle == .sampled
-            ? TitlebarSampler.cachedMaskImage(
-                windowID: hit.windowID,
-                windowBounds: hit.bounds,
-                maskFrame: maskFrame,
-                scale: scale,
-                appearance: appearance
+        guard
+            let trayFrame = HoverOverlayTrayPanel.frame(
+                forDisplayFrames: layout.allPanelFrames
             )
-            : nil
-        let mask = HoverOverlayMaskPanel(maskFrame: maskFrame, sampledImage: cached)
-        mask.orderFrontRegardless()
-        maskPanel = mask
-        if maskStyle == .sampled, cached == nil {
-            scheduleSampledBackdrop(
-                hit: hit,
-                maskFrame: maskFrame,
-                buttonFrames: buttonFrames,
-                scale: scale,
-                appearance: appearance
+        else { return }
+        let glows = zip(layout.buttons, layout.panelFrames).map { info, panelFrame in
+            // The dot's circle rect (same inset rule as the chip drawing)
+            // expressed in tray-local coordinates.
+            let circleFrame = panelFrame.insetBy(dx: 4, dy: 4)
+            return HoverOverlayTrayPanel.Glow(
+                rect: HoverOverlayTrayPanel.localRect(
+                    forAXRect: circleFrame,
+                    inTray: trayFrame
+                ),
+                color: OverlayChipDrawing.vividColor(for: info.button)
             )
         }
-    }
-
-    /// Kicks off the async title-bar sampling and swaps the mask to the
-    /// sampled backdrop when it lands. Guards against staleness: if the
-    /// overlay moved on to another window or was hidden meanwhile, the
-    /// image is discarded.
-    private func scheduleSampledBackdrop(
-        hit: AXQuery.WindowHit,
-        maskFrame: CGRect,
-        buttonFrames: [CGRect],
-        scale: CGFloat,
-        appearance: String
-    ) {
-        guard hit.windowID != 0 else { return }
-        Task(priority: .userInitiated) { [weak self] in
-            let image = await TitlebarSampler.maskImage(
-                windowID: hit.windowID,
-                windowBounds: hit.bounds,
-                maskFrame: maskFrame,
-                scale: scale,
-                appearance: appearance
-            )
-            guard let image else { return }
-            DispatchQueue.main.async { [weak self] in
-                guard
-                    let self,
-                    isOverlayVisible,
-                    panelPID == hit.processIdentifier,
-                    panelSignature == buttonFrames,
-                    let maskPanel
-                else { return }
-                maskPanel.setSampledImage(image)
-            }
-        }
+        let tray = HoverOverlayTrayPanel(trayFrame: trayFrame, glows: glows)
+        tray.orderFrontRegardless()
+        trayPanel = tray
     }
 
     func hidePanels() {
@@ -173,13 +123,10 @@ extension HoverOverlayController {
         extraPanels.forEach { $0.orderOut(nil) }
         extraPanels = []
         panelExtraActions = []
-        maskPanel?.orderOut(nil)
-        maskPanel = nil
+        trayPanel?.orderOut(nil)
+        trayPanel = nil
         panelSignature = []
         panelPID = 0
-        // Force a fresh rebuild (and re-sample) on the next show, since the
-        // host title bar content may have changed while hidden.
-        panelMaskStyle = nil
     }
 
     /// Performs the rule action (or a native AXPress when no rule applies)

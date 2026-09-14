@@ -35,11 +35,12 @@ add; everything else keeps system defaults.
   buttons with a mis-click dwell ring (0–800 ms; brushing past never
   triggers). **Hotspot** keeps the title bar's original look and only
   enlarges the invisible click zones, responding immediately.
-- **Native-button mask**: while enlarged, the real buttons are covered.
-  Default is a zero-permission **Liquid Glass**; optional **Sampled** mode
-  captures a clean strip of the title bar and stretches it across the mask
-  so the backdrop is pixel-identical (needs Screen Recording permission;
-  falls back to glass automatically).
+- **Glass tray**: while enlarged, a clear Liquid Glass capsule tray sits
+  behind the whole group of enlarged buttons and extra chips, composited
+  live by the system so it blends with any title-bar background — no
+  sampling, no Screen Recording permission. The enlarged dots are opaque
+  vivid circles, eliminating color bleed at the source, with bounded
+  same-color glows that absorb the native buttons' glass ghosts.
 - **Never out of bounds**: the enlarged panel is laid out as a whole group
   and clamped to the intersection of the window and the screen.
 - **App library picker**: adding an app lists every installed app with
@@ -72,11 +73,8 @@ flowchart LR
 - **Interception**: the CGEventTap thread only does coordinate-level
   filtering; AX queries and actions run on a serial worker queue.
 - **Hover enlargement**: entering the trigger zone (button group + 12 pt)
-  lays the native-button mask first, then the enlarged chips; all geometry
-  is clamped to window ∩ screen in global coordinates.
-- **Backdrop sampling**: ScreenCaptureKit captures strips beside the
-  buttons → per-column cleanliness analysis (rejects text, buttons, and
-  transparent pixels) → the widest clean run is stretched across the mask.
+  lays the glass tray first, then the enlarged chips; all geometry is
+  clamped to window ∩ screen in global coordinates.
 
 ## Known limitations
 

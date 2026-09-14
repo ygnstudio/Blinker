@@ -47,10 +47,9 @@ public final class HoverOverlayController {
     var extraPanels: [HoverOverlayExtraPanel] = []
     var panelSignature: [CGRect] = []
     var panelPID: pid_t = 0
-    var maskPanel: HoverOverlayMaskPanel?
-    /// The mask style the current panels were built with, so a settings
-    /// change triggers a rebuild; `nil` after hiding (fresh sample next show).
-    var panelMaskStyle: HoverOverlayMaskStyle?
+    /// The glass capsule tray behind the enlarged chips. Click-through; one
+    /// window level below the chip panels.
+    var trayPanel: HoverOverlayTrayPanel?
     /// The extra actions the current chips were built with; a change also
     /// triggers a rebuild.
     var panelExtraActions: [ButtonAction] = []

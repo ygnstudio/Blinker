@@ -65,22 +65,17 @@ CGEventTap（独立线程）
 ### 数据流二：悬停放大（热路径，鼠标移动）
 
 ```
-鼠标移动检测（事件节流）
+鼠标移动检测（事件节流 + 拖拽停摆 + latest-wins 合并）
   → HoverOverlayController+Detection：isCursorInTriggerZone（按钮组外扩 12pt）
-  → HoverOverlayGeometry.panelFrames：整组布局 + 钳制到窗口∩屏幕
-  → rebuildPanels：先铺遮罩面板（Level = popUpMenu - 1），再铺放大芯片
-  → （采样模式）scheduleSampledBackdrop：异步 SCScreenshotManager 抓条带
-     → TitlebarPixelScan 逐列分析 → 最宽干净段拉伸 → 回填遮罩
+  → HoverOverlayGeometry.panelFrames：整组左缘锚定布局 + 钳制到窗口∩屏幕
+  → rebuildPanels：先铺玻璃托盘（Level = popUpMenu - 1，点击穿透 + 三灯受控辉光），再铺放大芯片
 ```
-
-采样回填带 staleness 守卫（`isOverlayVisible` / `panelPID` / `panelSignature`），异步结果返回时若上下文已变则直接丢弃。
 
 ### 线程模型
 
 - **CGEventTap 回调**：独立线程，只做便宜过滤，不碰 UI。
 - **AX 查询与动作执行**：工作队列（串行），避免 AX 调用阻塞 tap。
 - **主线程**：只负责 NSPanel 显示/隐藏与 SwiftUI 设置页。
-- **屏幕采样**：`userInitiated` Task，结果经 staleness 校验后回主线程贴图。
 
 ### 坐标系
 
@@ -91,8 +86,8 @@ CGEventTap（独立线程）
 | 决策 | 原因 |
 |---|---|
 | NSPanel 覆盖层 + CGEventTap 拦截（而非 AXObserver 抢点击） | 保留原生按钮的可访问性语义；覆盖层只做视觉替换 |
-| `SCScreenshotManager.captureImage`（SDK 26） | `CGWindowListCreateImage` 在 SDK 26 硬性不可用，无迁移路径 |
-| 双遮罩方案（玻璃默认 / 真实采样可选） | 采样需屏幕录制权限；默认零权限，用户显式 opt-in 才申请 |
+| 玻璃托盘 + 不透明放大珠（而非采样遮罩） | 玻璃由系统合成器实时取景，任意背景自动融合，零权限零延迟；不透明珠从源头杜绝偏色；受控辉光（衰减边界 < 托盘边距）吸收原生按钮残影，永不溢出或被裁剪 |
+| 布局左缘锚定（而非组中心对齐） | 放大珠组从原生组左缘向右生长：红灯玻璃残影始终被首珠盖住，组也永不越出窗口左缘 |
 | 不沙盒，Developer ID + 公证官网直发 | 辅助功能权限与沙盒互斥，无法上 MAS |
 | 无日志/统计/遥测 | 隐私优先，local-only 是产品承诺（见 CONTRIBUTING） |
 | deployment target macOS 15 | 覆盖 Intel 末代系统（26 是最后支持 Intel 的版本），核心 API 无 `#available` 分支压力 |
@@ -138,10 +133,9 @@ Inside `HoverOverlay/`:
 
 | Layer | Files | Responsibility |
 |---|---|---|
-| Orchestration | `HoverOverlayController(+Detection/+Panels)` | Mouse tracking, trigger decision, panel lifecycle, async sampling |
-| Geometry | `HoverOverlayGeometry` | `panelFrames` (whole-group layout, clamped to window∩screen), trigger zone |
-| Presentation | `HoverOverlayPanel` / `HoverOverlayMaskPanel` | Enlarged chips (NSGlassEffectView) / native-button mask |
-| Sampling | `TitlebarSampler` / `TitlebarPixelScan` | SCScreenshotManager capture → per-column cleanliness scan → widest clean run |
+| Orchestration | `HoverOverlayController(+Detection/+Panels)` | Mouse tracking, trigger decision, panel lifecycle |
+| Geometry | `HoverOverlayGeometry` | `panelFrames` (leading-anchored group layout, clamped to window∩screen), trigger zone |
+| Presentation | `HoverOverlayPanel` / `HoverOverlayTrayPanel` | Enlarged chips (opaque vivid dots) / click-through glass tray with bounded glows |
 
 ### Data flow 1: click interception (cold path, per click)
 
@@ -158,22 +152,17 @@ The pre-filter is the performance contract: most clicks die in step one and neve
 ### Data flow 2: hover enlarge (hot path, per mouse move)
 
 ```
-Mouse-move detection (throttled)
+Mouse-move detection (throttled + drag stand-down + latest-wins coalescing)
   → HoverOverlayController+Detection: isCursorInTriggerZone (button group + 12pt)
-  → HoverOverlayGeometry.panelFrames: whole-group layout, clamped to window∩screen
-  → rebuildPanels: mask panel first (Level = popUpMenu - 1), then enlarged chips
-  → (sampled style) scheduleSampledBackdrop: async SCScreenshotManager capture
-     → TitlebarPixelScan column analysis → widest clean run → mask backfill
+  → HoverOverlayGeometry.panelFrames: leading-anchored group layout, clamped to window∩screen
+  → rebuildPanels: glass tray first (Level = popUpMenu - 1, click-through + bounded dot glows), then enlarged chips
 ```
-
-The sampled backfill carries staleness guards (`isOverlayVisible` / `panelPID` / `panelSignature`); stale results are dropped on arrival.
 
 ### Threading model
 
 - **CGEventTap callback**: dedicated thread; cheap filtering only, never touches UI.
 - **AX queries & action performance**: serial worker queue so AX calls never block the tap.
 - **Main thread**: NSPanel show/hide and SwiftUI settings only.
-- **Screen sampling**: `userInitiated` Task; results re-validated for staleness before being applied on the main thread.
 
 ### Coordinate spaces
 
@@ -184,8 +173,8 @@ The sampled backfill carries staleness guards (`isOverlayVisible` / `panelPID` /
 | Decision | Rationale |
 |---|---|
 | NSPanel overlays + CGEventTap (not AXObserver click stealing) | Preserves native button accessibility semantics; overlays only replace visuals |
-| `SCScreenshotManager.captureImage` (SDK 26) | `CGWindowListCreateImage` is hard-unavailable on SDK 26 |
-| Dual mask styles (glass default / sampled opt-in) | Sampling needs Screen Recording permission; default is zero-permission |
+| Glass tray + opaque enlarged dots (not a sampled mask) | The glass is composited live by the system — any background blends with zero permission and zero latency; opaque dots eliminate color bleed at the source; bounded glows (decay edge < tray margin) absorb the native buttons' ghosts without ever spilling or clipping |
+| Leading-edge-anchored layout (not group-center alignment) | The enlarged group grows rightward from the native group's left edge: the red button's glass ghost stays covered by the first dot, and the group never crosses the window's left edge |
 | Non-sandboxed, Developer ID + notarized website distribution | Accessibility permission is mutually exclusive with App Sandbox |
 | No logging / statistics / telemetry | Privacy-first; local-only is a product promise (see CONTRIBUTING) |
 | Deployment target macOS 15 | Covers final Intel systems; no `#available` branching pressure |

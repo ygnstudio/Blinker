@@ -87,7 +87,8 @@ final class RuleEngineTests: XCTestCase {
         XCTAssertNil(decoded.first?.minimizeAction)
     }
 
-    /// Settings persisted without a `maskStyle` key decode with the default.
+    /// Settings persisted by an older version (no `maskStyle`, no
+    /// `extraButtonActions`) decode with defaults instead of resetting.
     func testLegacyHoverSettingsWithoutMaskStyleDecode() throws {
         let legacyJSON = """
         {"isEnabled":true,"enlargedSize":36,"dwellMilliseconds":200,
@@ -97,7 +98,7 @@ final class RuleEngineTests: XCTestCase {
         let decoded = try JSONDecoder().decode(HoverOverlaySettings.self, from: data)
 
         XCTAssertEqual(decoded.mode, .overlay)
-        XCTAssertEqual(decoded.maskStyle, .glass)
+        XCTAssertEqual(decoded.enlargedSize, 36)
     }
 
     func testRuleStoreRoundTripsThroughDefaults() throws {

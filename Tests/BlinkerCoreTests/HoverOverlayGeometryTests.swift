@@ -37,24 +37,17 @@ final class HoverOverlayGeometryTests: XCTestCase {
         ))
     }
 
-    func testPanelFrameCentersOnButton() {
-        let button = CGRect(x: 200, y: 300, width: 14, height: 14)
-        let panel = HoverOverlayGeometry.panelFrame(forButtonFrame: button, enlargedSize: 28)
-
-        XCTAssertEqual(panel.midX, button.midX, accuracy: 0.001)
-        XCTAssertEqual(panel.midY, button.midY, accuracy: 0.001)
-        XCTAssertEqual(panel.width, 28)
-        XCTAssertEqual(panel.height, 28)
-    }
-
-    func testSingleButtonGroupMatchesPanelFrame() {
+    func testSingleButtonGroupLeadsAtNativeEdge() {
         let frames = [CGRect(x: 200, y: 300, width: 14, height: 14)]
         let panels = HoverOverlayGeometry.panelFrames(forButtonFrames: frames, enlargedSize: 28)
 
-        XCTAssertEqual(panels, [HoverOverlayGeometry.panelFrame(
-            forButtonFrame: frames[0],
-            enlargedSize: 28
-        )])
+        XCTAssertEqual(panels.count, 1)
+        // Leading edge anchored slightly past the native button's left edge
+        // so the glass ghost stays covered; vertical center is preserved.
+        XCTAssertEqual(panels[0].minX, 200 - HoverOverlayGeometry.leadingAnchorInset, accuracy: 0.001)
+        XCTAssertEqual(panels[0].midY, 307, accuracy: 0.001)
+        XCTAssertEqual(panels[0].width, 28)
+        XCTAssertEqual(panels[0].height, 28)
     }
 
     func testGroupLayoutSpreadsEnlargedPanelsWithoutOverlap() {
@@ -80,10 +73,14 @@ final class HoverOverlayGeometryTests: XCTestCase {
                 "panel \(index) overlaps panel \(index + 1)"
             )
         }
-        // The group stays centered on the original buttons' bounding box.
-        let groupCenterX = frames.dropFirst().reduce(frames[0]) { $0.union($1) }.midX
-        let laidOutCenterX = (panels[0].minX + panels[2].maxX) / 2
-        XCTAssertEqual(laidOutCenterX, groupCenterX, accuracy: 0.001)
+        // The group is leading-edge anchored: the first panel sits slightly
+        // left of the native group's left edge, growing to the right.
+        let groupMinX = frames.dropFirst().reduce(frames[0]) { $0.union($1) }.minX
+        XCTAssertEqual(
+            panels[0].minX,
+            groupMinX - HoverOverlayGeometry.leadingAnchorInset,
+            accuracy: 0.001
+        )
         // Order is preserved (close / minimize / zoom left to right).
         XCTAssertTrue(panels[0].midX < panels[1].midX)
         XCTAssertTrue(panels[1].midX < panels[2].midX)
@@ -98,8 +95,9 @@ final class HoverOverlayGeometryTests: XCTestCase {
     }
 
     func testGroupLayoutClampsIntoContainerOnEdgeAnchoredWindows() {
-        // Buttons at the very top-left corner of the screen: the centered
-        // group would overflow past both edges and get clipped.
+        // Buttons at the very top-left corner of the screen: the leading
+        // anchor keeps the group inside, but the clamp must still hold for
+        // every panel.
         let frames = [
             CGRect(x: 8, y: 8, width: 14, height: 14),
             CGRect(x: 22, y: 8, width: 14, height: 14),
@@ -162,7 +160,7 @@ final class HoverOverlayGeometryTests: XCTestCase {
         )
 
         XCTAssertEqual(withExtras.count, 5)
-        // The native chips keep their centered positions.
+        // The native chips keep their leading-anchored positions.
         XCTAssertEqual(Array(withExtras.prefix(3)), native)
         // Extras continue to the right with the minimum gap.
         XCTAssertEqual(withExtras[3].minX - withExtras[2].maxX, 4, accuracy: 0.001)

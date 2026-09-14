@@ -12,6 +12,20 @@ protocol OverlayDwellPanel: AnyObject {
 /// Shared chip-drawing primitives used by both the traffic-light button view
 /// and the extra-action button view, so the two chip styles stay identical.
 enum OverlayChipDrawing {
+    /// The vivid fill color of an enlarged traffic dot — the native traffic
+    /// light colors at full saturation, opaque so the native button can
+    /// never tint the dot through the glass tray.
+    static func vividColor(for button: TrafficButton) -> NSColor {
+        switch button {
+        case .close:
+            NSColor(srgbRed: 1.0, green: 0.37255, blue: 0.34118, alpha: 1.0)
+        case .minimize:
+            NSColor(srgbRed: 0.99608, green: 0.73725, blue: 0.18039, alpha: 1.0)
+        case .zoom:
+            NSColor(srgbRed: 0.15686, green: 0.78431, blue: 0.25098, alpha: 1.0)
+        }
+    }
+
     /// Pre-macOS 26 fallback for the glass chip: a translucent rounded
     /// backdrop so the chip reads on any wallpaper.
     static func drawBackdropChip(in bounds: NSRect) {
@@ -41,10 +55,16 @@ enum OverlayChipDrawing {
         path.stroke()
     }
 
-    /// The solid inner circle.
+    /// The solid inner circle: opaque fill with a hairline dark rim, like
+    /// the native traffic lights — no translucency, so nothing bleeds
+    /// through from the glass tray below.
     static func drawCircle(in circleRect: NSRect, color: NSColor) {
-        color.withAlphaComponent(0.9).setFill()
+        color.setFill()
         NSBezierPath(ovalIn: circleRect).fill()
+        NSColor.black.withAlphaComponent(0.16).setStroke()
+        let rim = NSBezierPath(ovalIn: circleRect)
+        rim.lineWidth = 1
+        rim.stroke()
     }
 
     /// The inner circle rect for a chip of the given bounds (4 pt inset).
