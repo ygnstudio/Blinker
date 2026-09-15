@@ -1,43 +1,90 @@
+import AppKit
 import BlinkerCore
 import SwiftUI
 
-/// The settings window, organized into tabs: per-app rules, the window
-/// management toolkit, hover overlay configuration, general preferences and
-/// an about page.
-struct SettingsScreen: View {
-    @ObservedObject var ruleStore: RuleStore
-    @ObservedObject var hoverSettingsStore: HoverOverlaySettingsStore
-    let onApplyHoverSettings: (HoverOverlaySettings) -> Void
-    @ObservedObject var hotkeyManager: HotkeyManager
-    @ObservedObject var workspaceStore: WorkspaceStore
-    let onSnapEnabledChange: (Bool) -> Void
-    @ObservedObject var appDelegate: AppDelegate
+/// Assembles the five settings tabs as a toolbar-style `NSTabViewController`,
+/// so the tab row lives in the window's titlebar like System Settings rather
+/// than floating inside the content area.
+final class SettingsTabViewController: NSTabViewController {
+    init(
+        ruleStore: RuleStore,
+        hoverSettingsStore: HoverOverlaySettingsStore,
+        onApplyHoverSettings: @escaping (HoverOverlaySettings) -> Void,
+        hotkeyManager: HotkeyManager,
+        workspaceStore: WorkspaceStore,
+        onSnapEnabledChange: @escaping (Bool) -> Void,
+        appDelegate: AppDelegate
+    ) {
+        super.init(nibName: nil, bundle: nil)
+        tabStyle = .toolbar
+        canPropagateSelectedChildViewControllerTitle = false
+
+        addTab(
+            SettingsTabContent { RulesTab(ruleStore: ruleStore) },
+            title: tr("规则", "Rules"),
+            symbol: "list.bullet.rectangle"
+        )
+        addTab(
+            SettingsTabContent {
+                WindowManagementTab(
+                    hotkeyManager: hotkeyManager,
+                    workspaceStore: workspaceStore,
+                    onSnapEnabledChange: onSnapEnabledChange
+                )
+            },
+            title: tr("窗口管理", "Windows"),
+            symbol: "rectangle.split.2x2"
+        )
+        addTab(
+            SettingsTabContent {
+                HoverSettingsTab(
+                    store: hoverSettingsStore,
+                    onApply: onApplyHoverSettings
+                )
+            },
+            title: tr("悬停放大", "Hover"),
+            symbol: "arrow.up.left.and.arrow.down.right"
+        )
+        addTab(
+            SettingsTabContent { GeneralTab(appDelegate: appDelegate) },
+            title: tr("通用", "General"),
+            symbol: "gearshape"
+        )
+        addTab(
+            SettingsTabContent { AboutTab() },
+            title: tr("关于", "About"),
+            symbol: "info.circle"
+        )
+    }
+
+    @available(*, unavailable)
+    required init?(coder _: NSCoder) {
+        fatalError("init(coder:) is not supported")
+    }
+
+    private func addTab<Content: View>(
+        _ content: Content,
+        title: String,
+        symbol: String
+    ) {
+        let item = NSTabViewItem(
+            viewController: NSHostingController(rootView: content)
+        )
+        item.label = title
+        item.image = NSImage(systemSymbolName: symbol, accessibilityDescription: title)
+        addTabViewItem(item)
+    }
+}
+
+/// Wraps a tab's content with the app-wide appearance override so every tab
+/// follows the General tab's light/dark choice.
+private struct SettingsTabContent<Content: View>: View {
+    @ViewBuilder var content: Content
     @ObservedObject private var preferences = AppPreferences.shared
 
     var body: some View {
-        TabView {
-            RulesTab(ruleStore: ruleStore)
-                .tabItem { Label(tr("规则", "Rules"), systemImage: "list.bullet.rectangle") }
-            WindowManagementTab(
-                hotkeyManager: hotkeyManager,
-                workspaceStore: workspaceStore,
-                onSnapEnabledChange: onSnapEnabledChange
-            )
-            .tabItem { Label(tr("窗口管理", "Windows"), systemImage: "rectangle.split.2x2") }
-            HoverSettingsTab(store: hoverSettingsStore, onApply: onApplyHoverSettings)
-                .tabItem {
-                    Label(
-                        tr("悬停放大", "Hover"),
-                        systemImage: "arrow.up.left.and.arrow.down.right"
-                    )
-                }
-            GeneralTab(appDelegate: appDelegate)
-                .tabItem { Label(tr("通用", "General"), systemImage: "gearshape") }
-            AboutTab()
-                .tabItem { Label(tr("关于", "About"), systemImage: "info.circle") }
-        }
-        .frame(width: 560, height: 480)
-        .preferredColorScheme(preferences.appearance.resolvedScheme)
+        content
+            .preferredColorScheme(preferences.appearance.resolvedScheme)
     }
 }
 
@@ -84,7 +131,7 @@ extension ClickVariant {
 // MARK: - Rules tab
 
 /// Per-app remapping of the traffic light buttons.
-private struct RulesTab: View {
+struct RulesTab: View {
     @ObservedObject var ruleStore: RuleStore
     @ObservedObject private var preferences = AppPreferences.shared
     @State private var showingAppLibrary = false

@@ -146,7 +146,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, Observ
     func openSettings() {
         bringToFront()
         if settingsWindow == nil {
-            let screen = SettingsScreen(
+            let controller = SettingsTabViewController(
                 ruleStore: ruleStore,
                 hoverSettingsStore: hoverOverlaySettingsStore,
                 onApplyHoverSettings: applyHoverOverlaySettings,
@@ -155,7 +155,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, Observ
                 onSnapEnabledChange: applySnapEnabled,
                 appDelegate: self
             )
-            let window = NSWindow(contentViewController: NSHostingController(rootView: screen))
+            let window = NSWindow(contentViewController: controller)
             window.title = tr("Blinker 设置", "Blinker Settings")
             window.styleMask.insert(.miniaturizable)
             window.setContentSize(NSSize(width: 560, height: 480))
