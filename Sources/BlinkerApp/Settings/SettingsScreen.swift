@@ -171,6 +171,16 @@ private struct RuleRowView: View {
     let onRemove: () -> Void
     @State private var isExpanded = false
 
+    /// The app's icon resolved from its bundle identifier on disk; falls
+    /// back to the generic application icon when the app is missing (e.g.
+    /// uninstalled since the rule was created).
+    private var appIcon: NSImage {
+        if let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: rule.bundleIdentifier) {
+            return NSWorkspace.shared.icon(forFile: url.path)
+        }
+        return NSWorkspace.shared.icon(for: .applicationBundle)
+    }
+
     /// Every action is available on every button; the default entry keeps
     /// the system behavior. Menus render grouped window ops first.
     static let options: [ButtonAction?] = [
@@ -200,12 +210,13 @@ private struct RuleRowView: View {
             HStack(spacing: 12) {
                 disclosureButton
 
-                VStack(alignment: .leading, spacing: 2) {
+                HStack(spacing: 8) {
+                    Image(nsImage: appIcon)
+                        .resizable()
+                        .frame(width: 24, height: 24)
                     Text(rule.displayName)
                         .font(.body)
-                    Text(rule.bundleIdentifier)
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
 
