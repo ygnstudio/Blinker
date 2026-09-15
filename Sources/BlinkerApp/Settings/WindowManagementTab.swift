@@ -77,9 +77,10 @@ struct WindowManagementTab: View {
             Text(tr("工作区", "Workspaces"))
         } footer: {
             Text(tr(
-                "把当前窗口排布存成命名预设，点「恢复」一键还原；也可通过悬停红绿灯旁的「窗口管理」按钮快速恢复。已退出的应用会被跳过。",
+                "把当前窗口排布存成命名预设，点「恢复」一键还原；最小化和其他桌面的窗口也会一并记录。同名保存会覆盖旧布局，已退出的应用会被跳过。",
                 "Save the current window arrangement as a named preset and restore it in one click — "
-                    + "also from the hover window-manager chip. Apps that are not running are skipped."
+                    + "minimized and other-Space windows are captured too. Saving under an existing name "
+                    + "overwrites it; apps that are not running are skipped."
             ))
         }
     }

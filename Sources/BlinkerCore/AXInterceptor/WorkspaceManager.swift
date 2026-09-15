@@ -42,14 +42,21 @@ public enum WorkspaceManager {
 
     // MARK: - Capture
 
-    /// Snapshots every visible regular-app window, one entry per app (the
-    /// largest window wins). Blinker's own windows are excluded.
+    /// Snapshots every regular-app window — on-screen, minimized and on
+    /// other Spaces alike — one entry per window. Blinker's own windows are
+    /// excluded. Uses the unfiltered window list because `.optionOnScreenOnly`
+    /// silently drops everything outside the current Space, which made saved
+    /// workspaces look empty (and restore a no-op) for most real layouts.
     public static func captureVisibleWindows() -> [WorkspaceEntry] {
-        let list = CGWindowListCopyWindowInfo([.optionOnScreenOnly], kCGNullWindowID)
-            as? [[String: Any]] ?? []
+        // The raw list reports every window the system knows about; pair it
+        // with the on-screen list so entries can note nothing extra — the
+        // frame is the last-known frame for hidden windows, which is exactly
+        // what restore wants.
+        let list = CGWindowListCopyWindowInfo([], kCGNullWindowID) as? [[String: Any]] ?? []
         let ownPID = ProcessInfo.processInfo.processIdentifier
 
-        var best: [String: WorkspaceEntry] = [:]
+        var entries: [WorkspaceEntry] = []
+        var seenFrames: Set<String> = []
         for info in list {
             guard info[kCGWindowLayer as String] as? Int == 0 else { continue }
             guard
@@ -66,51 +73,98 @@ public enum WorkspaceManager {
                   app.activationPolicy == .regular,
                   let bundleIdentifier = app.bundleIdentifier
             else { continue }
+            // The raw list contains window proxies (e.g. full-width title-bar
+            // strips) that share a frame; one entry per distinct frame.
+            let frameKey = "\(bundleIdentifier)|\(frame.integral)"
+            guard seenFrames.insert(frameKey).inserted else { continue }
 
-            let entry = WorkspaceEntry(
+            entries.append(WorkspaceEntry(
                 bundleIdentifier: bundleIdentifier,
                 appName: app.localizedName ?? bundleIdentifier,
                 frame: frame
-            )
-            if let existing = best[bundleIdentifier], area(existing) >= area(entry) {
-                continue
-            }
-            best[bundleIdentifier] = entry
+            ))
         }
-        return Array(best.values)
-    }
-
-    private static func area(_ entry: WorkspaceEntry) -> CGFloat {
-        entry.frame.width * entry.frame.height
+        return entries.sorted {
+            ($0.appName, $0.frame.minX, $0.frame.minY)
+                < ($1.appName, $1.frame.minX, $1.frame.minY)
+        }
     }
 
     // MARK: - Restore
 
-    /// Repositions one window per saved entry onto a running instance of the
-    /// same app. Returns how many entries were restored; apps that are not
-    /// running (or expose no AX window) are skipped silently — callers may
-    /// log the miss.
+    /// Repositions saved windows onto running instances of the same apps.
+    /// Entries are paired with the app's AX windows by size similarity (the
+    /// closest current window wins), so multi-window apps restore every
+    /// window instead of just the first. Returns how many entries were
+    /// restored; apps that are not running (or expose no AX window) are
+    /// skipped silently — callers may log the miss.
     @discardableResult
     public static func restore(_ workspace: SavedWorkspace) -> Int {
         var restored = 0
         let running = NSWorkspace.shared.runningApplications
-        for entry in workspace.entries {
+        let entriesByApp = Dictionary(grouping: workspace.entries, by: \.bundleIdentifier)
+        for (bundleIdentifier, entries) in entriesByApp {
             guard let app = running.first(where: {
-                $0.bundleIdentifier == entry.bundleIdentifier
+                $0.bundleIdentifier == bundleIdentifier
             }) else { continue }
-            guard let window = firstWindowElement(processIdentifier: app.processIdentifier) else {
-                continue
+            guard let windows = axWindows(processIdentifier: app.processIdentifier), !windows.isEmpty
+            else { continue }
+
+            var used: Set<Int> = []
+            for entry in entries {
+                guard let index = bestWindowIndex(for: entry.frame, in: windows, used: used) else {
+                    continue
+                }
+                used.insert(index)
+                AXQuery.setWindowFrame(axFrame: entry.frame, of: windows[index])
+                restored += 1
             }
-            AXQuery.setWindowFrame(axFrame: entry.frame, of: window)
-            restored += 1
         }
         return restored
     }
 
-    /// The app's first AX window — the one most likely to be the user's main
-    /// surface. Minimized windows are rarely first, and moving hidden windows
-    /// would only surprise.
-    private static func firstWindowElement(processIdentifier: pid_t) -> AXUIElement? {
+    /// Picks the unused AX window whose current area is closest to the saved
+    /// frame's area — a cheap size fingerprint that survives position changes
+    /// and pairs multi-window apps sensibly.
+    private static func bestWindowIndex(
+        for frame: CGRect,
+        in windows: [AXUIElement],
+        used: Set<Int>
+    ) -> Int? {
+        let savedArea = frame.width * frame.height
+        var bestIndex: Int?
+        var bestDistance = CGFloat.greatestFiniteMagnitude
+        for (index, window) in windows.enumerated() where !used.contains(index) {
+            guard let current = elementFrame(window) else { continue }
+            let area = current.width * current.height
+            let distance = abs(area - savedArea)
+            if distance < bestDistance {
+                bestDistance = distance
+                bestIndex = index
+            }
+        }
+        return bestIndex
+    }
+
+    private static func elementFrame(_ element: AXUIElement) -> CGRect? {
+        var positionRef: CFTypeRef?
+        var sizeRef: CFTypeRef?
+        guard
+            AXUIElementCopyAttributeValue(element, kAXPositionAttribute as CFString, &positionRef) ==
+            .success,
+            AXUIElementCopyAttributeValue(element, kAXSizeAttribute as CFString, &sizeRef) == .success,
+            let positionValue = positionRef, let sizeValue = sizeRef
+        else { return nil }
+        var point = CGPoint()
+        var size = CGSize()
+        AXValueGetValue(positionValue as! AXValue, .cgPoint, &point) // swiftlint:disable:this force_cast
+        AXValueGetValue(sizeValue as! AXValue, .cgSize, &size) // swiftlint:disable:this force_cast
+        return CGRect(origin: point, size: size)
+    }
+
+    /// All of the app's AX windows, any state — minimized windows keep their
+    /// last frame, so repositioning them lands correctly when un-minimized.
+    private static func axWindows(processIdentifier: pid_t) -> [AXUIElement]? {
         let appElement = AXUIElementCreateApplication(processIdentifier)
         AXQuery.applyMessagingTimeout(appElement)
         var windowsRef: CFTypeRef?
@@ -121,8 +175,8 @@ public enum WorkspaceManager {
                 &windowsRef
             ) == .success,
             let windows = windowsRef as? [AXUIElement],
-            let window = windows.first
+            !windows.isEmpty
         else { return nil }
-        return window
+        return windows
     }
 }
