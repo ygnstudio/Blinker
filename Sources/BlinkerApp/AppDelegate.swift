@@ -1,5 +1,6 @@
 import AppKit
 import BlinkerCore
+import Combine
 import os
 import SwiftUI
 
@@ -48,6 +49,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, Observ
     private var hoverOverlay: HoverOverlayController?
     private var retryTimer: Timer?
     private var statusItem: NSStatusItem?
+    private var preferencesCancellable: AnyCancellable?
     private var hasPromptedForPermission = false
     private let logger = Logger(subsystem: "com.ygnstudio.blinker", category: "app")
 
@@ -127,7 +129,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, Observ
         statusItem.button?.performClick(nil)
     }
 
-    func menuDidClose(_ menu: NSMenu) {
+    func menuDidClose(_: NSMenu) {
         statusItem?.menu = nil
     }
 
@@ -158,13 +160,30 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, Observ
             let window = NSWindow(contentViewController: controller)
             window.title = tr("Blinker 设置", "Blinker Settings")
             window.styleMask.insert(.miniaturizable)
-            window.setContentSize(NSSize(width: 560, height: 480))
+            window.setContentSize(NSSize(width: 640, height: 480))
+            window.contentMinSize = NSSize(width: 640, height: 420)
             window.center()
             window.isReleasedWhenClosed = false
             window.level = .floating
+            window.appearance = AppPreferences.shared.nsAppearance
             settingsWindow = window
+            observePreferenceChanges()
         }
         settingsWindow?.makeKeyAndOrderFront(nil)
+    }
+
+    /// Keeps the settings window chrome in sync with the General tab: the
+    /// window title and `NSAppearance` live on the AppKit side, so SwiftUI's
+    /// `preferredColorScheme` alone leaves the titlebar (and the in-titlebar
+    /// tab row) one step behind the content.
+    private func observePreferenceChanges() {
+        preferencesCancellable = AppPreferences.shared.objectWillChange
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                guard let window = self?.settingsWindow else { return }
+                window.title = tr("Blinker 设置", "Blinker Settings")
+                window.appearance = AppPreferences.shared.nsAppearance
+            }
     }
 
     /// Activates the app so newly opened windows (settings) appear on top.

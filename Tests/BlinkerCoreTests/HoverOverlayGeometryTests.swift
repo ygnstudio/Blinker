@@ -340,14 +340,14 @@ final class SafeCorridorTests: XCTestCase {
         // to the HUD's top edge — including the gap itself — is safe. The
         // endpoint `panel.minY` itself is half-open (covered by the HUD
         // rect hit-test in the caller).
-        for y in stride(from: CGFloat(540), through: CGFloat(545.5), by: 0.5) {
+        for sampleY in stride(from: CGFloat(540), through: CGFloat(545.5), by: 0.5) {
             XCTAssertTrue(
                 HoverOverlayGeometry.safeCorridorContains(
-                    cursor: CGPoint(x: 220, y: y),
+                    cursor: CGPoint(x: 220, y: sampleY),
                     anchor: anchor,
                     panel: panel
                 ),
-                "cursor at y=\(y) should stay inside the corridor"
+                "cursor at y=\(sampleY) should stay inside the corridor"
             )
         }
     }

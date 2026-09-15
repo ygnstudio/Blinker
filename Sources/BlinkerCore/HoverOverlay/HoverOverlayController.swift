@@ -74,10 +74,14 @@ public final class HoverOverlayController {
     func hudSafeZoneContains(_ point: CGPoint) -> Bool {
         hudStateLock.withLock {
             guard !hudKeepAliveFrameAX.isNull else { return false }
-            if hudKeepAliveFrameAX.contains(point) { return true }
+            if hudKeepAliveFrameAX.contains(point) {
+                return true
+            }
             guard !hudAnchorFrameAX.isNull else { return false }
             // Still hovering the chip that opened the HUD: safe.
-            if hudAnchorFrameAX.contains(point) { return true }
+            if hudAnchorFrameAX.contains(point) {
+                return true
+            }
             return HoverOverlayGeometry.safeCorridorContains(
                 cursor: point,
                 anchor: hudAnchorFrameAX,

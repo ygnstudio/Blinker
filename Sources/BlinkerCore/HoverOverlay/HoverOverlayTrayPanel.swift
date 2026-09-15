@@ -132,7 +132,7 @@ final class TrayGlowView: NSView {
     var glows: [HoverOverlayTrayPanel.Glow] = []
 
     override func draw(_: NSRect) {
-        guard let cg = NSGraphicsContext.current?.cgContext else { return }
+        guard let context = NSGraphicsContext.current?.cgContext else { return }
         for glow in glows {
             let dotRect = glow.rect
             let srgb = glow.color.usingColorSpace(.sRGB) ?? glow.color
@@ -143,11 +143,11 @@ final class TrayGlowView: NSView {
                 dx: -dotRect.width * 0.32,
                 dy: -dotRect.height * 0.32
             )
-            cg.saveGState()
+            context.saveGState()
             NSBezierPath(ovalIn: haloRect).addClip()
             let components: [CGFloat] = [
                 srgb.redComponent, srgb.greenComponent, srgb.blueComponent, 0.45,
-                srgb.redComponent, srgb.greenComponent, srgb.blueComponent, 0
+                srgb.redComponent, srgb.greenComponent, srgb.blueComponent, 0,
             ]
             if let gradient = CGGradient(
                 colorSpace: CGColorSpaceCreateDeviceRGB(),
@@ -155,7 +155,7 @@ final class TrayGlowView: NSView {
                 locations: [0, 1],
                 count: 2
             ) {
-                cg.drawRadialGradient(
+                context.drawRadialGradient(
                     gradient,
                     startCenter: CGPoint(x: dotRect.midX, y: dotRect.midY),
                     startRadius: dotRect.width * 0.38,
@@ -164,7 +164,7 @@ final class TrayGlowView: NSView {
                     options: []
                 )
             }
-            cg.restoreGState()
+            context.restoreGState()
         }
     }
 }

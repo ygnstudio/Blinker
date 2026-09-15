@@ -68,6 +68,17 @@ final class AppPreferences: ObservableObject {
         isSnapEnabled = defaults.object(forKey: "isSnapEnabled") as? Bool ?? true
     }
 
+    /// `NSAppearance` for the settings window chrome; `nil` follows the
+    /// system. Applying it on the window keeps the titlebar and in-titlebar
+    /// tab row in sync with the content instantly.
+    var nsAppearance: NSAppearance? {
+        switch appearance {
+        case .system: nil
+        case .light: NSAppearance(named: .aqua)
+        case .dark: NSAppearance(named: .darkAqua)
+        }
+    }
+
     /// Whether UI text should render in English. `.system` inspects the
     /// user's preferred languages and falls back to Chinese only for zh.
     var isEnglish: Bool {

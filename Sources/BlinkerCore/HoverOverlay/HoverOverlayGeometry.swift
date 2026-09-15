@@ -139,7 +139,7 @@ public enum HoverOverlayGeometry {
             CGPoint(x: anchor.minX, y: anchor.maxY),
             CGPoint(x: anchor.maxX, y: anchor.maxY),
             CGPoint(x: panel.maxX, y: panel.minY),
-            CGPoint(x: panel.minX, y: panel.minY)
+            CGPoint(x: panel.minX, y: panel.minY),
         ]
         return Self.polygonContains(cursor, corners)
     }
@@ -149,11 +149,14 @@ public enum HoverOverlayGeometry {
         var inside = false
         var previous = vertices.count - 1
         for index in 0 ..< vertices.count {
-            let a = vertices[index]
-            let b = vertices[previous]
-            let crossesHorizontally = (a.y > point.y) != (b.y > point.y)
+            let current = vertices[index]
+            let earlier = vertices[previous]
+            let crossesHorizontally =
+                (current.y > point.y) != (earlier.y > point.y)
             if crossesHorizontally,
-                point.x < (b.x - a.x) * (point.y - a.y) / (b.y - a.y) + a.x {
+               point.x < (earlier.x - current.x) * (point.y - current.y)
+               / (earlier.y - current.y) + current.x
+            {
                 inside.toggle()
             }
             previous = index
