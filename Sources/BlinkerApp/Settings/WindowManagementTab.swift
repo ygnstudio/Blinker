@@ -140,9 +140,9 @@ struct WindowManagementTab: View {
     private var hotkeySection: some View {
         Section {
             Toggle(tr("启用全局快捷键", "Enable Global Hotkeys"), isOn: hotkeysEnabledBinding)
-                // Keep the master switch clickable while the bindings are
-                // grayed out, otherwise the toggle locks itself out.
-                .disabled(false)
+            // The master switch stays enabled; disabling lands on the
+            // individual binding rows only — a Form/Section-level
+            // `.disabled` locks the master toggle itself on macOS 26.
             HotkeyRowView(
                 label: tr("悬停放大开关", "Toggle Hover Enlargement"),
                 combo: hotkeyManager.hoverToggleCombo,
@@ -150,6 +150,7 @@ struct WindowManagementTab: View {
                 onRecord: { hotkeyManager.beginRecordingHoverToggle() },
                 onClear: { hotkeyManager.clearHoverToggleBinding() }
             )
+            .disabled(!hotkeyManager.isEnabled)
             ForEach(HotkeyManager.bindableActions, id: \.rawValue) { action in
                 HotkeyRowView(
                     label: action.localizedLabel,
@@ -158,6 +159,7 @@ struct WindowManagementTab: View {
                     onRecord: { hotkeyManager.beginRecording(for: action) },
                     onClear: { hotkeyManager.clearBinding(for: action) }
                 )
+                .disabled(!hotkeyManager.isEnabled)
             }
         } header: {
             Text(tr("全局快捷键", "Global Hotkeys"))
@@ -172,7 +174,6 @@ struct WindowManagementTab: View {
                     + "U/I/J/K; the hover toggle defaults to ⌃⌥H."
             ))
         }
-        .disabled(!hotkeyManager.isEnabled)
     }
 
     private var hotkeysEnabledBinding: Binding<Bool> {

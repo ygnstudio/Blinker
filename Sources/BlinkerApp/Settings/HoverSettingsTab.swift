@@ -18,11 +18,8 @@ struct HoverSettingsTab: View {
         Form {
             Section {
                 Toggle(tr("启用悬停放大", "Enable Hover Enlargement"), isOn: isEnabledBinding)
-                    // The master switch must stay clickable while the rest of
-                    // the form is grayed out, otherwise turning the feature
-                    // off locks the toggle itself.
-                    .disabled(false)
                 modePicker
+                    .disabled(!settings.isEnabled)
             } header: {
                 Text(tr("模式与尺寸", "Mode & Size"))
             } footer: {
@@ -40,6 +37,7 @@ struct HoverSettingsTab: View {
             } header: {
                 Text(tr("放大参数", "Enlargement"))
             }
+            .disabled(!settings.isEnabled)
 
             Section {
                 scopePicker
@@ -52,6 +50,7 @@ struct HoverSettingsTab: View {
                         + " blending with any background. No extra permission required."
                 ))
             }
+            .disabled(!settings.isEnabled)
 
             Section {
                 ForEach(0 ..< HoverOverlaySettings.extraSlotCount, id: \.self) { index in
@@ -76,9 +75,9 @@ struct HoverSettingsTab: View {
                         + " clicking performs the action. Leave empty to hide a slot."
                 ))
             }
+            .disabled(!settings.isEnabled)
         }
         .formStyle(.grouped)
-        .disabled(!settings.isEnabled)
     }
 
     /// Every action except `none` — a chip that does nothing is pointless.
