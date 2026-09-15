@@ -26,7 +26,7 @@ extension ButtonAction {
         case .almostMaximize: tr("准最大化", "Almost Maximize")
         case .moveToNextDisplay: tr("下一显示器", "Next Display")
         case .none: tr("无操作", "Do Nothing")
-        case .windowManagerPanel: tr("窗口管理", "Window Manager")
+        case .windowManagerPanel: tr("打开窗口管理面板", "Open Window Manager Panel")
         }
     }
 }
@@ -63,8 +63,10 @@ struct ActionPicker: View {
     /// rows use "不显示".
     var emptyLabel: String = tr("默认", "Default")
     /// Menu width; fits four CJK characters ("关闭窗口") without ellipsis.
-    /// The compact variant matrix uses a narrower value.
-    var pickerWidth: CGFloat = 88
+    /// Uniform across the rules matrix and the hover extra-button slots
+    /// (previously the latter used a narrower 88 that truncated
+    /// "下一显示器").
+    var pickerWidth: CGFloat = 104
     /// Whether the leading color dot renders; matrix cells drop it because
     /// their column headers already carry the light's color.
     var showsDot: Bool = true

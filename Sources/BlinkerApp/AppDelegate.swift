@@ -208,8 +208,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, Observ
             }
             window.styleMask.insert(.fullSizeContentView)
             window.styleMask.insert(.miniaturizable)
-            window.setContentSize(NSSize(width: 860, height: 500))
-            window.contentMinSize = NSSize(width: 720, height: 460)
+            // Width floor for the rules tab's three columns: 180 (sidebar
+            // min) + 232 (rule list min + leading glass inset) + 1 (divider)
+            // + ~460 (inspector: grouped-form card insets plus the matrix —
+            // 64 label column + 3×104 pickers + grid gaps) ≈ 873, so the
+            // old 720 minimum truncated the matrix horizontally; the
+            // minimum now matches the default width.
+            window.setContentSize(NSSize(width: 880, height: 500))
+            window.contentMinSize = NSSize(width: 880, height: 460)
             window.center()
             window.isReleasedWhenClosed = false
             // Normal level: `bringToFront()` handles the initial fronting;

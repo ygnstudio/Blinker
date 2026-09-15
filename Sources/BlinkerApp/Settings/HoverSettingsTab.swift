@@ -3,12 +3,16 @@ import SwiftUI
 
 // MARK: - Hover tab
 
-/// Hover overlay configuration: master switch, mode and size, scope and
-/// extra-button slots — long explanations live in info popovers instead of
-/// multi-line footers, keeping the form dense. Per-row `.disabled` only
-/// (never section-level), so the master toggle never locks itself.
+/// Hover overlay configuration: master switch, mode and size, scope,
+/// extra-button slots and the hover-toggle hotkey — long explanations live
+/// in info popovers instead of multi-line footers, keeping the form dense.
+/// Per-row `.disabled` only (never section-level), so the master toggle
+/// never locks itself.
 struct HoverSettingsTab: View {
     @ObservedObject var store: HoverOverlaySettingsStore
+    /// Owns the hover-toggle hotkey binding; observed here so the row moved
+    /// from the window-management tab keeps its live recording state.
+    @ObservedObject var hotkeyManager: HotkeyManager
     let onApply: (HoverOverlaySettings) -> Void
     @ObservedObject private var preferences = AppPreferences.shared
 
@@ -19,7 +23,7 @@ struct HoverSettingsTab: View {
     var body: some View {
         Form {
             Section {
-                Toggle(tr("启用悬停放大", "Enable Hover Enlargement"), isOn: isEnabledBinding)
+                Toggle(tr("开启悬停放大", "Enable Hover Enlargement"), isOn: isEnabledBinding)
                 modePicker
                     .disabled(!settings.isEnabled)
                 sizeSlider
@@ -54,6 +58,21 @@ struct HoverSettingsTab: View {
                         "选好动作的按钮会在悬停红绿灯时出现在绿灯右侧，点击即执行该动作；留空则不显示。",
                         "Buttons with a chosen action appear to the right of the green light on hover;"
                             + " clicking performs the action. Leave empty to hide a slot."
+                    )
+                )
+            }
+
+            Section {
+                hoverToggleHotkeyRow
+            } header: {
+                SectionHeader(
+                    title: tr("快捷键", "Hotkey"),
+                    info: tr(
+                        "在任意应用下按下即可直接开关悬停放大；点击右侧录制新的快捷键，Esc 取消，减号清除。"
+                            + "默认 ⌃⌥H；受「窗口管理 → 全局快捷键」总开关控制。",
+                        "Press anywhere to toggle hover enlargement directly; click to record a new"
+                            + " key (Esc cancels), the minus clears it. Defaults to ⌃⌥H and follows the"
+                            + " global-hotkeys master switch on the Windows tab."
                     )
                 )
             }
@@ -109,7 +128,7 @@ struct HoverSettingsTab: View {
         LazyVGrid(
             columns: [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)],
             alignment: .leading,
-            spacing: 6
+            spacing: 12
         ) {
             ForEach(0 ..< HoverOverlaySettings.extraSlotCount, id: \.self) { index in
                 LabeledContent {
@@ -118,6 +137,10 @@ struct HoverSettingsTab: View {
                         options: Self.extraOptions,
                         selection: extraBinding(index),
                         emptyLabel: tr("不显示", "Hidden"),
+                        // The same 104pt width as the rules matrix, so the
+                        // "下一显示器" option never truncates on either
+                        // surface (previously 88 here).
+                        pickerWidth: 104,
                         // Every slot shares the same accent color, so the
                         // dots carry no information — drop them (matching
                         // the rules matrix).
@@ -130,6 +153,29 @@ struct HoverSettingsTab: View {
             }
         }
         .padding(.vertical, 2)
+    }
+
+    /// The hover-toggle hotkey row, moved from the window-management tab so
+    /// the binding lives next to the feature it controls. The binding
+    /// itself is still owned by the hotkey manager, so the row follows the
+    /// global-hotkeys master switch.
+    private var hoverToggleHotkeyRow: some View {
+        HotkeyRowView(
+            label: tr("悬停放大开关", "Toggle Hover Enlargement"),
+            combo: hotkeyManager.hoverToggleCombo,
+            isRecording: hotkeyManager.recordingTarget == .hoverToggle,
+            recordingHint: hotkeyManager.recordingHint,
+            conflictWarning: hoverToggleConflictWarning,
+            onRecord: { hotkeyManager.beginRecordingHoverToggle() },
+            onClear: { hotkeyManager.clearHoverToggleBinding() }
+        )
+        .disabled(!hotkeyManager.isEnabled)
+    }
+
+    /// The hover-toggle combo's conflict with any window-action binding.
+    private var hoverToggleConflictWarning: String? {
+        guard let combo = hotkeyManager.hoverToggleCombo else { return nil }
+        return hotkeyManager.internalConflictWarning(for: combo, action: nil)
     }
 
     private var dwellLabel: String {

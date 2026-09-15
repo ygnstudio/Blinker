@@ -13,6 +13,9 @@ struct RulesTab: View {
     /// The rule whose matrix the inspector shows; owned by the settings
     /// root so the app-library sheet can auto-select a newly added rule.
     @Binding var selection: AppRule.ID?
+    /// Opens the app-library sheet from the empty state's secondary button,
+    /// mirroring the sidebar's add-app affordance.
+    let onAddApp: () -> Void
 
     private var enabledRules: [AppRule] { ruleStore.rules.filter(\.isEnabled) }
     private var disabledRules: [AppRule] { ruleStore.rules.filter { !$0.isEnabled } }
@@ -109,15 +112,22 @@ struct RulesTab: View {
 
     private var emptyState: some View {
         // The system-standard empty state, matching first-party apps; the
-        // symbol mirrors the sidebar icon for coherence.
+        // symbol mirrors the sidebar icon for coherence. The secondary
+        // action mirrors the sidebar's add button so the empty tab does
+        // not dead-end below the fold.
         ContentUnavailableView {
             Label(tr("还没有配置任何应用", "No Apps Configured"), systemImage: "list.bullet.rectangle")
         } description: {
             Text(tr(
-                "点击侧栏下方的 ＋ 添加应用，即可单独定义它的红绿灯行为；未添加的应用保持系统默认。",
-                "Click the ＋ at the bottom of the sidebar to add an app and remap its"
-                    + " traffic lights; everything else keeps system defaults."
+                "点击下方按钮或侧栏中的「添加应用」，即可单独定义它的红绿灯行为；未添加的应用保持系统默认。",
+                "Add an app below or from the sidebar to remap its traffic lights;"
+                    + " everything else keeps system defaults."
             ))
+        } actions: {
+            Button(action: onAddApp) {
+                Label(tr("从应用库添加", "Add from App Library"), systemImage: "plus")
+            }
+            .buttonStyle(.bordered)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }

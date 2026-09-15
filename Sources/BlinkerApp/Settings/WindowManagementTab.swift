@@ -4,7 +4,10 @@ import SwiftUI
 /// The window management tab: saved layouts, desktop switching with
 /// drag-to-snap, and the global hotkey configuration. Long explanations
 /// live in info popovers instead of multi-line footers; naming a saved
-/// layout happens in a proper sheet, not a bare alert.
+/// layout happens in a proper sheet, not a bare alert. Hotkey bindings are
+/// grouped into halves / quarters / whole-window sections so the flat
+/// eleven-row list reads as browsable chunks; the hover-toggle hotkey lives
+/// on the hover tab, next to the feature it controls.
 struct WindowManagementTab: View {
     @ObservedObject var hotkeyManager: HotkeyManager
     @ObservedObject var workspaceStore: WorkspaceStore
@@ -16,7 +19,21 @@ struct WindowManagementTab: View {
         Form {
             workspaceSection
             desktopAndSnapSection
-            hotkeySection
+            hotkeySwitchSection
+            hotkeyGroupSection(
+                title: tr("半屏", "Halves"),
+                actions: [.tileLeft, .tileRight, .tileTop, .tileBottom]
+            )
+            hotkeyGroupSection(
+                title: tr("四分屏", "Quarters"),
+                actions: [
+                    .tileTopLeft, .tileTopRight, .tileBottomLeft, .tileBottomRight
+                ]
+            )
+            hotkeyGroupSection(
+                title: tr("整窗", "Window"),
+                actions: [.maximize, .almostMaximize, .centerWindow, .moveToNextDisplay]
+            )
         }
         .formStyle(.grouped)
         .sheet(isPresented: $showingSaveWorkspaceSheet) {
@@ -24,10 +41,13 @@ struct WindowManagementTab: View {
         }
     }
 
-    private func panelButton(_ label: String, icon: String, action: @escaping () -> Void) -> some View {
+    /// Compact leading-aligned desktop buttons — small bordered controls,
+    /// not two full-width giant buttons.
+    private func panelButton(
+        _ label: String, icon: String, action: @escaping () -> Void
+    ) -> some View {
         Button(action: action) {
             Label(label, systemImage: icon)
-                .frame(maxWidth: .infinity)
         }
         .buttonStyle(.bordered)
         .controlSize(.small)
@@ -55,6 +75,10 @@ struct WindowManagementTab: View {
                 Label(tr("保存当前布局…", "Save Current Layout…"), systemImage: "plus")
             }
             .buttonStyle(.bordered)
+            // The save action is a footer-style affordance of the section,
+            // not a sibling setting of the toggle above — drop the divider
+            // that separated them.
+            .listRowSeparator(.hidden, edges: .top)
         } header: {
             SectionHeader(
                 title: tr("工作区", "Workspaces"),
@@ -93,7 +117,8 @@ struct WindowManagementTab: View {
                     SpaceSwitcher.switchDesktop(.next)
                 }
             }
-            Toggle(tr("启用拖拽贴靠", "Enable Drag to Snap"), isOn: snapBinding)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            Toggle(tr("开启拖拽贴靠", "Enable Drag to Snap"), isOn: snapBinding)
         } header: {
             SectionHeader(
                 title: tr("桌面与贴靠", "Desktop & Snapping"),
@@ -130,54 +155,50 @@ struct WindowManagementTab: View {
 
     // MARK: - Hotkeys
 
-    private var hotkeySection: some View {
+    /// The master switch; the binding rows live in the three groups below.
+    private var hotkeySwitchSection: some View {
         Section {
-            Toggle(tr("启用全局快捷键", "Enable Global Hotkeys"), isOn: hotkeysEnabledBinding)
-            // The master switch stays enabled; disabling lands on the
-            // individual binding rows only — a Form/Section-level
-            // `.disabled` locks the master toggle itself on macOS 26.
-            HotkeyRowView(
-                label: tr("悬停放大开关", "Toggle Hover Enlargement"),
-                combo: hotkeyManager.hoverToggleCombo,
-                isRecording: hotkeyManager.recordingTarget == .hoverToggle,
-                recordingHint: hotkeyManager.recordingHint,
-                conflictWarning: hoverToggleConflictWarning,
-                onRecord: { hotkeyManager.beginRecordingHoverToggle() },
-                onClear: { hotkeyManager.clearHoverToggleBinding() }
-            )
-            .disabled(!hotkeyManager.isEnabled)
-            ForEach(HotkeyManager.bindableActions, id: \.rawValue) { action in
-                HotkeyRowView(
-                    label: action.localizedLabel,
-                    combo: hotkeyManager.bindings[action.rawValue],
-                    isRecording: hotkeyManager.recordingTarget == .windowAction(action),
-                    recordingHint: hotkeyManager.recordingHint,
-                    conflictWarning: windowActionConflictWarning(for: action),
-                    onRecord: { hotkeyManager.beginRecording(for: action) },
-                    onClear: { hotkeyManager.clearBinding(for: action) }
-                )
-                .disabled(!hotkeyManager.isEnabled)
-            }
+            Toggle(tr("开启全局快捷键", "Enable Global Hotkeys"), isOn: hotkeysEnabledBinding)
         } header: {
             SectionHeader(
                 title: tr("全局快捷键", "Global Hotkeys"),
                 info: tr(
-                    "在任意应用下按键即可对最前面的窗口执行动作；「悬停放大开关」直接开关悬停放大。"
-                        + "点击右侧录制新的快捷键，Esc 取消，减号清除。窗口动作默认方案为 ⌃⌥ 加方向键"
-                        + "与 U/I/J/K，悬停开关默认 ⌃⌥H。",
-                    "Press anywhere to act on the frontmost window; the hover toggle switches"
-                        + " hover enlargement directly. Click a binding to record a new key (Esc cancels);"
-                        + " the minus clears it. Window actions default to ⌃⌥ with arrows and U/I/J/K;"
-                        + " the hover toggle defaults to ⌃⌥H."
+                    "在任意应用下按键即可对最前面的窗口执行动作。点击右侧录制新的快捷键，Esc 取消，"
+                        + "减号清除。窗口动作默认方案为 ⌃⌥ 加方向键与 U/I/J/K；"
+                        + "悬停放大开关的快捷键在「悬停放大」页配置。",
+                    "Press anywhere to act on the frontmost window. Click a binding to record a new"
+                        + " key (Esc cancels); the minus clears it. Window actions default to ⌃⌥ with"
+                        + " arrows and U/I/J/K; the hover-toggle hotkey lives on the Hover tab."
                 )
             )
         }
     }
 
-    /// The hover-toggle combo's conflict with any window-action binding.
-    private var hoverToggleConflictWarning: String? {
-        guard let combo = hotkeyManager.hoverToggleCombo else { return nil }
-        return hotkeyManager.internalConflictWarning(for: combo, action: nil)
+    /// One hotkey group with a plain section title.
+    private func hotkeyGroupSection(title: String, actions: [ButtonAction]) -> some View {
+        Section {
+            ForEach(actions, id: \.rawValue) { action in
+                hotkeyRow(for: action)
+            }
+        } header: {
+            Text(title)
+        }
+    }
+
+    private func hotkeyRow(for action: ButtonAction) -> some View {
+        HotkeyRowView(
+            label: action.localizedLabel,
+            combo: hotkeyManager.bindings[action.rawValue],
+            isRecording: hotkeyManager.recordingTarget == .windowAction(action),
+            recordingHint: hotkeyManager.recordingHint,
+            conflictWarning: windowActionConflictWarning(for: action),
+            onRecord: { hotkeyManager.beginRecording(for: action) },
+            onClear: { hotkeyManager.clearBinding(for: action) }
+        )
+        // The master switch stays enabled; disabling lands on the individual
+        // binding rows only — a Form/Section-level `.disabled` locks the
+        // master toggle itself on macOS 26.
+        .disabled(!hotkeyManager.isEnabled)
     }
 
     /// One window action's conflict with any other Blinker binding.
@@ -288,91 +309,6 @@ private struct WorkspaceRowView: View {
             .fixedSize()
             .help(tr("更多操作", "More actions"))
             .accessibilityLabel(tr("更多操作", "More actions"))
-        }
-    }
-}
-
-// MARK: - Hotkey row
-
-/// One hotkey binding row: label, current combo (or record prompt), a clear
-/// button, plus inline recorder feedback and conflict warnings.
-private struct HotkeyRowView: View {
-    let label: String
-    let combo: HotkeyCombo?
-    let isRecording: Bool
-    /// Recorder feedback (e.g. "hold a modifier") while this row records.
-    let recordingHint: String?
-    /// Conflict with another Blinker binding, if any.
-    let conflictWarning: String?
-    let onRecord: () -> Void
-    let onClear: () -> Void
-    @ObservedObject private var preferences = AppPreferences.shared
-
-    var body: some View {
-        HStack {
-            // The label never changes while recording — swapping it made the
-            // whole row jump; the recording state lives on the chip instead.
-            Text(label)
-                .foregroundStyle(isRecording ? Color.accentColor : .primary)
-            Spacer()
-            // Fixed-width trailing column: chip and clear button reserve
-            // their space even when absent, so all rows share the same
-            // right edge.
-            HStack(spacing: 6) {
-                Button {
-                    onRecord()
-                } label: {
-                    Text(
-                        isRecording
-                            ? tr("按下快捷键…", "Press keys…")
-                            : combo?.displayLabel ?? tr("未设置", "Not Set")
-                    )
-                    // Wide enough for the recording prompt ("按下快捷键…")
-                    // and four-modifier combos ("⌃⌥⇧⌘K"), so no row ellipsizes
-                    // and all rows keep a shared right edge.
-                    .frame(width: 96)
-                }
-                .buttonStyle(.bordered)
-                .tint(isRecording ? .accentColor : nil)
-                Button(role: .destructive, action: onClear) {
-                    Image(systemName: "minus.circle")
-                }
-                .buttonStyle(.borderless)
-                .help(tr("清除快捷键", "Clear hotkey"))
-                .accessibilityLabel(tr("清除快捷键", "Clear hotkey"))
-                .disabled(combo == nil)
-                .opacity(combo == nil ? 0 : 1)
-            }
-        }
-        if isRecording {
-            // Recorder feedback: the reject reason when the last press was
-            // unusable, otherwise the visible cancel affordance.
-            Text(recordingHint ?? tr("按 Esc 取消录制", "Esc to cancel"))
-                .font(.caption2)
-                .foregroundStyle(.secondary)
-        }
-        if let conflictWarning {
-            WarningLine(text: conflictWarning)
-        }
-        if let combo, let warning = HotkeyManager.systemConflictWarning(for: combo) {
-            WarningLine(text: warning)
-        }
-    }
-}
-
-/// A small warning line: primary-color text (contrast-safe in both
-/// appearances) with a decorative orange glyph carrying the tone.
-private struct WarningLine: View {
-    let text: String
-
-    var body: some View {
-        HStack(alignment: .firstTextBaseline, spacing: 4) {
-            Image(systemName: "exclamationmark.triangle.fill")
-                .font(.caption2)
-                .foregroundStyle(.orange)
-            Text(text)
-                .font(.caption2)
-                .foregroundStyle(.primary)
         }
     }
 }

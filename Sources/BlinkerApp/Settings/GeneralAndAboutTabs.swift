@@ -87,17 +87,25 @@ struct GeneralTab: View {
     /// so the icon click can open settings directly.
     private var interceptionSection: some View {
         Section {
-            Toggle(tr("开启红绿灯拦截", "Enable Interception"), isOn: interceptionBinding)
+            Toggle(isOn: interceptionBinding) {
+                // The feature's master switch carries a leading glyph, the
+                // same weight the sidebar gives each section.
+                Label(tr("开启红绿灯拦截", "Enable Interception"), systemImage: "hand.raised.fill")
+            }
         } header: {
-            Text(tr("拦截", "Interception"))
+            SectionHeader(
+                title: tr("拦截", "Interception"),
+                info: tr(
+                    "开启后，红绿灯的点击与悬停放大由 Blinker 接管；关闭后恢复系统默认行为。",
+                    "While on, Blinker handles traffic-light clicks and the hover overlay;"
+                        + " turning it off restores system defaults."
+                )
+            )
         } footer: {
             Text(
                 tr("当前状态：", "Current status: ")
                     + appDelegate.status.localizedLabel
-                    + tr(
-                        "。关闭后，红绿灯点击与悬停放大恢复系统默认行为。",
-                        ". While off, traffic-light clicks and the hover overlay use system defaults."
-                    )
+                    + tr("。", ".")
             )
         }
     }
@@ -182,12 +190,16 @@ struct AboutTab: View {
     private var versionLine: String {
         // Local dev builds carry a git-describe version ("v0.2.2-42-g3a3486c");
         // the line shows just the release number plus the build number, like
-        // first-party about pages do.
+        // first-party about pages do — the "v" prefix reads redundant after
+        // the localized "版本" label.
         let raw = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String
-        let release = raw.flatMap { $0.split(separator: "-").first }.map(String.init) ?? raw
+        var release = (raw.flatMap { $0.split(separator: "-").first }.map(String.init) ?? raw) ?? "dev"
+        if release.hasPrefix("v") {
+            release.removeFirst()
+        }
         let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String
         let buildSuffix = build.map { " (\($0))" } ?? ""
-        return tr("版本", "Version") + " \(release ?? "dev")\(buildSuffix) · MIT"
+        return tr("版本", "Version") + " \(release)\(buildSuffix) · MIT"
     }
 
     // MARK: Feature rows

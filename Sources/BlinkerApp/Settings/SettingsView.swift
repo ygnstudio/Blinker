@@ -59,17 +59,13 @@ struct SettingsView: View {
 
     private var selectedSection: SettingsSection { selection ?? .rules }
 
-    private var currentSectionIndex: Int? {
-        SettingsSection.allCases.firstIndex(of: selectedSection)
-    }
-
     var body: some View {
         NavigationSplitView {
             sidebarList
+                // The add-app footer is a permanent sidebar affordance —
+                // constant height on every tab, no jump when switching.
                 .safeAreaInset(edge: .bottom, spacing: 0) {
-                    if selectedSection == .rules {
-                        sidebarFooter
-                    }
+                    sidebarFooter
                 }
                 .navigationSplitViewColumnWidth(min: 180, ideal: 200, max: 230)
         } detail: {
@@ -77,26 +73,10 @@ struct SettingsView: View {
                 .toolbar(removing: .sidebarToggle)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        // The pane title lives in the toolbar row, next to the back/forward
-        // capsule — the Tahoe System Settings convention; the detail column
-        // starts directly with content.
+        // The pane title lives in the toolbar row — the Tahoe System
+        // Settings convention; the detail column starts directly with
+        // content.
         .navigationTitle(selectedSection.title)
-        .toolbar {
-            ToolbarItem(placement: .navigation) {
-                ControlGroup {
-                    Button(action: navigateBack) {
-                        Label(tr("后退", "Back"), systemImage: "chevron.left")
-                    }
-                    .disabled(currentSectionIndex == 0)
-
-                    Button(action: navigateForward) {
-                        Label(tr("前进", "Forward"), systemImage: "chevron.right")
-                    }
-                    .disabled(currentSectionIndex == SettingsSection.allCases.count - 1)
-                }
-                .controlGroupStyle(.navigation)
-            }
-        }
         .preferredColorScheme(preferences.appearance.resolvedScheme)
         // The hotkey recorder installs an app-local key monitor; if the
         // window goes away mid-recording, that monitor must not survive to
@@ -113,22 +93,10 @@ struct SettingsView: View {
                 ruleStore.upsert(rule)
                 // Jump straight to the new rule's matrix instead of making
                 // the user hunt for it in the list.
+                selection = .rules
                 ruleSelection = rule.id
             }
         }
-    }
-
-    private func navigateBack() {
-        guard let index = currentSectionIndex, index > 0 else { return }
-        selection = SettingsSection.allCases[index - 1]
-    }
-
-    private func navigateForward() {
-        guard
-            let index = currentSectionIndex,
-            index < SettingsSection.allCases.count - 1
-        else { return }
-        selection = SettingsSection.allCases[index + 1]
     }
 
     private var sidebarList: some View {
@@ -148,18 +116,16 @@ struct SettingsView: View {
 
     /// The Notes-style bottom of the sidebar: the add-app action lives
     /// where Notes keeps its "new folder" button. `safeAreaInset` pins it
-    /// inside the sidebar so the material runs continuously behind it.
+    /// inside the sidebar so the material runs continuously behind it; the
+    /// label carries the text so the affordance needs no tooltip.
     private var sidebarFooter: some View {
         HStack {
             Button {
                 showingAppLibrary = true
             } label: {
-                Image(systemName: "plus.circle.fill")
-                    .font(.title3)
+                Label(tr("添加应用", "Add App"), systemImage: "plus")
             }
             .buttonStyle(.borderless)
-            .help(tr("添加应用", "Add App"))
-            .accessibilityLabel(tr("添加应用", "Add App"))
             Spacer()
         }
         .padding(.horizontal, 12)
@@ -178,7 +144,11 @@ struct SettingsView: View {
     private var detailContent: some View {
         switch selectedSection {
         case .rules:
-            RulesTab(ruleStore: ruleStore, selection: $ruleSelection)
+            RulesTab(
+                ruleStore: ruleStore,
+                selection: $ruleSelection,
+                onAddApp: { showingAppLibrary = true }
+            )
         case .windows:
             WindowManagementTab(
                 hotkeyManager: hotkeyManager,
@@ -186,7 +156,11 @@ struct SettingsView: View {
                 onSnapEnabledChange: onSnapEnabledChange
             )
         case .hover:
-            HoverSettingsTab(store: hoverSettingsStore, onApply: onApplyHoverSettings)
+            HoverSettingsTab(
+                store: hoverSettingsStore,
+                hotkeyManager: hotkeyManager,
+                onApply: onApplyHoverSettings
+            )
         case .general:
             GeneralTab(appDelegate: appDelegate)
         case .about:

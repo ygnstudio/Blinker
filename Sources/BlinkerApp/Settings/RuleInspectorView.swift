@@ -5,6 +5,8 @@ import SwiftUI
 /// The detail side of the rules master-detail surface: app identity plus
 /// the full click-variant matrix — five click ways by three lights, every
 /// slot a full-width picker instead of the old cramped in-row controls.
+/// Header and matrix sit in grouped form cards so the inspector shares the
+/// card language of every other tab; the master-detail split stays.
 struct RuleInspectorView: View {
     let rule: AppRule
     let onUpdate: (AppRule) -> Void
@@ -59,21 +61,28 @@ struct RuleInspectorView: View {
     private static let matrixVariants: [ClickVariant] = [.left] + ClickVariant.extraSlots
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 18) {
+        Form {
+            Section {
                 header
-                matrix
-                Text(tr(
-                    "默认保持系统行为；配置长按后，该按钮的普通点击也会由 Blinker 接管。",
-                    "Default keeps system behavior; with a long press set,"
-                        + " plain clicks on that button are handled by Blinker too."
-                ))
-                .font(.caption)
-                .foregroundStyle(.secondary)
             }
-            .padding(20)
-            .frame(maxWidth: .infinity, alignment: .leading)
+            Section {
+                matrix
+            } header: {
+                SectionHeader(title: tr("动作矩阵", "Action Matrix"), info: longPressNote)
+            }
         }
+        .formStyle(.grouped)
+    }
+
+    /// The long-press side effect, surfaced from the matrix section header's
+    /// info popover (the app-wide convention for long explanations) instead
+    /// of a low-weight caption below the grid.
+    private var longPressNote: String {
+        tr(
+            "默认保持系统行为；配置长按后，该按钮的普通点击也会由 Blinker 接管。",
+            "Default keeps system behavior; with a long press set, plain clicks on"
+                + " that button are handled by Blinker too."
+        )
     }
 
     // MARK: - Header
@@ -93,9 +102,8 @@ struct RuleInspectorView: View {
                     .lineLimit(1)
             }
             Spacer(minLength: 12)
-            Toggle(tr("启用", "Enabled"), isOn: enabledBinding)
+            Toggle(tr("开启", "Enabled"), isOn: enabledBinding)
                 .toggleStyle(.switch)
-                .controlSize(.small)
         }
     }
 
@@ -144,6 +152,7 @@ struct RuleInspectorView: View {
                 }
             }
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private func lightHeader(_ title: String, color: Color) -> some View {
