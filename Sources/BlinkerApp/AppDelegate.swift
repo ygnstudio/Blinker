@@ -164,7 +164,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, Observ
             window.contentMinSize = NSSize(width: 640, height: 420)
             window.center()
             window.isReleasedWhenClosed = false
-            window.level = .floating
+            // Normal level: `bringToFront()` handles the initial fronting;
+            // a floating window would permanently cover other apps' windows.
             window.appearance = AppPreferences.shared.nsAppearance
             settingsWindow = window
             observePreferenceChanges()
