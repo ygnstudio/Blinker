@@ -12,6 +12,8 @@ APP_VERSION="${2:?missing version}"
 BUNDLE_VERSION="${3:-1}"
 APP_DIR="${4:-Blinker.app}"
 BUNDLE_ID="com.ygnstudio.Blinker"
+REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+ICON_PATH="$REPO_ROOT/Assets/Blinker.icns"
 
 [[ -x "$BINARY_PATH" ]] || { echo "error: binary not found at $BINARY_PATH" >&2; exit 1; }
 
@@ -19,6 +21,16 @@ rm -rf "$APP_DIR"
 mkdir -p "$APP_DIR/Contents/MacOS"
 
 cp "$BINARY_PATH" "$APP_DIR/Contents/MacOS/Blinker"
+
+# Bundle icon (rendered by Scripts/render-app-icon.py when present).
+ICON_PLIST_ENTRY=""
+if [[ -f "$ICON_PATH" ]]; then
+  mkdir -p "$APP_DIR/Contents/Resources"
+  cp "$ICON_PATH" "$APP_DIR/Contents/Resources/Blinker.icns"
+  ICON_PLIST_ENTRY=$'    <key>CFBundleIconFile</key>\n    <string>Blinker</string>'
+else
+  echo "warning: $ICON_PATH not found — bundling without an app icon" >&2
+fi
 
 cat > "$APP_DIR/Contents/Info.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
@@ -31,6 +43,7 @@ cat > "$APP_DIR/Contents/Info.plist" <<PLIST
     <string>$BUNDLE_ID</string>
     <key>CFBundleName</key>
     <string>Blinker</string>
+${ICON_PLIST_ENTRY}
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleShortVersionString</key>
