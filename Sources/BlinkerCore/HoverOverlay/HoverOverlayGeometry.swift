@@ -14,17 +14,27 @@ public enum HoverOverlayGeometry {
     /// — or already over one of the enlarged panels — to keep the overlay
     /// alive. Including the panels prevents a hide/flicker loop when the
     /// cursor moves from a native button onto its enlarged neighbor.
+    ///
+    /// `trayFrame` extends the alive zone to the glass tray's margins: the
+    /// tray visually wraps the whole chip group, so gliding across its
+    /// padding (the gaps between chips, the pill's rounded ends) must not
+    /// tear the overlay down mid-move. The tray is not a hover surface —
+    /// only actual chip frames count for `isCursorInPanel`.
     public static func isCursorInTriggerZone(
         cursor: CGPoint,
         buttonFrames: [CGRect],
         panelFrames: [CGRect],
-        padding: CGFloat = triggerPadding
+        padding: CGFloat = triggerPadding,
+        trayFrame: CGRect? = nil
     ) -> Bool {
         if let group = unionedBounds(of: buttonFrames) {
             let triggerBounds = group.insetBy(dx: -padding, dy: -padding)
             if triggerBounds.contains(cursor) {
                 return true
             }
+        }
+        if let trayFrame, trayFrame.contains(cursor) {
+            return true
         }
         return panelFrames.contains { isCursorInPanel(cursor: cursor, panelFrame: $0) }
     }
@@ -153,10 +163,9 @@ public enum HoverOverlayGeometry {
             let earlier = vertices[previous]
             let crossesHorizontally =
                 (current.y > point.y) != (earlier.y > point.y)
-            if crossesHorizontally,
-               point.x < (earlier.x - current.x) * (point.y - current.y)
-               / (earlier.y - current.y) + current.x
-            {
+            let crossingX = (earlier.x - current.x) * (point.y - current.y)
+                / (earlier.y - current.y) + current.x
+            if crossesHorizontally, point.x < crossingX {
                 inside.toggle()
             }
             previous = index

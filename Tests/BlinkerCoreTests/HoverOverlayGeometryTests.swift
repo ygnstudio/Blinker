@@ -37,6 +37,54 @@ final class HoverOverlayGeometryTests: XCTestCase {
         ))
     }
 
+    func testTrayMarginKeepsOverlayAlive() {
+        // Two native 14pt buttons; 28pt enlarged chips centered on them,
+        // leading-anchored 6pt left of the native edge; the tray inflates
+        // the chip bounding box by 16pt horizontally and 12pt vertically.
+        let buttons = [
+            CGRect(x: 100, y: 500, width: 14, height: 14),
+            CGRect(x: 120, y: 500, width: 14, height: 14),
+        ]
+        let panels = HoverOverlayGeometry.panelFrames(forButtonFrames: buttons, enlargedSize: 28)
+        XCTAssertEqual(panels, [
+            CGRect(x: 94, y: 493, width: 28, height: 28),
+            CGRect(x: 126, y: 493, width: 28, height: 28),
+        ])
+        let tray = HoverOverlayTrayPanel.frame(forDisplayFrames: panels)
+        XCTAssertEqual(tray, CGRect(x: 78, y: 481, width: 92, height: 52))
+
+        // The tray's rounded left end sits left of the native-button
+        // trigger padding (native group + 12pt starts at x=88, the tray at
+        // x=78) but inside the tray: the overlay must stay alive.
+        XCTAssertTrue(HoverOverlayGeometry.isCursorInTriggerZone(
+            cursor: CGPoint(x: 82, y: 510),
+            buttonFrames: buttons,
+            panelFrames: panels,
+            trayFrame: tray
+        ))
+        // Just below the chips but still inside the tray's bottom margin
+        // (the padding ends at y=526, the tray at y=533): stays alive.
+        XCTAssertTrue(HoverOverlayGeometry.isCursorInTriggerZone(
+            cursor: CGPoint(x: 100, y: 530),
+            buttonFrames: buttons,
+            panelFrames: panels,
+            trayFrame: tray
+        ))
+        // Below the tray: back to hiding.
+        XCTAssertFalse(HoverOverlayGeometry.isCursorInTriggerZone(
+            cursor: CGPoint(x: 100, y: 536),
+            buttonFrames: buttons,
+            panelFrames: panels,
+            trayFrame: tray
+        ))
+        // Without a tray frame the old padding-only behavior is unchanged.
+        XCTAssertFalse(HoverOverlayGeometry.isCursorInTriggerZone(
+            cursor: CGPoint(x: 82, y: 510),
+            buttonFrames: buttons,
+            panelFrames: panels
+        ))
+    }
+
     func testSingleButtonGroupLeadsAtNativeEdge() {
         let frames = [CGRect(x: 200, y: 300, width: 14, height: 14)]
         let panels = HoverOverlayGeometry.panelFrames(forButtonFrames: frames, enlargedSize: 28)
