@@ -18,6 +18,14 @@ final class WorkspaceStoreTests: XCTestCase {
         )
     }
 
+    /// Waits for one async store operation to finish. Capture runs on the
+    /// AX work queue and lands on the main thread, which `wait(for:)` serves.
+    private func waitForSave(_ store: WorkspaceStore, named name: String) {
+        let saved = expectation(description: "save \(name) completed")
+        store.saveCurrentLayout(named: name) { saved.fulfill() }
+        wait(for: [saved], timeout: 10)
+    }
+
     func testSavedWorkspaceCodableRoundTrip() throws {
         let workspace = SavedWorkspace(
             name: "写代码",
@@ -41,8 +49,8 @@ final class WorkspaceStoreTests: XCTestCase {
         let store = WorkspaceStore(defaults: defaults)
         XCTAssertEqual(store.workspaces.count, 0)
 
-        store.saveCurrentLayout(named: "写代码")
-        store.saveCurrentLayout(named: "写代码")
+        waitForSave(store, named: "写代码")
+        waitForSave(store, named: "写代码")
 
         XCTAssertEqual(store.workspaces.count, 1, "same name overwrites instead of duplicating")
     }
@@ -52,8 +60,8 @@ final class WorkspaceStoreTests: XCTestCase {
         defer { defaults.removePersistentDomain(forName: suite) }
 
         let store = WorkspaceStore(defaults: defaults)
-        store.saveCurrentLayout(named: "写代码")
-        store.saveCurrentLayout(named: "开会")
+        waitForSave(store, named: "写代码")
+        waitForSave(store, named: "开会")
         let firstID = store.workspaces[0].id
 
         let reloaded = WorkspaceStore(defaults: defaults)
@@ -66,9 +74,15 @@ final class WorkspaceStoreTests: XCTestCase {
         defer { defaults.removePersistentDomain(forName: suite) }
 
         let store = WorkspaceStore(defaults: defaults)
-        store.saveCurrentLayout(named: "写代码")
+        waitForSave(store, named: "写代码")
 
-        XCTAssertEqual(store.restore(id: UUID()), 0, "unknown ID restores nothing")
+        let restoredUnknown = expectation(description: "unknown id restores nothing")
+        store.restore(id: UUID()) { restored in
+            XCTAssertEqual(restored, 0, "unknown ID restores nothing")
+            restoredUnknown.fulfill()
+        }
+        wait(for: [restoredUnknown], timeout: 10)
+
         store.remove(id: UUID())
         XCTAssertEqual(store.workspaces.count, 1, "removing an unknown ID is a no-op")
 

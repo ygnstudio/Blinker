@@ -169,14 +169,40 @@ final class HoverOverlayButtonView: NSView {
         onLongPress()
     }
 
-    override func mouseUp(with _: NSEvent) {
+    override func mouseUp(with event: NSEvent) {
         // A click that outlived the threshold already fired as a long press
         // (fireLongPress clears the pending state before this runs).
         guard pressStartedAt != nil else { return }
         pressStartedAt = nil
         longPressTimer?.invalidate()
         longPressTimer = nil
+        // Native buttons cancel when the cursor leaves them before release;
+        // the enlarged chips do the same.
+        guard isCursorInsideChip(event) else { return }
         onActivate(.left)
+    }
+
+    override func mouseDragged(with event: NSEvent) {
+        // Leaving the chip mid-press cancels the pending long press (and,
+        // via the release check above, the plain click too).
+        guard pressStartedAt != nil else { return }
+        if !isCursorInsideChip(event) {
+            cancelPendingPress()
+        }
+    }
+
+    /// The release position, in the view's own coordinates, still inside the
+    /// drawn circle.
+    private func isCursorInsideChip(_ event: NSEvent) -> Bool {
+        let point = convert(event.locationInWindow, from: nil)
+        return OverlayChipDrawing.circleRect(in: bounds).contains(point)
+    }
+
+    /// Drops a pending press: no click, no long-press timer.
+    private func cancelPendingPress() {
+        pressStartedAt = nil
+        longPressTimer?.invalidate()
+        longPressTimer = nil
     }
 
     override func rightMouseDown(with _: NSEvent) {

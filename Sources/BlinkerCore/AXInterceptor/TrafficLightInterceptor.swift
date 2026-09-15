@@ -25,12 +25,11 @@ import os
 public final class TrafficLightInterceptor {
     private let ruleEngine: RuleEngine
     private let actionPerformer: WindowActionPerforming
-    private var eventTap: CFMachPort?
-    private var runLoopSource: CFRunLoopSource?
-    /// Hosts the event tap's run loop so the callback — including its
-    /// synchronous AX hit test — never runs on (or blocks) the main thread.
-    private var tapThread: Thread?
-    private var tapRunLoop: CFRunLoop?
+    /// Hosts the event tap on a dedicated thread: its callback — including
+    /// the synchronous AX hit test — never runs on (or blocks) the main
+    /// thread. `stop()` waits for the thread's exit, so the unretained
+    /// `userInfo` pointer below is never used after deallocation.
+    private let tapHost = EventTapThreadHost(threadName: "interceptor-tap")
     private let workQueue = DispatchQueue(label: "com.ygnstudio.blinker.interceptor")
     private let logger = Logger(subsystem: "com.ygnstudio.blinker", category: "interceptor")
 
@@ -62,14 +61,14 @@ public final class TrafficLightInterceptor {
     }
 
     public var isRunning: Bool {
-        eventTap != nil
+        tapHost.isRunning
     }
 
     /// Installs the event tap. Returns `false` when the Accessibility
     /// permission is missing or the system refuses the tap.
     @discardableResult
     public func start() -> Bool {
-        guard eventTap == nil else { return true }
+        guard !tapHost.isRunning else { return true }
         guard AccessibilityPermission.isTrusted else {
             logger.error("start aborted: accessibility permission missing")
             return false
@@ -90,55 +89,28 @@ public final class TrafficLightInterceptor {
         )
 
         guard
-            let tap = CGEvent.tapCreate(
-                tap: .cghidEventTap,
-                place: .headInsertEventTap,
+            tapHost.start(
+                mask: mask,
                 options: .defaultTap,
-                eventsOfInterest: mask,
                 callback: callback,
                 userInfo: Unmanaged.passUnretained(self).toOpaque()
             )
         else {
-            logger.error("CGEvent.tapCreate returned nil (hidTap, headInsert, defaultTap)")
             return false
         }
-
-        // The tap is created here (so failures report synchronously) but
-        // hosted on a dedicated thread: its callback performs synchronous AX
-        // IPC with a 250 ms timeout, which must never stall the main thread.
-        let source = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, tap, 0)
-        let thread = OverlayTapThread { [weak self] in
-            guard let self, !Thread.current.isCancelled else { return }
-            let runLoop = RunLoop.current.getCFRunLoop()
-            self.tapRunLoop = runLoop
-            CFRunLoopAddSource(runLoop, source, .commonModes)
-            CGEvent.tapEnable(tap: tap, enable: true)
-        }
-        thread.name = "com.ygnstudio.blinker.interceptor-tap"
-        thread.start()
-
-        tapThread = thread
-        eventTap = tap
-        runLoopSource = source
         logger.info("event tap installed on dedicated thread")
         return true
     }
 
     public func stop() {
-        if let tap = eventTap {
-            CGEvent.tapEnable(tap: tap, enable: false)
-        }
-        if let source = runLoopSource, let runLoop = tapRunLoop {
-            CFRunLoopRemoveSource(runLoop, source, .commonModes)
-        }
-        if let runLoop = tapRunLoop {
-            CFRunLoopStop(runLoop)
-        }
-        tapThread?.cancel()
-        eventTap = nil
-        runLoopSource = nil
-        tapRunLoop = nil
-        tapThread = nil
+        tapHost.stop()
+        // Drop any in-flight long press so a late timer can never fire its
+        // action after the interceptor stood down.
+        pendingLock.lock()
+        pendingPress = nil
+        longPressWorkItem?.cancel()
+        longPressWorkItem = nil
+        pendingLock.unlock()
     }
 
     deinit {
@@ -151,9 +123,7 @@ public final class TrafficLightInterceptor {
         // The system can disable the tap (e.g. after a timeout); re-arm it.
         if eventType == .tapDisabledByTimeout || eventType == .tapDisabledByUserInput {
             logger.warning("tap disabled (\(eventType.rawValue)); re-enabling")
-            if let tap = eventTap {
-                CGEvent.tapEnable(tap: tap, enable: true)
-            }
+            tapHost.enableTap()
             return Unmanaged.passUnretained(event)
         }
 

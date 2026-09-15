@@ -24,31 +24,54 @@ public final class WorkspaceStore: ObservableObject {
 
     /// Snapshots the current window arrangement and saves it under `name`.
     /// Saving again under an existing name overwrites that workspace.
-    public func saveCurrentLayout(named name: String) {
-        let entries = WorkspaceManager.captureVisibleWindows()
-        if let index = workspaces.firstIndex(where: { $0.name == name }) {
-            workspaces[index].entries = entries
-        } else {
-            workspaces.append(SavedWorkspace(name: name, entries: entries))
+    /// Capture runs on the AX work queue; `completion` fires on the main
+    /// thread once the store has been updated.
+    public func saveCurrentLayout(named name: String, completion: (() -> Void)? = nil) {
+        WorkspaceManager.captureVisibleWindowsAsync { [weak self] entries in
+            guard let self else { return }
+            if let index = workspaces.firstIndex(where: { $0.name == name }) {
+                workspaces[index].entries = entries
+            } else {
+                workspaces.append(SavedWorkspace(name: name, entries: entries))
+            }
+            persist()
+            logger.info("saved workspace '\(name, privacy: .public)' with \(entries.count) entries")
+            completion?()
         }
-        persist()
-        logger.info("saved workspace '\(name, privacy: .public)' with \(entries.count) entries")
     }
 
-    /// Re-captures and replaces a stored workspace's entries.
-    public func update(id: UUID) {
-        guard let index = workspaces.firstIndex(where: { $0.id == id }) else { return }
-        workspaces[index].entries = WorkspaceManager.captureVisibleWindows()
-        persist()
+    /// Re-captures and replaces a stored workspace's entries. Capture runs
+    /// on the AX work queue; `completion` fires on the main thread.
+    public func update(id: UUID, completion: (() -> Void)? = nil) {
+        guard workspaces.contains(where: { $0.id == id }) else {
+            completion?()
+            return
+        }
+        WorkspaceManager.captureVisibleWindowsAsync { [weak self] entries in
+            guard
+                let self,
+                let index = workspaces.firstIndex(where: { $0.id == id })
+            else {
+                completion?()
+                return
+            }
+            workspaces[index].entries = entries
+            persist()
+            completion?()
+        }
     }
 
-    /// Restores a workspace and returns how many windows moved.
-    @discardableResult
-    public func restore(id: UUID) -> Int {
-        guard let workspace = workspaces.first(where: { $0.id == id }) else { return 0 }
-        let restored = WorkspaceManager.restore(workspace)
-        logger.info("restored '\(workspace.name, privacy: .public)': \(restored) windows")
-        return restored
+    /// Restores a workspace. The AX work runs on the background queue;
+    /// `completion` receives how many windows moved, on the main thread.
+    public func restore(id: UUID, completion: ((Int) -> Void)? = nil) {
+        guard let workspace = workspaces.first(where: { $0.id == id }) else {
+            completion?(0)
+            return
+        }
+        WorkspaceManager.restoreAsync(workspace) { [weak self] restored in
+            self?.logger.info("restored '\(workspace.name, privacy: .public)': \(restored) windows")
+            completion?(restored)
+        }
     }
 
     public func remove(id: UUID) {

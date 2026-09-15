@@ -95,6 +95,12 @@ struct SettingsView: View {
             }
         }
         .preferredColorScheme(preferences.appearance.resolvedScheme)
+        // The hotkey recorder installs an app-local key monitor; if the
+        // window goes away mid-recording, that monitor must not survive to
+        // swallow (and bind!) some later keystroke.
+        .onDisappear {
+            hotkeyManager.endRecording()
+        }
         .sheet(isPresented: $showingAppLibrary) {
             AppLibraryPicker { app in
                 ruleStore.upsert(AppRule(

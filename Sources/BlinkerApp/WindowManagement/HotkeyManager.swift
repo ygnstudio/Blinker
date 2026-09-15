@@ -3,80 +3,6 @@ import BlinkerCore
 import Carbon.HIToolbox
 import os
 
-/// A recorded global hotkey: a Carbon virtual key code plus Carbon modifier
-/// flags, persisted in `UserDefaults`.
-struct HotkeyCombo: Codable, Hashable {
-    var keyCode: UInt32
-    var modifiers: UInt32
-
-    /// Human-readable label, e.g. "⌃⌥←" or "⌘⇧K".
-    var displayLabel: String {
-        var label = ""
-        if modifiers & UInt32(controlKey) != 0 {
-            label += "⌃"
-        }
-        if modifiers & UInt32(optionKey) != 0 {
-            label += "⌥"
-        }
-        if modifiers & UInt32(shiftKey) != 0 {
-            label += "⇧"
-        }
-        if modifiers & UInt32(cmdKey) != 0 {
-            label += "⌘"
-        }
-        label += Self.keyName(for: keyCode)
-        return label
-    }
-
-    /// Readable names for the key codes users actually bind; everything else
-    /// falls back to "Key N".
-    private static func keyName(for keyCode: UInt32) -> String {
-        switch Int(keyCode) {
-        case kVK_LeftArrow: "←"
-        case kVK_RightArrow: "→"
-        case kVK_UpArrow: "↑"
-        case kVK_DownArrow: "↓"
-        case kVK_Space: tr("空格", "Space")
-        case kVK_Return: "↩"
-        case kVK_Tab: "⇥"
-        case _ where isLetter(keyCode): letterName(keyCode)
-        case _ where isDigit(keyCode): digitName(keyCode)
-        default: "Key \(keyCode)"
-        }
-    }
-
-    /// Letters are scattered across the key-code table; map each explicitly.
-    private static let letterTable: [Int: String] = [
-        kVK_ANSI_A: "A", kVK_ANSI_B: "B", kVK_ANSI_C: "C", kVK_ANSI_D: "D", kVK_ANSI_E: "E",
-        kVK_ANSI_F: "F", kVK_ANSI_G: "G", kVK_ANSI_H: "H", kVK_ANSI_I: "I", kVK_ANSI_J: "J",
-        kVK_ANSI_K: "K", kVK_ANSI_L: "L", kVK_ANSI_M: "M", kVK_ANSI_N: "N", kVK_ANSI_O: "O",
-        kVK_ANSI_P: "P", kVK_ANSI_Q: "Q", kVK_ANSI_R: "R", kVK_ANSI_S: "S", kVK_ANSI_T: "T",
-        kVK_ANSI_U: "U", kVK_ANSI_V: "V", kVK_ANSI_W: "W", kVK_ANSI_X: "X", kVK_ANSI_Y: "Y",
-        kVK_ANSI_Z: "Z",
-    ]
-
-    private static let digitTable: [Int: String] = [
-        kVK_ANSI_0: "0", kVK_ANSI_1: "1", kVK_ANSI_2: "2", kVK_ANSI_3: "3", kVK_ANSI_4: "4",
-        kVK_ANSI_5: "5", kVK_ANSI_6: "6", kVK_ANSI_7: "7", kVK_ANSI_8: "8", kVK_ANSI_9: "9",
-    ]
-
-    private static func isLetter(_ keyCode: UInt32) -> Bool {
-        letterTable[Int(keyCode)] != nil
-    }
-
-    private static func isDigit(_ keyCode: UInt32) -> Bool {
-        digitTable[Int(keyCode)] != nil
-    }
-
-    private static func letterName(_ keyCode: UInt32) -> String {
-        letterTable[Int(keyCode)] ?? "Key \(keyCode)"
-    }
-
-    private static func digitName(_ keyCode: UInt32) -> String {
-        digitTable[Int(keyCode)] ?? "Key \(keyCode)"
-    }
-}
-
 /// Registers and manages the global hotkeys that trigger window actions on
 /// the frontmost window. Bindings are persisted per action; a master switch
 /// enables or disables the whole feature.
@@ -136,8 +62,21 @@ final class HotkeyManager: ObservableObject {
     /// the window-action id range (table index + 1).
     private static let hoverToggleHotKeyID: UInt32 = 0x484F // 'HO'
 
-    /// The combo that toggles hover enlargement from anywhere. Ships as ⌃⌥H
-    /// on first launch; `nil` disables the command hotkey.
+    /// The default hover-toggle combo shipped on first launch.
+    private static let defaultHoverToggleCombo = HotkeyCombo(
+        keyCode: UInt32(kVK_ANSI_H),
+        modifiers: UInt32(controlKey | optionKey)
+    )
+
+    /// What the recorder is currently capturing, if anything.
+    enum RecordingTarget: Equatable {
+        case windowAction(ButtonAction)
+        case hoverToggle
+    }
+
+    /// The combo that toggles hover enlargement from anywhere; `nil` disables
+    /// the command hotkey. `nil` is persisted (encoded as JSON `null`) so a
+    /// cleared binding survives relaunches.
     @Published private(set) var hoverToggleCombo: HotkeyCombo? {
         didSet { persistHoverToggleCombo() }
     }
@@ -145,9 +84,6 @@ final class HotkeyManager: ObservableObject {
     /// Invoked when the hover-toggle hotkey fires; wired to the app
     /// delegate, which flips `HoverOverlaySettings.isEnabled`.
     var onToggleHoverOverlay: (() -> Void)?
-
-    /// Whether the recorder is currently capturing the hover-toggle combo.
-    @Published private(set) var isRecordingHoverToggle = false
 
     @Published private(set) var bindings: [String: HotkeyCombo] {
         didSet { persist() }
@@ -157,8 +93,13 @@ final class HotkeyManager: ObservableObject {
         didSet { persistEnabled() }
     }
 
-    /// The action currently waiting for a key press in the recorder, if any.
-    @Published private(set) var recordingAction: ButtonAction?
+    /// The command currently waiting for a key press in the recorder, if
+    /// any. One recorder target at a time; `endRecording()` cancels it.
+    @Published private(set) var recordingTarget: RecordingTarget?
+
+    /// Inline feedback shown while the recorder rejects a key press (e.g. a
+    /// bare key without modifiers); cleared on the next valid press.
+    @Published private(set) var recordingHint: String?
 
     private var registeredHotKeys: [String: EventHotKeyRef?] = [:]
     private var registeredHoverToggleHotKey: EventHotKeyRef?
@@ -173,13 +114,21 @@ final class HotkeyManager: ObservableObject {
         self.defaults = defaults
 
         if defaults.object(forKey: Self.enabledKey) == nil {
-            // First launch: ship the default scheme.
+            // First launch: ship the default scheme. Assignments in init do
+            // not fire the didSet observers, so persist everything here
+            // explicitly — otherwise `enabledKey` never lands in defaults,
+            // every subsequent launch takes this branch again and wipes the
+            // user's customizations.
             isEnabled = true
             bindings = Self.defaultBindings
-            hoverToggleCombo = HotkeyCombo(
-                keyCode: UInt32(kVK_ANSI_H),
-                modifiers: UInt32(controlKey | optionKey)
-            )
+            hoverToggleCombo = Self.defaultHoverToggleCombo
+            defaults.set(true, forKey: Self.enabledKey)
+            if let data = try? JSONEncoder().encode(bindings) {
+                defaults.set(data, forKey: Self.storageKey)
+            }
+            if let data = try? JSONEncoder().encode(hoverToggleCombo) {
+                defaults.set(data, forKey: Self.hoverToggleStorageKey)
+            }
         } else {
             isEnabled = defaults.bool(forKey: Self.enabledKey)
             if let data = defaults.data(forKey: Self.storageKey) {
@@ -187,12 +136,15 @@ final class HotkeyManager: ObservableObject {
             } else {
                 bindings = [:]
             }
-            hoverToggleCombo = defaults.data(forKey: Self.hoverToggleStorageKey)
-                .flatMap { try? JSONDecoder().decode(HotkeyCombo.self, from: $0) }
-                ?? HotkeyCombo(
-                    keyCode: UInt32(kVK_ANSI_H),
-                    modifiers: UInt32(controlKey | optionKey)
-                )
+            // A stored JSON `null` decodes as `nil` — an explicitly cleared
+            // binding stays cleared; a missing key means "never configured"
+            // and falls back to the shipped default.
+            if let data = defaults.data(forKey: Self.hoverToggleStorageKey),
+               let decoded = try? JSONDecoder().decode(HotkeyCombo?.self, from: data) {
+                hoverToggleCombo = decoded
+            } else {
+                hoverToggleCombo = Self.defaultHoverToggleCombo
+            }
         }
 
         installEventHandler()
@@ -225,86 +177,80 @@ final class HotkeyManager: ObservableObject {
     // MARK: - Recording
 
     /// Starts capturing the next key press as the new binding for `action`.
-    /// Escape cancels; any other key (with at least one modifier) records.
+    /// Esc cancels; a key with at least one modifier records; a bare key
+    /// keeps the recorder waiting with an inline hint.
     func beginRecording(for action: ButtonAction) {
-        endRecording()
-        recordingAction = action
-        localMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
-            self?.handleRecordingEvent(event)
-            return nil
-        }
+        recordNextKey(target: .windowAction(action))
     }
 
+    /// Starts capturing the next key press as the hover-toggle binding;
+    /// same rules as the window-action recorder.
+    func beginRecordingHoverToggle() {
+        recordNextKey(target: .hoverToggle)
+    }
+
+    /// Cancels any in-flight recording. Also called when the settings UI
+    /// goes away, so the local monitor can never outlive its row.
     func endRecording() {
         if let localMonitor {
             NSEvent.removeMonitor(localMonitor)
         }
         localMonitor = nil
-        recordingAction = nil
-        isRecordingHoverToggle = false
+        recordingTarget = nil
+        recordingHint = nil
     }
 
-    private func handleRecordingEvent(_ event: NSEvent) {
-        guard let action = recordingAction else {
-            endRecording()
-            return
-        }
+    /// The single recorder both binding kinds share: one local key monitor,
+    /// one set of rules, one dispatch on completion.
+    private func recordNextKey(target: RecordingTarget) {
         endRecording()
-        guard event.keyCode != UInt16(kVK_Escape) else { return }
+        recordingTarget = target
+        localMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
+            guard let self else { return event }
+            return handleRecordingKeyEvent(event) ? nil : event
+        }
+    }
+
+    /// Consumes one key press while recording. Returns `true` when the event
+    /// was swallowed (it resolved, canceled or was rejected by the
+    /// recorder); `false` lets it propagate — only bare Tab does, so
+    /// keyboard navigation out of the recorder keeps working.
+    private func handleRecordingKeyEvent(_ event: NSEvent) -> Bool {
+        guard let target = recordingTarget else { return false }
+
+        // Esc cancels the recording (and is swallowed so it cannot close the
+        // settings window underneath).
+        if event.keyCode == UInt16(kVK_Escape) {
+            endRecording()
+            return true
+        }
 
         let carbonModifiers = Self.carbonModifiers(from: event.modifierFlags)
-        guard carbonModifiers != 0 else { return } // require at least one modifier
-        bind(HotkeyCombo(keyCode: UInt32(event.keyCode), modifiers: carbonModifiers), for: action)
-    }
 
-    static func carbonModifiers(from flags: NSEvent.ModifierFlags) -> UInt32 {
-        var carbon: UInt32 = 0
-        if flags.contains(.command) {
-            carbon |= UInt32(cmdKey)
+        // Bare Tab stays usable for focus navigation while recording.
+        if carbonModifiers == 0, event.keyCode == UInt16(kVK_Tab) {
+            return false
         }
-        if flags.contains(.option) {
-            carbon |= UInt32(optionKey)
-        }
-        if flags.contains(.control) {
-            carbon |= UInt32(controlKey)
-        }
-        if flags.contains(.shift) {
-            carbon |= UInt32(shiftKey)
-        }
-        return carbon
-    }
 
-    /// Warns when a combo collides with a well-known system shortcut.
-    static func systemConflictWarning(for combo: HotkeyCombo) -> String? {
-        let conflicts: [HotkeyCombo: String] = [
-            HotkeyCombo(keyCode: UInt32(kVK_Space), modifiers: UInt32(cmdKey)): "Spotlight",
-            HotkeyCombo(keyCode: UInt32(kVK_Space), modifiers: UInt32(controlKey)): tr(
-                "输入法切换",
-                "Input Source"
-            ),
-            HotkeyCombo(keyCode: UInt32(kVK_UpArrow), modifiers: UInt32(controlKey)): tr(
-                "调度中心",
-                "Mission Control"
-            ),
-            HotkeyCombo(keyCode: UInt32(kVK_ANSI_3), modifiers: UInt32(cmdKey | shiftKey)): tr(
-                "截屏",
-                "Screenshot"
-            ),
-            HotkeyCombo(keyCode: UInt32(kVK_ANSI_4), modifiers: UInt32(cmdKey | shiftKey)): tr(
-                "截屏",
-                "Screenshot"
-            ),
-            HotkeyCombo(keyCode: UInt32(kVK_ANSI_5), modifiers: UInt32(cmdKey | shiftKey)): tr(
-                "截屏",
-                "Screenshot"
-            ),
-            HotkeyCombo(keyCode: UInt32(kVK_Escape), modifiers: UInt32(cmdKey | optionKey)): tr(
-                "强制退出",
-                "Force Quit"
-            ),
-        ]
-        guard let name = conflicts[combo] else { return nil }
-        return tr("与系统快捷键冲突：", "Conflicts with a system shortcut: ") + name
+        guard carbonModifiers != 0 else {
+            // A key without modifiers cannot be a global hotkey (it would
+            // shadow normal typing everywhere); keep recording and explain.
+            recordingHint = tr(
+                "需按住至少一个修饰键（⌘ ⌥ ⌃ ⇧）",
+                "Hold at least one modifier key (⌘ ⌥ ⌃ ⇧)"
+            )
+            return true
+        }
+
+        endRecording()
+        let combo = HotkeyCombo(keyCode: UInt32(event.keyCode), modifiers: carbonModifiers)
+        switch target {
+        case .windowAction(let action):
+            bind(combo, for: action)
+        case .hoverToggle:
+            bindHoverToggle(combo)
+        }
+        return true
     }
 
     // MARK: - Registration (Carbon)
@@ -421,11 +367,86 @@ final class HotkeyManager: ObservableObject {
     }
 }
 
+// MARK: - Modifier mapping & conflict warnings
+
+extension HotkeyManager {
+    /// Maps AppKit modifier flags onto Carbon's modifier mask.
+    static func carbonModifiers(from flags: NSEvent.ModifierFlags) -> UInt32 {
+        var carbon: UInt32 = 0
+        if flags.contains(.command) {
+            carbon |= UInt32(cmdKey)
+        }
+        if flags.contains(.option) {
+            carbon |= UInt32(optionKey)
+        }
+        if flags.contains(.control) {
+            carbon |= UInt32(controlKey)
+        }
+        if flags.contains(.shift) {
+            carbon |= UInt32(shiftKey)
+        }
+        return carbon
+    }
+
+    /// Warns when a combo collides with a well-known system shortcut.
+    static func systemConflictWarning(for combo: HotkeyCombo) -> String? {
+        let conflicts: [HotkeyCombo: String] = [
+            HotkeyCombo(keyCode: UInt32(kVK_Space), modifiers: UInt32(cmdKey)): "Spotlight",
+            HotkeyCombo(keyCode: UInt32(kVK_Space), modifiers: UInt32(controlKey)): tr(
+                "输入法切换",
+                "Input Source"
+            ),
+            HotkeyCombo(keyCode: UInt32(kVK_UpArrow), modifiers: UInt32(controlKey)): tr(
+                "调度中心",
+                "Mission Control"
+            ),
+            HotkeyCombo(keyCode: UInt32(kVK_ANSI_3), modifiers: UInt32(cmdKey | shiftKey)): tr(
+                "截屏",
+                "Screenshot"
+            ),
+            HotkeyCombo(keyCode: UInt32(kVK_ANSI_4), modifiers: UInt32(cmdKey | shiftKey)): tr(
+                "截屏",
+                "Screenshot"
+            ),
+            HotkeyCombo(keyCode: UInt32(kVK_ANSI_5), modifiers: UInt32(cmdKey | shiftKey)): tr(
+                "截屏",
+                "Screenshot"
+            ),
+            HotkeyCombo(keyCode: UInt32(kVK_Escape), modifiers: UInt32(cmdKey | optionKey)): tr(
+                "强制退出",
+                "Force Quit"
+            ),
+        ]
+        guard let name = conflicts[combo] else { return nil }
+        return tr("与系统快捷键冲突：", "Conflicts with a system shortcut: ") + name
+    }
+
+    /// Warns when `combo` is already bound to another Blinker command —
+    /// Carbon would register both but only ever deliver one of them, leaving
+    /// the other silently dead. Pass `action: nil` when recording the hover
+    /// toggle; its own current binding is then exempt.
+    func internalConflictWarning(for combo: HotkeyCombo, action: ButtonAction?) -> String? {
+        for other in Self.bindableActions where other != action {
+            if bindings[other.rawValue] == combo {
+                return tr(
+                    "已用于「\(other.localizedLabel)」",
+                    "Already used by \"\(other.localizedLabel)\""
+                )
+            }
+        }
+        if action != nil, hoverToggleCombo == combo {
+            return tr("已用于「悬停放大开关」", "Already used by the hover toggle")
+        }
+        return nil
+    }
+}
+
 // MARK: - Hover-toggle command hotkey
 
 /// The hover-enlargement toggle lives outside the window-action table: it
 /// dispatches through a reserved hot key id and a callback wired by the app
-/// delegate instead of `FrontWindowActionPerformer`.
+/// delegate instead of `FrontWindowActionPerformer`. Recording goes through
+/// the shared `recordNextKey` path.
 extension HotkeyManager {
     func bindHoverToggle(_ combo: HotkeyCombo) {
         hoverToggleCombo = combo
@@ -438,31 +459,6 @@ extension HotkeyManager {
             UnregisterEventHotKey(ref)
         }
         registeredHoverToggleHotKey = nil
-    }
-
-    /// Starts capturing the next key press as the hover-toggle binding.
-    func beginRecordingHoverToggle() {
-        endRecording()
-        isRecordingHoverToggle = true
-        localMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
-            self?.handleHoverToggleRecordingEvent(event)
-            return nil
-        }
-    }
-
-    /// Recording variant for the hover-toggle command hotkey; same rules:
-    /// Esc cancels, at least one modifier required.
-    private func handleHoverToggleRecordingEvent(_ event: NSEvent) {
-        guard isRecordingHoverToggle else {
-            endRecording()
-            return
-        }
-        endRecording()
-        guard event.keyCode != UInt16(kVK_Escape) else { return }
-
-        let carbonModifiers = Self.carbonModifiers(from: event.modifierFlags)
-        guard carbonModifiers != 0 else { return }
-        bindHoverToggle(HotkeyCombo(keyCode: UInt32(event.keyCode), modifiers: carbonModifiers))
     }
 
     private func registerHoverToggle(_ combo: HotkeyCombo) {
@@ -488,7 +484,9 @@ extension HotkeyManager {
     }
 
     private func persistHoverToggleCombo() {
-        if let combo = hoverToggleCombo, let data = try? JSONEncoder().encode(combo) {
+        // Encodes `nil` as JSON `null`, so an explicitly cleared binding is
+        // distinguishable from "never stored" on the next launch.
+        if let data = try? JSONEncoder().encode(hoverToggleCombo) {
             defaults.set(data, forKey: Self.hoverToggleStorageKey)
         } else {
             defaults.removeObject(forKey: Self.hoverToggleStorageKey)

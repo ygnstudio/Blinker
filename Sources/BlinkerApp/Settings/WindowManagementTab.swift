@@ -139,7 +139,9 @@ struct WindowManagementTab: View {
             HotkeyRowView(
                 label: tr("悬停放大开关", "Toggle Hover Enlargement"),
                 combo: hotkeyManager.hoverToggleCombo,
-                isRecording: hotkeyManager.isRecordingHoverToggle,
+                isRecording: hotkeyManager.recordingTarget == .hoverToggle,
+                recordingHint: hotkeyManager.recordingHint,
+                conflictWarning: hoverToggleConflictWarning,
                 onRecord: { hotkeyManager.beginRecordingHoverToggle() },
                 onClear: { hotkeyManager.clearHoverToggleBinding() }
             )
@@ -148,7 +150,9 @@ struct WindowManagementTab: View {
                 HotkeyRowView(
                     label: action.localizedLabel,
                     combo: hotkeyManager.bindings[action.rawValue],
-                    isRecording: hotkeyManager.recordingAction == action,
+                    isRecording: hotkeyManager.recordingTarget == .windowAction(action),
+                    recordingHint: hotkeyManager.recordingHint,
+                    conflictWarning: windowActionConflictWarning(for: action),
                     onRecord: { hotkeyManager.beginRecording(for: action) },
                     onClear: { hotkeyManager.clearBinding(for: action) }
                 )
@@ -168,6 +172,18 @@ struct WindowManagementTab: View {
                 )
             )
         }
+    }
+
+    /// The hover-toggle combo's conflict with any window-action binding.
+    private var hoverToggleConflictWarning: String? {
+        guard let combo = hotkeyManager.hoverToggleCombo else { return nil }
+        return hotkeyManager.internalConflictWarning(for: combo, action: nil)
+    }
+
+    /// One window action's conflict with any other Blinker binding.
+    private func windowActionConflictWarning(for action: ButtonAction) -> String? {
+        guard let combo = hotkeyManager.bindings[action.rawValue] else { return nil }
+        return hotkeyManager.internalConflictWarning(for: combo, action: action)
     }
 
     private var hotkeysEnabledBinding: Binding<Bool> {
@@ -279,12 +295,16 @@ private struct WorkspaceRowView: View {
 
 // MARK: - Hotkey row
 
-/// One hotkey binding row: label, current combo (or record prompt) and a
-/// clear button.
+/// One hotkey binding row: label, current combo (or record prompt), a clear
+/// button, plus inline recorder feedback and conflict warnings.
 private struct HotkeyRowView: View {
     let label: String
     let combo: HotkeyCombo?
     let isRecording: Bool
+    /// Recorder feedback (e.g. "hold a modifier") while this row records.
+    let recordingHint: String?
+    /// Conflict with another Blinker binding, if any.
+    let conflictWarning: String?
     let onRecord: () -> Void
     let onClear: () -> Void
     @ObservedObject private var preferences = AppPreferences.shared
@@ -321,6 +341,16 @@ private struct HotkeyRowView: View {
                 .disabled(combo == nil)
                 .opacity(combo == nil ? 0 : 1)
             }
+        }
+        if isRecording, let recordingHint {
+            Text(recordingHint)
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+        }
+        if let conflictWarning {
+            Text(conflictWarning)
+                .font(.caption2)
+                .foregroundStyle(.orange)
         }
         if let combo, let warning = HotkeyManager.systemConflictWarning(for: combo) {
             Text(warning)

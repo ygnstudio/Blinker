@@ -54,6 +54,40 @@ public enum WorkspaceManager {
     /// path lives in Core and reads the same key). Default is off.
     static let spaceRestoreDefaultsKey = "workspaceSpaceRestoreEnabled"
 
+    /// Serial queue keeping the AX-heavy capture/restore work off the main
+    /// thread. The synchronous functions below run on it via the `Async`
+    /// wrappers; serial ordering keeps rapid save/restore calls from
+    /// interleaving AX writes.
+    public static let axQueue = DispatchQueue(
+        label: "com.ygnstudio.blinker.workspace-ax",
+        qos: .userInitiated
+    )
+
+    // MARK: - Async entry points
+
+    /// Captures the current arrangement on the AX queue; `completion`
+    /// receives the entries on the main thread.
+    public static func captureVisibleWindowsAsync(
+        completion: @escaping ([WorkspaceEntry]) -> Void
+    ) {
+        axQueue.async {
+            let entries = captureVisibleWindows()
+            DispatchQueue.main.async { completion(entries) }
+        }
+    }
+
+    /// Restores a workspace on the AX queue; `completion` receives the
+    /// number of restored windows on the main thread.
+    public static func restoreAsync(
+        _ workspace: SavedWorkspace,
+        completion: @escaping (Int) -> Void
+    ) {
+        axQueue.async {
+            let restored = restore(workspace)
+            DispatchQueue.main.async { completion(restored) }
+        }
+    }
+
     // MARK: - Capture
 
     /// A window that passed all capture filters, with the ids the Space
