@@ -37,9 +37,7 @@ final class HoverOverlayTrayPanel: NSPanel {
     ///     tray margins.
     ///   - glows: The per-dot glows drawn on the glass, in tray-local
     ///     coordinates.
-    ///   - tintColor: User-configured Liquid Glass tint, or `nil` for the
-    ///     system-managed neutral glass.
-    init(trayFrame: CGRect, glows: [Glow], tintColor: NSColor? = nil) {
+    init(trayFrame: CGRect, glows: [Glow]) {
         let globalMaxY = NSScreen.screens.map(\.frame.maxY).max() ?? 0
         let appKitFrame = CGRect(
             x: trayFrame.minX,
@@ -73,7 +71,6 @@ final class HoverOverlayTrayPanel: NSPanel {
         if #available(macOS 26.0, *) {
             let glass = NSGlassEffectView(frame: NSRect(origin: .zero, size: size))
             glass.cornerRadius = radius
-            glass.tintColor = tintColor
             container.addSubview(glass)
         } else {
             let backdrop = NSVisualEffectView(frame: NSRect(origin: .zero, size: size))

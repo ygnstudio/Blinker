@@ -36,11 +36,6 @@ public struct HoverOverlaySettings: Codable, Hashable, Sendable {
     /// order. A `nil` slot renders no chip; non-nil slots render a chip that
     /// performs the mapped action on click.
     public var extraButtonActions: [ButtonAction?]
-    /// Custom Liquid Glass tint as `#RRGGBB`, shared by the tray, the HUD,
-    /// the extra chips and the settings window. `nil` follows the system
-    /// accent. The traffic-light dots always keep their semantic red /
-    /// yellow / green colors.
-    public var glassTintColorHex: String?
 
     public init(
         isEnabled: Bool = true,
@@ -48,8 +43,7 @@ public struct HoverOverlaySettings: Codable, Hashable, Sendable {
         dwellMilliseconds: Int = 150,
         appliesToAllWindows: Bool = true,
         mode: HoverOverlayMode = .overlay,
-        extraButtonActions: [ButtonAction?] = [],
-        glassTintColorHex: String? = nil
+        extraButtonActions: [ButtonAction?] = []
     ) {
         self.isEnabled = isEnabled
         self.enlargedSize = min(max(enlargedSize, 28), 48)
@@ -57,7 +51,6 @@ public struct HoverOverlaySettings: Codable, Hashable, Sendable {
         self.appliesToAllWindows = appliesToAllWindows
         self.mode = mode
         self.extraButtonActions = Self.normalizedExtraActions(extraButtonActions)
-        self.glassTintColorHex = glassTintColorHex
     }
 
     /// The non-nil extra actions in slot order — the chips actually rendered.
@@ -86,14 +79,13 @@ public struct HoverOverlaySettings: Codable, Hashable, Sendable {
 
     private enum CodingKeys: String, CodingKey {
         case isEnabled, enlargedSize, dwellMilliseconds, appliesToAllWindows, mode
-        case extraButtonActions, glassTintColorHex
+        case extraButtonActions
     }
 
     /// Decodes leniently so settings persisted by older versions (without a
-    /// `mode`, `maskStyle`, `extraButtonActions` or `glassTintColorHex` key)
-    /// still load instead of resetting to defaults. A persisted `maskStyle`
-    /// from versions that sampled the title bar is ignored — the glass tray
-    /// replaced sampling.
+    /// `mode`, `maskStyle` or `extraButtonActions` key) still load instead of
+    /// resetting to defaults. A persisted `maskStyle` from versions that
+    /// sampled the title bar is ignored — the glass tray replaced sampling.
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         let fallback = HoverOverlaySettings()
@@ -109,9 +101,6 @@ public struct HoverOverlaySettings: Codable, Hashable, Sendable {
             container.decodeIfPresent([ButtonAction?].self, forKey: .extraButtonActions)
                 ?? fallback.extraButtonActions
         )
-        glassTintColorHex = try container
-            .decodeIfPresent(String.self, forKey: .glassTintColorHex)
-            ?? fallback.glassTintColorHex
     }
 }
 

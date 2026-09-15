@@ -30,10 +30,9 @@ extension ButtonAction {
 
 /// Borderless, non-activating panel showing one user-configured extra action
 /// chip to the right of the traffic lights. Rendering mirrors
-/// `HoverOverlayPanel`: on macOS 26+ a circular Liquid Glass chip tinted
-/// with the configured glass tint (falling back to the system accent),
-/// dwell ring and an action symbol; earlier systems draw an opaque accent
-/// circle directly on the glass tray.
+/// `HoverOverlayPanel`: an opaque accent circle, dwell ring and an action
+/// symbol drawn directly on the glass tray — no glass wrapper of its own, so
+/// the chip language matches the enlarged dots exactly.
 final class HoverOverlayExtraPanel: NSPanel {
     let buttonView: HoverOverlayExtraButtonView
 
@@ -41,13 +40,10 @@ final class HoverOverlayExtraPanel: NSPanel {
     ///   - panelFrame: The panel's frame in AX coordinates (from the group
     ///     layout).
     ///   - action: The action performed when the chip is clicked.
-    ///   - tintColor: User-configured glass tint, or `nil` for the system
-    ///     accent.
     ///   - onActivate: Called when the user clicks after dwell completion.
     init(
         panelFrame: CGRect,
         action: ButtonAction,
-        tintColor: NSColor? = nil,
         onActivate: @escaping () -> Void
     ) {
         let globalMaxY = NSScreen.screens.map(\.frame.maxY).max() ?? 0
@@ -61,7 +57,6 @@ final class HoverOverlayExtraPanel: NSPanel {
         buttonView = HoverOverlayExtraButtonView(
             frame: NSRect(origin: .zero, size: appKitFrame.size),
             action: action,
-            tintColor: tintColor,
             onActivate: onActivate
         )
         super.init(
@@ -77,54 +72,25 @@ final class HoverOverlayExtraPanel: NSPanel {
         hidesOnDeactivate = false
         hasShadow = false
         isReleasedWhenClosed = false
-        contentView = Self.makeContentView(buttonView: buttonView, tintColor: tintColor)
-    }
-
-    /// Layers the button view on a circular glass chip (macOS 26+); before
-    /// 26 the button view draws its own opaque circle and needs no backdrop.
-    private static func makeContentView(
-        buttonView: HoverOverlayExtraButtonView,
-        tintColor: NSColor?
-    ) -> NSView {
-        guard #available(macOS 26.0, *) else {
-            return buttonView
-        }
-        let container = NSView(frame: buttonView.bounds)
-        let circleRect = OverlayChipDrawing.circleRect(in: container.bounds)
-        let glass = NSGlassEffectView(frame: circleRect)
-        glass.cornerRadius = circleRect.width / 2
-        glass.tintColor = tintColor ?? .controlAccentColor
-        container.addSubview(glass)
-        buttonView.usesGlassFill = true
-        container.addSubview(buttonView)
-        return container
+        contentView = buttonView
     }
 }
 
-/// Draws one extra action chip: accent circle (or the glass chip beneath it
-/// on macOS 26+), SF Symbol and dwell progress ring — the same chip language
-/// as the enlarged traffic lights.
+/// Draws one extra action chip: accent circle, SF Symbol and dwell progress
+/// ring — the same chip language as the enlarged traffic lights.
 final class HoverOverlayExtraButtonView: NSView {
     private let action: ButtonAction
     private let onActivate: () -> Void
-    /// The user's glass tint overrides the system accent when configured.
-    private var customTintColor: NSColor?
     private var dwellProgress: Double = 0
     private var isActivated = false
-    /// When `true` a circular `NSGlassEffectView` sits behind this view and
-    /// provides the chip's fill, so `draw` skips the opaque circle. Set by
-    /// the panel when it installs the glass backdrop.
-    var usesGlassFill = false
 
     init(
         frame: NSRect,
         action: ButtonAction,
-        tintColor: NSColor? = nil,
         onActivate: @escaping () -> Void
     ) {
         self.action = action
         self.onActivate = onActivate
-        customTintColor = tintColor
         super.init(frame: frame)
     }
 
@@ -133,10 +99,10 @@ final class HoverOverlayExtraButtonView: NSView {
         fatalError("init(coder:) is not supported")
     }
 
-    /// The chip's semantic color — the configured tint, or the system accent
-    /// — used for the dwell ring and the fallback opaque circle.
+    /// The chip's semantic color — the same accent used for the dwell ring,
+    /// drawn as an opaque circle exactly like the enlarged traffic dots.
     var accentColor: NSColor {
-        customTintColor ?? .controlAccentColor
+        .controlAccentColor
     }
 
     func setDwellProgress(_ progress: Double) {
@@ -162,9 +128,7 @@ final class HoverOverlayExtraButtonView: NSView {
     override func draw(_: NSRect) {
         let circleRect = OverlayChipDrawing.circleRect(in: bounds)
         OverlayChipDrawing.drawProgressRing(around: circleRect, progress: dwellProgress)
-        if !usesGlassFill {
-            OverlayChipDrawing.drawCircle(in: circleRect, color: accentColor)
-        }
+        OverlayChipDrawing.drawCircle(in: circleRect, color: accentColor)
         drawSymbol(in: circleRect)
     }
 

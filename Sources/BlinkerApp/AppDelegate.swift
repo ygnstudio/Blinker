@@ -166,13 +166,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, Observ
             window.isReleasedWhenClosed = false
             window.level = .floating
             window.appearance = AppPreferences.shared.nsAppearance
-            if #available(macOS 26.0, *) {
-                // Liquid Glass backdrop: let the SwiftUI glass pane in each
-                // tab blur what is behind the window. Earlier systems keep
-                // the standard opaque window.
-                window.isOpaque = false
-                window.backgroundColor = .clear
-            }
             settingsWindow = window
             observePreferenceChanges()
         }

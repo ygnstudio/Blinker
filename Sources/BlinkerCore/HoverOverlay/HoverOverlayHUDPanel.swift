@@ -140,11 +140,8 @@ final class HoverOverlayHUDPanel: NSPanel {
     /// Corner radius matching the SwiftUI content's tile rounding.
     static let cornerRadius: CGFloat = 14
 
-    /// - Parameters:
-    ///   - axFrame: The HUD frame in AX (top-left origin) coordinates.
-    ///   - tintColor: User-configured Liquid Glass tint, or `nil` for the
-    ///     system-managed neutral glass.
-    init(axFrame: CGRect, content: HoverOverlayHUDContent, tintColor: NSColor? = nil) {
+    /// - Parameter axFrame: The HUD frame in AX (top-left origin) coordinates.
+    init(axFrame: CGRect, content: HoverOverlayHUDContent) {
         let globalMaxY = NSScreen.screens.map(\.frame.maxY).max() ?? 0
         let appKitFrame = CGRect(
             x: axFrame.minX,
@@ -173,7 +170,6 @@ final class HoverOverlayHUDPanel: NSPanel {
         if #available(macOS 26.0, *) {
             let glass = NSGlassEffectView(frame: container.bounds)
             glass.cornerRadius = radius
-            glass.tintColor = tintColor
             container.addSubview(glass)
         } else {
             let backdrop = NSVisualEffectView(frame: container.bounds)

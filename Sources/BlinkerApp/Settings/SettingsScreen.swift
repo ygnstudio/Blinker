@@ -35,23 +35,18 @@ final class SettingsTabViewController: NSTabViewController {
         tabStyle = .toolbar
         canPropagateSelectedChildViewControllerTitle = false
         specs = [
-            rulesSpec(ruleStore: ruleStore, hoverStore: hoverSettingsStore),
+            rulesSpec(ruleStore: ruleStore),
             windowManagementSpec(
                 hotkeyManager: hotkeyManager,
                 workspaceStore: workspaceStore,
-                onSnapEnabledChange: onSnapEnabledChange,
-                hoverStore: hoverSettingsStore
+                onSnapEnabledChange: onSnapEnabledChange
             ),
             hoverSpec(
                 hoverSettingsStore: hoverSettingsStore,
                 onApplyHoverSettings: onApplyHoverSettings
             ),
-            generalSpec(
-                appDelegate: appDelegate,
-                hoverStore: hoverSettingsStore,
-                onApplyHoverSettings: onApplyHoverSettings
-            ),
-            aboutSpec(hoverStore: hoverSettingsStore),
+            generalSpec(appDelegate: appDelegate),
+            aboutSpec(),
         ]
         rebuildTabs()
 
@@ -66,10 +61,10 @@ final class SettingsTabViewController: NSTabViewController {
         fatalError("init(coder:) is not supported")
     }
 
-    private func rulesSpec(ruleStore: RuleStore, hoverStore: HoverOverlaySettingsStore) -> TabSpec {
+    private func rulesSpec(ruleStore: RuleStore) -> TabSpec {
         TabSpec(
             viewController: NSHostingController(
-                rootView: SettingsTabContent(store: hoverStore) { RulesTab(ruleStore: ruleStore) }
+                rootView: SettingsTabContent { RulesTab(ruleStore: ruleStore) }
             ),
             chineseTitle: "规则",
             englishTitle: "Rules",
@@ -80,12 +75,11 @@ final class SettingsTabViewController: NSTabViewController {
     private func windowManagementSpec(
         hotkeyManager: HotkeyManager,
         workspaceStore: WorkspaceStore,
-        onSnapEnabledChange: @escaping (Bool) -> Void,
-        hoverStore: HoverOverlaySettingsStore
+        onSnapEnabledChange: @escaping (Bool) -> Void
     ) -> TabSpec {
         TabSpec(
             viewController: NSHostingController(
-                rootView: SettingsTabContent(store: hoverStore) {
+                rootView: SettingsTabContent {
                     WindowManagementTab(
                         hotkeyManager: hotkeyManager,
                         workspaceStore: workspaceStore,
@@ -105,7 +99,7 @@ final class SettingsTabViewController: NSTabViewController {
     ) -> TabSpec {
         TabSpec(
             viewController: NSHostingController(
-                rootView: SettingsTabContent(store: hoverSettingsStore) {
+                rootView: SettingsTabContent {
                     HoverSettingsTab(
                         store: hoverSettingsStore,
                         onApply: onApplyHoverSettings
@@ -118,20 +112,10 @@ final class SettingsTabViewController: NSTabViewController {
         )
     }
 
-    private func generalSpec(
-        appDelegate: AppDelegate,
-        hoverStore: HoverOverlaySettingsStore,
-        onApplyHoverSettings: @escaping (HoverOverlaySettings) -> Void
-    ) -> TabSpec {
+    private func generalSpec(appDelegate: AppDelegate) -> TabSpec {
         TabSpec(
             viewController: NSHostingController(
-                rootView: SettingsTabContent(store: hoverStore) {
-                    GeneralTab(
-                        appDelegate: appDelegate,
-                        hoverSettingsStore: hoverStore,
-                        onApplyHoverSettings: onApplyHoverSettings
-                    )
-                }
+                rootView: SettingsTabContent { GeneralTab(appDelegate: appDelegate) }
             ),
             chineseTitle: "通用",
             englishTitle: "General",
@@ -139,10 +123,10 @@ final class SettingsTabViewController: NSTabViewController {
         )
     }
 
-    private func aboutSpec(hoverStore: HoverOverlaySettingsStore) -> TabSpec {
+    private func aboutSpec() -> TabSpec {
         TabSpec(
             viewController: NSHostingController(
-                rootView: SettingsTabContent(store: hoverStore) { AboutTab() }
+                rootView: SettingsTabContent { AboutTab() }
             ),
             chineseTitle: "关于",
             englishTitle: "About",
@@ -172,42 +156,15 @@ final class SettingsTabViewController: NSTabViewController {
     }
 }
 
-/// Wraps a tab's content with the app-wide appearance override and, on
-/// macOS 26+, a Liquid Glass backdrop tinted by the user's preference —
-/// the same material as the hover tray and the management HUD.
+/// Wraps a tab's content with the app-wide appearance override so every tab
+/// follows the General tab's light/dark choice.
 private struct SettingsTabContent<Content: View>: View {
-    let store: HoverOverlaySettingsStore
     @ViewBuilder var content: Content
     @ObservedObject private var preferences = AppPreferences.shared
 
     var body: some View {
         content
-            .background { glassBackdrop }
             .preferredColorScheme(preferences.appearance.resolvedScheme)
-    }
-
-    @ViewBuilder
-    private var glassBackdrop: some View {
-        if #available(macOS 26.0, *) {
-            let tint = GlassTint.resolved(hex: store.settings.glassTintColorHex)
-            let style = tint.map { Glass.regular.tint(Color(nsColor: $0)) } ?? Glass.regular
-            Rectangle()
-                .glassEffect(style, in: Rectangle())
-                .ignoresSafeArea()
-        }
-    }
-}
-
-/// Hides the grouped form/list backgrounds on macOS 26+ so each tab's
-/// content sits directly on the window's glass backdrop; before 26 the
-/// standard opaque grouped look is kept.
-struct HiddenGlassCompatibleBackground: ViewModifier {
-    func body(content: Content) -> some View {
-        if #available(macOS 26.0, *) {
-            content.scrollContentBackground(.hidden)
-        } else {
-            content
-        }
     }
 }
 
@@ -242,7 +199,6 @@ struct RulesTab: View {
             }
         }
         .listStyle(.inset(alternatesRowBackgrounds: true))
-        .modifier(HiddenGlassCompatibleBackground())
     }
 
     private var emptyState: some View {

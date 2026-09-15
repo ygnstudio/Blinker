@@ -5,30 +5,16 @@ import SwiftUI
 // MARK: - General tab
 
 /// Language, appearance and interception preferences; both lookups default
-/// to following the system. The Liquid Glass section configures the tint
-/// shared by every glass surface (tray, HUD, extra chips, this window).
+/// to following the system.
 struct GeneralTab: View {
     @ObservedObject var appDelegate: AppDelegate
     @ObservedObject private var preferences = AppPreferences.shared
-    @ObservedObject private var hoverSettingsStore: HoverOverlaySettingsStore
-    private let onApplyHoverSettings: (HoverOverlaySettings) -> Void
     @State private var launchAtLogin = false
     @State private var launchAtLoginError = false
-
-    init(
-        appDelegate: AppDelegate,
-        hoverSettingsStore: HoverOverlaySettingsStore,
-        onApplyHoverSettings: @escaping (HoverOverlaySettings) -> Void
-    ) {
-        self.appDelegate = appDelegate
-        self.hoverSettingsStore = hoverSettingsStore
-        self.onApplyHoverSettings = onApplyHoverSettings
-    }
 
     var body: some View {
         Form {
             interceptionSection
-            liquidGlassSection
 
             Section {
                 Picker(tr("语言", "Language"), selection: $preferences.language) {
@@ -77,74 +63,9 @@ struct GeneralTab: View {
             }
         }
         .formStyle(.grouped)
-        .modifier(HiddenGlassCompatibleBackground())
         .onAppear {
             launchAtLogin = SMAppService.mainApp.status == .enabled
         }
-    }
-
-    /// Tint for every Liquid Glass surface, mirroring Apple's own glass
-    /// tint adjustment. The traffic-light dots always keep their semantic
-    /// red / yellow / green colors.
-    private var liquidGlassSection: some View {
-        Section {
-            Picker(tr("色调", "Tint"), selection: usesCustomTint) {
-                Text(tr("跟随系统", "Follow System")).tag(false)
-                Text(tr("自定义", "Custom")).tag(true)
-            }
-            if usesCustomTint.wrappedValue {
-                ColorPicker(
-                    tr("自定义色调", "Custom Tint"),
-                    selection: customTint,
-                    supportsOpacity: false
-                )
-            }
-        } header: {
-            Text(tr("液态玻璃", "Liquid Glass"))
-        } footer: {
-            Text(tr(
-                "为悬停玻璃托盘、窗口管理面板与设置窗口着色；红绿灯按钮保持红黄绿原色。",
-                "Tints the hover tray, the management HUD and this window;"
-                    + " the traffic lights keep their red/yellow/green."
-            ))
-        }
-    }
-
-    /// Whether a custom tint is configured (vs following the system accent).
-    private var usesCustomTint: Binding<Bool> {
-        Binding(
-            get: { hoverSettingsStore.settings.glassTintColorHex != nil },
-            set: { custom in
-                var settings = hoverSettingsStore.settings
-                settings.glassTintColorHex = custom
-                    ? GlassTint.hexString(from: .controlAccentColor)
-                    : nil
-                applyHoverSettings(settings)
-            }
-        )
-    }
-
-    /// The custom tint color; writing persists it and re-tints live.
-    private var customTint: Binding<Color> {
-        Binding(
-            get: {
-                Color(
-                    nsColor: GlassTint.resolved(
-                        hex: hoverSettingsStore.settings.glassTintColorHex
-                    ) ?? .controlAccentColor
-                )
-            },
-            set: { color in
-                var settings = hoverSettingsStore.settings
-                settings.glassTintColorHex = GlassTint.hexString(from: NSColor(color))
-                applyHoverSettings(settings)
-            }
-        )
-    }
-
-    private func applyHoverSettings(_ settings: HoverOverlaySettings) {
-        hoverSettingsStore.update(settings)
-        onApplyHoverSettings(settings)
     }
 
     /// Pause/resume for click interception — moved out of the menu bar menu
@@ -248,7 +169,6 @@ struct AboutTab: View {
                 }
             }
             .formStyle(.grouped)
-            .modifier(HiddenGlassCompatibleBackground())
         }
     }
 

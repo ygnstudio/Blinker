@@ -13,11 +13,9 @@ struct OverlayButtonInfo {
 /// Borderless, non-activating panel showing one enlarged traffic-light button.
 ///
 /// The panel frame comes from the group layout (`HoverOverlayGeometry
-/// .panelFrames`) so enlarged neighbors never overlap. On macOS 26+ the dot
-/// is a circular Liquid Glass chip tinted with the button's semantic color
-/// (`NSGlassEffectView`); earlier systems fall back to an opaque vivid
-/// circle with a hairline rim. The glass capsule tray behind the group
-/// (`HoverOverlayTrayPanel`) provides the backdrop on every OS.
+/// .panelFrames`) so enlarged neighbors never overlap. The dot is an opaque
+/// vivid circle with a hairline rim; the glass capsule tray behind it
+/// (`HoverOverlayTrayPanel`) provides the chip's backdrop on every OS.
 final class HoverOverlayPanel: NSPanel {
     let buttonView: HoverOverlayButtonView
 
@@ -66,34 +64,13 @@ final class HoverOverlayPanel: NSPanel {
         hidesOnDeactivate = false
         hasShadow = false
         isReleasedWhenClosed = false
-        contentView = Self.makeContentView(buttonView: buttonView, info: info, isHotspot: isHotspot)
-    }
-
-    /// Layers the button view on a circular glass chip (macOS 26+); before
-    /// 26 the button view draws its own opaque circle and needs no backdrop.
-    private static func makeContentView(
-        buttonView: HoverOverlayButtonView,
-        info: OverlayButtonInfo,
-        isHotspot: Bool
-    ) -> NSView {
-        guard !isHotspot, #available(macOS 26.0, *) else {
-            return buttonView
-        }
-        let container = NSView(frame: buttonView.bounds)
-        let circleRect = OverlayChipDrawing.circleRect(in: container.bounds)
-        let glass = NSGlassEffectView(frame: circleRect)
-        glass.cornerRadius = circleRect.width / 2
-        glass.tintColor = OverlayChipDrawing.vividColor(for: info.button)
-        container.addSubview(glass)
-        buttonView.usesGlassFill = true
-        container.addSubview(buttonView)
-        return container
+        contentView = buttonView
     }
 }
 
-/// Draws one enlarged traffic-light button: vivid circle (or the glass chip
-/// beneath it on macOS 26+), symbol and dwell progress ring. In hotspot mode
-/// the view is fully invisible and always activated.
+/// Draws one enlarged traffic-light button: opaque vivid circle, symbol and
+/// dwell progress ring. In hotspot mode the view is fully invisible and
+/// always activated.
 final class HoverOverlayButtonView: NSView {
     private let info: OverlayButtonInfo
     private let isHotspot: Bool
@@ -101,10 +78,6 @@ final class HoverOverlayButtonView: NSView {
     private let onLongPress: () -> Void
     private var dwellProgress: Double = 0
     private var isActivated = false
-    /// When `true` a circular `NSGlassEffectView` sits behind this view and
-    /// provides the dot's fill, so `draw` skips the opaque circle. Set by
-    /// the panel when it installs the glass backdrop.
-    var usesGlassFill = false
     /// Pending plain left click waiting to resolve as a quick click (mouse
     /// up) or a long press (timer). Mirrors the interceptor's behavior for
     /// buttons whose long-press slot is configured.
@@ -214,9 +187,7 @@ final class HoverOverlayButtonView: NSView {
         guard !isHotspot else { return }
         let circleRect = OverlayChipDrawing.circleRect(in: bounds)
         OverlayChipDrawing.drawProgressRing(around: circleRect, progress: dwellProgress)
-        if !usesGlassFill {
-            OverlayChipDrawing.drawCircle(in: circleRect, color: accentColor)
-        }
+        OverlayChipDrawing.drawCircle(in: circleRect, color: accentColor)
         drawSymbol(in: circleRect)
     }
 
