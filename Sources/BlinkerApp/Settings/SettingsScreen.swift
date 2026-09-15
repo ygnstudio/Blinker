@@ -39,6 +39,10 @@ struct RulesTab: View {
         HStack(spacing: 0) {
             ruleList
                 .frame(minWidth: 220, idealWidth: 240, maxWidth: 300, maxHeight: .infinity)
+                // The Liquid Glass sidebar's floating hot zone spills a few
+                // points into the detail column; the leading inset keeps the
+                // "已启用" section header (and every list row) fully visible.
+                .padding(.leading, 12)
             Divider()
             if let rule = selectedRule {
                 RuleInspectorView(rule: rule, onUpdate: { ruleStore.upsert($0) })

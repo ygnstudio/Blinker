@@ -127,7 +127,14 @@ struct RuleInspectorView: View {
             }
             ForEach(Self.matrixVariants, id: \.rawValue) { variant in
                 GridRow {
+                    // Fixed-width label column: without it "⌥+左键" and
+                    // "🌐+左键" wrap to two lines while the others stay on
+                    // one, misaligning the whole grid. Scaling (instead of
+                    // truncation) absorbs longer English labels.
                     Text(variant.localizedLabel)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
+                        .frame(width: 64, alignment: .trailing)
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .gridColumnAlignment(.trailing)

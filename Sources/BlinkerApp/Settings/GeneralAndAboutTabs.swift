@@ -87,15 +87,16 @@ struct GeneralTab: View {
     /// so the icon click can open settings directly.
     private var interceptionSection: some View {
         Section {
-            Toggle(tr("启用红绿灯拦截", "Enable Interception"), isOn: interceptionBinding)
+            Toggle(tr("开启红绿灯拦截", "Enable Interception"), isOn: interceptionBinding)
         } header: {
             Text(tr("拦截", "Interception"))
         } footer: {
             Text(
-                appDelegate.status.localizedLabel
+                tr("当前状态：", "Current status: ")
+                    + appDelegate.status.localizedLabel
                     + tr(
-                        "。暂停后红绿灯点击与悬停放大恢复系统默认行为。",
-                        ". While paused, traffic-light clicks and the hover overlay use system defaults."
+                        "。关闭后，红绿灯点击与悬停放大恢复系统默认行为。",
+                        ". While off, traffic-light clicks and the hover overlay use system defaults."
                     )
             )
         }

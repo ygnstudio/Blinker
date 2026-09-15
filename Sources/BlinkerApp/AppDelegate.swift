@@ -15,10 +15,10 @@ enum InterceptorStatus {
     var localizedLabel: String {
         switch self {
         case .checking: tr("检查辅助功能权限…", "Checking accessibility permission…")
-        case .running: tr("拦截运行中", "Interception running")
+        case .running: tr("已启用", "Enabled")
         case .noPermission: tr("未授权辅助功能", "Accessibility not granted")
         case .tapFailed: tr("事件监听启动失败", "Event tap failed to start")
-        case .paused: tr("已暂停", "Paused")
+        case .paused: tr("已关闭", "Disabled")
         }
     }
 }
@@ -208,7 +208,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, Observ
             }
             window.styleMask.insert(.fullSizeContentView)
             window.styleMask.insert(.miniaturizable)
-            window.setContentSize(NSSize(width: 860, height: 560))
+            window.setContentSize(NSSize(width: 860, height: 500))
             window.contentMinSize = NSSize(width: 720, height: 460)
             window.center()
             window.isReleasedWhenClosed = false

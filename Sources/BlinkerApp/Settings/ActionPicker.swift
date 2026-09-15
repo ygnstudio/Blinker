@@ -37,8 +37,8 @@ extension ClickVariant {
         switch self {
         case .left: tr("左键", "Left Click")
         case .right: tr("右键", "Right Click")
-        case .optionLeft: tr("⌥ + 左键", "⌥ + Left Click")
-        case .globeLeft: tr("🌐 + 左键", "🌐 + Left Click")
+        case .optionLeft: tr("⌥+左键", "⌥+Left Click")
+        case .globeLeft: tr("🌐+左键", "🌐+Left Click")
         case .longPressLeft: tr("长按", "Long Press")
         }
     }
