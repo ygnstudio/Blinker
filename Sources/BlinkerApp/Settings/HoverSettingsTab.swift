@@ -56,7 +56,8 @@ struct HoverSettingsTab: View {
                             dotColor: .controlAccentColor,
                             options: Self.extraOptions,
                             selection: extraBinding(index),
-                            emptyLabel: tr("不显示", "Hidden")
+                            emptyLabel: tr("不显示", "Hidden"),
+                            pickerWidth: 120
                         )
                     } label: {
                         Text(tr("按钮 \(index + 1)", "Button \(index + 1)"))

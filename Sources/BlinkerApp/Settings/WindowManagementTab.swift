@@ -227,27 +227,34 @@ private struct HotkeyRowView: View {
 
     var body: some View {
         HStack {
-            Text(action.localizedLabel)
+            // While recording the prompt replaces the label so the trailing
+            // column (chip + clear) keeps a fixed width on every row.
+            Text(
+                isRecording
+                    ? tr("按下快捷键…（Esc 取消）", "Press keys… (Esc to cancel)")
+                    : action.localizedLabel
+            )
+            .font(isRecording ? .callout : .body)
+            .foregroundStyle(isRecording ? Color.accentColor : .primary)
             Spacer()
-            if isRecording {
-                Text(tr("按下快捷键…（Esc 取消）", "Press keys… (Esc to cancel)"))
-                    .font(.callout)
-                    .foregroundStyle(Color.accentColor)
-            } else {
+            // Fixed-width trailing column: chip and clear button reserve
+            // their space even when absent, so all rows share the same
+            // right edge.
+            HStack(spacing: 6) {
                 Button {
                     onRecord()
                 } label: {
                     Text(combo?.displayLabel ?? tr("未设置", "Not Set"))
-                        .frame(minWidth: 72)
+                        .frame(width: 84)
                 }
                 .buttonStyle(.bordered)
-                if combo != nil {
-                    Button(role: .destructive, action: onClear) {
-                        Image(systemName: "minus.circle")
-                    }
-                    .buttonStyle(.borderless)
-                    .help(tr("清除快捷键", "Clear hotkey"))
+                Button(role: .destructive, action: onClear) {
+                    Image(systemName: "minus.circle")
                 }
+                .buttonStyle(.borderless)
+                .help(tr("清除快捷键", "Clear hotkey"))
+                .disabled(combo == nil)
+                .opacity(combo == nil ? 0 : 1)
             }
         }
         if let combo, let warning = HotkeyManager.systemConflictWarning(for: combo) {

@@ -346,8 +346,9 @@ struct ActionPicker: View {
     /// Label for the `nil` option; traffic rows use "默认", extra-button
     /// rows use "不显示".
     var emptyLabel: String = tr("默认", "Default")
-    /// Menu width; the compact variant matrix uses a narrower value.
-    var pickerWidth: CGFloat = 84
+    /// Menu width; fits four CJK characters ("关闭窗口") without ellipsis.
+    /// The compact variant matrix uses a narrower value.
+    var pickerWidth: CGFloat = 100
 
     var body: some View {
         HStack(spacing: 5) {
