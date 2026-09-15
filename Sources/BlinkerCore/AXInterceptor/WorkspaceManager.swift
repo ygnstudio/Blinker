@@ -297,21 +297,9 @@ public enum WorkspaceManager {
         return bestIndex
     }
 
+    /// An element's frame via the shared, type-validated AX reader.
     private static func elementFrame(_ element: AXUIElement) -> CGRect? {
-        var positionRef: CFTypeRef?
-        var sizeRef: CFTypeRef?
-        guard
-            AXUIElementCopyAttributeValue(element, kAXPositionAttribute as CFString, &positionRef) ==
-                .success,
-            AXUIElementCopyAttributeValue(element, kAXSizeAttribute as CFString, &sizeRef) ==
-                .success,
-            let positionValue = positionRef, let sizeValue = sizeRef
-        else { return nil }
-        var point = CGPoint()
-        var size = CGSize()
-        AXValueGetValue(positionValue as! AXValue, .cgPoint, &point) // swiftlint:disable:this force_cast
-        AXValueGetValue(sizeValue as! AXValue, .cgSize, &size) // swiftlint:disable:this force_cast
-        return CGRect(origin: point, size: size)
+        AXQuery.elementFrame(element)
     }
 
     /// All of the app's AX windows, any state — minimized windows keep their

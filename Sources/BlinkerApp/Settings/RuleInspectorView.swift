@@ -77,16 +77,22 @@ struct RuleInspectorView: View {
         }
     }
 
-    /// The app's icon resolved from its bundle identifier on disk; falls
-    /// back to the generic application icon when the app is missing.
+    /// The app's cached icon (see `AppIconStore`); no per-render disk I/O.
     private var appIcon: NSImage {
-        if let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: rule.bundleIdentifier) {
-            return NSWorkspace.shared.icon(forFile: url.path)
-        }
-        return NSWorkspace.shared.icon(for: .applicationBundle)
+        AppIconStore.icon(forBundleIdentifier: rule.bundleIdentifier)
     }
 
     // MARK: - Matrix
+
+    /// The localized light name spoken by the matrix pickers' accessibility
+    /// labels (mirrors the column headers).
+    private func lightName(_ button: TrafficButton) -> String {
+        switch button {
+        case .close: tr("红灯", "Red")
+        case .minimize: tr("黄灯", "Yellow")
+        case .zoom: tr("绿灯", "Green")
+        }
+    }
 
     private var matrix: some View {
         Grid(alignment: .center, horizontalSpacing: 8, verticalSpacing: 8) {
@@ -132,6 +138,10 @@ struct RuleInspectorView: View {
             pickerWidth: 104,
             showsDot: false
         )
+        // The picker's visible label is the action name; the row/column
+        // semantics live in the matrix headers, which VoiceOver does not
+        // associate — so name each popup explicitly.
+        .accessibilityLabel("\(variant.localizedLabel)，\(lightName(button))")
     }
 
     // MARK: - Bindings

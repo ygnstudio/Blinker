@@ -185,12 +185,8 @@ final class HoverOverlayHUDPanel: NSPanel {
         let hostingView = NSHostingView(rootView: content)
         let measured = hostingView.fittingSize
         let size = NSSize(width: max(252, measured.width), height: measured.height)
-        let globalMaxY = AXQuery.coordinatePivotY
-        let appKitFrame = CGRect(
-            x: axOrigin.x,
-            y: globalMaxY - axOrigin.y - size.height,
-            width: size.width,
-            height: size.height
+        let appKitFrame = AXQuery.appKitFrame(
+            fromAXRect: CGRect(origin: axOrigin, size: CGSize(width: size.width, height: size.height))
         )
         axFrame = CGRect(origin: axOrigin, size: CGSize(width: size.width, height: size.height))
         super.init(
@@ -233,8 +229,7 @@ final class HoverOverlayHUDPanel: NSPanel {
     /// Repositions the panel to a new frame in AX (top-left origin)
     /// coordinates, keeping its measured size.
     func setAXFrame(_ frame: CGRect) {
-        let globalMaxY = AXQuery.coordinatePivotY
-        setFrameOrigin(CGPoint(x: frame.minX, y: globalMaxY - frame.maxY))
+        setFrameOrigin(AXQuery.appKitFrame(fromAXRect: frame).origin)
         axFrame = CGRect(origin: frame.origin, size: axFrame.size)
     }
 }

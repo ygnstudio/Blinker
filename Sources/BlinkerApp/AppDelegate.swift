@@ -243,21 +243,42 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, Observ
     /// Starts (or restarts, e.g. after the permission was granted) interception.
     func attemptStartInterceptor() {
         guard interceptor == nil else {
-            // Already running; still refresh the visible status.
+            // Already running; still refresh the visible status. Any pending
+            // permission-retry poll has served its purpose by now and must
+            // not keep firing every two seconds.
             status = .running
+            cancelPermissionRetry()
             return
         }
         guard AccessibilityPermission.isTrusted else {
-            status = .noPermission
-            logger.error("accessibility permission missing")
-            if !hasPromptedForPermission {
-                hasPromptedForPermission = true
-                AccessibilityPermission.prompt()
-            }
-            schedulePermissionRetry()
+            handleMissingAccessibilityPermission()
             return
         }
+        startInterceptionStack()
+    }
 
+    /// Stops the permission-retry poll; called once interception is up (or
+    /// already up), whatever path got it there.
+    private func cancelPermissionRetry() {
+        retryTimer?.invalidate()
+        retryTimer = nil
+    }
+
+    /// The no-permission branch of `attemptStartInterceptor`: surface the
+    /// state, prompt once, and poll until access is granted.
+    private func handleMissingAccessibilityPermission() {
+        status = .noPermission
+        logger.error("accessibility permission missing")
+        if !hasPromptedForPermission {
+            hasPromptedForPermission = true
+            AccessibilityPermission.prompt()
+        }
+        schedulePermissionRetry()
+    }
+
+    /// Brings up the full interception stack: click interceptor, hover
+    /// overlay and drag-to-snap, all sharing one permission and performer.
+    private func startInterceptionStack() {
         let engine = RuleEngine { [weak ruleStore] in ruleStore?.snapshot ?? [] }
         let performer = DefaultWindowActionPerformer()
         let interceptor = TrafficLightInterceptor(ruleEngine: engine, actionPerformer: performer)
@@ -299,6 +320,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, Observ
 
         isIntercepting = true
         status = .running
+        cancelPermissionRetry()
         logger.info("interceptor started; event tap active")
     }
 

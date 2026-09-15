@@ -38,13 +38,7 @@ final class HoverOverlayTrayPanel: NSPanel {
     ///   - glows: The per-dot glows drawn on the glass, in tray-local
     ///     coordinates.
     init(trayFrame: CGRect, glows: [Glow]) {
-        let globalMaxY = AXQuery.coordinatePivotY
-        let appKitFrame = CGRect(
-            x: trayFrame.minX,
-            y: globalMaxY - trayFrame.maxY,
-            width: trayFrame.width,
-            height: trayFrame.height
-        )
+        let appKitFrame = AXQuery.appKitFrame(fromAXRect: trayFrame)
         super.init(
             contentRect: appKitFrame,
             styleMask: [.borderless, .nonactivatingPanel],

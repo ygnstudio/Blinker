@@ -118,18 +118,37 @@ struct RulesTab: View {
     }
 }
 
+/// Resolves and caches app icons by bundle identifier. `NSWorkspace` icon
+/// resolution hits the disk (bundle lookup + icns read), so list rows must
+/// never compute it inline — every render would pay the cost.
+enum AppIconStore {
+    private static let cache = NSCache<NSString, NSImage>()
+
+    /// The app's icon, falling back to the generic application icon when
+    /// the app is no longer installed.
+    static func icon(forBundleIdentifier bundleIdentifier: String) -> NSImage {
+        if let cached = cache.object(forKey: bundleIdentifier as NSString) {
+            return cached
+        }
+        let resolved: NSImage
+        if let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleIdentifier) {
+            resolved = NSWorkspace.shared.icon(forFile: url.path)
+        } else {
+            resolved = NSWorkspace.shared.icon(for: .applicationBundle)
+        }
+        cache.setObject(resolved, forKey: bundleIdentifier as NSString)
+        return resolved
+    }
+}
+
 /// One compact row of the rule list: app icon, name and a summary of how
 /// many slots are customized — the Notes-style title + subtitle density.
 private struct RuleListRow: View {
     let rule: AppRule
 
-    /// The app's icon resolved from its bundle identifier on disk; falls
-    /// back to the generic application icon when the app is missing.
+    /// The app's cached icon (see `AppIconStore`); no per-render disk I/O.
     private var appIcon: NSImage {
-        if let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: rule.bundleIdentifier) {
-            return NSWorkspace.shared.icon(forFile: url.path)
-        }
-        return NSWorkspace.shared.icon(for: .applicationBundle)
+        AppIconStore.icon(forBundleIdentifier: rule.bundleIdentifier)
     }
 
     /// How many of the fifteen slots carry a non-default action.

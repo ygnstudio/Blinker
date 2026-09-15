@@ -16,6 +16,20 @@ enum AXQuery {
         NSScreen.screens.first?.frame.maxY ?? 0
     }
 
+    /// Converts a rect from AX (top-left origin) global coordinates into
+    /// AppKit (bottom-left origin) global coordinates, flipping around the
+    /// primary screen's top edge. Shared by every overlay panel so the
+    /// conversion cannot drift between them.
+    static func appKitFrame(fromAXRect axFrame: CGRect) -> CGRect {
+        let globalMaxY = coordinatePivotY
+        return CGRect(
+            x: axFrame.minX,
+            y: globalMaxY - axFrame.maxY,
+            width: axFrame.width,
+            height: axFrame.height
+        )
+    }
+
     /// The on-screen window a cursor point belongs to, as seen by `CGWindowList`.
     struct WindowHit {
         let processIdentifier: pid_t
@@ -55,10 +69,19 @@ enum AXQuery {
             let originValue = originRef, let sizeValue = sizeRef
         else { return nil }
 
-        var origin = CGPoint.zero
-        var size = CGSize.zero
+        // Validate the CF types before unwrapping: a misbehaving app can
+        // return something other than an AXValue, which would trap inside
+        // AXValueGetValue. Swift forbids `as?` on CF types (it claims the
+        // downcast always succeeds), so validate via type IDs instead.
+        guard
+            CFGetTypeID(originValue) == AXValueGetTypeID(),
+            CFGetTypeID(sizeValue) == AXValueGetTypeID()
+        else { return nil }
         let originAXValue = unsafeDowncast(originValue, to: AXValue.self)
         let sizeAXValue = unsafeDowncast(sizeValue, to: AXValue.self)
+
+        var origin = CGPoint.zero
+        var size = CGSize.zero
         guard
             AXValueGetValue(originAXValue, .cgPoint, &origin),
             AXValueGetValue(sizeAXValue, .cgSize, &size)
@@ -98,6 +121,8 @@ enum AXQuery {
         let focusedWindow = kAXFocusedWindowAttribute as CFString
         let result = AXUIElementCopyAttributeValue(appElement, focusedWindow, &windowRef)
         guard result == .success, let window = windowRef else { return nil }
+        // Type-check the CF value before downcasting (see elementFrame).
+        guard CFGetTypeID(window) == AXUIElementGetTypeID() else { return nil }
         return unsafeDowncast(window, to: AXUIElement.self)
     }
 

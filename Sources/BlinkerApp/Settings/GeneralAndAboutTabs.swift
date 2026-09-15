@@ -12,6 +12,9 @@ struct GeneralTab: View {
     @ObservedObject private var preferences = AppPreferences.shared
     @State private var launchAtLogin = false
     @State private var launchAtLoginError = false
+    /// Set once the onAppear load has run, so the initial state assignment
+    /// does not re-register an already-registered login item via onChange.
+    @State private var didLoadLaunchAtLogin = false
 
     var body: some View {
         Form {
@@ -43,6 +46,9 @@ struct GeneralTab: View {
                     isOn: $launchAtLogin
                 )
                 .onChange(of: launchAtLogin) { _, newValue in
+                    // Skip the initial load assignment (see onAppear below);
+                    // only user flips reach the system registration.
+                    guard didLoadLaunchAtLogin else { return }
                     updateLaunchAtLogin(newValue)
                 }
             } header: {
@@ -65,7 +71,10 @@ struct GeneralTab: View {
         }
         .formStyle(.grouped)
         .onAppear {
+            // Only the user-facing assignment; the onChange guard above
+            // keeps this from re-registering the login item on every visit.
             launchAtLogin = SMAppService.mainApp.status == .enabled
+            didLoadLaunchAtLogin = true
         }
     }
 

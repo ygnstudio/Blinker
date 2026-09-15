@@ -13,16 +13,24 @@ import os
 /// is not Blinker's own.
 public final class WindowSnapper {
     private let actionPerformer: WindowActionPerforming
-    private var eventTap: CFMachPort?
-    private var runLoopSource: CFRunLoopSource?
+    /// Hosts the observe-only tap on a dedicated thread (never the main run
+    /// loop, so drag callbacks cannot stall UI work) with the shared,
+    /// ordered teardown.
+    private let tapHost = EventTapThreadHost(threadName: "snapper-tap")
     private let logger = Logger(subsystem: "com.ygnstudio.blinker", category: "snapper")
 
     private static let titleBarBandHeight: CGFloat = 32
-    /// Guards the mutable drag state below (tap callback runs on the main
-    /// run loop; `isEnabled` is toggled from the settings UI).
+    /// Guards the mutable drag state below (tap callback runs on the tap
+    /// thread; `isEnabled` is toggled from the settings UI).
     private let stateLock = NSLock()
     private var isEnabled = true
     private var drag: DragContext?
+
+    /// One screen's placement geometry, snapshotted at drag start.
+    struct ScreenGeometry {
+        let frame: CGRect
+        let visibleFrame: CGRect
+    }
 
     /// Bookkeeping for one window drag, from mouse down to mouse up.
     private struct DragContext {
@@ -31,6 +39,10 @@ public final class WindowSnapper {
         /// the AX window; resolution falls back to the app's focused window,
         /// which is correct mid-drag).
         let initialBounds: CGRect
+        /// Screens snapshot taken at drag start: the per-move-event zone
+        /// math must not re-read `NSScreen.screens` (an AppKit global walk)
+        /// on every drag event, and not from the tap thread.
+        let screens: [ScreenGeometry]
         /// The placement currently previewed, if any.
         var previewedPlacement: WindowPlacement?
     }
@@ -42,7 +54,7 @@ public final class WindowSnapper {
     }
 
     public var isRunning: Bool {
-        eventTap != nil
+        tapHost.isRunning
     }
 
     /// Enables or disables zone detection live; the tap keeps running so the
@@ -60,7 +72,7 @@ public final class WindowSnapper {
     /// permission is missing or the system refuses the tap.
     @discardableResult
     public func start() -> Bool {
-        guard eventTap == nil else { return true }
+        guard !tapHost.isRunning else { return true }
         guard AccessibilityPermission.isTrusted else {
             logger.error("start aborted: accessibility permission missing")
             return false
@@ -80,11 +92,9 @@ public final class WindowSnapper {
         )
 
         guard
-            let tap = CGEvent.tapCreate(
-                tap: .cghidEventTap,
-                place: .headInsertEventTap,
+            tapHost.start(
+                mask: mask,
                 options: .listenOnly,
-                eventsOfInterest: mask,
                 callback: callback,
                 userInfo: Unmanaged.passUnretained(self).toOpaque()
             )
@@ -92,26 +102,12 @@ public final class WindowSnapper {
             logger.error("CGEvent.tapCreate returned nil (snapper, listenOnly)")
             return false
         }
-
-        let source = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, tap, 0)
-        CFRunLoopAddSource(CFRunLoopGetMain(), source, .commonModes)
-        CGEvent.tapEnable(tap: tap, enable: true)
-
-        eventTap = tap
-        runLoopSource = source
         logger.info("snapper tap installed (observe-only)")
         return true
     }
 
     public func stop() {
-        if let tap = eventTap {
-            CGEvent.tapEnable(tap: tap, enable: false)
-        }
-        if let source = runLoopSource {
-            CFRunLoopRemoveSource(CFRunLoopGetMain(), source, .commonModes)
-        }
-        eventTap = nil
-        runLoopSource = nil
+        tapHost.stop()
         hidePreview()
     }
 
@@ -123,9 +119,7 @@ public final class WindowSnapper {
 
     private func handle(event: CGEvent, eventType: CGEventType) {
         if eventType == .tapDisabledByTimeout || eventType == .tapDisabledByUserInput {
-            if let tap = eventTap {
-                CGEvent.tapEnable(tap: tap, enable: true)
-            }
+            tapHost.enableTap()
             return
         }
 
@@ -134,8 +128,8 @@ public final class WindowSnapper {
             // CG (top-left origin) space — matches CGWindowList bounds.
             handleDragStart(at: event.location)
         case .leftMouseDragged:
-            // AppKit (bottom-left origin) space — matches NSScreen frames
-            // and SnapZones fixtures.
+            // AppKit (bottom-left origin) space — matches the snapshotted
+            // screen frames and SnapZones fixtures.
             handleDragMove(to: Self.appKitPoint(from: event.location))
         case .leftMouseUp:
             handleDragEnd(to: Self.appKitPoint(from: event.location))
@@ -158,6 +152,9 @@ public final class WindowSnapper {
     }
 
     /// Arms the drag context when a mouse down could start a window drag.
+    /// Runs once per drag, so this is the only place that walks the window
+    /// list and reads `NSScreen.screens` — the per-move hot path uses the
+    /// snapshot captured here.
     private func handleDragStart(at location: CGPoint) {
         stateLock.lock()
         let enabled = isEnabled
@@ -174,10 +171,14 @@ public final class WindowSnapper {
             location.y - hit.bounds.minY <= Self.titleBarBandHeight
         else { return }
 
+        let screens = NSScreen.screens.map { screen in
+            ScreenGeometry(frame: screen.frame, visibleFrame: screen.visibleFrame)
+        }
         stateLock.lock()
         drag = DragContext(
             processIdentifier: hit.processIdentifier,
             initialBounds: hit.bounds,
+            screens: screens,
             previewedPlacement: nil
         )
         stateLock.unlock()
@@ -186,13 +187,13 @@ public final class WindowSnapper {
     /// - Parameter appKitLocation: Cursor in AppKit global coordinates.
     private func handleDragMove(to appKitLocation: CGPoint) {
         stateLock.lock()
-        guard drag != nil, isEnabled else {
+        guard let context = drag, isEnabled else {
             stateLock.unlock()
             return
         }
         stateLock.unlock()
 
-        guard let screen = Self.screen(containing: appKitLocation) else { return }
+        guard let screen = Self.screen(containing: appKitLocation, in: context.screens) else { return }
         let visibleFrame = screen.visibleFrame
         guard let placement = SnapZones.placement(at: appKitLocation, in: visibleFrame) else {
             hidePreview()
@@ -219,7 +220,9 @@ public final class WindowSnapper {
         hidePreview()
 
         guard let context, let placement = context.previewedPlacement else { return }
-        guard let screen = Self.screen(containing: appKitLocation) else { return }
+        guard
+            let screen = Self.screen(containing: appKitLocation, in: context.screens)
+        else { return }
         let target = WindowGeometry.targetFrame(
             for: placement,
             originalFrame: .zero,
@@ -240,31 +243,39 @@ public final class WindowSnapper {
         AXQuery.setWindowFrame(
             window,
             appKitFrame: target,
-            globalMaxY: NSScreen.screens.first?.frame.maxY ?? 0
+            globalMaxY: AXQuery.coordinatePivotY
         )
     }
 
     // MARK: - Preview panel
 
+    /// All preview panel work hops to the main thread: NSPanel ordering is
+    /// main-thread-only, and the tap callback now runs on its own thread.
+    /// Sequential dispatch preserves show/hide ordering.
     private func showPreview(_ appKitFrame: CGRect) {
-        if let previewPanel {
-            previewPanel.setFrame(appKitFrame, display: true)
-            return
+        DispatchQueue.main.async { [weak self] in
+            guard let self else { return }
+            if let previewPanel {
+                previewPanel.setFrame(appKitFrame, display: true)
+                return
+            }
+            let panel = SnapPreviewPanel(appKitFrame: appKitFrame)
+            panel.orderFrontRegardless()
+            previewPanel = panel
         }
-        let panel = SnapPreviewPanel(appKitFrame: appKitFrame)
-        panel.orderFrontRegardless()
-        previewPanel = panel
     }
 
     private func hidePreview() {
-        previewPanel?.orderOut(nil)
-        previewPanel = nil
+        DispatchQueue.main.async { [weak self] in
+            self?.previewPanel?.orderOut(nil)
+            self?.previewPanel = nil
+        }
     }
 
-    /// Finds the screen containing an AppKit global point, falling back to
-    /// the main screen.
-    private static func screen(containing point: CGPoint) -> NSScreen? {
-        NSScreen.screens.first { $0.frame.contains(point) } ?? NSScreen.main
+    /// Finds the snapshotted screen containing an AppKit global point,
+    /// falling back to the first screen.
+    private static func screen(containing point: CGPoint, in screens: [ScreenGeometry]) -> ScreenGeometry? {
+        screens.first { $0.frame.contains(point) } ?? screens.first
     }
 }
 

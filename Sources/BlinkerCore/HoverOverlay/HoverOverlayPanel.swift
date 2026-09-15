@@ -41,14 +41,8 @@ final class HoverOverlayPanel: NSPanel {
         onActivate: @escaping (ClickVariant) -> Void,
         onLongPress: @escaping () -> Void
     ) {
-        let globalMaxY = AXQuery.coordinatePivotY
         // Convert the AX (top-left origin) panel frame to AppKit coordinates.
-        let appKitFrame = CGRect(
-            x: panelFrame.minX,
-            y: globalMaxY - panelFrame.maxY,
-            width: panelFrame.width,
-            height: panelFrame.height
-        )
+        let appKitFrame = AXQuery.appKitFrame(fromAXRect: panelFrame)
         buttonView = HoverOverlayButtonView(
             frame: NSRect(origin: .zero, size: appKitFrame.size),
             info: info,
