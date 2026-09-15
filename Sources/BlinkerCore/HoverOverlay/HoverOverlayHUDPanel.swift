@@ -14,11 +14,22 @@ public struct HUDWorkspaceItem: Identifiable, Sendable {
     }
 }
 
-/// Bilingual helper for the HUD. The overlay is not part of the settings
-/// window, so the app-level `tr` (which follows the language preference)
-/// does not apply here; follow the system locale instead.
+/// The app target's language preference mirrored into Core. The overlay is
+/// not part of the settings window, so it cannot observe `AppPreferences`
+/// directly; the app delegate copies the preference here on launch and on
+/// every change. `nil` means "no preference known" — follow the system
+/// locale (also the standalone-Core behavior in tests).
+public enum OverlayL10n {
+    public static var preferEnglish: Bool?
+}
+
+/// Bilingual helper for the HUD. Prefers the app-level language choice
+/// (mirrored via `OverlayL10n.preferEnglish`) so the HUD never disagrees
+/// with the settings UI; falls back to the system locale when unset.
 private func hudText(_ zhText: String, _ enText: String) -> String {
-    Locale.current.languageCode == "zh" ? zhText : enText
+    let systemIsChinese = Locale.current.language.languageCode?.identifier == "zh"
+    let english = OverlayL10n.preferEnglish ?? !systemIsChinese
+    return english ? enText : zhText
 }
 
 /// The SwiftUI content of the window-management HUD: a compact placement
@@ -54,16 +65,15 @@ struct HoverOverlayHUDContent: View {
                         VStack(spacing: 3) {
                             miniScreen(for: action)
                             Text(action.overlayLocalizedLabel)
-                                .font(.system(size: 9))
+                                .font(.system(size: 10))
                                 .foregroundStyle(.secondary)
                                 .lineLimit(1)
                         }
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 5)
-                        .background(RoundedRectangle(cornerRadius: 7).fill(Color.primary.opacity(0.05)))
                         .contentShape(Rectangle())
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(HUDHoverButtonStyle())
                 }
             }
 
@@ -91,9 +101,14 @@ struct HoverOverlayHUDContent: View {
                                 .font(.caption2)
                                 .foregroundStyle(.secondary)
                         }
+                        // The padding grows the row's hit area and gives the
+                        // hover background room; the panel's height math in
+                        // `openHUD` accounts for it (30 pt per row).
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 4)
                         .contentShape(Rectangle())
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(HUDHoverButtonStyle())
                 }
             }
         }
@@ -128,6 +143,23 @@ struct HoverOverlayHUDContent: View {
                 .strokeBorder(Color.secondary.opacity(0.5), lineWidth: 1)
                 .frame(width: 56, height: 34)
         }
+    }
+}
+
+/// Hover feedback for HUD buttons: `.plain` gives no pointer indication on
+/// the glass backdrop, so tiles and rows lift their fill from 5% to 12%
+/// primary on hover/press. Shared by the placement grid and workspace rows.
+private struct HUDHoverButtonStyle: ButtonStyle {
+    @State private var isHovered = false
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .background(
+                RoundedRectangle(cornerRadius: 7)
+                    .fill(Color.primary.opacity(isHovered || configuration.isPressed ? 0.12 : 0.05))
+            )
+            .onHover { isHovered = $0 }
+            .animation(.easeInOut(duration: 0.12), value: isHovered)
     }
 }
 

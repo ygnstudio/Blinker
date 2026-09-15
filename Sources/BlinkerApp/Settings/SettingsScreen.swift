@@ -1,172 +1,6 @@
 import AppKit
 import BlinkerCore
-import Combine
 import SwiftUI
-
-/// Assembles the five settings tabs as a toolbar-style `NSTabViewController`,
-/// so the tab row lives in the window's titlebar like System Settings rather
-/// than floating inside the content area.
-///
-/// Tab titles are AppKit-side (`NSTabViewItem.label`), so they don't react to
-/// the SwiftUI language preference on their own. The controller therefore
-/// keeps the child view controllers alive and re-wraps them in fresh tab
-/// items whenever the language changes — `@State` inside each tab survives.
-final class SettingsTabViewController: NSTabViewController {
-    private struct TabSpec {
-        let viewController: NSViewController
-        let chineseTitle: String
-        let englishTitle: String
-        let symbol: String
-    }
-
-    private var specs: [TabSpec] = []
-    private var languageCancellable: AnyCancellable?
-
-    init(
-        ruleStore: RuleStore,
-        hoverSettingsStore: HoverOverlaySettingsStore,
-        onApplyHoverSettings: @escaping (HoverOverlaySettings) -> Void,
-        hotkeyManager: HotkeyManager,
-        workspaceStore: WorkspaceStore,
-        onSnapEnabledChange: @escaping (Bool) -> Void,
-        appDelegate: AppDelegate
-    ) {
-        super.init(nibName: nil, bundle: nil)
-        tabStyle = .toolbar
-        canPropagateSelectedChildViewControllerTitle = false
-        specs = [
-            rulesSpec(ruleStore: ruleStore),
-            windowManagementSpec(
-                hotkeyManager: hotkeyManager,
-                workspaceStore: workspaceStore,
-                onSnapEnabledChange: onSnapEnabledChange
-            ),
-            hoverSpec(
-                hoverSettingsStore: hoverSettingsStore,
-                onApplyHoverSettings: onApplyHoverSettings
-            ),
-            generalSpec(appDelegate: appDelegate),
-            aboutSpec(),
-        ]
-        rebuildTabs()
-
-        languageCancellable = AppPreferences.shared.$language
-            .dropFirst()
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] _ in self?.rebuildTabs() }
-    }
-
-    @available(*, unavailable)
-    required init?(coder _: NSCoder) {
-        fatalError("init(coder:) is not supported")
-    }
-
-    private func rulesSpec(ruleStore: RuleStore) -> TabSpec {
-        TabSpec(
-            viewController: NSHostingController(
-                rootView: SettingsTabContent { RulesTab(ruleStore: ruleStore) }
-            ),
-            chineseTitle: "规则",
-            englishTitle: "Rules",
-            symbol: "list.bullet.rectangle"
-        )
-    }
-
-    private func windowManagementSpec(
-        hotkeyManager: HotkeyManager,
-        workspaceStore: WorkspaceStore,
-        onSnapEnabledChange: @escaping (Bool) -> Void
-    ) -> TabSpec {
-        TabSpec(
-            viewController: NSHostingController(
-                rootView: SettingsTabContent {
-                    WindowManagementTab(
-                        hotkeyManager: hotkeyManager,
-                        workspaceStore: workspaceStore,
-                        onSnapEnabledChange: onSnapEnabledChange
-                    )
-                }
-            ),
-            chineseTitle: "窗口管理",
-            englishTitle: "Windows",
-            symbol: "rectangle.split.2x2"
-        )
-    }
-
-    private func hoverSpec(
-        hoverSettingsStore: HoverOverlaySettingsStore,
-        onApplyHoverSettings: @escaping (HoverOverlaySettings) -> Void
-    ) -> TabSpec {
-        TabSpec(
-            viewController: NSHostingController(
-                rootView: SettingsTabContent {
-                    HoverSettingsTab(
-                        store: hoverSettingsStore,
-                        onApply: onApplyHoverSettings
-                    )
-                }
-            ),
-            chineseTitle: "悬停放大",
-            englishTitle: "Hover",
-            symbol: "arrow.up.left.and.arrow.down.right"
-        )
-    }
-
-    private func generalSpec(appDelegate: AppDelegate) -> TabSpec {
-        TabSpec(
-            viewController: NSHostingController(
-                rootView: SettingsTabContent { GeneralTab(appDelegate: appDelegate) }
-            ),
-            chineseTitle: "通用",
-            englishTitle: "General",
-            symbol: "gearshape"
-        )
-    }
-
-    private func aboutSpec() -> TabSpec {
-        TabSpec(
-            viewController: NSHostingController(
-                rootView: SettingsTabContent { AboutTab() }
-            ),
-            chineseTitle: "关于",
-            englishTitle: "About",
-            symbol: "info.circle"
-        )
-    }
-
-    /// Re-creates the tab items with titles in the current language,
-    /// preserving the selected tab.
-    private func rebuildTabs() {
-        let selectedIndex = selectedTabViewItemIndex
-        while let item = tabView.tabViewItems.last {
-            tabView.removeTabViewItem(item)
-        }
-        for spec in specs {
-            let item = NSTabViewItem(viewController: spec.viewController)
-            item.label = AppPreferences.shared.isEnglish
-                ? spec.englishTitle
-                : spec.chineseTitle
-            let title = item.label
-            item.image = NSImage(systemSymbolName: spec.symbol, accessibilityDescription: title)
-            addTabViewItem(item)
-        }
-        if selectedIndex >= 0, selectedIndex < tabView.tabViewItems.count {
-            tabView.selectTabViewItem(at: selectedIndex)
-        }
-    }
-}
-
-/// Wraps a tab's content with the app-wide appearance override so every tab
-/// follows the General tab's light/dark choice.
-private struct SettingsTabContent<Content: View>: View {
-    @ViewBuilder var content: Content
-    @ObservedObject private var preferences = AppPreferences.shared
-
-    var body: some View {
-        content
-            .preferredColorScheme(preferences.appearance.resolvedScheme)
-    }
-}
 
 // MARK: - Rules tab
 
@@ -175,6 +9,12 @@ struct RulesTab: View {
     @ObservedObject var ruleStore: RuleStore
     @ObservedObject private var preferences = AppPreferences.shared
     @State private var showingAppLibrary = false
+    /// The currently selected rule row; drives the footer's minus button.
+    @State private var selection: AppRule.ID?
+
+    private var selectedRule: AppRule? {
+        ruleStore.rules.first { $0.id == selection }
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -189,54 +29,69 @@ struct RulesTab: View {
     }
 
     private var ruleList: some View {
-        List {
+        List(selection: $selection) {
             ForEach(ruleStore.rules) { rule in
                 RuleRowView(
                     rule: rule,
-                    onUpdate: { ruleStore.upsert($0) },
-                    onRemove: { ruleStore.remove(bundleIdentifier: rule.bundleIdentifier) }
+                    onUpdate: { ruleStore.upsert($0) }
                 )
+                .tag(rule.id)
             }
         }
-        .listStyle(.inset(alternatesRowBackgrounds: true))
+        // Plain inset list with separators — no alternating stripes, which
+        // would paint the empty area below the rows.
+        .listStyle(.inset)
     }
 
     private var emptyState: some View {
-        VStack(spacing: 8) {
-            Spacer()
-            Image(systemName: "circle.circle")
-                .font(.system(size: 32))
-                .foregroundStyle(.secondary)
-            Text(tr("还没有配置任何应用", "No apps configured yet"))
-                .font(.headline)
-            Text(
-                tr(
-                    "添加应用后，即可单独定义它的红绿灯行为；\n未添加的应用保持系统默认。",
-                    "Add an app to remap its traffic lights;\neverything else keeps system defaults."
-                )
-            )
-            .font(.caption)
-            .foregroundStyle(.secondary)
-            .multilineTextAlignment(.center)
-            Spacer()
+        // The system-standard empty state, matching first-party apps.
+        ContentUnavailableView {
+            Label(tr("还没有配置任何应用", "No Apps Configured"), systemImage: "circle.circle")
+        } description: {
+            Text(tr(
+                "添加应用后，即可单独定义它的红绿灯行为；未添加的应用保持系统默认。",
+                "Add an app to remap its traffic lights; everything else keeps system defaults."
+            ))
         }
-        .frame(maxWidth: .infinity)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
+    /// The system-settings-style footer bar: small plus/minus buttons at the
+    /// leading edge (like the Login Items list) with the hint caption after
+    /// them.
     private var footerBar: some View {
-        HStack {
+        HStack(spacing: 12) {
             Button {
                 showingAppLibrary = true
             } label: {
-                Label(tr("添加应用", "Add App"), systemImage: "plus")
+                Image(systemName: "plus")
             }
-            .fixedSize()
+            .buttonStyle(.bordered)
+            .controlSize(.small)
+            .help(tr("添加应用", "Add App"))
+            .accessibilityLabel(tr("添加应用", "Add App"))
+
+            Button {
+                if let selectedRule {
+                    ruleStore.remove(bundleIdentifier: selectedRule.bundleIdentifier)
+                    selection = nil
+                }
+            } label: {
+                Image(systemName: "minus")
+            }
+            .buttonStyle(.bordered)
+            .controlSize(.small)
+            .disabled(selectedRule == nil)
+            .help(tr("删除选中的应用", "Remove the selected app"))
+            .accessibilityLabel(tr("删除选中的应用", "Remove the selected app"))
+
             Spacer()
+
             Text(tr("未列出的应用保持系统默认行为", "Apps not listed keep system defaults"))
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
-        .padding(.horizontal, 12)
+        .padding(.horizontal, 16)
         .padding(.vertical, 10)
         .sheet(isPresented: $showingAppLibrary) {
             AppLibraryPicker { app in
@@ -256,7 +111,6 @@ struct RulesTab: View {
 private struct RuleRowView: View {
     let rule: AppRule
     let onUpdate: (AppRule) -> Void
-    let onRemove: () -> Void
     @State private var isExpanded = false
 
     /// The app's icon resolved from its bundle identifier on disk; falls
@@ -327,11 +181,6 @@ private struct RuleRowView: View {
                 Toggle("", isOn: enabledBinding)
                     .labelsHidden()
                     .toggleStyle(.checkbox)
-
-                Button(role: .destructive, action: onRemove) {
-                    Image(systemName: "minus.circle")
-                }
-                .buttonStyle(.borderless)
             }
             .padding(.vertical, 2)
 
@@ -399,6 +248,8 @@ private struct RuleRowView: View {
         }
         .buttonStyle(.borderless)
         .help(tr("更多点击方式", "More click variants"))
+        .accessibilityLabel(tr("更多点击方式", "More click variants"))
+        .accessibilityValue(isExpanded ? tr("已展开", "Expanded") : tr("已折叠", "Collapsed"))
     }
 
     private func binding(button: TrafficButton, variant: ClickVariant) -> Binding<ButtonAction?> {

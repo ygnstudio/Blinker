@@ -45,14 +45,32 @@ enum OverlayChipDrawing {
 
     /// The solid inner circle: opaque fill with a hairline dark rim, like
     /// the native traffic lights — no translucency, so nothing bleeds
-    /// through from the glass tray below.
+    /// through from the glass tray below. With Increase Contrast enabled
+    /// the rim strengthens to match the system's bolder button outlines.
     static func drawCircle(in circleRect: NSRect, color: NSColor) {
         color.setFill()
         NSBezierPath(ovalIn: circleRect).fill()
-        NSColor.black.withAlphaComponent(0.16).setStroke()
+        let increaseContrast = NSWorkspace.shared.accessibilityDisplayShouldIncreaseContrast
+        NSColor.black.withAlphaComponent(increaseContrast ? 0.5 : 0.16).setStroke()
         let rim = NSBezierPath(ovalIn: circleRect)
         rim.lineWidth = 1
         rim.stroke()
+    }
+
+    /// Symbol ink for a chip filled with `color`: the native traffic dots
+    /// always take a dark glyph, but accent-filled chips (whose fill follows
+    /// the user's accent color) need a light glyph on dark fills to stay
+    /// readable — graphite, purple or brown accents bury a 55%-black glyph.
+    static func symbolInk(onFill color: NSColor) -> NSColor {
+        guard let srgb = color.usingColorSpace(.sRGB) else {
+            return NSColor.black.withAlphaComponent(0.55)
+        }
+        let luminance = 0.2126 * srgb.redComponent
+            + 0.7152 * srgb.greenComponent
+            + 0.0722 * srgb.blueComponent
+        return luminance < 0.5
+            ? NSColor.white.withAlphaComponent(0.92)
+            : NSColor.black.withAlphaComponent(0.55)
     }
 
     /// The inner circle rect for a chip of the given bounds (4 pt inset).

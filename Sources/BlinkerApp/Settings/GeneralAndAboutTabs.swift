@@ -1,3 +1,4 @@
+import AppKit
 import BlinkerCore
 import ServiceManagement
 import SwiftUI
@@ -114,105 +115,145 @@ struct GeneralTab: View {
 
 // MARK: - About tab
 
-/// The about tab: app identity, version and project links.
+/// The about tab: app identity, version badge and card-style feature /
+/// link grid, following the first-party macOS 26 about pages.
 struct AboutTab: View {
     @ObservedObject private var preferences = AppPreferences.shared
 
     var body: some View {
-        VStack(spacing: 0) {
-            identityHeader
-                .padding(.vertical, 20)
-            Form {
-                Section {
-                    featureRow(
-                        color: .red,
-                        text: tr("红灯重定义：退出应用或关闭窗口", "Red: quit the app or close the window")
-                    )
-                    featureRow(
-                        color: .green,
-                        text: tr("绿灯重定义：最大化、全屏或左右半屏", "Green: maximize, fullscreen, or tiling")
-                    )
-                    featureRow(
-                        icon: "hand.point.up.left",
-                        text: tr(
-                            "悬停放大与纯热区点击，防误触进度环",
-                            "Hover overlay & hotspot clicks with a dwell ring"
-                        )
-                    )
-                    featureRow(
-                        icon: "sparkles",
-                        text: tr("macOS 26+ 原生液态玻璃质感", "Native Liquid Glass on macOS 26+")
-                    )
-                } header: {
-                    Text(tr("功能", "Features"))
-                }
-
-                Section {
-                    linkRow(
-                        title: "ygnstudio/Blinker · GitHub",
-                        url: URL(string: "https://github.com/ygnstudio/Blinker")!
-                    )
-                    linkRow(
-                        title: tr("小红书主页", "Xiaohongshu Profile"),
-                        url: URL(
-                            string: "https://www.xiaohongshu.com/user/profile/66a7e7ae000000001d023641"
-                        )!
-                    )
-                } header: {
-                    Text(tr("链接", "Links"))
-                } footer: {
-                    Text(tr(
-                        "使用需在系统设置中授予辅助功能权限；红绿灯行为由你为每个应用单独定义。",
-                        "Grant Accessibility permission to get started;"
-                            + " each app's buttons are remapped individually."
-                    ))
-                }
+        ScrollView {
+            VStack(spacing: 20) {
+                identityHeader
+                featureGrid
+                linksColumn
+                Text(tr(
+                    "使用需在系统设置中授予辅助功能权限；红绿灯行为由你为每个应用单独定义。",
+                    "Grant Accessibility permission to get started;"
+                        + " each app's buttons are remapped individually."
+                ))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
             }
-            .formStyle(.grouped)
+            .padding(24)
+            .frame(maxWidth: .infinity)
         }
     }
 
     private var identityHeader: some View {
-        VStack(spacing: 4) {
-            Image(systemName: "circle.circle")
-                .font(.system(size: 44))
-                .foregroundStyle(.tint)
+        VStack(spacing: 8) {
+            Group {
+                if let icon = NSImage(named: NSImage.applicationIconName) {
+                    Image(nsImage: icon)
+                        .resizable()
+                } else {
+                    Image(systemName: "circle.circle")
+                        .resizable()
+                        .foregroundStyle(.tint)
+                        .padding(8)
+                }
+            }
+            .frame(width: 72, height: 72)
+            .shadow(color: .black.opacity(0.15), radius: 4, y: 2)
+
             Text("Blinker")
-                .font(.title2.bold())
+                .font(.title.bold())
             Text(versionLine)
                 .font(.caption)
                 .foregroundStyle(.secondary)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 3)
+                .background(Capsule().fill(Color.secondary.opacity(0.15)))
         }
     }
 
     private var versionLine: String {
-        let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String
-        return tr("版本", "Version") + " \(version ?? "dev") · MIT"
+        // Local dev builds carry a git-describe version ("v0.2.2-42-g3a3486c");
+        // the badge shows just the release number, like first-party about
+        // pages do.
+        let raw = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String
+        let release = raw.flatMap { $0.split(separator: "-").first }.map(String.init) ?? raw
+        return tr("版本", "Version") + " \(release ?? "dev") · MIT"
     }
 
-    private func featureRow(color: Color, text: String) -> some View {
-        HStack(spacing: 8) {
-            Circle()
-                .fill(color)
-                .frame(width: 10, height: 10)
-            Text(text)
-                .font(.callout)
+    // MARK: Feature cards
+
+    private var featureGrid: some View {
+        LazyVGrid(
+            columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)],
+            spacing: 10
+        ) {
+            featureCard(
+                icon: "xmark.circle.fill",
+                color: .red,
+                text: tr("红灯重定义：退出应用或关闭窗口", "Red: quit the app or close the window")
+            )
+            featureCard(
+                icon: "arrow.up.left.and.arrow.down.right",
+                color: .green,
+                text: tr("绿灯重定义：最大化、全屏或贴靠", "Green: maximize, fullscreen, or tiling")
+            )
+            featureCard(
+                icon: "hand.point.up.left.fill",
+                color: .purple,
+                text: tr("悬停放大与纯热区，防误触进度环", "Hover overlay & hotspot with a dwell ring")
+            )
+            featureCard(
+                icon: "sparkles",
+                color: .blue,
+                text: tr("macOS 26+ 原生液态玻璃质感", "Native Liquid Glass on macOS 26+")
+            )
         }
     }
 
-    private func featureRow(icon: String, text: String) -> some View {
-        HStack(spacing: 8) {
+    private func featureCard(icon: String, color: Color, text: String) -> some View {
+        HStack(spacing: 10) {
             Image(systemName: icon)
-                .foregroundStyle(.tint)
-                .frame(width: 10)
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(.white)
+                .frame(width: 26, height: 26)
+                .background(
+                    RoundedRectangle(cornerRadius: 7, style: .continuous)
+                        .fill(color.gradient)
+                )
             Text(text)
-                .font(.callout)
+                .font(.caption)
+                .fixedSize(horizontal: false, vertical: true)
+            Spacer(minLength: 0)
+        }
+        .padding(10)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(cardBackground)
+    }
+
+    // MARK: Link cards
+
+    private var linksColumn: some View {
+        VStack(spacing: 10) {
+            linkCard(
+                title: "ygnstudio/Blinker · GitHub",
+                systemImage: "link",
+                url: URL(string: "https://github.com/ygnstudio/Blinker")!
+            )
+            linkCard(
+                title: tr("小红书主页", "Xiaohongshu Profile"),
+                systemImage: "book.closed",
+                url: URL(string: "https://www.xiaohongshu.com/user/profile/66a7e7ae000000001d023641")!
+            )
         }
     }
 
-    private func linkRow(title: String, url: URL) -> some View {
+    private func linkCard(title: String, systemImage: String, url: URL) -> some View {
         Link(destination: url) {
-            HStack {
+            HStack(spacing: 10) {
+                Image(systemName: systemImage)
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(.tint)
+                    .frame(width: 26, height: 26)
+                    .background(
+                        RoundedRectangle(cornerRadius: 7, style: .continuous)
+                            .fill(Color.accentColor.opacity(0.15))
+                    )
                 Text(title)
                     .font(.callout)
                 Spacer()
@@ -220,6 +261,17 @@ struct AboutTab: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
+            .padding(10)
+            .background(cardBackground)
+            .contentShape(Rectangle())
         }
+        .buttonStyle(.plain)
+    }
+
+    /// The shared card fill: a whisper of the primary color, legible on
+    /// both light and dark without a hard border.
+    private var cardBackground: some View {
+        RoundedRectangle(cornerRadius: 10, style: .continuous)
+            .fill(Color.primary.opacity(0.04))
     }
 }

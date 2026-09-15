@@ -34,6 +34,7 @@ struct WindowManagementTab: View {
             Label(label, systemImage: icon)
                 .frame(maxWidth: .infinity)
         }
+        .buttonStyle(.bordered)
         .controlSize(.small)
     }
 
@@ -55,6 +56,7 @@ struct WindowManagementTab: View {
             } label: {
                 Label(tr("保存当前布局…", "Save Current Layout…"), systemImage: "plus")
             }
+            .buttonStyle(.bordered)
             .alert(
                 tr("保存工作区", "Save Workspace"),
                 isPresented: $showingSaveWorkspaceAlert
@@ -212,16 +214,19 @@ private struct WorkspaceRowView: View {
             }
             .buttonStyle(.borderless)
             .help(tr("恢复此工作区", "Restore this workspace"))
+            .accessibilityLabel(tr("恢复此工作区", "Restore this workspace"))
             Button(action: onUpdate) {
                 Image(systemName: "arrow.triangle.2.circlepath.circle")
             }
             .buttonStyle(.borderless)
             .help(tr("用当前布局覆盖", "Overwrite with current layout"))
+            .accessibilityLabel(tr("用当前布局覆盖", "Overwrite with current layout"))
             Button(role: .destructive, action: onRemove) {
                 Image(systemName: "minus.circle")
             }
             .buttonStyle(.borderless)
             .help(tr("删除此工作区", "Delete this workspace"))
+            .accessibilityLabel(tr("删除此工作区", "Delete this workspace"))
         }
     }
 }
@@ -240,15 +245,10 @@ private struct HotkeyRowView: View {
 
     var body: some View {
         HStack {
-            // While recording the prompt replaces the label so the trailing
-            // column (chip + clear) keeps a fixed width on every row.
-            Text(
-                isRecording
-                    ? tr("按下快捷键…（Esc 取消）", "Press keys… (Esc to cancel)")
-                    : label
-            )
-            .font(isRecording ? .callout : .body)
-            .foregroundStyle(isRecording ? Color.accentColor : .primary)
+            // The label never changes while recording — swapping it made the
+            // whole row jump; the recording state lives on the chip instead.
+            Text(label)
+                .foregroundStyle(isRecording ? Color.accentColor : .primary)
             Spacer()
             // Fixed-width trailing column: chip and clear button reserve
             // their space even when absent, so all rows share the same
@@ -257,15 +257,21 @@ private struct HotkeyRowView: View {
                 Button {
                     onRecord()
                 } label: {
-                    Text(combo?.displayLabel ?? tr("未设置", "Not Set"))
-                        .frame(width: 84)
+                    Text(
+                        isRecording
+                            ? tr("按下快捷键…", "Press keys…")
+                            : combo?.displayLabel ?? tr("未设置", "Not Set")
+                    )
+                    .frame(width: 84)
                 }
                 .buttonStyle(.bordered)
+                .tint(isRecording ? .accentColor : nil)
                 Button(role: .destructive, action: onClear) {
                     Image(systemName: "minus.circle")
                 }
                 .buttonStyle(.borderless)
                 .help(tr("清除快捷键", "Clear hotkey"))
+                .accessibilityLabel(tr("清除快捷键", "Clear hotkey"))
                 .disabled(combo == nil)
                 .opacity(combo == nil ? 0 : 1)
             }

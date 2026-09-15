@@ -135,22 +135,24 @@ final class HoverOverlayExtraButtonView: NSView {
     private func drawSymbol(in circleRect: NSRect) {
         guard let symbolName = action.extraSymbolName else { return }
         let pointSize = circleRect.width * 0.38
-        let configured = NSImage(
-            systemSymbolName: symbolName,
-            accessibilityDescription: nil
-        )?
-            .withSymbolConfiguration(.init(pointSize: pointSize, weight: .semibold))
-        guard let configured else { return }
-        let image = configured
-        image.isTemplate = true
-        // Matches the traffic chips' 55% black symbol ink.
+        // The ink follows the fill's luminance: light glyph on dark accent
+        // fills, the traffic chips' 55% black on light ones.
+        let ink = OverlayChipDrawing.symbolInk(onFill: accentColor)
+        let configuration = NSImage.SymbolConfiguration(pointSize: pointSize, weight: .semibold)
+            .applying(.init(hierarchicalColor: ink))
+        guard
+            let image = NSImage(
+                systemSymbolName: symbolName,
+                accessibilityDescription: nil
+            )?.withSymbolConfiguration(configuration)
+        else { return }
         let symbolRect = CGRect(
             x: circleRect.midX - image.size.width / 2,
             y: circleRect.midY - image.size.height / 2,
             width: image.size.width,
             height: image.size.height
         )
-        image.draw(in: symbolRect, from: .zero, operation: .sourceOver, fraction: 0.55)
+        image.draw(in: symbolRect, from: .zero, operation: .sourceOver, fraction: 1)
     }
 }
 

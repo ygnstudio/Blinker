@@ -6,13 +6,20 @@ struct InstalledApp: Identifiable, Hashable {
     let bundleIdentifier: String
     let name: String
     let path: String
+    /// Resolved once during the (backgrounded) library scan; a computed
+    /// property would re-hit `NSWorkspace` on every list row render.
+    let icon: NSImage
 
     var id: String {
         bundleIdentifier
     }
 
-    var icon: NSImage {
-        NSWorkspace.shared.icon(forFile: path)
+    static func == (lhs: InstalledApp, rhs: InstalledApp) -> Bool {
+        lhs.bundleIdentifier == rhs.bundleIdentifier
+    }
+
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(bundleIdentifier)
     }
 }
 
@@ -49,7 +56,8 @@ enum ApplicationLibrary {
                 byBundleIdentifier[bundleIdentifier] = InstalledApp(
                     bundleIdentifier: bundleIdentifier,
                     name: name,
-                    path: path
+                    path: path,
+                    icon: NSWorkspace.shared.icon(forFile: path)
                 )
             }
         }

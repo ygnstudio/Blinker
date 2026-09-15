@@ -23,12 +23,17 @@ struct HoverSettingsTab: View {
             } header: {
                 Text(tr("模式与尺寸", "Mode & Size"))
             } footer: {
-                Text(tr(
-                    "开启后，鼠标悬停到窗口红绿灯按钮上会临时放大，点击即执行对应动作。",
-                    "When enabled, hovering a window's traffic lights enlarges them;"
-                        + " clicking performs the mapped action."
-                ))
-                Text(modeHint)
+                // A single wrapped paragraph: sibling Texts in a footer
+                // render side-by-side as columns on macOS 26, so they are
+                // joined with an explicit line break instead.
+                Text(
+                    tr(
+                        "开启后，鼠标悬停到窗口红绿灯按钮上会临时放大，点击即执行对应动作。",
+                        "When enabled, hovering a window's traffic lights enlarges them;"
+                            + " clicking performs the mapped action."
+                    )
+                    + "\n" + modeHint
+                )
             }
 
             Section {

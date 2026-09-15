@@ -245,7 +245,9 @@ extension HoverOverlayController {
         let width: CGFloat = 252
         let workspaces = workspacesProvider()
         let gridRows = CGFloat(Self.hudPlacements.count / 3)
-        let height = 18 + 10 + gridRows * 54 + 12 + CGFloat(min(workspaces.count, 6)) * 26 + 24
+        // 30 pt per workspace row: caption row + the hover background's
+        // padding (see HoverOverlayHUDContent's workspace list).
+        let height = 18 + 10 + gridRows * 54 + 12 + CGFloat(min(workspaces.count, 6)) * 30 + 24
 
         // Anchor below the triggering chip, clamped into the window ∩ screen
         // container so the HUD never drifts off-screen.

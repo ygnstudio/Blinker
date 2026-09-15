@@ -56,6 +56,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, Observ
     func applicationDidFinishLaunching(_: Notification) {
         // Menu bar app: no Dock icon, no main window.
         NSApp.setActivationPolicy(.accessory)
+        // The HUD lives in Core and cannot observe AppPreferences; mirror
+        // the language choice so overlay text matches the settings UI.
+        OverlayL10n.preferEnglish = AppPreferences.shared.isEnglish
         observeWindowVisibility()
         observeAccessibilityTrustChanges()
         setupStatusItem()
@@ -160,7 +163,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, Observ
     func openSettings() {
         bringToFront()
         if settingsWindow == nil {
-            let controller = SettingsTabViewController(
+            let rootView = SettingsView(
                 ruleStore: ruleStore,
                 hoverSettingsStore: hoverOverlaySettingsStore,
                 onApplyHoverSettings: applyHoverOverlaySettings,
@@ -169,11 +172,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, Observ
                 onSnapEnabledChange: applySnapEnabled,
                 appDelegate: self
             )
-            let window = NSWindow(contentViewController: controller)
-            window.title = tr("Blinker 设置", "Blinker Settings")
+            let window = NSWindow(contentViewController: NSHostingController(rootView: rootView))
+            // The section title comes from the detail column's
+            // `navigationTitle`; the window title stays static for Mission
+            // Control and the Window menu.
+            window.title = "Blinker"
+            window.titleVisibility = .hidden
             window.styleMask.insert(.miniaturizable)
-            window.setContentSize(NSSize(width: 640, height: 480))
-            window.contentMinSize = NSSize(width: 640, height: 420)
+            window.setContentSize(NSSize(width: 860, height: 560))
+            window.contentMinSize = NSSize(width: 720, height: 460)
             window.center()
             window.isReleasedWhenClosed = false
             // Normal level: `bringToFront()` handles the initial fronting;
@@ -185,17 +192,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, Observ
         settingsWindow?.makeKeyAndOrderFront(nil)
     }
 
-    /// Keeps the settings window chrome in sync with the General tab: the
-    /// window title and `NSAppearance` live on the AppKit side, so SwiftUI's
-    /// `preferredColorScheme` alone leaves the titlebar (and the in-titlebar
-    /// tab row) one step behind the content.
+    /// Keeps the settings window chrome in sync with the General tab:
+    /// `NSAppearance` lives on the AppKit side, so SwiftUI's
+    /// `preferredColorScheme` alone leaves the titlebar one step behind the
+    /// content. Language needs no window-side work anymore — the SwiftUI
+    /// sidebar re-renders itself, and the HUD reads the mirrored
+    /// `OverlayL10n` preference updated here.
     private func observePreferenceChanges() {
         preferencesCancellable = AppPreferences.shared.objectWillChange
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
-                guard let window = self?.settingsWindow else { return }
-                window.title = tr("Blinker 设置", "Blinker Settings")
-                window.appearance = AppPreferences.shared.nsAppearance
+                // objectWillChange fires before the new value lands; reading
+                // the preference on the next turn picks up the fresh value.
+                DispatchQueue.main.async {
+                    OverlayL10n.preferEnglish = AppPreferences.shared.isEnglish
+                }
+                self?.settingsWindow?.appearance = AppPreferences.shared.nsAppearance
             }
     }
 
