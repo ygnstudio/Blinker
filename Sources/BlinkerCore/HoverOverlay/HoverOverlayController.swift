@@ -37,6 +37,9 @@ public final class HoverOverlayController {
     var cachedButtons: [OverlayButtonInfo] = []
     var cachedAXWindow: AXUIElement?
     var cachedWindowPID: pid_t = 0
+    /// The CG window id of the cached hit; same-pid-same-frame window swaps
+    /// (close + reopen at the same spot) are caught by comparing it.
+    var cachedWindowID: CGWindowID = 0
     var cachedWindowBounds: CGRect?
     var isOverlayVisible = false
 
@@ -246,8 +249,10 @@ public final class HoverOverlayController {
             // While a window drags, its bounds change with every event, so
             // cursor detection would re-resolve AX frames and rebuild the
             // panels at drag frequency — pure churn that stutters the drag
-            // itself. Stand down once and wait for the mouse up.
+            // itself. Stand down once and wait for the mouse up. The drag
+            // also reorders windows, so the window-hit cache must go too.
             if startedDragging {
+                AXQuery.invalidateWindowUnderPointCache()
                 DispatchQueue.main.async { [weak self] in
                     self?.hidePanels()
                 }

@@ -38,11 +38,17 @@ public final class TrafficLightInterceptor {
 
     private static let titleBarBandHeight: CGFloat = 32
 
-    /// Guards `pendingPress` and `longPressWorkItem`, which are written from
-    /// the event tap (main run loop) and the timer (work queue).
+    /// Guards `pendingPress`, `longPressWorkItem` and the swallow flags
+    /// below, which are written from the event tap and the timer (work
+    /// queue).
     private let pendingLock = NSLock()
     private var pendingPress: PendingPress?
     private var longPressWorkItem: DispatchWorkItem?
+    /// Whether the previous left/right mouse *down* was swallowed, so the
+    /// matching up is swallowed too — the target app must never see an
+    /// orphaned mouse-up for a click that never landed.
+    private var didSwallowLeftDown = false
+    private var didSwallowRightDown = false
 
     /// A left mouse down waiting to become either a plain click or a long
     /// press. `shortAction` is the plain left-click mapping (`nil` keeps the
@@ -86,6 +92,7 @@ public final class TrafficLightInterceptor {
             (1 << CGEventType.leftMouseDown.rawValue)
                 | (1 << CGEventType.leftMouseUp.rawValue)
                 | (1 << CGEventType.rightMouseDown.rawValue)
+                | (1 << CGEventType.rightMouseUp.rawValue)
         )
 
         guard
@@ -110,6 +117,8 @@ public final class TrafficLightInterceptor {
         pendingPress = nil
         longPressWorkItem?.cancel()
         longPressWorkItem = nil
+        didSwallowLeftDown = false
+        didSwallowRightDown = false
         pendingLock.unlock()
     }
 
@@ -130,6 +139,8 @@ public final class TrafficLightInterceptor {
         switch eventType {
         case .leftMouseUp:
             return handleLeftMouseUp(event: event)
+        case .rightMouseUp:
+            return handleRightMouseUp(event: event)
         case .leftMouseDown, .rightMouseDown:
             return handleMouseDown(event: event, isRightClick: eventType == .rightMouseDown)
         default:
@@ -137,19 +148,22 @@ public final class TrafficLightInterceptor {
         }
     }
 
-    /// Resolves a pending press when the left button is released. The matching
-    /// mouse up is always swallowed: the original mouse down never reached the
-    /// target app, so forwarding a lone mouse up would be misleading.
+    /// Resolves a pending press when the left button is released. The
+    /// matching mouse up is always swallowed when its down was: the original
+    /// mouse down never reached the target app, so forwarding a lone mouse
+    /// up would be misleading.
     private func handleLeftMouseUp(event: CGEvent) -> Unmanaged<CGEvent>? {
         pendingLock.lock()
         let pending = pendingPress
         pendingPress = nil
         longPressWorkItem?.cancel()
         longPressWorkItem = nil
+        let swallowUp = didSwallowLeftDown
+        didSwallowLeftDown = false
         pendingLock.unlock()
 
-        guard let pending else { return Unmanaged.passUnretained(event) }
-        if !pending.didFireLong, let shortAction = pending.shortAction {
+        guard pending != nil || swallowUp else { return Unmanaged.passUnretained(event) }
+        if let pending, !pending.didFireLong, let shortAction = pending.shortAction {
             workQueue.async { [weak self] in
                 self?.perform(shortAction, button: pending.button, window: pending.windowHit)
             }
@@ -157,10 +171,23 @@ public final class TrafficLightInterceptor {
         return nil
     }
 
+    /// The right-click counterpart of `handleLeftMouseUp`: a right mouse up
+    /// is swallowed exactly when its down was (right clicks never enter the
+    /// long-press pipeline).
+    private func handleRightMouseUp(event: CGEvent) -> Unmanaged<CGEvent>? {
+        pendingLock.lock()
+        let swallowUp = didSwallowRightDown
+        didSwallowRightDown = false
+        pendingLock.unlock()
+        return swallowUp ? nil : Unmanaged.passUnretained(event)
+    }
+
     private func handleMouseDown(event: CGEvent, isRightClick: Bool) -> Unmanaged<CGEvent>? {
         // A click just consumed by a hover overlay panel must not be
-        // re-interpreted here (the tap fires before window routing).
-        guard !OverlayClickGate.isSuppressed else {
+        // re-interpreted here (the tap fires before window routing); only
+        // clicks near the consumed one are gated, so a fast second click on
+        // another window's traffic lights keeps its remapping.
+        guard !OverlayClickGate.isSuppressed(at: event.location) else {
             logger.debug("click suppressed (consumed by overlay panel); pass-through")
             return Unmanaged.passUnretained(event)
         }
@@ -178,7 +205,15 @@ public final class TrafficLightInterceptor {
             return Unmanaged.passUnretained(event)
         }
 
-        // Swallow the original click.
+        // Swallow the original click — and remember which button, so the
+        // matching mouse up is swallowed as well (no orphaned ups).
+        pendingLock.lock()
+        if isRightClick {
+            didSwallowRightDown = true
+        } else {
+            didSwallowLeftDown = true
+        }
+        pendingLock.unlock()
         if let pending = makePendingPress(decision: decision, windowHit: window) {
             scheduleLongPress(pending)
         } else {

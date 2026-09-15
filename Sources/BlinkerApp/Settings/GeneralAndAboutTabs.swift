@@ -32,12 +32,16 @@ struct GeneralTab: View {
                     }
                 }
             } header: {
-                Text(tr("语言与外观", "Language & Appearance"))
-            } footer: {
-                Text(tr(
-                    "「跟随系统」读取系统语言与深浅色设置；更改立即生效。",
-                    "Follow System reads the system language and appearance; changes apply immediately."
-                ))
+                SectionHeader(
+                    title: tr("语言与外观", "Language & Appearance"),
+                    info: tr(
+                        "「跟随系统」读取系统语言与深浅色设置；更改立即生效。"
+                            + "外观仅作用于设置窗口；悬停放大的液态玻璃始终跟随系统深浅色。",
+                        "Follow System reads the system language and appearance; changes apply"
+                            + " immediately. The appearance setting styles the settings window only —"
+                            + " the hover overlay's glass always follows the system appearance."
+                    )
+                )
             }
 
             Section {
@@ -52,7 +56,13 @@ struct GeneralTab: View {
                     updateLaunchAtLogin(newValue)
                 }
             } header: {
-                Text(tr("启动", "Startup"))
+                SectionHeader(
+                    title: tr("启动", "Startup"),
+                    info: tr(
+                        "开启后 Blinker 随系统登录自动启动，常驻菜单栏。",
+                        "Blinker starts automatically when you log in and lives in the menu bar."
+                    )
+                )
             } footer: {
                 if launchAtLoginError {
                     Text(tr(
@@ -61,11 +71,6 @@ struct GeneralTab: View {
                             + " → General → Login Items."
                     ))
                     .foregroundStyle(.red)
-                } else {
-                    Text(tr(
-                        "开启后 Blinker 随系统登录自动启动，常驻菜单栏。",
-                        "Blinker starts automatically when you log in and lives in the menu bar."
-                    ))
                 }
             }
         }
@@ -175,11 +180,13 @@ struct AboutTab: View {
 
     private var versionLine: String {
         // Local dev builds carry a git-describe version ("v0.2.2-42-g3a3486c");
-        // the line shows just the release number, like first-party about
-        // pages do.
+        // the line shows just the release number plus the build number, like
+        // first-party about pages do.
         let raw = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String
         let release = raw.flatMap { $0.split(separator: "-").first }.map(String.init) ?? raw
-        return tr("版本", "Version") + " \(release ?? "dev") · MIT"
+        let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String
+        let buildSuffix = build.map { " (\($0))" } ?? ""
+        return tr("版本", "Version") + " \(release ?? "dev")\(buildSuffix) · MIT"
     }
 
     // MARK: Feature rows
@@ -230,17 +237,30 @@ struct AboutTab: View {
 
     // MARK: Link rows
 
+    // Constant literal URLs: the force-unwrap is reviewed with every change
+    // to the string, which SwiftLint cannot know — hence the explicit
+    // exemption here rather than at each call site.
+    // swiftlint:disable:next force_unwrapping
+    private static let githubURL = URL(string: "https://github.com/ygnstudio/Blinker")!
+
+    // The Xiaohongshu profile link (kept multi-line: the raw URL is long,
+    // and splitting it would break the literal).
+    // swiftlint:disable:next force_unwrapping
+    private static let xiaohongshuURL = URL(
+        string: "https://www.xiaohongshu.com/user/profile/66a7e7ae000000001d023641"
+    )!
+
     private var linksColumn: some View {
         VStack(spacing: 8) {
             linkRow(
                 title: "ygnstudio/Blinker · GitHub",
                 systemImage: "link",
-                url: URL(string: "https://github.com/ygnstudio/Blinker")!
+                url: Self.githubURL
             )
             linkRow(
                 title: tr("小红书主页", "Xiaohongshu Profile"),
                 systemImage: "book.closed",
-                url: URL(string: "https://www.xiaohongshu.com/user/profile/66a7e7ae000000001d023641")!
+                url: Self.xiaohongshuURL
             )
         }
     }

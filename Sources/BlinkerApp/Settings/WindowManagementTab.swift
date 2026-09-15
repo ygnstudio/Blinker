@@ -213,7 +213,6 @@ private struct SaveWorkspaceSheet: View {
                 .font(.headline)
             TextField(tr("名称", "Name"), text: $name)
                 .textFieldStyle(.roundedBorder)
-                .onSubmit(save)
             Text(tr(
                 "记录当前所有可见窗口的位置和大小；同名保存会覆盖旧布局。",
                 "Records the position and size of every visible window;"
@@ -261,7 +260,7 @@ private struct WorkspaceRowView: View {
                     .font(.body)
                 Text(tr(
                     "\(workspace.entries.count) 个窗口",
-                    "\(workspace.entries.count) windows"
+                    workspace.entries.count == 1 ? "1 window" : "\(workspace.entries.count) windows"
                 ))
                 .font(.caption2)
                 .foregroundStyle(.secondary)
@@ -328,7 +327,10 @@ private struct HotkeyRowView: View {
                             ? tr("按下快捷键…", "Press keys…")
                             : combo?.displayLabel ?? tr("未设置", "Not Set")
                     )
-                    .frame(width: 84)
+                    // Wide enough for the recording prompt ("按下快捷键…")
+                    // and four-modifier combos ("⌃⌥⇧⌘K"), so no row ellipsizes
+                    // and all rows keep a shared right edge.
+                    .frame(width: 96)
                 }
                 .buttonStyle(.bordered)
                 .tint(isRecording ? .accentColor : nil)
@@ -342,20 +344,35 @@ private struct HotkeyRowView: View {
                 .opacity(combo == nil ? 0 : 1)
             }
         }
-        if isRecording, let recordingHint {
-            Text(recordingHint)
+        if isRecording {
+            // Recorder feedback: the reject reason when the last press was
+            // unusable, otherwise the visible cancel affordance.
+            Text(recordingHint ?? tr("按 Esc 取消录制", "Esc to cancel"))
                 .font(.caption2)
                 .foregroundStyle(.secondary)
         }
         if let conflictWarning {
-            Text(conflictWarning)
-                .font(.caption2)
-                .foregroundStyle(.orange)
+            WarningLine(text: conflictWarning)
         }
         if let combo, let warning = HotkeyManager.systemConflictWarning(for: combo) {
-            Text(warning)
+            WarningLine(text: warning)
+        }
+    }
+}
+
+/// A small warning line: primary-color text (contrast-safe in both
+/// appearances) with a decorative orange glyph carrying the tone.
+private struct WarningLine: View {
+    let text: String
+
+    var body: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 4) {
+            Image(systemName: "exclamationmark.triangle.fill")
                 .font(.caption2)
                 .foregroundStyle(.orange)
+            Text(text)
+                .font(.caption2)
+                .foregroundStyle(.primary)
         }
     }
 }

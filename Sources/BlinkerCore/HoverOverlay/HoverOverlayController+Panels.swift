@@ -397,7 +397,9 @@ extension HoverOverlayController {
     // MARK: - Workspace observation
 
     /// Any app activation change hides the overlay; the next mouse move
-    /// re-creates it when still hovering a title bar.
+    /// re-creates it when still hovering a title bar. Activation can also
+    /// reorder windows under a stationary cursor, so the window-hit cache
+    /// is dropped as well.
     func observeWorkspaceActivation() {
         guard workspaceObserver == nil else { return }
         workspaceObserver = NSWorkspace.shared.notificationCenter.addObserver(
@@ -405,6 +407,7 @@ extension HoverOverlayController {
             object: nil,
             queue: .main
         ) { [weak self] _ in
+            AXQuery.invalidateWindowUnderPointCache()
             self?.hidePanels()
         }
     }

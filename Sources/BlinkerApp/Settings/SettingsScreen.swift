@@ -10,8 +10,9 @@ import SwiftUI
 /// density, one screen for all fifteen slots.
 struct RulesTab: View {
     @ObservedObject var ruleStore: RuleStore
-    /// The rule whose matrix the inspector shows.
-    @State private var selection: AppRule.ID?
+    /// The rule whose matrix the inspector shows; owned by the settings
+    /// root so the app-library sheet can auto-select a newly added rule.
+    @Binding var selection: AppRule.ID?
 
     private var enabledRules: [AppRule] { ruleStore.rules.filter(\.isEnabled) }
     private var disabledRules: [AppRule] { ruleStore.rules.filter { !$0.isEnabled } }

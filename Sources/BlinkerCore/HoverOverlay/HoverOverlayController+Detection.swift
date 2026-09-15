@@ -52,7 +52,11 @@ extension HoverOverlayController {
             settings.isEnabled,
             let hit = AXQuery.windowUnderPoint(
                 location,
-                excludingProcessIdentifier: ProcessInfo.processInfo.processIdentifier
+                excludingProcessIdentifier: ProcessInfo.processInfo.processIdentifier,
+                // Hot path (per mouse move): a validated cached hit avoids
+                // the full CGWindowList copy; invalidated on drags and app
+                // activations (see the controller).
+                usingCache: true
             ),
             let app = NSRunningApplication(processIdentifier: hit.processIdentifier),
             let bundleIdentifier = app.bundleIdentifier
@@ -129,8 +133,10 @@ extension HoverOverlayController {
     }
 
     /// Returns the traffic buttons of the window under the cursor, re-reading
-    /// them via AX only when the CG window bounds changed (or the cache is
-    /// empty); otherwise serves the cached values.
+    /// them via AX only when the CG window identity changed (pid + window id
+    /// + bounds — a same-pid same-frame window swap must not serve the
+    /// closed window's zombie AX element) or the cache is empty; otherwise
+    /// serves the cached values.
     private func resolveButtons(
         windowHit: AXQuery.WindowHit
     ) -> (buttons: [OverlayButtonInfo], axWindow: AXUIElement?) {
@@ -138,7 +144,9 @@ extension HoverOverlayController {
             previous: cachedWindowBounds,
             current: windowHit.bounds
         )
-        if cachedWindowPID == windowHit.processIdentifier, boundsUnchanged {
+        if cachedWindowPID == windowHit.processIdentifier,
+           cachedWindowID == windowHit.windowID,
+           boundsUnchanged {
             return (cachedButtons, cachedAXWindow)
         }
 
@@ -162,6 +170,7 @@ extension HoverOverlayController {
         cachedButtons = buttons
         cachedAXWindow = axWindow
         cachedWindowPID = hit.processIdentifier
+        cachedWindowID = hit.windowID
         cachedWindowBounds = hit.bounds
     }
 
@@ -169,6 +178,7 @@ extension HoverOverlayController {
         cachedButtons = []
         cachedAXWindow = nil
         cachedWindowPID = 0
+        cachedWindowID = 0
         cachedWindowBounds = nil
         guard isOverlayVisible else { return }
         isOverlayVisible = false

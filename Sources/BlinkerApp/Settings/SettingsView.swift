@@ -53,6 +53,9 @@ struct SettingsView: View {
     @ObservedObject private var preferences = AppPreferences.shared
     @State private var selection: SettingsSection? = .rules
     @State private var showingAppLibrary = false
+    /// The selected rule in the rules tab; owned here so the app-library
+    /// sheet can auto-select a newly added rule.
+    @State private var ruleSelection: AppRule.ID?
 
     private var selectedSection: SettingsSection { selection ?? .rules }
 
@@ -103,10 +106,14 @@ struct SettingsView: View {
         }
         .sheet(isPresented: $showingAppLibrary) {
             AppLibraryPicker { app in
-                ruleStore.upsert(AppRule(
+                let rule = AppRule(
                     bundleIdentifier: app.bundleIdentifier,
                     displayName: app.name
-                ))
+                )
+                ruleStore.upsert(rule)
+                // Jump straight to the new rule's matrix instead of making
+                // the user hunt for it in the list.
+                ruleSelection = rule.id
             }
         }
     }
@@ -171,7 +178,7 @@ struct SettingsView: View {
     private var detailContent: some View {
         switch selectedSection {
         case .rules:
-            RulesTab(ruleStore: ruleStore)
+            RulesTab(ruleStore: ruleStore, selection: $ruleSelection)
         case .windows:
             WindowManagementTab(
                 hotkeyManager: hotkeyManager,

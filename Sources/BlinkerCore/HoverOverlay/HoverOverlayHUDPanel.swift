@@ -97,9 +97,12 @@ struct HoverOverlayHUDContent: View {
                                 .font(.caption)
                                 .lineLimit(1)
                             Spacer()
-                            Text(hudText("\(workspace.windowCount) 窗", "\(workspace.windowCount) win"))
-                                .font(.caption2)
-                                .foregroundStyle(.secondary)
+                            Text(hudText(
+                                "\(workspace.windowCount) 窗",
+                                workspace.windowCount == 1 ? "1 window" : "\(workspace.windowCount) windows"
+                            ))
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
                         }
                         // The padding grows the row's hit area and gives the
                         // hover background room; the panel's height math in
@@ -178,13 +181,21 @@ final class HoverOverlayHUDPanel: NSPanel {
 
     /// - Parameters:
     ///   - axOrigin: The HUD's top-left origin in AX coordinates. The size
-    ///     comes from the content's ideal size (`fittingSize`), so adding
-    ///     rows or changing padding can never desync a height formula.
+    ///     comes from the content's ideal size (`fittingSize`), floored at a
+    ///     conservative minimum — `NSHostingView.fittingSize` measured
+    ///     outside a window can report a stale ideal height for lazy
+    ///     content, and a too-short panel would clip the workspace rows.
     ///   - content: The SwiftUI content to host.
     init(axOrigin: CGPoint, content: HoverOverlayHUDContent) {
         let hostingView = NSHostingView(rootView: content)
         let measured = hostingView.fittingSize
-        let size = NSSize(width: max(252, measured.width), height: measured.height)
+        // Grid (3 rows) + header + divider + one workspace row + padding:
+        // anything smaller means the measurement went stale.
+        let minimumHeight: CGFloat = 150
+        let size = NSSize(
+            width: max(252, measured.width),
+            height: max(minimumHeight, measured.height)
+        )
         let appKitFrame = AXQuery.appKitFrame(
             fromAXRect: CGRect(origin: axOrigin, size: CGSize(width: size.width, height: size.height))
         )
@@ -239,7 +250,8 @@ final class HoverOverlayHUDPanel: NSPanel {
 extension ButtonAction {
     /// Locale-based label for HUD rendering. The settings UI has its own
     /// preference-aware `localizedLabel`; this one follows the system locale
-    /// because the HUD lives outside the settings window.
+    /// because the HUD lives outside the settings window. The wording
+    /// matches the settings labels so the two surfaces share one vocabulary.
     var overlayLocalizedLabel: String {
         switch self {
         case .closeWindow: hudText("关闭窗口", "Close Window")
@@ -247,18 +259,18 @@ extension ButtonAction {
         case .minimize: hudText("最小化", "Minimize")
         case .hideApp: hudText("隐藏应用", "Hide App")
         case .maximize: hudText("最大化", "Maximize")
-        case .almostMaximize: hudText("准最大化", "Almost Max")
+        case .almostMaximize: hudText("准最大化", "Almost Maximize")
         case .fullscreen: hudText("全屏", "Fullscreen")
-        case .tileLeft: hudText("左半屏", "Left Half")
-        case .tileRight: hudText("右半屏", "Right Half")
-        case .tileTop: hudText("上半屏", "Top Half")
-        case .tileBottom: hudText("下半屏", "Bottom Half")
-        case .tileTopLeft: hudText("左上", "Top Left")
-        case .tileTopRight: hudText("右上", "Top Right")
-        case .tileBottomLeft: hudText("左下", "Bottom Left")
-        case .tileBottomRight: hudText("右下", "Bottom Right")
-        case .centerWindow: hudText("居中", "Center")
-        case .moveToNextDisplay: hudText("下一屏", "Next Display")
+        case .tileLeft: hudText("左半屏", "Tile Left")
+        case .tileRight: hudText("右半屏", "Tile Right")
+        case .tileTop: hudText("上半屏", "Tile Top")
+        case .tileBottom: hudText("下半屏", "Tile Bottom")
+        case .tileTopLeft: hudText("左上屏", "Tile Top Left")
+        case .tileTopRight: hudText("右上屏", "Tile Top Right")
+        case .tileBottomLeft: hudText("左下屏", "Tile Bottom Left")
+        case .tileBottomRight: hudText("右下屏", "Tile Bottom Right")
+        case .centerWindow: hudText("窗口居中", "Center")
+        case .moveToNextDisplay: hudText("下一显示器", "Next Display")
         case .none: hudText("无操作", "Do Nothing")
         case .windowManagerPanel: hudText("窗口管理", "Window Manager")
         }

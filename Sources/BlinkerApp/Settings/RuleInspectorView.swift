@@ -10,7 +10,8 @@ struct RuleInspectorView: View {
     let onUpdate: (AppRule) -> Void
 
     /// Every action is available on every button; the default entry keeps
-    /// the system behavior. Menus render grouped window ops first.
+    /// the system behavior. Menus render the options in titled sections:
+    /// default, window ops, snapping, app ops, no-op.
     static let options: [ButtonAction?] = [
         nil,
         .closeWindow,
@@ -31,6 +32,27 @@ struct RuleInspectorView: View {
         .centerWindow,
         .moveToNextDisplay,
         ButtonAction.none,
+    ]
+
+    /// The same options as titled menu sections.
+    static let optionGroups: [ActionOptionGroup] = [
+        ActionOptionGroup(label: nil, options: [nil]),
+        ActionOptionGroup(
+            label: tr("窗口", "Window"),
+            options: [
+                .closeWindow, .minimize, .maximize, .almostMaximize,
+                .fullscreen, .centerWindow, .moveToNextDisplay,
+            ]
+        ),
+        ActionOptionGroup(
+            label: tr("贴靠", "Snapping"),
+            options: [
+                .tileLeft, .tileRight, .tileTop, .tileBottom,
+                .tileTopLeft, .tileTopRight, .tileBottomLeft, .tileBottomRight,
+            ]
+        ),
+        ActionOptionGroup(label: tr("应用", "App"), options: [.quitApp, .hideApp]),
+        ActionOptionGroup(label: nil, options: [ButtonAction.none]),
     ]
 
     /// Matrix rows: the plain left click plus every enhanced variant.
@@ -136,7 +158,8 @@ struct RuleInspectorView: View {
             options: Self.options,
             selection: binding(button: button, variant: variant),
             pickerWidth: 104,
-            showsDot: false
+            showsDot: false,
+            groups: Self.optionGroups
         )
         // The picker's visible label is the action name; the row/column
         // semantics live in the matrix headers, which VoiceOver does not

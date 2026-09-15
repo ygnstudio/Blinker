@@ -114,7 +114,7 @@ final class HoverOverlayExtraButtonView: NSView {
     override func mouseDown(with _: NSEvent) {
         // Same contract as the traffic chips: the interceptor's tap sees the
         // raw event first; arm the gate so it passes the click through.
-        OverlayClickGate.suppressFor(milliseconds: OverlayClickGate.suppressionMilliseconds)
+        OverlayClickGate.suppressAtMouseLocation(forMilliseconds: OverlayClickGate.suppressionMilliseconds)
         guard isActivated else { return }
         onActivate()
     }

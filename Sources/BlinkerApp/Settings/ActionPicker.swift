@@ -24,7 +24,7 @@ extension ButtonAction {
         case .tileBottomRight: tr("右下屏", "Tile Bottom Right")
         case .centerWindow: tr("窗口居中", "Center")
         case .almostMaximize: tr("准最大化", "Almost Maximize")
-        case .moveToNextDisplay: tr("移到下一显示器", "Next Display")
+        case .moveToNextDisplay: tr("下一显示器", "Next Display")
         case .none: tr("无操作", "Do Nothing")
         case .windowManagerPanel: tr("窗口管理", "Window Manager")
         }
@@ -46,6 +46,13 @@ extension ClickVariant {
 
 // MARK: - Action picker
 
+/// One titled group of options inside the picker's menu; a `nil` label
+/// renders as a plain divider.
+struct ActionOptionGroup {
+    let label: String?
+    let options: [ButtonAction?]
+}
+
 /// A traffic-light action picker: a dot in the button's color followed by
 /// the action menu, so each row's three pickers are self-explanatory.
 struct ActionPicker: View {
@@ -61,6 +68,8 @@ struct ActionPicker: View {
     /// Whether the leading color dot renders; matrix cells drop it because
     /// their column headers already carry the light's color.
     var showsDot: Bool = true
+    /// Titled groups rendered as menu sections; `nil` keeps the menu flat.
+    var groups: [ActionOptionGroup]?
 
     var body: some View {
         HStack(spacing: 5) {
@@ -70,14 +79,26 @@ struct ActionPicker: View {
                     .frame(width: 9, height: 9)
             }
             Picker(selection: $selection) {
-                ForEach(Array(options.enumerated()), id: \.offset) { _, action in
-                    Text(Self.label(for: action, emptyLabel: emptyLabel)).tag(action)
+                if let groups {
+                    ForEach(Array(groups.enumerated()), id: \.offset) { _, group in
+                        Section(group.label ?? "") {
+                            optionButtons(group.options)
+                        }
+                    }
+                } else {
+                    optionButtons(options)
                 }
             } label: {
                 EmptyView()
             }
             .labelsHidden()
             .frame(width: pickerWidth)
+        }
+    }
+
+    private func optionButtons(_ options: [ButtonAction?]) -> some View {
+        ForEach(Array(options.enumerated()), id: \.offset) { _, action in
+            Text(Self.label(for: action, emptyLabel: emptyLabel)).tag(action)
         }
     }
 

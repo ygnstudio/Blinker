@@ -59,7 +59,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, Observ
         // The HUD lives in Core and cannot observe AppPreferences; mirror
         // the language choice so overlay text matches the settings UI.
         OverlayL10n.preferEnglish = AppPreferences.shared.isEnglish
-        observeWindowVisibility()
         observeAccessibilityTrustChanges()
         setupStatusItem()
         attemptStartInterceptor()
@@ -116,10 +115,26 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, Observ
 
         let statusRow = NSMenuItem()
         let hostingView = NSHostingView(rootView: InterceptorStatusRow(appDelegate: self))
-        hostingView.frame = NSRect(x: 0, y: 0, width: 220, height: 30)
+        // Size to the localized status text (with a floor), so longer
+        // labels never clip inside the menu row.
+        let fittingSize = hostingView.fittingSize
+        hostingView.frame = NSRect(
+            origin: .zero,
+            size: NSSize(width: max(220, ceil(fittingSize.width)), height: max(24, ceil(fittingSize.height)))
+        )
         statusRow.view = hostingView
         menu.addItem(statusRow)
         menu.addItem(.separator())
+
+        if status == .tapFailed {
+            let retryItem = NSMenuItem(
+                title: tr("重试启动拦截", "Retry Starting Interception"),
+                action: #selector(retryInterceptorClicked),
+                keyEquivalent: ""
+            )
+            retryItem.target = self
+            menu.addItem(retryItem)
+        }
 
         let settingsItem = NSMenuItem(
             title: tr("设置…", "Settings…"),
@@ -142,6 +157,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, Observ
         // otherwise it would also swallow the plain left click.
         statusItem.menu = menu
         statusItem.button?.performClick(nil)
+    }
+
+    @objc private func retryInterceptorClicked() {
+        attemptStartInterceptor()
     }
 
     func menuDidClose(_: NSMenu) {
@@ -197,6 +216,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, Observ
             // a floating window would permanently cover other apps' windows.
             window.appearance = AppPreferences.shared.nsAppearance
             settingsWindow = window
+            observeWindowVisibility()
             observePreferenceChanges()
         }
         settingsWindow?.makeKeyAndOrderFront(nil)
@@ -228,12 +248,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, Observ
         NSApp.activate(ignoringOtherApps: true)
     }
 
-    /// Safety net: whenever any window of the app becomes key, pull the
-    /// app to the front again. Covers paths that bypass `bringToFront()`.
+    /// Safety net: whenever the settings window becomes key, pull the app
+    /// to the front again. Covers paths that bypass `bringToFront()`.
+    /// Scoped to the settings window only — activating on *any* key window
+    /// would aggressively steal focus from other apps.
     private func observeWindowVisibility() {
+        guard let settingsWindow else { return }
         NotificationCenter.default.addObserver(
             forName: NSWindow.didBecomeKeyNotification,
-            object: nil,
+            object: settingsWindow,
             queue: .main
         ) { [weak self] _ in
             self?.bringToFront()

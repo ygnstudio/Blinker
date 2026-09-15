@@ -26,7 +26,8 @@ enum OverlayChipDrawing {
         }
     }
 
-    /// The dwell progress arc drawn just outside the circle.
+    /// The dwell progress arc drawn just outside the circle. With Increase
+    /// Contrast enabled the arc thickens, mirroring the bolder rim below.
     static func drawProgressRing(around circleRect: NSRect, progress: Double) {
         guard progress > 0 else { return }
         let ringRect = circleRect.insetBy(dx: -2, dy: -2)
@@ -38,7 +39,8 @@ enum OverlayChipDrawing {
             endAngle: 90 - 360 * progress,
             clockwise: true
         )
-        path.lineWidth = 1.5
+        let increaseContrast = NSWorkspace.shared.accessibilityDisplayShouldIncreaseContrast
+        path.lineWidth = increaseContrast ? 2.5 : 1.5
         NSColor.controlAccentColor.setStroke()
         path.stroke()
     }

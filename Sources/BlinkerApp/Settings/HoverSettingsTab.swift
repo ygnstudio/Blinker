@@ -117,7 +117,11 @@ struct HoverSettingsTab: View {
                         dotColor: .controlAccentColor,
                         options: Self.extraOptions,
                         selection: extraBinding(index),
-                        emptyLabel: tr("不显示", "Hidden")
+                        emptyLabel: tr("不显示", "Hidden"),
+                        // Every slot shares the same accent color, so the
+                        // dots carry no information — drop them (matching
+                        // the rules matrix).
+                        showsDot: false
                     )
                 } label: {
                     Text(tr("按钮 \(index + 1)", "Button \(index + 1)"))

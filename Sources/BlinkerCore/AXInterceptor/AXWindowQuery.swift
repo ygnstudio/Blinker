@@ -179,10 +179,26 @@ enum AXQuery {
     /// Cheaply finds the topmost standard (layer 0) on-screen window containing
     /// the point. `excludingProcessIdentifier` skips windows of a given app,
     /// e.g. Blinker's own settings window.
+    ///
+    /// `usingCache` serves a validated cached hit instead of walking the
+    /// whole `CGWindowList` — intended for hot paths (per-mouse-move hover
+    /// detection), not for click decisions. The cached hit is re-validated
+    /// with a single-window query (still on screen, layer 0, current bounds
+    /// containing the point); residual staleness is limited to z-order
+    /// changes directly under a stationary cursor, and the cache is
+    /// invalidated on drags and app activations by the hover controller.
     static func windowUnderPoint(
         _ point: CGPoint,
-        excludingProcessIdentifier excludedPID: pid_t? = nil
+        excludingProcessIdentifier excludedPID: pid_t? = nil,
+        usingCache: Bool = false
     ) -> WindowHit? {
+        if usingCache, let cached = cachedWindowHit {
+            if cached.processIdentifier != excludedPID,
+               let validated = validatedCachedHit(cached, at: point) {
+                return validated
+            }
+        }
+
         let windowList = CGWindowListCopyWindowInfo([.optionOnScreenOnly], kCGNullWindowID)
             as? [[String: Any]] ?? []
         for info in windowList {
@@ -199,12 +215,52 @@ enum AXQuery {
                 // The topmost window at this point belongs to us (settings
                 // window, overlay host); never fall through to windows hidden
                 // behind it.
+                cacheWindowHit(nil)
                 return nil
             }
             let windowID = info[kCGWindowNumber as String] as? CGWindowID ?? 0
-            return WindowHit(processIdentifier: pid, bounds: bounds, windowID: windowID)
+            let hit = WindowHit(processIdentifier: pid, bounds: bounds, windowID: windowID)
+            cacheWindowHit(hit)
+            return hit
         }
+        cacheWindowHit(nil)
         return nil
+    }
+
+    // MARK: - Hot-path hit cache
+
+    private static let cacheLock = NSLock()
+    private static var cachedWindowHit: WindowHit?
+
+    private static func cacheWindowHit(_ hit: WindowHit?) {
+        cacheLock.withLock { cachedWindowHit = hit }
+    }
+
+    /// Drops the hot-path cache; called when the window order may have
+    /// changed without the cursor moving (drag stand-down, app activation).
+    static func invalidateWindowUnderPointCache() {
+        cacheWindowHit(nil)
+    }
+
+    /// Re-validates a cached hit with a single-window `CGWindowList` query —
+    /// far cheaper than the full copy — returning the hit with its *current*
+    /// bounds, or `nil` when the window disappeared, left the screen or no
+    /// longer contains the point.
+    private static func validatedCachedHit(_ cached: WindowHit, at point: CGPoint) -> WindowHit? {
+        guard cached.windowID != 0 else { return nil }
+        let list = CGWindowListCopyWindowInfo([.optionOnScreenOnly], cached.windowID)
+            as? [[String: Any]] ?? []
+        guard let info = list.first else { return nil }
+        guard
+            info[kCGWindowLayer as String] as? Int == 0,
+            let pid = info[kCGWindowOwnerPID as String] as? pid_t,
+            pid == cached.processIdentifier,
+            let boundsDictionary = info[kCGWindowBounds as String],
+            // swiftlint:disable:next force_cast
+            let bounds = CGRect(dictionaryRepresentation: boundsDictionary as! CFDictionary),
+            bounds.contains(point)
+        else { return nil }
+        return WindowHit(processIdentifier: pid, bounds: bounds, windowID: cached.windowID)
     }
 }
 

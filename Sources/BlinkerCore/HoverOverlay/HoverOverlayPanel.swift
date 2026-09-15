@@ -128,9 +128,10 @@ final class HoverOverlayButtonView: NSView {
 
     override func mouseDown(with event: NSEvent) {
         // This click is consumed here, but the interceptor's tap sees the raw
-        // event first; arm the gate so it passes the click through instead of
-        // performing the mapped action a second time.
-        OverlayClickGate.suppressFor(milliseconds: OverlayClickGate.suppressionMilliseconds)
+        // event first; arm the gate (scoped to this click's position) so it
+        // passes the click through instead of performing the mapped action a
+        // second time.
+        OverlayClickGate.suppressAtMouseLocation(forMilliseconds: OverlayClickGate.suppressionMilliseconds)
         guard isActivated || isHotspot else { return }
 
         let variant = Self.variant(of: event)
@@ -200,7 +201,7 @@ final class HoverOverlayButtonView: NSView {
     }
 
     override func rightMouseDown(with _: NSEvent) {
-        OverlayClickGate.suppressFor(milliseconds: OverlayClickGate.suppressionMilliseconds)
+        OverlayClickGate.suppressAtMouseLocation(forMilliseconds: OverlayClickGate.suppressionMilliseconds)
         guard isActivated || isHotspot else { return }
         onActivate(.right)
     }
