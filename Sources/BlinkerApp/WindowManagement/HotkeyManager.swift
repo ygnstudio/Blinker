@@ -130,7 +130,24 @@ final class HotkeyManager: ObservableObject {
 
     private static let storageKey = "com.ygnstudio.blinker.hotkeys"
     private static let enabledKey = "com.ygnstudio.blinker.hotkeysEnabled"
+    private static let hoverToggleStorageKey = "com.ygnstudio.blinker.hover-toggle-hotkey"
     private static let hotkeySignature = OSType(0x424C_4E4B) // 'BLNK'
+    /// Reserved hot key id for the hover-overlay toggle command; far outside
+    /// the window-action id range (table index + 1).
+    private static let hoverToggleHotKeyID: UInt32 = 0x484F // 'HO'
+
+    /// The combo that toggles hover enlargement from anywhere. Ships as ⌃⌥H
+    /// on first launch; `nil` disables the command hotkey.
+    @Published private(set) var hoverToggleCombo: HotkeyCombo? {
+        didSet { persistHoverToggleCombo() }
+    }
+
+    /// Invoked when the hover-toggle hotkey fires; wired to the app
+    /// delegate, which flips `HoverOverlaySettings.isEnabled`.
+    var onToggleHoverOverlay: (() -> Void)?
+
+    /// Whether the recorder is currently capturing the hover-toggle combo.
+    @Published private(set) var isRecordingHoverToggle = false
 
     @Published private(set) var bindings: [String: HotkeyCombo] {
         didSet { persist() }
@@ -144,6 +161,7 @@ final class HotkeyManager: ObservableObject {
     @Published private(set) var recordingAction: ButtonAction?
 
     private var registeredHotKeys: [String: EventHotKeyRef?] = [:]
+    private var registeredHoverToggleHotKey: EventHotKeyRef?
     private var eventHandler: EventHandlerRef?
     private var localMonitor: Any?
     private let frontWindowPerformer: FrontWindowActionPerformer
@@ -158,6 +176,10 @@ final class HotkeyManager: ObservableObject {
             // First launch: ship the default scheme.
             isEnabled = true
             bindings = Self.defaultBindings
+            hoverToggleCombo = HotkeyCombo(
+                keyCode: UInt32(kVK_ANSI_H),
+                modifiers: UInt32(controlKey | optionKey)
+            )
         } else {
             isEnabled = defaults.bool(forKey: Self.enabledKey)
             if let data = defaults.data(forKey: Self.storageKey) {
@@ -165,6 +187,12 @@ final class HotkeyManager: ObservableObject {
             } else {
                 bindings = [:]
             }
+            hoverToggleCombo = defaults.data(forKey: Self.hoverToggleStorageKey)
+                .flatMap { try? JSONDecoder().decode(HotkeyCombo.self, from: $0) }
+                ?? HotkeyCombo(
+                    keyCode: UInt32(kVK_ANSI_H),
+                    modifiers: UInt32(controlKey | optionKey)
+                )
         }
 
         installEventHandler()
@@ -213,6 +241,7 @@ final class HotkeyManager: ObservableObject {
         }
         localMonitor = nil
         recordingAction = nil
+        isRecordingHoverToggle = false
     }
 
     private func handleRecordingEvent(_ event: NSEvent) {
@@ -316,7 +345,13 @@ final class HotkeyManager: ObservableObject {
             &hotKeyID
         )
         guard status == noErr else { return }
-        // The hot key id encodes the binding table index (see register).
+        // The reserved command id dispatches to the app command; otherwise
+        // the hot key id encodes the binding table index (see register).
+        if hotKeyID.id == Self.hoverToggleHotKeyID {
+            logger.info("hotkey fired: toggle hover overlay")
+            onToggleHoverOverlay?()
+            return
+        }
         guard let action = Self.bindableActions.first(where: { id(for: $0) == hotKeyID.id }) else { return }
         logger.info("hotkey fired: \(action.rawValue, privacy: .public)")
         frontWindowPerformer.perform(action)
@@ -355,6 +390,9 @@ final class HotkeyManager: ObservableObject {
             guard let combo = bindings[action.rawValue] else { continue }
             register(combo, for: action)
         }
+        if let combo = hoverToggleCombo {
+            registerHoverToggle(combo)
+        }
     }
 
     private func unregisterAll() {
@@ -364,6 +402,10 @@ final class HotkeyManager: ObservableObject {
             }
         }
         registeredHotKeys.removeAll()
+        if let ref = registeredHoverToggleHotKey {
+            UnregisterEventHotKey(ref)
+        }
+        registeredHoverToggleHotKey = nil
     }
 
     // MARK: - Persistence
@@ -376,5 +418,80 @@ final class HotkeyManager: ObservableObject {
 
     private func persistEnabled() {
         defaults.set(isEnabled, forKey: Self.enabledKey)
+    }
+}
+
+// MARK: - Hover-toggle command hotkey
+
+/// The hover-enlargement toggle lives outside the window-action table: it
+/// dispatches through a reserved hot key id and a callback wired by the app
+/// delegate instead of `FrontWindowActionPerformer`.
+extension HotkeyManager {
+    func bindHoverToggle(_ combo: HotkeyCombo) {
+        hoverToggleCombo = combo
+        registerHoverToggle(combo)
+    }
+
+    func clearHoverToggleBinding() {
+        hoverToggleCombo = nil
+        if let ref = registeredHoverToggleHotKey {
+            UnregisterEventHotKey(ref)
+        }
+        registeredHoverToggleHotKey = nil
+    }
+
+    /// Starts capturing the next key press as the hover-toggle binding.
+    func beginRecordingHoverToggle() {
+        endRecording()
+        isRecordingHoverToggle = true
+        localMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
+            self?.handleHoverToggleRecordingEvent(event)
+            return nil
+        }
+    }
+
+    /// Recording variant for the hover-toggle command hotkey; same rules:
+    /// Esc cancels, at least one modifier required.
+    private func handleHoverToggleRecordingEvent(_ event: NSEvent) {
+        guard isRecordingHoverToggle else {
+            endRecording()
+            return
+        }
+        endRecording()
+        guard event.keyCode != UInt16(kVK_Escape) else { return }
+
+        let carbonModifiers = Self.carbonModifiers(from: event.modifierFlags)
+        guard carbonModifiers != 0 else { return }
+        bindHoverToggle(HotkeyCombo(keyCode: UInt32(event.keyCode), modifiers: carbonModifiers))
+    }
+
+    private func registerHoverToggle(_ combo: HotkeyCombo) {
+        if let existing = registeredHoverToggleHotKey {
+            UnregisterEventHotKey(existing)
+        }
+        var hotKeyRef: EventHotKeyRef?
+        let hotKeyID = EventHotKeyID(signature: Self.hotkeySignature, id: Self.hoverToggleHotKeyID)
+        let status = RegisterEventHotKey(
+            combo.keyCode,
+            combo.modifiers,
+            hotKeyID,
+            GetApplicationEventTarget(),
+            0,
+            &hotKeyRef
+        )
+        if status == noErr {
+            registeredHoverToggleHotKey = hotKeyRef
+        } else {
+            logger.error("RegisterEventHotKey failed for hover toggle: \(status)")
+            registeredHoverToggleHotKey = nil
+        }
+    }
+
+    private func persistHoverToggleCombo() {
+        if let combo = hoverToggleCombo, let data = try? JSONEncoder().encode(combo) {
+            defaults.set(data, forKey: Self.hoverToggleStorageKey)
+        } else {
+            defaults.removeObject(forKey: Self.hoverToggleStorageKey)
+        }
     }
 }

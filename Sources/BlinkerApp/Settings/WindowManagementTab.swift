@@ -140,9 +140,19 @@ struct WindowManagementTab: View {
     private var hotkeySection: some View {
         Section {
             Toggle(tr("启用全局快捷键", "Enable Global Hotkeys"), isOn: hotkeysEnabledBinding)
+                // Keep the master switch clickable while the bindings are
+                // grayed out, otherwise the toggle locks itself out.
+                .disabled(false)
+            HotkeyRowView(
+                label: tr("悬停放大开关", "Toggle Hover Enlargement"),
+                combo: hotkeyManager.hoverToggleCombo,
+                isRecording: hotkeyManager.isRecordingHoverToggle,
+                onRecord: { hotkeyManager.beginRecordingHoverToggle() },
+                onClear: { hotkeyManager.clearHoverToggleBinding() }
+            )
             ForEach(HotkeyManager.bindableActions, id: \.rawValue) { action in
                 HotkeyRowView(
-                    action: action,
+                    label: action.localizedLabel,
                     combo: hotkeyManager.bindings[action.rawValue],
                     isRecording: hotkeyManager.recordingAction == action,
                     onRecord: { hotkeyManager.beginRecording(for: action) },
@@ -153,12 +163,13 @@ struct WindowManagementTab: View {
             Text(tr("全局快捷键", "Global Hotkeys"))
         } footer: {
             Text(tr(
-                "在任意应用下按键即可对最前面的窗口执行动作。点击右侧录制新的快捷键，"
-                    + "Esc 取消，减号清除。"
-                    + "默认方案为 ⌃⌥ 加方向键与 U/I/J/K。",
-                "Press anywhere to act on the frontmost window. Click a binding to record a new key "
-                    + "(Esc cancels); "
-                    + "the minus clears it. The default scheme is ⌃⌥ with arrows and U/I/J/K."
+                "在任意应用下按键即可对最前面的窗口执行动作；「悬停放大开关」直接开关悬停放大。"
+                    + "点击右侧录制新的快捷键，Esc 取消，减号清除。"
+                    + "窗口动作默认方案为 ⌃⌥ 加方向键与 U/I/J/K，悬停开关默认 ⌃⌥H。",
+                "Press anywhere to act on the frontmost window; the hover toggle switches hover "
+                    + "enlargement directly. Click a binding to record a new key (Esc cancels); "
+                    + "the minus clears it. Window actions default to ⌃⌥ with arrows and "
+                    + "U/I/J/K; the hover toggle defaults to ⌃⌥H."
             ))
         }
         .disabled(!hotkeyManager.isEnabled)
@@ -216,10 +227,10 @@ private struct WorkspaceRowView: View {
 
 // MARK: - Hotkey row
 
-/// One hotkey binding row: action label, current combo (or record prompt) and
-/// a clear button.
+/// One hotkey binding row: label, current combo (or record prompt) and a
+/// clear button.
 private struct HotkeyRowView: View {
-    let action: ButtonAction
+    let label: String
     let combo: HotkeyCombo?
     let isRecording: Bool
     let onRecord: () -> Void
@@ -233,7 +244,7 @@ private struct HotkeyRowView: View {
             Text(
                 isRecording
                     ? tr("按下快捷键…（Esc 取消）", "Press keys… (Esc to cancel)")
-                    : action.localizedLabel
+                    : label
             )
             .font(isRecording ? .callout : .body)
             .foregroundStyle(isRecording ? Color.accentColor : .primary)

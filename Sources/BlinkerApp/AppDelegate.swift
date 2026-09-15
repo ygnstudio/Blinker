@@ -60,6 +60,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, Observ
         observeAccessibilityTrustChanges()
         setupStatusItem()
         attemptStartInterceptor()
+        wireHoverToggleHotkey()
+    }
+
+    /// The ⌃⌥H global hotkey (configurable) flips hover enlargement without
+    /// a trip to the settings window.
+    private func wireHoverToggleHotkey() {
+        hotkeyManager.onToggleHoverOverlay = { [weak self] in
+            guard let self else { return }
+            var settings = hoverOverlaySettingsStore.snapshot
+            settings.isEnabled.toggle()
+            applyHoverOverlaySettings(settings)
+        }
     }
 
     // MARK: - Status item

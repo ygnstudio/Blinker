@@ -18,6 +18,10 @@ struct HoverSettingsTab: View {
         Form {
             Section {
                 Toggle(tr("启用悬停放大", "Enable Hover Enlargement"), isOn: isEnabledBinding)
+                    // The master switch must stay clickable while the rest of
+                    // the form is grayed out, otherwise turning the feature
+                    // off locks the toggle itself.
+                    .disabled(false)
                 modePicker
             } header: {
                 Text(tr("模式与尺寸", "Mode & Size"))
