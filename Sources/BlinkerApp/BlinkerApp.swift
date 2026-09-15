@@ -1,4 +1,3 @@
-import BlinkerCore
 import SwiftUI
 
 @main
@@ -6,16 +5,9 @@ struct BlinkerApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
 
     var body: some Scene {
-        Settings {
-            SettingsScreen(
-                ruleStore: appDelegate.ruleStore,
-                hoverSettingsStore: appDelegate.hoverOverlaySettingsStore,
-                onApplyHoverSettings: appDelegate.applyHoverOverlaySettings,
-                hotkeyManager: appDelegate.hotkeyManager,
-                workspaceStore: appDelegate.workspaceStore,
-                onSnapEnabledChange: appDelegate.applySnapEnabled,
-                appDelegate: appDelegate
-            )
-        }
+        // The real settings window is a plain NSWindow created and owned by
+        // the app delegate (see `openSettings()`); this placeholder only
+        // satisfies the Scene requirement.
+        Settings { EmptyView() }
     }
 }

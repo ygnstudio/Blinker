@@ -73,8 +73,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, Observ
             accessibilityDescription: "Blinker"
         )
         item.button?.image?.isTemplate = true
-        item.button?.action = #selector(statusItemClicked)
         item.button?.target = self
+        item.button?.action = #selector(statusItemClicked)
+        // The action must fire for secondary clicks too, otherwise the
+        // context menu can never be shown.
+        item.button?.sendAction(on: [.leftMouseUp, .rightMouseUp, .otherMouseUp])
         statusItem = item
     }
 
@@ -85,7 +88,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, Observ
         if isSecondaryClick {
             showContextMenu()
         } else {
-            openSettingsFromAppKit()
+            openSettings()
         }
     }
 
@@ -129,14 +132,39 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, Observ
     }
 
     @objc private func openSettingsClicked() {
-        openSettingsFromAppKit()
+        openSettings()
     }
 
-    /// Opens the SwiftUI `Settings` scene from AppKit. `showSettingsWindow:`
-    /// is the selector the scene installs on macOS 14+.
-    private func openSettingsFromAppKit() {
+    // MARK: - Settings window
+
+    private var settingsWindow: NSWindow?
+
+    /// Shows the settings window, creating it on first open. A plain NSWindow
+    /// hosting the SwiftUI settings screen — deliberately not the SwiftUI
+    /// `Settings` scene, whose private `showSettingsWindow:` selector is
+    /// unreliable to invoke from AppKit in an accessory app.
+    func openSettings() {
         bringToFront()
-        NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
+        if settingsWindow == nil {
+            let screen = SettingsScreen(
+                ruleStore: ruleStore,
+                hoverSettingsStore: hoverOverlaySettingsStore,
+                onApplyHoverSettings: applyHoverOverlaySettings,
+                hotkeyManager: hotkeyManager,
+                workspaceStore: workspaceStore,
+                onSnapEnabledChange: applySnapEnabled,
+                appDelegate: self
+            )
+            let window = NSWindow(contentViewController: NSHostingController(rootView: screen))
+            window.title = tr("Blinker 设置", "Blinker Settings")
+            window.styleMask.insert(.miniaturizable)
+            window.setContentSize(NSSize(width: 560, height: 480))
+            window.center()
+            window.isReleasedWhenClosed = false
+            window.level = .floating
+            settingsWindow = window
+        }
+        settingsWindow?.makeKeyAndOrderFront(nil)
     }
 
     /// Activates the app so newly opened windows (settings) appear on top.
