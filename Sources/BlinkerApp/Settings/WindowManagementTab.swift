@@ -27,6 +27,7 @@ struct WindowManagementTab: View {
             hotkeySection
         }
         .formStyle(.grouped)
+        .modifier(HiddenGlassCompatibleBackground())
     }
 
     private func panelButton(_ label: String, icon: String, action: @escaping () -> Void) -> some View {

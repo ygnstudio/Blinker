@@ -74,6 +74,7 @@ struct HoverSettingsTab: View {
             }
         }
         .formStyle(.grouped)
+        .modifier(HiddenGlassCompatibleBackground())
         .disabled(!settings.isEnabled)
     }
 

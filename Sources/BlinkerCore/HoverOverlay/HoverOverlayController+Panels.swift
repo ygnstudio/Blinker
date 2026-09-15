@@ -19,7 +19,8 @@ extension HoverOverlayController {
             if needsRebuild {
                 rebuildPanels(
                     layout: layout,
-                    isHotspot: settings.mode == .hotspot
+                    isHotspot: settings.mode == .hotspot,
+                    glassTint: GlassTint.resolved(hex: settings.glassTintColorHex)
                 )
             } else {
                 // The tray is fronted before the panels so the enlarged
@@ -36,9 +37,13 @@ extension HoverOverlayController {
         }
     }
 
-    private func rebuildPanels(layout: OverlayLayout, isHotspot: Bool) {
+    private func rebuildPanels(
+        layout: OverlayLayout,
+        isHotspot: Bool,
+        glassTint: NSColor?
+    ) {
         hidePanels()
-        installTrayPanel(layout: layout, isHotspot: isHotspot)
+        installTrayPanel(layout: layout, isHotspot: isHotspot, glassTint: glassTint)
         panels = zip(layout.buttons, layout.panelFrames).map { info, panelFrame in
             HoverOverlayPanel(
                 panelFrame: panelFrame,
@@ -69,7 +74,8 @@ extension HoverOverlayController {
         extraPanels = layout.extraActions.enumerated().map { index, action in
             HoverOverlayExtraPanel(
                 panelFrame: layout.extraPanelFrames[index],
-                action: action
+                action: action,
+                tintColor: glassTint
             ) { [weak self] in
                 self?.activateExtra(ExtraChipContext(
                     action: action,
@@ -91,7 +97,11 @@ extension HoverOverlayController {
     /// chips stack above it; each traffic dot additionally gets a bounded
     /// radial glow on the glass that absorbs the native button's blurred
     /// ghost. Hotspot mode keeps the title bar untouched.
-    private func installTrayPanel(layout: OverlayLayout, isHotspot: Bool) {
+    private func installTrayPanel(
+        layout: OverlayLayout,
+        isHotspot: Bool,
+        glassTint: NSColor?
+    ) {
         guard !isHotspot else { return }
         guard
             let trayFrame = HoverOverlayTrayPanel.frame(
@@ -110,7 +120,7 @@ extension HoverOverlayController {
                 color: OverlayChipDrawing.vividColor(for: info.button)
             )
         }
-        let tray = HoverOverlayTrayPanel(trayFrame: trayFrame, glows: glows)
+        let tray = HoverOverlayTrayPanel(trayFrame: trayFrame, glows: glows, tintColor: glassTint)
         tray.orderFrontRegardless()
         trayPanel = tray
     }
@@ -284,7 +294,11 @@ extension HoverOverlayController {
                 self?.closeHUD()
             }
         )
-        hudPanel = HoverOverlayHUDPanel(axFrame: axFrame, content: content)
+        hudPanel = HoverOverlayHUDPanel(
+            axFrame: axFrame,
+            content: content,
+            tintColor: GlassTint.resolved(hex: settingsStore.snapshot.glassTintColorHex)
+        )
         hudPanel?.orderFrontRegardless()
         hudStateLock.withLock {
             hudKeepAliveFrameAX = axFrame
