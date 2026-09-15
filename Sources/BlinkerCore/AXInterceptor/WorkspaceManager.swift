@@ -11,11 +11,21 @@ public struct WorkspaceEntry: Codable, Hashable, Sendable {
     public let bundleIdentifier: String
     public let appName: String
     public let frame: CGRect
+    /// The desktop (Space) the window was on when captured, as its stable
+    /// UUID. Optional so pre-Space captures keep decoding; `nil` entries
+    /// restore frame-only.
+    public let spaceUUID: String?
 
-    public init(bundleIdentifier: String, appName: String, frame: CGRect) {
+    public init(
+        bundleIdentifier: String,
+        appName: String,
+        frame: CGRect,
+        spaceUUID: String? = nil
+    ) {
         self.bundleIdentifier = bundleIdentifier
         self.appName = appName
         self.frame = frame
+        self.spaceUUID = spaceUUID
     }
 }
 
@@ -40,25 +50,60 @@ public enum WorkspaceManager {
     /// panels that would turn restoring into a mess.
     static let minimumCaptureSize = CGSize(width: 120, height: 80)
 
+    /// UserDefaults key shared with the App-layer toggle (the HUD restore
+    /// path lives in Core and reads the same key). Default is off.
+    static let spaceRestoreDefaultsKey = "workspaceSpaceRestoreEnabled"
+
     // MARK: - Capture
+
+    /// A window that passed all capture filters, with the ids the Space
+    /// bridge needs.
+    private struct CaptureCandidate {
+        let windowID: Int
+        let bundleIdentifier: String
+        let appName: String
+        let frame: CGRect
+    }
 
     /// Snapshots every regular-app window — on-screen, minimized and on
     /// other Spaces alike — one entry per window. Blinker's own windows are
     /// excluded. Uses the unfiltered window list because `.optionOnScreenOnly`
     /// silently drops everything outside the current Space, which made saved
     /// workspaces look empty (and restore a no-op) for most real layouts.
+    /// Each entry also records the window's desktop (Space) UUID when the
+    /// SkyLight bridge is available.
     public static func captureVisibleWindows() -> [WorkspaceEntry] {
-        // The raw list reports every window the system knows about; pair it
-        // with the on-screen list so entries can note nothing extra — the
-        // frame is the last-known frame for hidden windows, which is exactly
-        // what restore wants.
+        let candidates = captureCandidates()
+        let spaceUUIDs = spaceUUIDsByWindowID(candidates.map(\.windowID))
+        return candidates
+            .map { candidate in
+                WorkspaceEntry(
+                    bundleIdentifier: candidate.bundleIdentifier,
+                    appName: candidate.appName,
+                    frame: candidate.frame,
+                    spaceUUID: spaceUUIDs[candidate.windowID]
+                )
+            }
+            .sorted {
+                ($0.appName, $0.frame.minX, $0.frame.minY)
+                    < ($1.appName, $1.frame.minX, $1.frame.minY)
+            }
+    }
+
+    /// Filters the raw window list down to capture-worthy windows.
+    private static func captureCandidates() -> [CaptureCandidate] {
+        // The raw list reports every window the system knows about; the
+        // frame is the last-known frame for hidden windows, which is
+        // exactly what restore wants.
         let list = CGWindowListCopyWindowInfo([], kCGNullWindowID) as? [[String: Any]] ?? []
         let ownPID = ProcessInfo.processInfo.processIdentifier
 
-        var entries: [WorkspaceEntry] = []
+        var candidates: [CaptureCandidate] = []
         var seenFrames: Set<String> = []
         for info in list {
-            guard info[kCGWindowLayer as String] as? Int == 0 else { continue }
+            guard info[kCGWindowLayer as String] as? Int == 0,
+                  let windowID = info[kCGWindowNumber as String] as? Int
+            else { continue }
             guard
                 let boundsDictionary = info[kCGWindowBounds as String],
                 // swiftlint:disable:next force_cast
@@ -78,16 +123,25 @@ public enum WorkspaceManager {
             let frameKey = "\(bundleIdentifier)|\(frame.integral)"
             guard seenFrames.insert(frameKey).inserted else { continue }
 
-            entries.append(WorkspaceEntry(
+            candidates.append(CaptureCandidate(
+                windowID: windowID,
                 bundleIdentifier: bundleIdentifier,
                 appName: app.localizedName ?? bundleIdentifier,
                 frame: frame
             ))
         }
-        return entries.sorted {
-            ($0.appName, $0.frame.minX, $0.frame.minY)
-                < ($1.appName, $1.frame.minX, $1.frame.minY)
-        }
+        return candidates
+    }
+
+    /// Maps window ids to Space UUIDs via the SkyLight bridge; empty when
+    /// the bridge is unavailable, so captures simply store no Space.
+    private static func spaceUUIDsByWindowID(_ windowIDs: [Int]) -> [Int: String] {
+        guard SkyLightSpaces.isAvailable, !windowIDs.isEmpty else { return [:] }
+        let catalog = Dictionary(
+            uniqueKeysWithValues: SkyLightSpaces.spaceCatalog().map { ($0.id, $0.uuid) }
+        )
+        guard !catalog.isEmpty else { return [:] }
+        return SkyLightSpaces.spacesForWindows(windowIDs).compactMapValues { catalog[$0] }
     }
 
     // MARK: - Restore
@@ -95,12 +149,26 @@ public enum WorkspaceManager {
     /// Repositions saved windows onto running instances of the same apps.
     /// Entries are paired with the app's AX windows by size similarity (the
     /// closest current window wins), so multi-window apps restore every
-    /// window instead of just the first. Returns how many entries were
-    /// restored; apps that are not running (or expose no AX window) are
-    /// skipped silently — callers may log the miss.
+    /// window instead of just the first. When the Space-restore preference
+    /// is on (and the SkyLight bridge is available), restored windows are
+    /// also moved back to the desktop they were captured on. Returns how
+    /// many entries were restored; apps that are not running (or expose no
+    /// AX window) are skipped silently — callers may log the miss.
     @discardableResult
     public static func restore(_ workspace: SavedWorkspace) -> Int {
+        let restoreSpaces = UserDefaults.standard.bool(forKey: spaceRestoreDefaultsKey)
+            && SkyLightSpaces.isAvailable
+        var spaceIDByUUID: [String: Int64] = [:]
+        var windowIDByFrame: [String: Int] = [:]
+        if restoreSpaces {
+            spaceIDByUUID = Dictionary(
+                uniqueKeysWithValues: SkyLightSpaces.spaceCatalog().map { ($0.uuid, $0.id) }
+            )
+            windowIDByFrame = cgWindowSnapshot()
+        }
+
         var restored = 0
+        var pendingMoves: [(windowID: Int, spaceID: Int64)] = []
         let running = NSWorkspace.shared.runningApplications
         let entriesByApp = Dictionary(grouping: workspace.entries, by: \.bundleIdentifier)
         for (bundleIdentifier, entries) in entriesByApp {
@@ -116,11 +184,60 @@ public enum WorkspaceManager {
                     continue
                 }
                 used.insert(index)
+                // Resolve the Space move *before* writing the frame back:
+                // the AX window still carries its current frame, which is
+                // what the pre-restore snapshot indexed on.
+                if let uuid = entry.spaceUUID,
+                   let spaceID = spaceIDByUUID[uuid],
+                   let currentFrame = elementFrame(windows[index]),
+                   let windowID = windowIDByFrame[windowIDByFrameKey(
+                       pid: app.processIdentifier,
+                       frame: currentFrame
+                   )] {
+                    pendingMoves.append((windowID, spaceID))
+                }
                 AXQuery.setWindowFrame(axFrame: entry.frame, of: windows[index])
                 restored += 1
             }
         }
+        moveWindowsToSpaces(pendingMoves)
         return restored
+    }
+
+    /// One shot of (pid, frame → windowID) for layer-0 windows, taken
+    /// before any frame is written back so each AX window's *current*
+    /// frame matches the snapshot. The raw list is used on purpose —
+    /// `.optionOnScreenOnly` drops other-Space windows.
+    private static func cgWindowSnapshot() -> [String: Int] {
+        let list = CGWindowListCopyWindowInfo([], kCGNullWindowID) as? [[String: Any]] ?? []
+        var snapshot: [String: Int] = [:]
+        for info in list {
+            guard info[kCGWindowLayer as String] as? Int == 0,
+                  let windowID = info[kCGWindowNumber as String] as? Int,
+                  let pid = info[kCGWindowOwnerPID as String] as? pid_t
+            else { continue }
+            guard
+                let boundsDictionary = info[kCGWindowBounds as String],
+                // swiftlint:disable:next force_cast
+                let frame = CGRect(dictionaryRepresentation: boundsDictionary as! CFDictionary)
+            else { continue }
+            snapshot[windowIDByFrameKey(pid: pid, frame: frame)] = windowID
+        }
+        return snapshot
+    }
+
+    /// Snapshot key: same pid and integral frame identifies one window.
+    private static func windowIDByFrameKey(pid: pid_t, frame: CGRect) -> String {
+        "\(pid)|\(frame.integral)"
+    }
+
+    /// Batch-moves the collected (window, Space) pairs, grouped per Space.
+    private static func moveWindowsToSpaces(_ moves: [(windowID: Int, spaceID: Int64)]) {
+        guard !moves.isEmpty else { return }
+        let grouped = Dictionary(grouping: moves, by: \.spaceID)
+        for (spaceID, group) in grouped {
+            _ = SkyLightSpaces.moveWindows(group.map(\.windowID), toSpace: spaceID)
+        }
     }
 
     /// Picks the unused AX window whose current area is closest to the saved
@@ -151,8 +268,9 @@ public enum WorkspaceManager {
         var sizeRef: CFTypeRef?
         guard
             AXUIElementCopyAttributeValue(element, kAXPositionAttribute as CFString, &positionRef) ==
-            .success,
-            AXUIElementCopyAttributeValue(element, kAXSizeAttribute as CFString, &sizeRef) == .success,
+                .success,
+            AXUIElementCopyAttributeValue(element, kAXSizeAttribute as CFString, &sizeRef) ==
+                .success,
             let positionValue = positionRef, let sizeValue = sizeRef
         else { return nil }
         var point = CGPoint()

@@ -4,118 +4,127 @@ import SwiftUI
 
 // MARK: - Rules tab
 
-/// Per-app remapping of the traffic light buttons.
+/// Per-app remapping of the traffic light buttons as a master-detail
+/// surface: a compact rule list on the left, the full click-variant matrix
+/// for the selected rule on the right — the Notes-style three-column
+/// density, one screen for all fifteen slots.
 struct RulesTab: View {
     @ObservedObject var ruleStore: RuleStore
-    @ObservedObject private var preferences = AppPreferences.shared
-    @State private var showingAppLibrary = false
-    /// The currently selected rule row; drives the footer's minus button.
+    /// The rule whose matrix the inspector shows.
     @State private var selection: AppRule.ID?
 
+    private var enabledRules: [AppRule] { ruleStore.rules.filter(\.isEnabled) }
+    private var disabledRules: [AppRule] { ruleStore.rules.filter { !$0.isEnabled } }
+
+    /// A deleted selection gracefully falls back to the placeholder
+    /// instead of showing a stale rule.
     private var selectedRule: AppRule? {
         ruleStore.rules.first { $0.id == selection }
     }
 
     var body: some View {
-        VStack(spacing: 0) {
+        Group {
             if ruleStore.rules.isEmpty {
                 emptyState
             } else {
-                ruleList
+                listDetail
             }
+        }
+    }
+
+    // MARK: - List-detail split
+
+    private var listDetail: some View {
+        HStack(spacing: 0) {
+            ruleList
+                .frame(minWidth: 220, idealWidth: 240, maxWidth: 300, maxHeight: .infinity)
             Divider()
-            footerBar
+            if let rule = selectedRule {
+                RuleInspectorView(rule: rule, onUpdate: { ruleStore.upsert($0) })
+            } else {
+                placeholder
+            }
         }
     }
 
     private var ruleList: some View {
         List(selection: $selection) {
-            ForEach(ruleStore.rules) { rule in
-                RuleRowView(
-                    rule: rule,
-                    onUpdate: { ruleStore.upsert($0) }
-                )
-                .tag(rule.id)
+            // Notes-style grouping: headers separate live groups so disabled
+            // rules stay discoverable instead of sinking to the bottom.
+            if !enabledRules.isEmpty {
+                Section(tr("已启用", "Enabled")) {
+                    ForEach(enabledRules) { rule in
+                        ruleRow(rule)
+                    }
+                    .onDelete { removeRules(at: $0, from: enabledRules) }
+                }
+            }
+            if !disabledRules.isEmpty {
+                Section(tr("已停用", "Disabled")) {
+                    ForEach(disabledRules) { rule in
+                        ruleRow(rule)
+                    }
+                    .onDelete { removeRules(at: $0, from: disabledRules) }
+                }
             }
         }
-        // Plain inset list with separators — no alternating stripes, which
-        // would paint the empty area below the rows.
         .listStyle(.inset)
     }
 
-    private var emptyState: some View {
-        // The system-standard empty state, matching first-party apps.
+    private func ruleRow(_ rule: AppRule) -> some View {
+        RuleListRow(rule: rule)
+            .tag(rule.id)
+            .contextMenu {
+                Button(role: .destructive) {
+                    ruleStore.remove(bundleIdentifier: rule.bundleIdentifier)
+                } label: {
+                    Label(tr("删除规则", "Delete Rule"), systemImage: "trash")
+                }
+            }
+    }
+
+    /// Maps List's delete offsets back onto the section's rules.
+    private func removeRules(at offsets: IndexSet, from source: [AppRule]) {
+        for index in offsets {
+            ruleStore.remove(bundleIdentifier: source[index].bundleIdentifier)
+        }
+    }
+
+    private var placeholder: some View {
         ContentUnavailableView {
-            Label(tr("还没有配置任何应用", "No Apps Configured"), systemImage: "circle.circle")
+            Label(tr("选择一个应用", "Select an App"), systemImage: "sidebar.right")
         } description: {
             Text(tr(
-                "添加应用后，即可单独定义它的红绿灯行为；未添加的应用保持系统默认。",
-                "Add an app to remap its traffic lights; everything else keeps system defaults."
+                "在左侧选择一个应用，即可在右侧为它的红绿灯配置各点击方式的动作。",
+                "Pick an app on the left to map its traffic lights per click variant."
             ))
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
-    /// The system-settings-style footer bar: small plus/minus buttons at the
-    /// leading edge (like the Login Items list) with the hint caption after
-    /// them.
-    private var footerBar: some View {
-        HStack(spacing: 12) {
-            Button {
-                showingAppLibrary = true
-            } label: {
-                Image(systemName: "plus")
-            }
-            .buttonStyle(.bordered)
-            .controlSize(.small)
-            .help(tr("添加应用", "Add App"))
-            .accessibilityLabel(tr("添加应用", "Add App"))
-
-            Button {
-                if let selectedRule {
-                    ruleStore.remove(bundleIdentifier: selectedRule.bundleIdentifier)
-                    selection = nil
-                }
-            } label: {
-                Image(systemName: "minus")
-            }
-            .buttonStyle(.bordered)
-            .controlSize(.small)
-            .disabled(selectedRule == nil)
-            .help(tr("删除选中的应用", "Remove the selected app"))
-            .accessibilityLabel(tr("删除选中的应用", "Remove the selected app"))
-
-            Spacer()
-
-            Text(tr("未列出的应用保持系统默认行为", "Apps not listed keep system defaults"))
-                .font(.caption)
-                .foregroundStyle(.secondary)
+    private var emptyState: some View {
+        // The system-standard empty state, matching first-party apps; the
+        // symbol mirrors the sidebar icon for coherence.
+        ContentUnavailableView {
+            Label(tr("还没有配置任何应用", "No Apps Configured"), systemImage: "list.bullet.rectangle")
+        } description: {
+            Text(tr(
+                "点击侧栏下方的 ＋ 添加应用，即可单独定义它的红绿灯行为；未添加的应用保持系统默认。",
+                "Click the ＋ at the bottom of the sidebar to add an app and remap its"
+                    + " traffic lights; everything else keeps system defaults."
+            ))
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 10)
-        .sheet(isPresented: $showingAppLibrary) {
-            AppLibraryPicker { app in
-                ruleStore.upsert(AppRule(
-                    bundleIdentifier: app.bundleIdentifier,
-                    displayName: app.name
-                ))
-            }
-        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
 
-/// One row of the rule table: app name plus one action picker per traffic
-/// light, each marked with a dot in the button's own color. A disclosure
-/// chevron expands the enhanced click-variant matrix (right click, ⌥/🌐
-/// clicks, long press).
-private struct RuleRowView: View {
+/// One compact row of the rule list: app icon, name and a summary of how
+/// many slots are customized — the Notes-style title + subtitle density.
+private struct RuleListRow: View {
     let rule: AppRule
-    let onUpdate: (AppRule) -> Void
-    @State private var isExpanded = false
 
     /// The app's icon resolved from its bundle identifier on disk; falls
-    /// back to the generic application icon when the app is missing (e.g.
-    /// uninstalled since the rule was created).
+    /// back to the generic application icon when the app is missing.
     private var appIcon: NSImage {
         if let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: rule.bundleIdentifier) {
             return NSWorkspace.shared.icon(forFile: url.path)
@@ -123,154 +132,56 @@ private struct RuleRowView: View {
         return NSWorkspace.shared.icon(for: .applicationBundle)
     }
 
-    /// Every action is available on every button; the default entry keeps
-    /// the system behavior. Menus render grouped window ops first.
-    static let options: [ButtonAction?] = [
-        nil,
-        .closeWindow,
-        .quitApp,
-        .minimize,
-        .hideApp,
-        .maximize,
-        .almostMaximize,
-        .fullscreen,
-        .tileLeft,
-        .tileRight,
-        .tileTop,
-        .tileBottom,
-        .tileTopLeft,
-        .tileTopRight,
-        .tileBottomLeft,
-        .tileBottomRight,
-        .centerWindow,
-        .moveToNextDisplay,
-        ButtonAction.none,
-    ]
+    /// How many of the fifteen slots carry a non-default action.
+    private var customizedCount: Int {
+        ClickVariant.allCases.reduce(0) { count, variant in
+            count + TrafficButton.allCases
+                .filter { rule.action(for: $0, variant: variant) != nil }
+                .count
+        }
+    }
+
+    /// Red/yellow/green left-click mappings as a compact "红=退出 · 绿=最大化"
+    /// line — the actual mappings at a glance, instead of a bare count.
+    /// Falls back to the count when only enhanced variants are customized.
+    private var summaryLine: String {
+        let segments = [
+            mapping(.close, tr("红", "Red")),
+            mapping(.minimize, tr("黄", "Yellow")),
+            mapping(.zoom, tr("绿", "Green")),
+        ].compactMap(\.self)
+
+        if segments.isEmpty {
+            return customizedCount == 0
+                ? tr("系统默认行为", "System defaults")
+                : tr("\(customizedCount) 项自定义", "\(customizedCount) customized")
+        }
+        return segments.joined(separator: tr(" · ", " · "))
+    }
+
+    /// The button's left-click mapping as "红=退出"; `nil` when default.
+    private func mapping(_ button: TrafficButton, _ label: String) -> String? {
+        guard let action = rule.action(for: button, variant: .left) else { return nil }
+        return "\(label)=\(action.localizedLabel)"
+    }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack(spacing: 12) {
-                disclosureButton
-
-                HStack(spacing: 8) {
-                    Image(nsImage: appIcon)
-                        .resizable()
-                        .frame(width: 24, height: 24)
-                    Text(rule.displayName)
-                        .font(.body)
-                        .lineLimit(1)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-
-                ActionPicker(
-                    dotColor: .systemRed,
-                    options: Self.options,
-                    selection: binding(button: .close, variant: .left)
-                )
-                ActionPicker(
-                    dotColor: .systemYellow,
-                    options: Self.options,
-                    selection: binding(button: .minimize, variant: .left)
-                )
-                ActionPicker(
-                    dotColor: .systemGreen,
-                    options: Self.options,
-                    selection: binding(button: .zoom, variant: .left)
-                )
-
-                Toggle("", isOn: enabledBinding)
-                    .labelsHidden()
-                    .toggleStyle(.checkbox)
+        HStack(spacing: 10) {
+            Image(nsImage: appIcon)
+                .resizable()
+                .frame(width: 22, height: 22)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(rule.displayName)
+                    .font(.body.weight(.medium))
+                    .lineLimit(1)
+                Text(summaryLine)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                    .truncationMode(.tail)
             }
-            .padding(.vertical, 2)
-
-            if isExpanded {
-                variantMatrix
-            }
+            Spacer(minLength: 0)
         }
-    }
-
-    /// The enhanced click-variant slots: one row per variant, three compact
-    /// pickers per row (red / yellow / green).
-    private var variantMatrix: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            ForEach(ClickVariant.extraSlots, id: \.rawValue) { variant in
-                HStack(spacing: 12) {
-                    Text(variant.localizedLabel)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .frame(width: 76, alignment: .trailing)
-                    ActionPicker(
-                        dotColor: .systemRed,
-                        options: Self.options,
-                        selection: binding(button: .close, variant: variant),
-                        pickerWidth: 62
-                    )
-                    .controlSize(.small)
-                    ActionPicker(
-                        dotColor: .systemYellow,
-                        options: Self.options,
-                        selection: binding(button: .minimize, variant: variant),
-                        pickerWidth: 62
-                    )
-                    .controlSize(.small)
-                    ActionPicker(
-                        dotColor: .systemGreen,
-                        options: Self.options,
-                        selection: binding(button: .zoom, variant: variant),
-                        pickerWidth: 62
-                    )
-                    .controlSize(.small)
-                }
-            }
-            Text(tr(
-                "留空保持默认；配置长按后，该按钮的普通点击也会由 Blinker 接管。",
-                "Leave empty for defaults; with a long press set, "
-                    + "plain clicks on that button are handled by Blinker too."
-            ))
-            .font(.caption2)
-            .foregroundStyle(.secondary)
-            .padding(.leading, 88)
-        }
-        .padding(.leading, 4)
-    }
-
-    private var disclosureButton: some View {
-        Button {
-            withAnimation(.easeInOut(duration: 0.15)) {
-                isExpanded.toggle()
-            }
-        } label: {
-            Image(systemName: "chevron.right")
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(.secondary)
-                .rotationEffect(.degrees(isExpanded ? 90 : 0))
-        }
-        .buttonStyle(.borderless)
-        .help(tr("更多点击方式", "More click variants"))
-        .accessibilityLabel(tr("更多点击方式", "More click variants"))
-        .accessibilityValue(isExpanded ? tr("已展开", "Expanded") : tr("已折叠", "Collapsed"))
-    }
-
-    private func binding(button: TrafficButton, variant: ClickVariant) -> Binding<ButtonAction?> {
-        Binding(
-            get: { rule.action(for: button, variant: variant) },
-            set: { newValue in
-                var updated = rule
-                updated.setAction(newValue, button: button, variant: variant)
-                onUpdate(updated)
-            }
-        )
-    }
-
-    private var enabledBinding: Binding<Bool> {
-        Binding(
-            get: { rule.isEnabled },
-            set: { newValue in
-                var updated = rule
-                updated.isEnabled = newValue
-                onUpdate(updated)
-            }
-        )
+        .padding(.vertical, 2)
     }
 }

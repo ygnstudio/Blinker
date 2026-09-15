@@ -83,6 +83,20 @@ flowchart LR
 - Apps with fully custom title bars (some Electron apps) expose no standard
   accessibility buttons and cannot be intercepted.
 
+## Accessibility breaks after an upgrade?
+
+Blinker ships ad-hoc signed (no paid developer account). macOS pins the
+Accessibility grant to one specific code signature, so **after every upgrade
+the toggle in System Settings still reads ON while the new build has been
+silently denied** — interception and hover enlargement stop working. Fix:
+
+```bash
+tccutil reset Accessibility com.ygnstudio.Blinker
+```
+
+Then relaunch Blinker and grant Accessibility again when prompted. Applies to
+both Homebrew upgrades and manually replacing the app.
+
 ## Build from source
 
 ```bash

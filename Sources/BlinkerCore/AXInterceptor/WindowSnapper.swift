@@ -131,14 +131,30 @@ public final class WindowSnapper {
 
         switch eventType {
         case .leftMouseDown:
+            // CG (top-left origin) space — matches CGWindowList bounds.
             handleDragStart(at: event.location)
         case .leftMouseDragged:
-            handleDragMove(to: event.location)
+            // AppKit (bottom-left origin) space — matches NSScreen frames
+            // and SnapZones fixtures.
+            handleDragMove(to: Self.appKitPoint(from: event.location))
         case .leftMouseUp:
-            handleDragEnd(at: event.location)
+            handleDragEnd(to: Self.appKitPoint(from: event.location))
         default:
             break
         }
+    }
+
+    /// Converts a CG (top-left origin) tap point into AppKit global
+    /// (bottom-left origin) coordinates — the space `NSScreen` frames and
+    /// `SnapZones` live in. Without this flip every snap zone is mirrored
+    /// vertically (drag-to-top resolved to a bottom tile).
+    static func appKitPoint(from cgPoint: CGPoint, pivotY: CGFloat) -> CGPoint {
+        CGPoint(x: cgPoint.x, y: pivotY - cgPoint.y)
+    }
+
+    /// Instance convenience using the primary screen's top edge as the pivot.
+    static func appKitPoint(from cgPoint: CGPoint) -> CGPoint {
+        appKitPoint(from: cgPoint, pivotY: AXQuery.coordinatePivotY)
     }
 
     /// Arms the drag context when a mouse down could start a window drag.
@@ -167,7 +183,8 @@ public final class WindowSnapper {
         stateLock.unlock()
     }
 
-    private func handleDragMove(to location: CGPoint) {
+    /// - Parameter appKitLocation: Cursor in AppKit global coordinates.
+    private func handleDragMove(to appKitLocation: CGPoint) {
         stateLock.lock()
         guard drag != nil, isEnabled else {
             stateLock.unlock()
@@ -175,9 +192,9 @@ public final class WindowSnapper {
         }
         stateLock.unlock()
 
-        guard let screen = Self.screen(containing: location) else { return }
+        guard let screen = Self.screen(containing: appKitLocation) else { return }
         let visibleFrame = screen.visibleFrame
-        guard let placement = SnapZones.placement(at: location, in: visibleFrame) else {
+        guard let placement = SnapZones.placement(at: appKitLocation, in: visibleFrame) else {
             hidePreview()
             return
         }
@@ -193,7 +210,8 @@ public final class WindowSnapper {
         stateLock.unlock()
     }
 
-    private func handleDragEnd(at location: CGPoint) {
+    /// - Parameter appKitLocation: Cursor in AppKit global coordinates.
+    private func handleDragEnd(to appKitLocation: CGPoint) {
         stateLock.lock()
         let context = drag
         drag = nil
@@ -201,7 +219,7 @@ public final class WindowSnapper {
         hidePreview()
 
         guard let context, let placement = context.previewedPlacement else { return }
-        guard let screen = Self.screen(containing: location) else { return }
+        guard let screen = Self.screen(containing: appKitLocation) else { return }
         let target = WindowGeometry.targetFrame(
             for: placement,
             originalFrame: .zero,
@@ -243,8 +261,8 @@ public final class WindowSnapper {
         previewPanel = nil
     }
 
-    /// Finds the screen containing a global point, falling back to the main
-    /// screen.
+    /// Finds the screen containing an AppKit global point, falling back to
+    /// the main screen.
     private static func screen(containing point: CGPoint) -> NSScreen? {
         NSScreen.screens.first { $0.frame.contains(point) } ?? NSScreen.main
     }

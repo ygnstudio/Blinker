@@ -27,6 +27,10 @@ public final class TrafficLightInterceptor {
     private let actionPerformer: WindowActionPerforming
     private var eventTap: CFMachPort?
     private var runLoopSource: CFRunLoopSource?
+    /// Hosts the event tap's run loop so the callback — including its
+    /// synchronous AX hit test — never runs on (or blocks) the main thread.
+    private var tapThread: Thread?
+    private var tapRunLoop: CFRunLoop?
     private let workQueue = DispatchQueue(label: "com.ygnstudio.blinker.interceptor")
     private let logger = Logger(subsystem: "com.ygnstudio.blinker", category: "interceptor")
 
@@ -46,6 +50,7 @@ public final class TrafficLightInterceptor {
     /// button dead for quick clicks); `longAction` fires on timeout.
     private struct PendingPress {
         let windowHit: AXQuery.WindowHit
+        let button: TrafficButton
         let shortAction: ButtonAction?
         let longAction: ButtonAction
         var didFireLong = false
@@ -98,13 +103,24 @@ public final class TrafficLightInterceptor {
             return false
         }
 
+        // The tap is created here (so failures report synchronously) but
+        // hosted on a dedicated thread: its callback performs synchronous AX
+        // IPC with a 250 ms timeout, which must never stall the main thread.
         let source = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, tap, 0)
-        CFRunLoopAddSource(CFRunLoopGetMain(), source, .commonModes)
-        CGEvent.tapEnable(tap: tap, enable: true)
+        let thread = OverlayTapThread { [weak self] in
+            guard let self, !Thread.current.isCancelled else { return }
+            let runLoop = RunLoop.current.getCFRunLoop()
+            self.tapRunLoop = runLoop
+            CFRunLoopAddSource(runLoop, source, .commonModes)
+            CGEvent.tapEnable(tap: tap, enable: true)
+        }
+        thread.name = "com.ygnstudio.blinker.interceptor-tap"
+        thread.start()
 
+        tapThread = thread
         eventTap = tap
         runLoopSource = source
-        logger.info("event tap installed and enabled")
+        logger.info("event tap installed on dedicated thread")
         return true
     }
 
@@ -112,11 +128,17 @@ public final class TrafficLightInterceptor {
         if let tap = eventTap {
             CGEvent.tapEnable(tap: tap, enable: false)
         }
-        if let source = runLoopSource {
-            CFRunLoopRemoveSource(CFRunLoopGetMain(), source, .commonModes)
+        if let source = runLoopSource, let runLoop = tapRunLoop {
+            CFRunLoopRemoveSource(runLoop, source, .commonModes)
         }
+        if let runLoop = tapRunLoop {
+            CFRunLoopStop(runLoop)
+        }
+        tapThread?.cancel()
         eventTap = nil
         runLoopSource = nil
+        tapRunLoop = nil
+        tapThread = nil
     }
 
     deinit {
@@ -159,7 +181,7 @@ public final class TrafficLightInterceptor {
         guard let pending else { return Unmanaged.passUnretained(event) }
         if !pending.didFireLong, let shortAction = pending.shortAction {
             workQueue.async { [weak self] in
-                self?.perform(shortAction, window: pending.windowHit)
+                self?.perform(shortAction, button: pending.button, window: pending.windowHit)
             }
         }
         return nil
@@ -191,17 +213,108 @@ public final class TrafficLightInterceptor {
             scheduleLongPress(pending)
         } else {
             workQueue.async { [weak self] in
-                self?.perform(decision.action, window: window)
+                self?.perform(decision.action, button: decision.button, window: window)
             }
         }
         return nil
     }
 
-    // MARK: - Decision
+    // MARK: - Long-press scheduling
 
+    private func makePendingPress(
+        decision: Decision,
+        windowHit: AXQuery.WindowHit
+    ) -> PendingPress? {
+        guard let longAction = decision.longPressAction else { return nil }
+        return PendingPress(
+            windowHit: windowHit,
+            button: decision.button,
+            shortAction: decision.action,
+            longAction: longAction
+        )
+    }
+
+    private func scheduleLongPress(_ pending: PendingPress) {
+        pendingLock.lock()
+        pendingPress = pending
+        let workItem = DispatchWorkItem { [weak self] in
+            self?.fireLongPressIfNeeded()
+        }
+        longPressWorkItem = workItem
+        pendingLock.unlock()
+
+        workQueue.asyncAfter(deadline: .now() + Self.longPressThreshold, execute: workItem)
+    }
+
+    /// Runs on the work queue when the long-press deadline elapses.
+    private func fireLongPressIfNeeded() {
+        pendingLock.lock()
+        guard let pending = pendingPress, !pending.didFireLong else {
+            pendingLock.unlock()
+            return
+        }
+        pendingPress?.didFireLong = true
+        let longAction = pending.longAction
+        let windowHit = pending.windowHit
+        pendingLock.unlock()
+
+        logger.info("long press threshold reached; firing long-press action")
+        perform(longAction, button: pending.button, window: windowHit)
+    }
+
+    // MARK: - Action execution
+
+    private func perform(_ action: ButtonAction, button: TrafficButton, window hit: AXQuery.WindowHit) {
+        // Resolve the AX window that was actually clicked. The swallowed
+        // mouse-down never activates the app, so the focused window can be a
+        // different one; matching by frame keeps the action on the right
+        // window when several windows of the same app are open.
+        guard
+            let targetWindow = AXQuery.resolveWindow(
+                processIdentifier: hit.processIdentifier,
+                bounds: hit.bounds
+            )
+        else {
+            logger.warning("no AX window matched the clicked CG window")
+            return
+        }
+        actionPerformer.perform(
+            action,
+            button: button,
+            window: targetWindow,
+            processIdentifier: hit.processIdentifier
+        )
+    }
+
+    // MARK: - AX hit test
+
+    /// Identifies the traffic button under the cursor via an AX hit test.
+    private static func trafficButton(
+        at point: CGPoint,
+        expectedProcessIdentifier processIdentifier: pid_t
+    ) -> TrafficButton? {
+        let systemWide = AXUIElementCreateSystemWide()
+        AXQuery.applyMessagingTimeout(systemWide)
+        var element: AXUIElement?
+        let result = AXUIElementCopyElementAtPosition(systemWide, Float(point.x), Float(point.y), &element)
+        guard result == .success, let element else { return nil }
+
+        var pid: pid_t = 0
+        guard AXUIElementGetPid(element, &pid) == .success, pid == processIdentifier else { return nil }
+
+        guard let subrole = AXQuery.stringAttribute(element, kAXSubroleAttribute) else { return nil }
+        return TrafficButton(axSubrole: subrole)
+    }
+}
+
+// MARK: - Decision
+
+extension TrafficLightInterceptor {
     /// What to do with a click on a traffic button.
-    private struct Decision {
+    fileprivate struct Decision {
         let action: ButtonAction
+        /// The traffic button that was clicked; forwarded to the performer.
+        let button: TrafficButton
         /// When set, the click enters long-press mode instead of executing
         /// `action` right away (plain left click with a long-press mapping).
         let longPressAction: ButtonAction?
@@ -209,7 +322,7 @@ public final class TrafficLightInterceptor {
 
     /// Resolves whether the click should be intercepted and with which action.
     /// Logs every rejection reason; returns `nil` for pass-through.
-    private func resolveDecision(
+    fileprivate func resolveDecision(
         location: CGPoint,
         window: AXQuery.WindowHit,
         isRightClick: Bool,
@@ -272,12 +385,12 @@ public final class TrafficLightInterceptor {
         let actionName = String(describing: action)
         let summary = "\(buttonName)/\(String(describing: variant)) -> \(actionName)"
         logger.info("\(bundleIdentifier, privacy: .public): \(summary, privacy: .public)")
-        return Decision(action: action, longPressAction: longPressAction)
+        return Decision(action: action, button: button, longPressAction: longPressAction)
     }
 
     /// Maps a physical click to its configured variant. Modifier checks come
     /// first (⌥ then 🌐); a plain left click may become a long-press pending.
-    private static func clickVariant(isRightClick: Bool, flags: CGEventFlags) -> ClickVariant {
+    fileprivate static func clickVariant(isRightClick: Bool, flags: CGEventFlags) -> ClickVariant {
         if isRightClick {
             return .right
         }
@@ -307,91 +420,5 @@ public final class TrafficLightInterceptor {
             return nil
         }
         return action
-    }
-
-    // MARK: - Long-press scheduling
-
-    private func makePendingPress(
-        decision: Decision,
-        windowHit: AXQuery.WindowHit
-    ) -> PendingPress? {
-        guard let longAction = decision.longPressAction else { return nil }
-        return PendingPress(
-            windowHit: windowHit,
-            shortAction: decision.action,
-            longAction: longAction
-        )
-    }
-
-    private func scheduleLongPress(_ pending: PendingPress) {
-        pendingLock.lock()
-        pendingPress = pending
-        let workItem = DispatchWorkItem { [weak self] in
-            self?.fireLongPressIfNeeded()
-        }
-        longPressWorkItem = workItem
-        pendingLock.unlock()
-
-        workQueue.asyncAfter(deadline: .now() + Self.longPressThreshold, execute: workItem)
-    }
-
-    /// Runs on the work queue when the long-press deadline elapses.
-    private func fireLongPressIfNeeded() {
-        pendingLock.lock()
-        guard let pending = pendingPress, !pending.didFireLong else {
-            pendingLock.unlock()
-            return
-        }
-        pendingPress?.didFireLong = true
-        let longAction = pending.longAction
-        let windowHit = pending.windowHit
-        pendingLock.unlock()
-
-        logger.info("long press threshold reached; firing long-press action")
-        perform(longAction, window: windowHit)
-    }
-
-    // MARK: - Action execution
-
-    private func perform(_ action: ButtonAction, window hit: AXQuery.WindowHit) {
-        // Resolve the AX window that was actually clicked. The swallowed
-        // mouse-down never activates the app, so the focused window can be a
-        // different one; matching by frame keeps the action on the right
-        // window when several windows of the same app are open.
-        guard
-            let targetWindow = AXQuery.resolveWindow(
-                processIdentifier: hit.processIdentifier,
-                bounds: hit.bounds
-            )
-        else {
-            logger.warning("no AX window matched the clicked CG window")
-            return
-        }
-        actionPerformer.perform(
-            action,
-            button: .close,
-            window: targetWindow,
-            processIdentifier: hit.processIdentifier
-        )
-    }
-
-    // MARK: - AX hit test
-
-    /// Identifies the traffic button under the cursor via an AX hit test.
-    private static func trafficButton(
-        at point: CGPoint,
-        expectedProcessIdentifier processIdentifier: pid_t
-    ) -> TrafficButton? {
-        let systemWide = AXUIElementCreateSystemWide()
-        AXQuery.applyMessagingTimeout(systemWide)
-        var element: AXUIElement?
-        let result = AXUIElementCopyElementAtPosition(systemWide, Float(point.x), Float(point.y), &element)
-        guard result == .success, let element else { return nil }
-
-        var pid: pid_t = 0
-        guard AXUIElementGetPid(element, &pid) == .success, pid == processIdentifier else { return nil }
-
-        guard let subrole = AXQuery.stringAttribute(element, kAXSubroleAttribute) else { return nil }
-        return TrafficButton(axSubrole: subrole)
     }
 }

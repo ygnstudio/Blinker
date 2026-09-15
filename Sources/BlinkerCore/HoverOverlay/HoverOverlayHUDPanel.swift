@@ -172,17 +172,27 @@ final class HoverOverlayHUDPanel: NSPanel {
     /// Corner radius matching the SwiftUI content's tile rounding.
     static let cornerRadius: CGFloat = 14
 
-    /// - Parameter axFrame: The HUD frame in AX (top-left origin) coordinates.
-    init(axFrame: CGRect, content: HoverOverlayHUDContent) {
-        let globalMaxY = NSScreen.screens.map(\.frame.maxY).max() ?? 0
-        let appKitFrame = CGRect(
-            x: axFrame.minX,
-            y: globalMaxY - axFrame.maxY,
-            width: axFrame.width,
-            height: axFrame.height
-        )
+    /// The panel's current frame in AX (top-left origin) coordinates —
+    /// measured from the hosted content, then repositioned via `setAXFrame`.
+    private(set) var axFrame: CGRect
+
+    /// - Parameters:
+    ///   - axOrigin: The HUD's top-left origin in AX coordinates. The size
+    ///     comes from the content's ideal size (`fittingSize`), so adding
+    ///     rows or changing padding can never desync a height formula.
+    ///   - content: The SwiftUI content to host.
+    init(axOrigin: CGPoint, content: HoverOverlayHUDContent) {
         let hostingView = NSHostingView(rootView: content)
-        hostingView.frame = NSRect(origin: .zero, size: appKitFrame.size)
+        let measured = hostingView.fittingSize
+        let size = NSSize(width: max(252, measured.width), height: measured.height)
+        let globalMaxY = AXQuery.coordinatePivotY
+        let appKitFrame = CGRect(
+            x: axOrigin.x,
+            y: globalMaxY - axOrigin.y - size.height,
+            width: size.width,
+            height: size.height
+        )
+        axFrame = CGRect(origin: axOrigin, size: CGSize(width: size.width, height: size.height))
         super.init(
             contentRect: appKitFrame,
             styleMask: [.borderless, .nonactivatingPanel],
@@ -197,7 +207,7 @@ final class HoverOverlayHUDPanel: NSPanel {
         hasShadow = false
         isReleasedWhenClosed = false
 
-        let container = NSView(frame: NSRect(origin: .zero, size: appKitFrame.size))
+        let container = NSView(frame: NSRect(origin: .zero, size: size))
         let radius = Self.cornerRadius
         if #available(macOS 26.0, *) {
             let glass = NSGlassEffectView(frame: container.bounds)
@@ -214,9 +224,18 @@ final class HoverOverlayHUDPanel: NSPanel {
             )
             container.addSubview(backdrop)
         }
+        hostingView.frame = NSRect(origin: .zero, size: size)
         hostingView.autoresizingMask = [.width, .height]
         container.addSubview(hostingView)
         contentView = container
+    }
+
+    /// Repositions the panel to a new frame in AX (top-left origin)
+    /// coordinates, keeping its measured size.
+    func setAXFrame(_ frame: CGRect) {
+        let globalMaxY = AXQuery.coordinatePivotY
+        setFrameOrigin(CGPoint(x: frame.minX, y: globalMaxY - frame.maxY))
+        axFrame = CGRect(origin: frame.origin, size: axFrame.size)
     }
 }
 

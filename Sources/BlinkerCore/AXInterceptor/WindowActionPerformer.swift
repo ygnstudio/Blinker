@@ -10,8 +10,10 @@ import os
 public protocol WindowActionPerforming: AnyObject {
     /// Performs `action` on `window` (owned by `processIdentifier`).
     ///
-    /// `button` is the traffic button the action was triggered from; remaps
-    /// that equal the native behavior press the original button via AX.
+    /// `button` is the traffic button the action was triggered from —
+    /// informational only. Remaps that equal a native behavior press the
+    /// *action's* native button (e.g. red → minimize presses the yellow
+    /// button), so implementations must not assume it equals `button`.
     func perform(
         _ action: ButtonAction,
         button: TrafficButton,
@@ -126,7 +128,7 @@ public final class DefaultWindowActionPerformer: WindowActionPerforming {
     /// The primary screen's top edge in AppKit coordinates; the pivot for
     /// converting between AppKit and AX (top-left origin) frames.
     private static var globalMaxY: CGFloat {
-        NSScreen.screens.first?.frame.maxY ?? 0
+        AXQuery.coordinatePivotY
     }
 
     /// Reads the window frame and converts it from AX to AppKit coordinates.

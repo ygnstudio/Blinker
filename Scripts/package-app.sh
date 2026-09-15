@@ -22,6 +22,20 @@ mkdir -p "$APP_DIR/Contents/MacOS"
 
 cp "$BINARY_PATH" "$APP_DIR/Contents/MacOS/Blinker"
 
+# Stamp the real build SDK into LC_BUILD_VERSION. SwiftPM's link step does
+# not record the SDK version (the field falls back to the deployment
+# target, e.g. sdk 15.0), and macOS 26+ only applies the Liquid Glass
+# design to binaries declaring an SDK of 26 or later. Rewrite it here,
+# before the bundle is signed below.
+BUILD_SDK="$(xcrun --show-sdk-version 2>/dev/null || echo "")"
+if [[ -n "$BUILD_SDK" ]] && xcrun vtool \
+    -set-build-version macos 15.0 "$BUILD_SDK" -replace \
+    -output "$APP_DIR/Contents/MacOS/Blinker" "$APP_DIR/Contents/MacOS/Blinker" 2>/dev/null; then
+  echo "stamped build sdk: $BUILD_SDK"
+else
+  echo "warning: could not stamp the build sdk (vtool); the app may keep the pre-26 appearance" >&2
+fi
+
 # Bundle icon (rendered by Scripts/render-app-icon.py when present).
 ICON_PLIST_ENTRY=""
 if [[ -f "$ICON_PATH" ]]; then

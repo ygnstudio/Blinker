@@ -3,8 +3,10 @@ import SwiftUI
 
 // MARK: - Hover tab
 
-/// Hover overlay configuration: master switch, mode, enlarged size,
-/// anti-mistouch dwell and scope, bound to `HoverOverlaySettingsStore`.
+/// Hover overlay configuration: master switch, mode and size, scope and
+/// extra-button slots — long explanations live in info popovers instead of
+/// multi-line footers, keeping the form dense. Per-row `.disabled` only
+/// (never section-level), so the master toggle never locks itself.
 struct HoverSettingsTab: View {
     @ObservedObject var store: HoverOverlaySettingsStore
     let onApply: (HoverOverlaySettings) -> Void
@@ -20,67 +22,41 @@ struct HoverSettingsTab: View {
                 Toggle(tr("启用悬停放大", "Enable Hover Enlargement"), isOn: isEnabledBinding)
                 modePicker
                     .disabled(!settings.isEnabled)
+                sizeSlider
+                    .disabled(!settings.isEnabled)
+                dwellSlider
+                    .disabled(!settings.isEnabled)
             } header: {
-                Text(tr("模式与尺寸", "Mode & Size"))
-            } footer: {
-                // A single wrapped paragraph: sibling Texts in a footer
-                // render side-by-side as columns on macOS 26, so they are
-                // joined with an explicit line break instead.
-                Text(
-                    tr(
-                        "开启后，鼠标悬停到窗口红绿灯按钮上会临时放大，点击即执行对应动作。",
-                        "When enabled, hovering a window's traffic lights enlarges them;"
-                            + " clicking performs the mapped action."
+                SectionHeader(title: tr("放大", "Enlargement"), info: enlargementInfo)
+            }
+
+            Section {
+                scopePicker
+                    .disabled(!settings.isEnabled)
+            } header: {
+                SectionHeader(
+                    title: tr("作用范围", "Scope"),
+                    info: tr(
+                        "悬停时以一块液态玻璃托盘衬托放大按钮与扩展按钮，随背景自动融合，无需任何额外权限。",
+                        "On hover, a Liquid Glass tray sits behind the enlarged buttons and extra chips,"
+                            + " blending with any background. No extra permission required."
                     )
-                    + "\n" + modeHint
                 )
             }
 
             Section {
-                sizeSlider
-                dwellSlider
+                extraSlotsGrid
+                    .disabled(!settings.isEnabled)
             } header: {
-                Text(tr("放大参数", "Enlargement"))
+                SectionHeader(
+                    title: tr("扩展按钮", "Extra Buttons"),
+                    info: tr(
+                        "选好动作的按钮会在悬停红绿灯时出现在绿灯右侧，点击即执行该动作；留空则不显示。",
+                        "Buttons with a chosen action appear to the right of the green light on hover;"
+                            + " clicking performs the action. Leave empty to hide a slot."
+                    )
+                )
             }
-            .disabled(!settings.isEnabled)
-
-            Section {
-                scopePicker
-            } header: {
-                Text(tr("作用范围", "Scope"))
-            } footer: {
-                Text(tr(
-                    "悬停时以一块液态玻璃托盘衬托放大按钮与扩展按钮，随背景自动融合，无需任何额外权限。",
-                    "On hover, a Liquid Glass tray sits behind the enlarged buttons and extra chips,"
-                        + " blending with any background. No extra permission required."
-                ))
-            }
-            .disabled(!settings.isEnabled)
-
-            Section {
-                ForEach(0 ..< HoverOverlaySettings.extraSlotCount, id: \.self) { index in
-                    LabeledContent {
-                        ActionPicker(
-                            dotColor: .controlAccentColor,
-                            options: Self.extraOptions,
-                            selection: extraBinding(index),
-                            emptyLabel: tr("不显示", "Hidden"),
-                            pickerWidth: 120
-                        )
-                    } label: {
-                        Text(tr("按钮 \(index + 1)", "Button \(index + 1)"))
-                    }
-                }
-            } header: {
-                Text(tr("扩展按钮", "Extra Buttons"))
-            } footer: {
-                Text(tr(
-                    "选好动作的按钮会在悬停红绿灯时出现在绿灯右侧，点击即执行该动作；留空则不显示。",
-                    "Buttons with a chosen action appear to the right of the green light on hover;"
-                        + " clicking performs the action. Leave empty to hide a slot."
-                ))
-            }
-            .disabled(!settings.isEnabled)
         }
         .formStyle(.grouped)
     }
@@ -127,6 +103,31 @@ struct HoverSettingsTab: View {
         }
     }
 
+    /// The four extra-button slots as a 2×2 grid — half the height of the
+    /// old four stacked rows.
+    private var extraSlotsGrid: some View {
+        LazyVGrid(
+            columns: [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)],
+            alignment: .leading,
+            spacing: 6
+        ) {
+            ForEach(0 ..< HoverOverlaySettings.extraSlotCount, id: \.self) { index in
+                LabeledContent {
+                    ActionPicker(
+                        dotColor: .controlAccentColor,
+                        options: Self.extraOptions,
+                        selection: extraBinding(index),
+                        emptyLabel: tr("不显示", "Hidden")
+                    )
+                } label: {
+                    Text(tr("按钮 \(index + 1)", "Button \(index + 1)"))
+                        .font(.callout)
+                }
+            }
+        }
+        .padding(.vertical, 2)
+    }
+
     private var dwellLabel: String {
         if settings.mode == .hotspot {
             return tr("不适用", "N/A")
@@ -136,19 +137,28 @@ struct HoverSettingsTab: View {
             : "\(settings.dwellMilliseconds) ms"
     }
 
-    private var modeHint: String {
+    /// The merged "what hovering does + which mode means what" explanation,
+    /// shown from the section header's info popover.
+    private var enlargementInfo: String {
+        let intro = tr(
+            "开启后，鼠标悬停到窗口红绿灯按钮上会临时放大，点击即执行对应动作。",
+            "When enabled, hovering a window's traffic lights enlarges them;"
+                + " clicking performs the mapped action."
+        )
+        let hint: String
         switch settings.mode {
         case .overlay:
-            tr(
+            hint = tr(
                 "覆盖放大：红绿灯上方绘制液态玻璃质感的放大按钮，带防误触进度环。",
                 "Overlay draws Liquid Glass buttons above the traffic lights with a dwell ring."
             )
         case .hotspot:
-            tr(
+            hint = tr(
                 "纯热区：界面外观完全不变，仅在按钮周围扩大不可见点击区，点击立即响应。",
                 "Hotspot keeps the title bar unchanged and only enlarges the invisible click zones."
             )
         }
+        return intro + "\n" + hint
     }
 
     private var isEnabledBinding: Binding<Bool> {

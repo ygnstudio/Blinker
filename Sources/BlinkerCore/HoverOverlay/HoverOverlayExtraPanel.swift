@@ -46,7 +46,7 @@ final class HoverOverlayExtraPanel: NSPanel {
         action: ButtonAction,
         onActivate: @escaping () -> Void
     ) {
-        let globalMaxY = NSScreen.screens.map(\.frame.maxY).max() ?? 0
+        let globalMaxY = AXQuery.coordinatePivotY
         // Convert the AX (top-left origin) panel frame to AppKit coordinates.
         let appKitFrame = CGRect(
             x: panelFrame.minX,
@@ -120,7 +120,7 @@ final class HoverOverlayExtraButtonView: NSView {
     override func mouseDown(with _: NSEvent) {
         // Same contract as the traffic chips: the interceptor's tap sees the
         // raw event first; arm the gate so it passes the click through.
-        OverlayClickGate.suppressFor(milliseconds: 500)
+        OverlayClickGate.suppressFor(milliseconds: OverlayClickGate.suppressionMilliseconds)
         guard isActivated else { return }
         onActivate()
     }

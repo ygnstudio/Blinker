@@ -11,6 +11,13 @@ public enum OverlayClickGate {
     private static let lock = NSLock()
     private static var suppressedUntil: TimeInterval = 0
 
+    /// How long clicks stay suppressed after an overlay panel consumes one.
+    /// Derived from the long-press threshold so raising the threshold can
+    /// never let a late mouse-up escape the protection window — keep the
+    /// margin if the threshold changes.
+    public static let suppressionMilliseconds: Int =
+        Int(TrafficLightInterceptor.longPressThreshold * 1000) + 200
+
     /// Suppresses intercepted clicks for the given duration in milliseconds.
     public static func suppressFor(milliseconds: Int) {
         lock.withLock {

@@ -115,8 +115,9 @@ struct GeneralTab: View {
 
 // MARK: - About tab
 
-/// The about tab: app identity, version badge and card-style feature /
-/// link grid, following the first-party macOS 26 about pages.
+/// The about tab: app identity, version line and plain feature / link
+/// rows, matching the minimal first-party macOS 26 about pages — no
+/// marketing cards, gradient tiles or capsule badges.
 struct AboutTab: View {
     @ObservedObject private var preferences = AppPreferences.shared
 
@@ -154,51 +155,50 @@ struct AboutTab: View {
                 }
             }
             .frame(width: 72, height: 72)
-            .shadow(color: .black.opacity(0.15), radius: 4, y: 2)
 
             Text("Blinker")
                 .font(.title.bold())
             Text(versionLine)
                 .font(.caption)
                 .foregroundStyle(.secondary)
-                .padding(.horizontal, 10)
-                .padding(.vertical, 3)
-                .background(Capsule().fill(Color.secondary.opacity(0.15)))
         }
     }
 
     private var versionLine: String {
         // Local dev builds carry a git-describe version ("v0.2.2-42-g3a3486c");
-        // the badge shows just the release number, like first-party about
+        // the line shows just the release number, like first-party about
         // pages do.
         let raw = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String
         let release = raw.flatMap { $0.split(separator: "-").first }.map(String.init) ?? raw
         return tr("版本", "Version") + " \(release ?? "dev") · MIT"
     }
 
-    // MARK: Feature cards
+    // MARK: Feature rows
 
+    /// A two-column grid of plain icon + text rows — no card backgrounds,
+    /// no gradient tiles; the tinted SF Symbol carries the color.
     private var featureGrid: some View {
         LazyVGrid(
-            columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)],
-            spacing: 10
+            columns: [GridItem(.flexible(), spacing: 16), GridItem(.flexible(), spacing: 16)],
+            alignment: .leading,
+            spacing: 12
         ) {
-            featureCard(
+            featureRow(
                 icon: "xmark.circle.fill",
                 color: .red,
                 text: tr("红灯重定义：退出应用或关闭窗口", "Red: quit the app or close the window")
             )
-            featureCard(
+            featureRow(
                 icon: "arrow.up.left.and.arrow.down.right",
                 color: .green,
                 text: tr("绿灯重定义：最大化、全屏或贴靠", "Green: maximize, fullscreen, or tiling")
             )
-            featureCard(
+            featureRow(
                 icon: "hand.point.up.left.fill",
                 color: .purple,
                 text: tr("悬停放大与纯热区，防误触进度环", "Hover overlay & hotspot with a dwell ring")
             )
-            featureCard(
+            featureRow(
                 icon: "sparkles",
                 color: .blue,
                 text: tr("macOS 26+ 原生液态玻璃质感", "Native Liquid Glass on macOS 26+")
@@ -206,36 +206,29 @@ struct AboutTab: View {
         }
     }
 
-    private func featureCard(icon: String, color: Color, text: String) -> some View {
+    private func featureRow(icon: String, color: Color, text: String) -> some View {
         HStack(spacing: 10) {
             Image(systemName: icon)
-                .font(.system(size: 12, weight: .semibold))
-                .foregroundStyle(.white)
-                .frame(width: 26, height: 26)
-                .background(
-                    RoundedRectangle(cornerRadius: 7, style: .continuous)
-                        .fill(color.gradient)
-                )
+                .font(.system(size: 14, weight: .medium))
+                .foregroundStyle(color)
+                .frame(width: 24, height: 24)
             Text(text)
-                .font(.caption)
+                .font(.callout)
                 .fixedSize(horizontal: false, vertical: true)
             Spacer(minLength: 0)
         }
-        .padding(10)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(cardBackground)
     }
 
-    // MARK: Link cards
+    // MARK: Link rows
 
     private var linksColumn: some View {
-        VStack(spacing: 10) {
-            linkCard(
+        VStack(spacing: 8) {
+            linkRow(
                 title: "ygnstudio/Blinker · GitHub",
                 systemImage: "link",
                 url: URL(string: "https://github.com/ygnstudio/Blinker")!
             )
-            linkCard(
+            linkRow(
                 title: tr("小红书主页", "Xiaohongshu Profile"),
                 systemImage: "book.closed",
                 url: URL(string: "https://www.xiaohongshu.com/user/profile/66a7e7ae000000001d023641")!
@@ -243,35 +236,25 @@ struct AboutTab: View {
         }
     }
 
-    private func linkCard(title: String, systemImage: String, url: URL) -> some View {
+    /// A plain system-styled link row: tinted symbol, tinted title and the
+    /// standard external-link arrow — no custom card chrome.
+    private func linkRow(title: String, systemImage: String, url: URL) -> some View {
         Link(destination: url) {
             HStack(spacing: 10) {
                 Image(systemName: systemImage)
-                    .font(.system(size: 12, weight: .semibold))
+                    .font(.system(size: 12, weight: .medium))
                     .foregroundStyle(.tint)
-                    .frame(width: 26, height: 26)
-                    .background(
-                        RoundedRectangle(cornerRadius: 7, style: .continuous)
-                            .fill(Color.accentColor.opacity(0.15))
-                    )
+                    .frame(width: 24, height: 24)
                 Text(title)
                     .font(.callout)
+                    .foregroundStyle(.tint)
                 Spacer()
                 Image(systemName: "arrow.up.right")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
-            .padding(10)
-            .background(cardBackground)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-    }
-
-    /// The shared card fill: a whisper of the primary color, legible on
-    /// both light and dark without a hard border.
-    private var cardBackground: some View {
-        RoundedRectangle(cornerRadius: 10, style: .continuous)
-            .fill(Color.primary.opacity(0.04))
     }
 }

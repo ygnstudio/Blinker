@@ -194,7 +194,7 @@ public final class HoverOverlayController {
         }
         let screens = NSScreen.screens
         guard !screens.isEmpty else { return windowBounds }
-        let globalMaxY = screens.map(\.frame.maxY).max() ?? 0
+        let globalMaxY = AXQuery.coordinatePivotY
         let axFrame: (NSScreen) -> CGRect = { screen in
             CGRect(
                 x: screen.frame.minX,

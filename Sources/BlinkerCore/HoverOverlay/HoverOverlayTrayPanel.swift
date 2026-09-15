@@ -38,7 +38,7 @@ final class HoverOverlayTrayPanel: NSPanel {
     ///   - glows: The per-dot glows drawn on the glass, in tray-local
     ///     coordinates.
     init(trayFrame: CGRect, glows: [Glow]) {
-        let globalMaxY = NSScreen.screens.map(\.frame.maxY).max() ?? 0
+        let globalMaxY = AXQuery.coordinatePivotY
         let appKitFrame = CGRect(
             x: trayFrame.minX,
             y: globalMaxY - trayFrame.maxY,
@@ -103,7 +103,7 @@ final class HoverOverlayTrayPanel: NSPanel {
     /// Converts an AX-space rect into tray-local AppKit coordinates for the
     /// given tray frame.
     static func localRect(forAXRect rect: CGRect, inTray trayFrame: CGRect) -> CGRect {
-        let globalMaxY = NSScreen.screens.map(\.frame.maxY).max() ?? 0
+        let globalMaxY = AXQuery.coordinatePivotY
         let appKitRect = CGRect(
             x: rect.minX,
             y: globalMaxY - rect.maxY,

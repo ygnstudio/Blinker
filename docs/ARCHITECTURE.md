@@ -73,13 +73,13 @@ CGEventTap（独立线程）
 
 ### 线程模型
 
-- **CGEventTap 回调**：独立线程，只做便宜过滤，不碰 UI。
-- **AX 查询与动作执行**：工作队列（串行），避免 AX 调用阻塞 tap。
+- **CGEventTap 回调**：专用线程（拦截器与悬停检测各持一个 tap 线程），永不触碰主线程。命中标题栏带的点击会在拦截器回调内同步做一次 AX hit test（250 ms 消息超时上限）——吞事件必须同步决策，这是唯一留在 tap 线程的 AX 调用。
+- **AX 动作执行**：串行工作队列，动作执行不占用 tap 线程。
 - **主线程**：只负责 NSPanel 显示/隐藏与 SwiftUI 设置页。
 
 ### 坐标系
 
-`HoverOverlayGeometry` 统一使用**屏幕全局坐标**（`CGWindowListCopyWindowInfo` 与 NSPanel frame 的交集空间）。AX 返回的窗口/按钮坐标已换算为全局坐标后再参与布局；所有钳制在 `overlayContainerBounds`（窗口 ∩ 屏幕）内完成。
+`HoverOverlayGeometry` 统一使用**屏幕全局坐标**（`CGWindowListCopyWindowInfo` 与 NSPanel frame 的交集空间）。AX 返回的窗口/按钮坐标已换算为全局坐标后再参与布局；所有钳制在 `overlayContainerBounds`（窗口 ∩ 屏幕）内完成。AppKit（底左原点）与 AX/CG（顶左原点）之间的换轴枢轴统一为 `AXQuery.coordinatePivotY`（主屏顶边）——不要用全屏 `max()`，副屏摆在主屏上方时会错位。
 
 ### 关键设计决策
 
@@ -160,13 +160,13 @@ Mouse-move detection (throttled + drag stand-down + latest-wins coalescing)
 
 ### Threading model
 
-- **CGEventTap callback**: dedicated thread; cheap filtering only, never touches UI.
-- **AX queries & action performance**: serial worker queue so AX calls never block the tap.
+- **CGEventTap callbacks**: dedicated threads (the interceptor and hover detection each own one); the main thread is never touched. Clicks inside a title-bar band run one synchronous AX hit test inside the interceptor callback (capped at 250 ms messaging timeout) — swallowing an event requires a synchronous decision, the only AX call that stays on the tap thread.
+- **AX action performance**: serial worker queue; action execution never occupies the tap thread.
 - **Main thread**: NSPanel show/hide and SwiftUI settings only.
 
 ### Coordinate spaces
 
-`HoverOverlayGeometry` works exclusively in **global screen coordinates**. AX-returned window/button rects are converted to global coordinates before layout; all clamping happens inside `overlayContainerBounds` (window ∩ screen).
+`HoverOverlayGeometry` works exclusively in **global screen coordinates**. AX-returned window/button rects are converted to global coordinates before layout; all clamping happens inside `overlayContainerBounds` (window ∩ screen). The y-axis pivot between AppKit (bottom-left origin) and AX/CG (top-left origin) is unified in `AXQuery.coordinatePivotY` (the primary screen's top edge) — never use a max() across all screens, which breaks when a secondary display sits above the primary.
 
 ### Key design decisions
 

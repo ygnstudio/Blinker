@@ -21,8 +21,9 @@ enum SettingsSection: String, CaseIterable, Identifiable {
         }
     }
 
-    /// Monochrome sidebar symbol, matching System Settings' own sidebar —
-    /// first-party settings windows use plain glyphs, not icon tiles.
+    /// The sidebar glyph — a monochrome SF Symbol, the System Settings
+    /// convention; it follows the accent color and appearance
+    /// automatically.
     var symbol: String {
         switch self {
         case .rules: "list.bullet.rectangle"
@@ -34,10 +35,12 @@ enum SettingsSection: String, CaseIterable, Identifiable {
     }
 }
 
-/// The settings window's root: a System Settings–style sidebar plus detail
-/// column, replacing the old toolbar tab strip. Every view observes
+/// The settings window's root, mirroring the system split layout: a flat
+/// single-section sidebar with monochrome glyphs (Liquid Glass on
+/// macOS 26+), the pane title in the toolbar row, and grouped form cards
+/// on the standard window background. Every view observes
 /// `AppPreferences`, so language and appearance changes re-render in
-/// place — the AppKit tab-rebuilding hack is gone with the tabs.
+/// place.
 struct SettingsView: View {
     @ObservedObject var ruleStore: RuleStore
     @ObservedObject var hoverSettingsStore: HoverOverlaySettingsStore
@@ -49,28 +52,118 @@ struct SettingsView: View {
 
     @ObservedObject private var preferences = AppPreferences.shared
     @State private var selection: SettingsSection? = .rules
+    @State private var showingAppLibrary = false
+
+    private var selectedSection: SettingsSection { selection ?? .rules }
+
+    private var currentSectionIndex: Int? {
+        SettingsSection.allCases.firstIndex(of: selectedSection)
+    }
 
     var body: some View {
         NavigationSplitView {
-            List(SettingsSection.allCases, selection: $selection) { section in
-                Label(section.title, systemImage: section.symbol)
-            }
-            .listStyle(.sidebar)
-            .navigationSplitViewColumnWidth(min: 180, ideal: 200, max: 230)
+            sidebarList
+                .safeAreaInset(edge: .bottom, spacing: 0) {
+                    if selectedSection == .rules {
+                        sidebarFooter
+                    }
+                }
+                .navigationSplitViewColumnWidth(min: 180, ideal: 200, max: 230)
         } detail: {
             detailContent
-                .navigationTitle((selection ?? .rules).title)
-                // System Settings carries no centered toolbar title; the
-                // selected sidebar row is the title.
-                .toolbar(removing: .title)
+                .toolbar(removing: .sidebarToggle)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
+        // The pane title lives in the toolbar row, next to the back/forward
+        // capsule — the Tahoe System Settings convention; the detail column
+        // starts directly with content.
+        .navigationTitle(selectedSection.title)
+        .toolbar {
+            ToolbarItem(placement: .navigation) {
+                ControlGroup {
+                    Button(action: navigateBack) {
+                        Label(tr("后退", "Back"), systemImage: "chevron.left")
+                    }
+                    .disabled(currentSectionIndex == 0)
+
+                    Button(action: navigateForward) {
+                        Label(tr("前进", "Forward"), systemImage: "chevron.right")
+                    }
+                    .disabled(currentSectionIndex == SettingsSection.allCases.count - 1)
+                }
+                .controlGroupStyle(.navigation)
+            }
+        }
         .preferredColorScheme(preferences.appearance.resolvedScheme)
+        .sheet(isPresented: $showingAppLibrary) {
+            AppLibraryPicker { app in
+                ruleStore.upsert(AppRule(
+                    bundleIdentifier: app.bundleIdentifier,
+                    displayName: app.name
+                ))
+            }
+        }
+    }
+
+    private func navigateBack() {
+        guard let index = currentSectionIndex, index > 0 else { return }
+        selection = SettingsSection.allCases[index - 1]
+    }
+
+    private func navigateForward() {
+        guard
+            let index = currentSectionIndex,
+            index < SettingsSection.allCases.count - 1
+        else { return }
+        selection = SettingsSection.allCases[index + 1]
+    }
+
+    private var sidebarList: some View {
+        List(selection: $selection) {
+            // One flat section — the System Settings convention; no group
+            // headers.
+            Section {
+                ForEach(SettingsSection.allCases) { section in
+                    sidebarRow(section)
+                }
+            }
+        }
+        // .sidebar renders as the system's Liquid Glass sidebar material
+        // on macOS 26+, the classic translucent material before that.
+        .listStyle(.sidebar)
+    }
+
+    /// The Notes-style bottom of the sidebar: the add-app action lives
+    /// where Notes keeps its "new folder" button. `safeAreaInset` pins it
+    /// inside the sidebar so the material runs continuously behind it.
+    private var sidebarFooter: some View {
+        HStack {
+            Button {
+                showingAppLibrary = true
+            } label: {
+                Image(systemName: "plus.circle.fill")
+                    .font(.title3)
+            }
+            .buttonStyle(.borderless)
+            .help(tr("添加应用", "Add App"))
+            .accessibilityLabel(tr("添加应用", "Add App"))
+            Spacer()
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+    }
+
+    /// One sidebar row: monochrome glyph plus title. The tag drives the
+    /// List's selection highlight.
+    private func sidebarRow(_ section: SettingsSection) -> some View {
+        Label(section.title, systemImage: section.symbol)
+            .padding(.vertical, 5)
+            .tag(section)
     }
 
     @ViewBuilder
     private var detailContent: some View {
-        switch selection ?? .rules {
+        switch selectedSection {
         case .rules:
             RulesTab(ruleStore: ruleStore)
         case .windows:
@@ -88,4 +181,3 @@ struct SettingsView: View {
         }
     }
 }
-

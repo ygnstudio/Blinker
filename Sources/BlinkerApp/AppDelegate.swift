@@ -173,11 +173,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, Observ
                 appDelegate: self
             )
             let window = NSWindow(contentViewController: NSHostingController(rootView: rootView))
-            // The section title comes from the detail column's
-            // `navigationTitle`; the window title stays static for Mission
-            // Control and the Window menu.
+            // System Settings–style chrome: the content fills the window and
+            // the traffic-light buttons float on the sidebar's own material.
+            // The pane name lives inside the detail column, so the window
+            // title stays hidden. The window keeps its standard opaque
+            // background — on macOS 26+ the sidebar's Liquid Glass and the
+            // toolbar materials are provided by the system automatically.
             window.title = "Blinker"
             window.titleVisibility = .hidden
+            // Pre-26: draw no titlebar background so the sidebar material
+            // runs under the traffic lights. 26+: leave it unset so the
+            // system paints its Liquid Glass titlebar/toolbar material.
+            if #unavailable(macOS 26.0) {
+                window.titlebarAppearsTransparent = true
+            }
+            window.styleMask.insert(.fullSizeContentView)
             window.styleMask.insert(.miniaturizable)
             window.setContentSize(NSSize(width: 860, height: 560))
             window.contentMinSize = NSSize(width: 720, height: 460)
@@ -276,6 +286,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, Observ
 
         self.interceptor = interceptor
         hoverOverlay = overlay
+
+        // Drag-to-snap rides on the same permission and performer; honors
+        // the persisted settings toggle from day one.
+        let snapper = WindowSnapper(actionPerformer: performer)
+        if snapper.start() {
+            snapper.setEnabled(AppPreferences.shared.isSnapEnabled)
+            windowSnapper = snapper
+        } else {
+            logger.error("snapper tap failed to start; drag-to-snap unavailable")
+        }
+
         isIntercepting = true
         status = .running
         logger.info("interceptor started; event tap active")

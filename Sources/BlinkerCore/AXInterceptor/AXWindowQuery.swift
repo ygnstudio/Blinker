@@ -1,3 +1,4 @@
+import AppKit
 import ApplicationServices
 import CoreGraphics
 
@@ -5,6 +6,16 @@ import CoreGraphics
 /// the hover overlay. All frame values are in AX (top-left origin) global
 /// coordinates unless stated otherwise.
 enum AXQuery {
+    /// The y-axis pivot between AppKit (bottom-left origin) and AX/CG
+    /// (top-left origin) global coordinates: the primary screen's top edge in
+    /// AppKit space. `NSScreen.screens` always reports the primary screen at
+    /// index 0 with origin (0, 0), so this equals the primary screen's
+    /// height. Never use `max()` across all screens here — a secondary
+    /// display arranged above the primary would shift every converted frame.
+    static var coordinatePivotY: CGFloat {
+        NSScreen.screens.first?.frame.maxY ?? 0
+    }
+
     /// The on-screen window a cursor point belongs to, as seen by `CGWindowList`.
     struct WindowHit {
         let processIdentifier: pid_t
@@ -111,29 +122,32 @@ enum AXQuery {
 
     /// Moves and resizes a window to a frame given in AppKit (bottom-left
     /// origin) coordinates; `globalMaxY` is the primary screen's top edge in
-    /// AppKit coordinates and acts as the axis pivot.
+    /// AppKit coordinates and acts as the axis pivot. Size is applied before
+    /// position: apps that clamp to min/max sizes resize around the window's
+    /// center, which would undo a position set first.
     static func setWindowFrame(_ window: AXUIElement, appKitFrame: CGRect, globalMaxY: CGFloat) {
-        var position = CGPoint(x: appKitFrame.minX, y: globalMaxY - appKitFrame.maxY)
         var size = CGSize(width: appKitFrame.width, height: appKitFrame.height)
-        if let positionValue = AXValueCreate(.cgPoint, &position) {
-            AXUIElementSetAttributeValue(window, kAXPositionAttribute as CFString, positionValue)
-        }
         if let sizeValue = AXValueCreate(.cgSize, &size) {
             AXUIElementSetAttributeValue(window, kAXSizeAttribute as CFString, sizeValue)
+        }
+        var position = CGPoint(x: appKitFrame.minX, y: globalMaxY - appKitFrame.maxY)
+        if let positionValue = AXValueCreate(.cgPoint, &position) {
+            AXUIElementSetAttributeValue(window, kAXPositionAttribute as CFString, positionValue)
         }
     }
 
     /// Moves and resizes a window to a frame already in AX (top-left origin)
     /// coordinates — the space `CGWindowList` reports and `elementFrame`
     /// reads, so workspace capture/restore round-trips without conversion.
+    /// Size first, then position (see the AppKit variant above).
     static func setWindowFrame(axFrame frame: CGRect, of window: AXUIElement) {
-        var position = CGPoint(x: frame.minX, y: frame.minY)
         var size = CGSize(width: frame.width, height: frame.height)
-        if let positionValue = AXValueCreate(.cgPoint, &position) {
-            AXUIElementSetAttributeValue(window, kAXPositionAttribute as CFString, positionValue)
-        }
         if let sizeValue = AXValueCreate(.cgSize, &size) {
             AXUIElementSetAttributeValue(window, kAXSizeAttribute as CFString, sizeValue)
+        }
+        var position = CGPoint(x: frame.minX, y: frame.minY)
+        if let positionValue = AXValueCreate(.cgPoint, &position) {
+            AXUIElementSetAttributeValue(window, kAXPositionAttribute as CFString, positionValue)
         }
     }
 

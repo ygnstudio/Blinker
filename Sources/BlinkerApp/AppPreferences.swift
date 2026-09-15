@@ -56,6 +56,15 @@ final class AppPreferences: ObservableObject {
         didSet { defaults.set(isSnapEnabled, forKey: "isSnapEnabled") }
     }
 
+    /// Whether workspace restore also moves windows back to the desktop
+    /// (Space) they were captured on. Core reads the same defaults key so
+    /// the HUD restore path follows the toggle too. Default off.
+    @Published var isWorkspaceSpaceRestoreEnabled: Bool {
+        didSet {
+            defaults.set(isWorkspaceSpaceRestoreEnabled, forKey: "workspaceSpaceRestoreEnabled")
+        }
+    }
+
     private let defaults = UserDefaults.standard
 
     private init() {
@@ -66,6 +75,7 @@ final class AppPreferences: ObservableObject {
             rawValue: defaults.string(forKey: "appAppearance") ?? ""
         ) ?? .system
         isSnapEnabled = defaults.object(forKey: "isSnapEnabled") as? Bool ?? true
+        isWorkspaceSpaceRestoreEnabled = defaults.bool(forKey: "workspaceSpaceRestoreEnabled")
     }
 
     /// `NSAppearance` for the settings window chrome; `nil` follows the

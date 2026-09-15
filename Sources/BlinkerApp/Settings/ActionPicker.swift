@@ -58,12 +58,17 @@ struct ActionPicker: View {
     /// Menu width; fits four CJK characters ("关闭窗口") without ellipsis.
     /// The compact variant matrix uses a narrower value.
     var pickerWidth: CGFloat = 88
+    /// Whether the leading color dot renders; matrix cells drop it because
+    /// their column headers already carry the light's color.
+    var showsDot: Bool = true
 
     var body: some View {
         HStack(spacing: 5) {
-            Circle()
-                .fill(Color(nsColor: dotColor))
-                .frame(width: 9, height: 9)
+            if showsDot {
+                Circle()
+                    .fill(Color(nsColor: dotColor))
+                    .frame(width: 9, height: 9)
+            }
             Picker(selection: $selection) {
                 ForEach(Array(options.enumerated()), id: \.offset) { _, action in
                     Text(Self.label(for: action, emptyLabel: emptyLabel)).tag(action)

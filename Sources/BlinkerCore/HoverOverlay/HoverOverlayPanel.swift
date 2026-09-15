@@ -25,6 +25,10 @@ final class HoverOverlayPanel: NSPanel {
     ///   - info: The overlayed button's metadata.
     ///   - isHotspot: When `true` the panel draws nothing and activates
     ///     immediately (invisible click zone).
+    ///   - hasLongPressAction: Whether the hovered app maps a long-press
+    ///     slot for this button. Only `true` enters the pending-press state;
+    ///     otherwise a slow click would fire the long-press timer into an
+    ///     unconfigured slot and be swallowed with no action at all.
     ///   - onActivate: Called with the click's variant when the user clicks
     ///     after dwell completion (long presses report through `onLongPress`).
     ///   - onLongPress: Called when a plain left click is held past the
@@ -33,10 +37,11 @@ final class HoverOverlayPanel: NSPanel {
         panelFrame: CGRect,
         info: OverlayButtonInfo,
         isHotspot: Bool = false,
+        hasLongPressAction: @escaping () -> Bool,
         onActivate: @escaping (ClickVariant) -> Void,
         onLongPress: @escaping () -> Void
     ) {
-        let globalMaxY = NSScreen.screens.map(\.frame.maxY).max() ?? 0
+        let globalMaxY = AXQuery.coordinatePivotY
         // Convert the AX (top-left origin) panel frame to AppKit coordinates.
         let appKitFrame = CGRect(
             x: panelFrame.minX,
@@ -48,6 +53,7 @@ final class HoverOverlayPanel: NSPanel {
             frame: NSRect(origin: .zero, size: appKitFrame.size),
             info: info,
             isHotspot: isHotspot,
+            hasLongPressAction: hasLongPressAction,
             onActivate: onActivate,
             onLongPress: onLongPress
         )
@@ -74,13 +80,15 @@ final class HoverOverlayPanel: NSPanel {
 final class HoverOverlayButtonView: NSView {
     private let info: OverlayButtonInfo
     private let isHotspot: Bool
+    private let hasLongPressAction: () -> Bool
     private let onActivate: (ClickVariant) -> Void
     private let onLongPress: () -> Void
     private var dwellProgress: Double = 0
     private var isActivated = false
     /// Pending plain left click waiting to resolve as a quick click (mouse
-    /// up) or a long press (timer). Mirrors the interceptor's behavior for
-    /// buttons whose long-press slot is configured.
+    /// up) or a long press (timer). Only entered when a long-press slot is
+    /// configured; mirrors the interceptor's behavior, which executes
+    /// immediately when it is not.
     private var pressStartedAt: Date?
     private var longPressTimer: Timer?
 
@@ -88,11 +96,13 @@ final class HoverOverlayButtonView: NSView {
         frame: NSRect,
         info: OverlayButtonInfo,
         isHotspot: Bool = false,
+        hasLongPressAction: @escaping () -> Bool = { false },
         onActivate: @escaping (ClickVariant) -> Void,
         onLongPress: @escaping () -> Void
     ) {
         self.info = info
         self.isHotspot = isHotspot
+        self.hasLongPressAction = hasLongPressAction
         self.onActivate = onActivate
         self.onLongPress = onLongPress
         super.init(frame: frame)
@@ -126,7 +136,7 @@ final class HoverOverlayButtonView: NSView {
         // This click is consumed here, but the interceptor's tap sees the raw
         // event first; arm the gate so it passes the click through instead of
         // performing the mapped action a second time.
-        OverlayClickGate.suppressFor(milliseconds: 500)
+        OverlayClickGate.suppressFor(milliseconds: OverlayClickGate.suppressionMilliseconds)
         guard isActivated || isHotspot else { return }
 
         let variant = Self.variant(of: event)
@@ -134,9 +144,14 @@ final class HoverOverlayButtonView: NSView {
             onActivate(variant)
             return
         }
-        // Plain left click: wait for release — a hold past the threshold is
-        // a long press instead. The controller ignores `onLongPress` when no
-        // long-press slot is configured, so scheduling unconditionally is safe.
+        // Plain left click. Only a button with a configured long-press slot
+        // waits for release/timeout; without one, a slow click would fire
+        // the timer into an unconfigured slot and be swallowed silently —
+        // instead it activates immediately, matching the interceptor path.
+        guard hasLongPressAction() else {
+            onActivate(.left)
+            return
+        }
         pressStartedAt = Date()
         let threshold = TrafficLightInterceptor.longPressThreshold
         let timer = Timer(timeInterval: threshold, repeats: false) { [weak self] _ in
@@ -165,7 +180,7 @@ final class HoverOverlayButtonView: NSView {
     }
 
     override func rightMouseDown(with _: NSEvent) {
-        OverlayClickGate.suppressFor(milliseconds: 500)
+        OverlayClickGate.suppressFor(milliseconds: OverlayClickGate.suppressionMilliseconds)
         guard isActivated || isHotspot else { return }
         onActivate(.right)
     }

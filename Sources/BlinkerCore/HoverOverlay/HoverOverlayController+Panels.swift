@@ -39,11 +39,33 @@ extension HoverOverlayController {
     private func rebuildPanels(layout: OverlayLayout, isHotspot: Bool) {
         hidePanels()
         installTrayPanel(layout: layout, isHotspot: isHotspot)
-        panels = zip(layout.buttons, layout.panelFrames).map { info, panelFrame in
+        panels = makeTrafficPanels(layout: layout, isHotspot: isHotspot)
+        panelSignature = layout.buttons.map(\.frame)
+        panelPID = layout.target.hit.processIdentifier
+        panelExtraActions = layout.extraActions
+        extraPanels = makeExtraPanels(layout: layout)
+        panels.forEach { $0.orderFrontRegardless() }
+        extraPanels.forEach { $0.orderFrontRegardless() }
+    }
+
+    /// One enlarged-button panel per traffic light, with a long-press probe
+    /// wired to the rule engine. Value-captured engine so the probe closure
+    /// stays Sendable and never retains the controller.
+    private func makeTrafficPanels(layout: OverlayLayout, isHotspot: Bool) -> [HoverOverlayPanel] {
+        let ruleEngine = self.ruleEngine
+        let bundleIdentifier = layout.target.bundleIdentifier
+        return zip(layout.buttons, layout.panelFrames).map { info, panelFrame in
             HoverOverlayPanel(
                 panelFrame: panelFrame,
                 info: info,
                 isHotspot: isHotspot,
+                hasLongPressAction: {
+                    ruleEngine.action(
+                        forBundleIdentifier: bundleIdentifier,
+                        button: info.button,
+                        variant: .longPressLeft
+                    ) != nil
+                },
                 onActivate: { [weak self] variant in
                     self?.activate(
                         info: info,
@@ -63,10 +85,11 @@ extension HoverOverlayController {
                 }
             )
         }
-        panelSignature = layout.buttons.map(\.frame)
-        panelPID = layout.target.hit.processIdentifier
-        panelExtraActions = layout.extraActions
-        extraPanels = layout.extraActions.enumerated().map { index, action in
+    }
+
+    /// One non-activating chip panel per configured extra action.
+    private func makeExtraPanels(layout: OverlayLayout) -> [HoverOverlayExtraPanel] {
+        layout.extraActions.enumerated().map { index, action in
             HoverOverlayExtraPanel(
                 panelFrame: layout.extraPanelFrames[index],
                 action: action
@@ -82,8 +105,6 @@ extension HoverOverlayController {
                 ))
             }
         }
-        panels.forEach { $0.orderFrontRegardless() }
-        extraPanels.forEach { $0.orderFrontRegardless() }
     }
 
     /// Installs the glass capsule tray behind the whole displayed group
@@ -153,7 +174,7 @@ extension HoverOverlayController {
                     processIdentifier: processIdentifier
                 )
             }
-        case (.none, .left):
+        case (nil, .left):
             workQueue.async { [weak self] in
                 // The click was swallowed by the panel; log a failed press so
                 // the user's dead click is at least diagnosable.
@@ -163,7 +184,7 @@ extension HoverOverlayController {
                     )
                 }
             }
-        case (.none, _):
+        case (nil, _):
             // Unconfigured enhanced variant: nothing to do (the click is
             // already consumed by the enlarged panel), just stand down.
             logger.debug("no action configured for this variant; standing down")
@@ -238,29 +259,13 @@ extension HoverOverlayController {
     ]
 
     /// Opens the management HUD below the enlarged group. All actions act on
-    /// the hovered window (`axWindow`) — never on the frontmost one.
+    /// the hovered window (`axWindow`) — never on the frontmost one. The
+    /// panel measures its own size from the SwiftUI content; this method
+    /// only anchors and clamps the position.
     private func openHUD(_ context: ExtraChipContext) {
         closeHUD()
 
-        let width: CGFloat = 252
         let workspaces = workspacesProvider()
-        let gridRows = CGFloat(Self.hudPlacements.count / 3)
-        // 30 pt per workspace row: caption row + the hover background's
-        // padding (see HoverOverlayHUDContent's workspace list).
-        let height = 18 + 10 + gridRows * 54 + 12 + CGFloat(min(workspaces.count, 6)) * 30 + 24
-
-        // Anchor below the triggering chip, clamped into the window ∩ screen
-        // container so the HUD never drifts off-screen.
-        let container = Self.overlayContainerBounds(
-            forButtonFrames: context.buttonFrames,
-            windowBounds: context.windowBounds
-        ) ?? context.windowBounds
-        var originX = context.anchorFrame.minX
-        originX = min(max(originX, container.minX + 4), container.maxX - width - 4)
-        var originY = context.anchorFrame.maxY + 6
-        originY = min(originY, container.maxY - height - 4)
-
-        let axFrame = CGRect(x: originX, y: originY, width: width, height: height)
         let content = HoverOverlayHUDContent(
             appName: context.appName,
             placements: Self.hudPlacements,
@@ -286,10 +291,26 @@ extension HoverOverlayController {
                 self?.closeHUD()
             }
         )
-        hudPanel = HoverOverlayHUDPanel(axFrame: axFrame, content: content)
-        hudPanel?.orderFrontRegardless()
+        let panel = HoverOverlayHUDPanel(
+            axOrigin: CGPoint(x: context.anchorFrame.minX, y: context.anchorFrame.maxY + 6),
+            content: content
+        )
+
+        // Clamp the measured frame into the window ∩ screen container so the
+        // HUD never drifts off-screen.
+        let container = Self.overlayContainerBounds(
+            forButtonFrames: context.buttonFrames,
+            windowBounds: context.windowBounds
+        ) ?? context.windowBounds
+        var frame = panel.axFrame
+        frame.origin.x = min(max(frame.minX, container.minX + 4), container.maxX - frame.width - 4)
+        frame.origin.y = min(frame.minY, container.maxY - frame.height - 4)
+        panel.setAXFrame(frame)
+
+        panel.orderFrontRegardless()
+        hudPanel = panel
         hudStateLock.withLock {
-            hudKeepAliveFrameAX = axFrame
+            hudKeepAliveFrameAX = frame
             hudAnchorFrameAX = context.anchorFrame
         }
         logger.info("management HUD opened")
