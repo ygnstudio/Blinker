@@ -25,7 +25,7 @@ enum InterceptorStatus {
 /// Owns the long-lived app state: the rule store, the event interceptor and
 /// the hover overlay, plus the window-management helpers (front-window
 /// executor, drag-to-snap snapper, global hotkeys).
-final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
+final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, ObservableObject {
     let ruleStore = RuleStore()
     let hoverOverlaySettingsStore = HoverOverlaySettingsStore()
     /// Named window-layout workspaces for the window-management tab.
@@ -47,6 +47,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
     private var windowSnapper: WindowSnapper?
     private var hoverOverlay: HoverOverlayController?
     private var retryTimer: Timer?
+    private var statusItem: NSStatusItem?
     private var hasPromptedForPermission = false
     private let logger = Logger(subsystem: "com.ygnstudio.blinker", category: "app")
 
@@ -55,7 +56,87 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
         NSApp.setActivationPolicy(.accessory)
         observeWindowVisibility()
         observeAccessibilityTrustChanges()
+        setupStatusItem()
         attemptStartInterceptor()
+    }
+
+    // MARK: - Status item
+
+    /// The menu bar icon is the app's front door: a plain left click opens
+    /// the settings window; the context menu (right click) only carries the
+    /// live status row, settings and quit — interception pause lives in the
+    /// settings' General tab instead of the menu.
+    private func setupStatusItem() {
+        let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
+        item.button?.image = NSImage(
+            systemSymbolName: "circle.circle",
+            accessibilityDescription: "Blinker"
+        )
+        item.button?.image?.isTemplate = true
+        item.button?.action = #selector(statusItemClicked)
+        item.button?.target = self
+        statusItem = item
+    }
+
+    @objc private func statusItemClicked() {
+        let event = NSApp.currentEvent
+        let isSecondaryClick = event?.type == .rightMouseUp
+            || (event?.type == .otherMouseUp && event?.modifierFlags.contains(.control) == true)
+        if isSecondaryClick {
+            showContextMenu()
+        } else {
+            openSettingsFromAppKit()
+        }
+    }
+
+    private func showContextMenu() {
+        guard let statusItem else { return }
+        let menu = NSMenu()
+        menu.delegate = self
+
+        let statusRow = NSMenuItem()
+        let hostingView = NSHostingView(rootView: InterceptorStatusRow(appDelegate: self))
+        hostingView.frame = NSRect(x: 0, y: 0, width: 220, height: 30)
+        statusRow.view = hostingView
+        menu.addItem(statusRow)
+        menu.addItem(.separator())
+
+        let settingsItem = NSMenuItem(
+            title: tr("设置…", "Settings…"),
+            action: #selector(openSettingsClicked),
+            keyEquivalent: ","
+        )
+        settingsItem.target = self
+        menu.addItem(settingsItem)
+        menu.addItem(.separator())
+        menu.addItem(
+            NSMenuItem(
+                title: tr("退出 Blinker", "Quit Blinker"),
+                action: #selector(NSApplication.terminate(_:)),
+                keyEquivalent: "q"
+            )
+        )
+
+        // The menu only opens on right click via the action handler, so it
+        // is attached just for this invocation and detached on close —
+        // otherwise it would also swallow the plain left click.
+        statusItem.menu = menu
+        statusItem.button?.performClick(nil)
+    }
+
+    func menuDidClose(_ menu: NSMenu) {
+        statusItem?.menu = nil
+    }
+
+    @objc private func openSettingsClicked() {
+        openSettingsFromAppKit()
+    }
+
+    /// Opens the SwiftUI `Settings` scene from AppKit. `showSettingsWindow:`
+    /// is the selector the scene installs on macOS 14+.
+    private func openSettingsFromAppKit() {
+        bringToFront()
+        NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
     }
 
     /// Activates the app so newly opened windows (settings) appear on top.

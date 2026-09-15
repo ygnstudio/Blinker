@@ -4,14 +4,18 @@ import SwiftUI
 
 // MARK: - General tab
 
-/// Language and appearance preferences; both default to following the system.
+/// Language, appearance and interception preferences; both lookups default
+/// to following the system.
 struct GeneralTab: View {
+    @ObservedObject var appDelegate: AppDelegate
     @ObservedObject private var preferences = AppPreferences.shared
     @State private var launchAtLogin = false
     @State private var launchAtLoginError = false
 
     var body: some View {
         Form {
+            interceptionSection
+
             Section {
                 Picker(tr("语言", "Language"), selection: $preferences.language) {
                     ForEach(AppLanguage.allCases, id: \.self) { language in
@@ -62,6 +66,35 @@ struct GeneralTab: View {
         .onAppear {
             launchAtLogin = SMAppService.mainApp.status == .enabled
         }
+    }
+
+    /// Pause/resume for click interception — moved out of the menu bar menu
+    /// so the icon click can open settings directly.
+    private var interceptionSection: some View {
+        Section {
+            Toggle(tr("启用红绿灯拦截", "Enable Interception"), isOn: interceptionBinding)
+        } header: {
+            Text(tr("拦截", "Interception"))
+        } footer: {
+            Text(
+                appDelegate.status.localizedLabel
+                    + tr(
+                        "。暂停后红绿灯点击与悬停放大恢复系统默认行为。",
+                        ". While paused, traffic-light clicks and the hover overlay use system defaults."
+                    )
+            )
+        }
+    }
+
+    private var interceptionBinding: Binding<Bool> {
+        Binding(
+            get: { appDelegate.isIntercepting },
+            set: { newValue in
+                if appDelegate.isIntercepting != newValue {
+                    appDelegate.toggleInterception()
+                }
+            }
+        )
     }
 
     private func updateLaunchAtLogin(_ enabled: Bool) {

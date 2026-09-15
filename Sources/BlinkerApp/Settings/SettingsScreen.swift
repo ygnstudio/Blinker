@@ -11,6 +11,7 @@ struct SettingsScreen: View {
     @ObservedObject var hotkeyManager: HotkeyManager
     @ObservedObject var workspaceStore: WorkspaceStore
     let onSnapEnabledChange: (Bool) -> Void
+    @ObservedObject var appDelegate: AppDelegate
     @ObservedObject private var preferences = AppPreferences.shared
 
     var body: some View {
@@ -30,7 +31,7 @@ struct SettingsScreen: View {
                         systemImage: "arrow.up.left.and.arrow.down.right"
                     )
                 }
-            GeneralTab()
+            GeneralTab(appDelegate: appDelegate)
                 .tabItem { Label(tr("通用", "General"), systemImage: "gearshape") }
             AboutTab()
                 .tabItem { Label(tr("关于", "About"), systemImage: "info.circle") }
