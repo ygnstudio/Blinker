@@ -118,12 +118,18 @@ final class HoverOverlayTrayPanel: NSPanel {
         )
     }
 
-    private static func pillMaskImage(size: NSSize, radius: CGFloat) -> NSImage {
+    /// White rounded-rect mask for `NSVisualEffectView.maskImage`, shared by
+    /// every glass-backed overlay panel (tray pill, management HUD).
+    static func roundedMaskImage(size: NSSize, radius: CGFloat) -> NSImage {
         NSImage(size: size, flipped: false) { rect in
             NSColor.white.setFill()
             NSBezierPath(roundedRect: rect, xRadius: radius, yRadius: radius).fill()
             return true
         }
+    }
+
+    private static func pillMaskImage(size: NSSize, radius: CGFloat) -> NSImage {
+        roundedMaskImage(size: size, radius: radius)
     }
 }
 

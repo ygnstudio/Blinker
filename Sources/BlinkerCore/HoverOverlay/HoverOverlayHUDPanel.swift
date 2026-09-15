@@ -99,15 +99,8 @@ struct HoverOverlayHUDContent: View {
         }
         .padding(14)
         .frame(width: 252)
-        .background(
-            RoundedRectangle(cornerRadius: 14)
-                .fill(Color(nsColor: .windowBackgroundColor))
-                .shadow(color: .black.opacity(0.25), radius: 10, y: 3)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 14)
-                .strokeBorder(Color.primary.opacity(0.12), lineWidth: 1)
-        )
+        // No opaque backdrop here: the hosting panel layers this content on
+        // the same glass material as the hover tray (see HoverOverlayHUDPanel).
         .onHover { hovering in
             if !hovering {
                 onClose()
@@ -140,8 +133,13 @@ struct HoverOverlayHUDContent: View {
 
 /// Borderless, non-activating panel hosting the window-management HUD. It
 /// floats below the enlarged traffic-light group and stays alive while the
-/// cursor remains inside it.
+/// cursor remains inside it. The backdrop uses the same glass material as
+/// the hover tray (`NSGlassEffectView` on macOS 26+, a masked
+/// `NSVisualEffectView` before), so the two surfaces read as one family.
 final class HoverOverlayHUDPanel: NSPanel {
+    /// Corner radius matching the SwiftUI content's tile rounding.
+    static let cornerRadius: CGFloat = 14
+
     /// - Parameter axFrame: The HUD frame in AX (top-left origin) coordinates.
     init(axFrame: CGRect, content: HoverOverlayHUDContent) {
         let globalMaxY = NSScreen.screens.map(\.frame.maxY).max() ?? 0
@@ -166,7 +164,27 @@ final class HoverOverlayHUDPanel: NSPanel {
         hidesOnDeactivate = false
         hasShadow = false
         isReleasedWhenClosed = false
-        contentView = hostingView
+
+        let container = NSView(frame: NSRect(origin: .zero, size: appKitFrame.size))
+        let radius = Self.cornerRadius
+        if #available(macOS 26.0, *) {
+            let glass = NSGlassEffectView(frame: container.bounds)
+            glass.cornerRadius = radius
+            container.addSubview(glass)
+        } else {
+            let backdrop = NSVisualEffectView(frame: container.bounds)
+            backdrop.material = .underWindowBackground
+            backdrop.blendingMode = .behindWindow
+            backdrop.state = .active
+            backdrop.maskImage = HoverOverlayTrayPanel.roundedMaskImage(
+                size: container.bounds.size,
+                radius: radius
+            )
+            container.addSubview(backdrop)
+        }
+        hostingView.autoresizingMask = [.width, .height]
+        container.addSubview(hostingView)
+        contentView = container
     }
 }
 
