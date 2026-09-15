@@ -163,8 +163,9 @@ struct RuleInspectorView: View {
         )
         // The picker's visible label is the action name; the row/column
         // semantics live in the matrix headers, which VoiceOver does not
-        // associate — so name each popup explicitly.
-        .accessibilityLabel("\(variant.localizedLabel)，\(lightName(button))")
+        // associate — so name each popup explicitly. The separator is
+        // localized so English VoiceOver does not pause on a fullwidth comma.
+        .accessibilityLabel("\(variant.localizedLabel)\(tr("，", ", "))\(lightName(button))")
     }
 
     // MARK: - Bindings

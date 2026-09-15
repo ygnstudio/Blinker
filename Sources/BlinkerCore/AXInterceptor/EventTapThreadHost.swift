@@ -14,6 +14,13 @@ import os
 ///   thread to exit. After `stop()` returns no callback can be running or
 ///   scheduled, so the tap's owner — whose raw pointer is the `userInfo` —
 ///   is safe to deallocate.
+///
+/// - Note: `start()` and `stop()` must be driven from a single thread.
+///   They are not safe to call concurrently: the initial `tap != nil`
+///   check in `start()` happens before `CGEvent.tapCreate`, so a `stop()`
+///   racing inside that window could return before the tap is attached,
+///   leaving the new tap running. All call sites (AppDelegate switches,
+///   `deinit`-triggered teardown) run on the main thread — keep it that way.
 final class EventTapThreadHost {
     private let lock = NSLock()
     private var tap: CFMachPort?

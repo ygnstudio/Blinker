@@ -409,7 +409,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, Observ
     private func schedulePermissionRetry() {
         guard retryTimer == nil else { return }
         retryTimer = Timer.scheduledTimer(withTimeInterval: 2, repeats: true) { [weak self] _ in
-            guard let self, interceptor == nil else { return }
+            guard let self else { return }
+            if interceptor != nil {
+                // Defensive: the interceptor is running, so whatever
+                // started it should already have cancelled this timer.
+                // Stop polling instead of spinning idly until relaunch.
+                retryTimer?.invalidate()
+                retryTimer = nil
+                return
+            }
             retryTimer?.invalidate()
             retryTimer = nil
             attemptStartInterceptor()
