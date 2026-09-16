@@ -50,6 +50,17 @@ final class AppPreferences: ObservableObject {
 
     private let defaults = UserDefaults.standard
 
+    /// `NSAppearance` for the hand-built settings window's chrome; `nil`
+    /// follows the system. Applying it on the NSWindow keeps the titlebar
+    /// in sync with the content's `preferredColorScheme` instantly.
+    var nsAppearance: NSAppearance? {
+        switch appearance {
+        case .system: nil
+        case .light: NSAppearance(named: .aqua)
+        case .dark: NSAppearance(named: .darkAqua)
+        }
+    }
+
     private init() {
         appearance = AppAppearance(
             rawValue: defaults.string(forKey: "appAppearance") ?? ""

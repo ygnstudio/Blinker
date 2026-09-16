@@ -39,24 +39,19 @@ struct RulesTab: View {
     // MARK: - List-detail split
 
     private var listDetail: some View {
-        // The rules tab is its own two-column split nested inside the
-        // settings detail. The system provides the column divider, the
-        // glass/safe-area avoidance and live column dragging — replacing
-        // the old hand-tuned HStack and its two padding compensations
-        // (leading 24 against the sidebar's glass spill, top 12 against
-        // the inset list's missing top inset). The list column keeps the
-        // 200/220/260 width semantics it had as a fixed frame.
-        NavigationSplitView(columnVisibility: .constant(.all)) {
+        HStack(spacing: 0) {
             ruleList
-                // The nested split would otherwise add a second sidebar
-                // toggle next to the outer one — and with the visibility
-                // pinned below, the toggle would be dead anyway.
-                .toolbar(removing: .sidebarToggle)
-                .navigationSplitViewColumnWidth(min: 200, ideal: 220, max: 260)
-        } detail: {
-            // No divider of our own: the split view draws the column
-            // boundary, and the grouped-form cards read as a second
-            // surface.
+                .frame(minWidth: 200, idealWidth: 220, maxWidth: 260, maxHeight: .infinity)
+                // The Liquid Glass sidebar's floating shadow spills a wide
+                // band into the detail column — 12pt only cleared the
+                // header text; the selected-row highlight still ran under
+                // it. 24pt clears the whole list. The top inset keeps the
+                // "已启用" section header below the toolbar edge (the inset
+                // list has no top content inset of its own, unlike Form).
+                .padding(.leading, 24)
+                .padding(.top, 12)
+            // No divider between the columns: the inset list's own edge and
+            // the grouped-form cards already read as two distinct surfaces.
             if let rule = selectedRule {
                 RuleInspectorView(rule: rule, onUpdate: { ruleStore.upsert($0) })
             } else {
