@@ -80,40 +80,173 @@ struct ActionPicker: View {
                     .fill(Color(nsColor: dotColor))
                     .frame(width: 9, height: 9)
             }
-            Picker(selection: $selection) {
-                if let groups {
-                    ForEach(Array(groups.enumerated()), id: \.offset) { _, group in
-                        Section(group.label ?? "") {
-                            optionButtons(group.options)
-                        }
-                    }
-                } else {
-                    optionButtons(options)
-                }
-            } label: {
-                EmptyView()
-            }
-            .labelsHidden()
-            // Both width bounds (a29f29c's lone minWidth half-worked): the
-            // popup button hugs its content unless it is *allowed* to
-            // expand, so a 104pt slot alone left each bezel at its label's
-            // width — "关闭窗口" wider than "默认", chevrons misaligned.
-            // minWidth keeps every Grid column's ideal width equal (all
-            // three matrix columns measure ≥104); maxWidth lets the bezel
-            // stretch to fill the slot it lands in, so every button renders
-            // the same width and the chevrons line up per column.
+            ActionPopupButton(
+                options: options,
+                emptyLabel: emptyLabel,
+                groups: groups,
+                selection: $selection
+            )
+            // Both width bounds: minWidth keeps every Grid column's ideal
+            // width equal (all three matrix columns measure ≥104), maxWidth
+            // lets the slot — and with it the popup bezel, which always
+            // fills its proposed width — stretch with the layout, so every
+            // button renders the same width and the chevrons line up.
             .frame(minWidth: pickerWidth, maxWidth: .infinity, alignment: .leading)
-        }
-    }
-
-    private func optionButtons(_ options: [ButtonAction?]) -> some View {
-        ForEach(Array(options.enumerated()), id: \.offset) { _, action in
-            Text(Self.label(for: action, emptyLabel: emptyLabel)).tag(action)
         }
     }
 
     private static func label(for action: ButtonAction?, emptyLabel: String) -> String {
         guard let action else { return emptyLabel }
         return action.localizedLabel
+    }
+}
+
+// MARK: - AppKit popup backing
+
+/// The real `NSPopUpButton` behind the action picker.
+///
+/// SwiftUI's menu-style `Picker` bezel hugs its label under the current
+/// macOS design language — a fixed frame (a29f29c's predecessor), a
+/// minWidth slot (a29f29c) and a maxWidth-allowing slot (43aa27e) all left
+/// the bezel at its content width, so "默认" rendered narrower than
+/// "关闭窗口" and the matrix chevrons misaligned. Hosting the AppKit
+/// control directly fixes it deterministically: it always fills the width
+/// SwiftUI proposes, and it brings the native checkmark and menu sections
+/// for free.
+private struct ActionPopupButton: NSViewRepresentable {
+    let options: [ButtonAction?]
+    var emptyLabel: String
+    var groups: [ActionOptionGroup]?
+    @Binding var selection: ButtonAction?
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(self)
+    }
+
+    func makeNSView(context: Context) -> NSPopUpButton {
+        let popup = NSPopUpButton(frame: .zero, pullsDown: false)
+        // The hosting container is sized by `sizeThatFits` below; the
+        // autoresizing mask keeps the bezel filling it on every resize.
+        popup.autoresizingMask = [.width, .height]
+        popup.target = context.coordinator
+        popup.action = #selector(Coordinator.selectionChanged(_:))
+        context.coordinator.rebuildMenu(in: popup)
+        context.coordinator.syncSelection(in: popup)
+        return popup
+    }
+
+    func updateNSView(_ popup: NSPopUpButton, context: Context) {
+        context.coordinator.parent = self
+        context.coordinator.rebuildMenu(in: popup)
+        context.coordinator.syncSelection(in: popup)
+    }
+
+    /// Fill whatever width the layout proposes; the fitting size is only
+    /// the fallback for unsized measurement (Grid's column pass), where the
+    /// outer `minWidth: pickerWidth` frame enforces the 104pt floor.
+    func sizeThatFits(_ proposal: ProposedViewSize, nsView: NSPopUpButton, context: Context) -> CGSize? {
+        CGSize(
+            width: proposal.width ?? nsView.fittingSize.width,
+            height: proposal.height ?? nsView.fittingSize.height
+        )
+    }
+
+    // MARK: Coordinator
+
+    /// Bridges menu selections into the SwiftUI binding and keeps the
+    /// popup's items and checkmark in sync with the binding.
+    @MainActor
+    final class Coordinator: NSObject {
+        var parent: ActionPopupButton
+        /// Fingerprint of the menu content the popup was last built from;
+        /// rebuilds are skipped while it is unchanged so an open menu is
+        /// never torn down mid-tracking.
+        private var menuFingerprint = ""
+
+        init(_ parent: ActionPopupButton) {
+            self.parent = parent
+        }
+
+        @objc func selectionChanged(_ sender: NSPopUpButton) {
+            guard let rawValue = sender.selectedItem?.representedObject as? String else { return }
+            let action = rawValue.isEmpty ? nil : ButtonAction(rawValue: rawValue)
+            // hop through the main queue: the menu action fires while
+            // AppKit is still inside menu tracking, and a synchronous
+            // binding write would reenter `updateNSView` mid-run.
+            DispatchQueue.main.async { [weak self] in
+                self?.parent.selection = action
+            }
+        }
+
+        func rebuildMenu(in popup: NSPopUpButton) {
+            let fingerprint = Self.menuFingerprint(
+                options: parent.options,
+                emptyLabel: parent.emptyLabel,
+                groups: parent.groups
+            )
+            guard fingerprint != menuFingerprint else { return }
+            menuFingerprint = fingerprint
+
+            popup.removeAllItems()
+            if let groups = parent.groups {
+                for group in groups {
+                    if let label = group.label {
+                        popup.menu?.addItem(.sectionHeader(title: label))
+                    }
+                    for action in group.options {
+                        popup.menu?.addItem(Self.menuItem(for: action, emptyLabel: parent.emptyLabel))
+                    }
+                }
+            } else {
+                for action in parent.options {
+                    popup.menu?.addItem(Self.menuItem(for: action, emptyLabel: parent.emptyLabel))
+                }
+            }
+        }
+
+        func syncSelection(in popup: NSPopUpButton) {
+            guard Self.action(of: popup.selectedItem) != parent.selection else { return }
+            let rawValue = parent.selection?.rawValue ?? ""
+            if let index = popup.itemArray.firstIndex(where: {
+                ($0.representedObject as? String) == rawValue
+            }) {
+                popup.selectItem(at: index)
+            }
+        }
+
+        private static func menuItem(for action: ButtonAction?, emptyLabel: String) -> NSMenuItem {
+            // The popup's own target/action (set in `makeNSView`) handles
+            // activation, so the item itself carries none; the selection
+            // round-trips through the represented raw value, with "" for
+            // the nil (system default) entry.
+            let item = NSMenuItem(
+                title: action?.localizedLabel ?? emptyLabel,
+                action: nil,
+                keyEquivalent: ""
+            )
+            item.representedObject = action?.rawValue ?? ""
+            return item
+        }
+
+        private static func action(of item: NSMenuItem?) -> ButtonAction? {
+            guard let rawValue = item?.representedObject as? String, !rawValue.isEmpty else { return nil }
+            return ButtonAction(rawValue: rawValue)
+        }
+
+        private static func menuFingerprint(
+            options: [ButtonAction?],
+            emptyLabel: String,
+            groups: [ActionOptionGroup]?
+        ) -> String {
+            let optionKey = { (actions: [ButtonAction?]) in
+                actions.map { $0?.rawValue ?? "-" }.joined(separator: ",")
+            }
+            let contentKey = groups.map { groups in
+                groups
+                    .map { "\($0.label ?? "")|\(optionKey($0.options))" }
+                    .joined(separator: ";")
+            } ?? optionKey(options)
+            return contentKey + "#" + emptyLabel
+        }
     }
 }
