@@ -65,10 +65,10 @@ struct RulesTab: View {
             // Notes-style grouping: headers separate live groups so disabled
             // rules stay discoverable instead of sinking to the bottom.
             //
-            // macOS quirk (a29f29c proved it the hard way): on the inset
-            // list, `.listRowSeparator(.hidden)` is ignored on Section
-            // *header* rows — the table view draws their separator no matter
-            // what — so the header closure left a lone line under "已启用".
+            // macOS quirk (learned the hard way): on the inset list,
+            // `.listRowSeparator(.hidden)` is ignored on Section *header*
+            // rows — the table view draws their separator no matter what —
+            // so the header closure left a lone line under "已启用".
             // The group titles are therefore plain rows inside the section:
             // a regular row's separator hides fine, and an untagged row
             // never joins the selection set, so grouping semantics, the

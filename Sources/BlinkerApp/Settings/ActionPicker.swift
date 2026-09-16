@@ -62,9 +62,9 @@ struct ActionPicker: View {
     /// Label for the `nil` option; traffic rows use "默认", extra-button
     /// rows use "不显示".
     var emptyLabel: String = tr("默认", "Default")
-    /// Menu width; fits four CJK characters ("关闭窗口") without ellipsis.
-    /// Uniform across the rules matrix and the hover extra-button slots
-    /// (previously the latter used a narrower 88 that truncated
+    /// Minimum menu width; fits four CJK characters ("关闭窗口") without
+    /// ellipsis. Uniform across the rules matrix and the hover extra-button
+    /// slots (previously the latter used a narrower 88 that truncated
     /// "下一显示器").
     var pickerWidth: CGFloat = 104
     /// Whether the leading color dot renders; matrix cells drop it because
@@ -94,11 +94,6 @@ struct ActionPicker: View {
             .frame(minWidth: pickerWidth, maxWidth: .infinity, alignment: .leading)
         }
     }
-
-    private static func label(for action: ButtonAction?, emptyLabel: String) -> String {
-        guard let action else { return emptyLabel }
-        return action.localizedLabel
-    }
 }
 
 // MARK: - AppKit popup backing
@@ -106,13 +101,12 @@ struct ActionPicker: View {
 /// The real `NSPopUpButton` behind the action picker.
 ///
 /// SwiftUI's menu-style `Picker` bezel hugs its label under the current
-/// macOS design language — a fixed frame (a29f29c's predecessor), a
-/// minWidth slot (a29f29c) and a maxWidth-allowing slot (43aa27e) all left
-/// the bezel at its content width, so "默认" rendered narrower than
-/// "关闭窗口" and the matrix chevrons misaligned. Hosting the AppKit
-/// control directly fixes it deterministically: it always fills the width
-/// SwiftUI proposes, and it brings the native checkmark and menu sections
-/// for free.
+/// macOS design language — fixed frames, minWidth slots and
+/// maxWidth-allowing slots all leave the bezel at its content width, so
+/// "默认" rendered narrower than "关闭窗口" and the matrix chevrons
+/// misaligned. Hosting the AppKit control directly fixes it
+/// deterministically: it always fills the width SwiftUI proposes, and it
+/// brings the native checkmark and menu sections for free.
 private struct ActionPopupButton: NSViewRepresentable {
     let options: [ButtonAction?]
     var emptyLabel: String
