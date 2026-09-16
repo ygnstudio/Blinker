@@ -16,7 +16,6 @@ struct HotkeyRowView: View {
     let conflictWarning: String?
     let onRecord: () -> Void
     let onClear: () -> Void
-    @ObservedObject private var preferences = AppPreferences.shared
 
     var body: some View {
         HStack {
@@ -34,8 +33,8 @@ struct HotkeyRowView: View {
                 } label: {
                     Text(
                         isRecording
-                            ? tr("按下快捷键…", "Press keys…")
-                            : combo?.displayLabel ?? tr("未设置", "Not Set")
+                            ? String(localized: "按下快捷键…")
+                            : combo?.displayLabel ?? String(localized: "未设置")
                     )
                     // Wide enough for the recording prompt ("按下快捷键…")
                     // and four-modifier combos ("⌃⌥⇧⌘K"), so no row ellipsizes
@@ -48,8 +47,8 @@ struct HotkeyRowView: View {
                     Image(systemName: "minus.circle")
                 }
                 .buttonStyle(.borderless)
-                .help(tr("清除快捷键", "Clear hotkey"))
-                .accessibilityLabel(tr("清除快捷键", "Clear hotkey"))
+                .help("清除快捷键")
+                .accessibilityLabel("清除快捷键")
                 .disabled(combo == nil)
                 .opacity(combo == nil ? 0 : 1)
             }
@@ -57,7 +56,7 @@ struct HotkeyRowView: View {
         if isRecording {
             // Recorder feedback: the reject reason when the last press was
             // unusable, otherwise the visible cancel affordance.
-            Text(recordingHint ?? tr("按 Esc 取消录制", "Esc to cancel"))
+            Text(recordingHint ?? String(localized: "按 Esc 取消录制"))
                 .font(.caption2)
                 .foregroundStyle(.secondary)
         }

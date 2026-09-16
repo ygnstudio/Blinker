@@ -5,7 +5,7 @@ import SwiftUI
 
 // MARK: - General tab
 
-/// Language, appearance and interception preferences; both lookups default
+/// Appearance and interception preferences; both lookups default
 /// to following the system.
 struct GeneralTab: View {
     @ObservedObject var appDelegate: AppDelegate
@@ -21,32 +21,21 @@ struct GeneralTab: View {
             interceptionSection
 
             Section {
-                Picker(tr("语言", "Language"), selection: $preferences.language) {
-                    ForEach(AppLanguage.allCases, id: \.self) { language in
-                        Text(language.menuLabel).tag(language)
-                    }
-                }
-                Picker(tr("外观", "Appearance"), selection: $preferences.appearance) {
+                Picker("外观", selection: $preferences.appearance) {
                     ForEach(AppAppearance.allCases, id: \.self) { appearance in
                         Text(appearance.menuLabel).tag(appearance)
                     }
                 }
             } header: {
                 SectionHeader(
-                    title: tr("语言与外观", "Language & Appearance"),
-                    info: tr(
-                        "「跟随系统」读取系统语言与深浅色设置；更改立即生效。"
-                            + "外观仅作用于设置窗口；悬停放大的液态玻璃始终跟随系统深浅色。",
-                        "Follow System reads the system language and appearance; changes apply"
-                            + " immediately. The appearance setting styles the settings window only —"
-                            + " the hover overlay's glass always follows the system appearance."
-                    )
+                    title: String(localized: "外观"),
+                    info: String(localized: "「跟随系统」读取系统深浅色设置；更改立即生效。外观仅作用于设置窗口；悬停放大的液态玻璃始终跟随系统深浅色。")
                 )
             }
 
             Section {
                 Toggle(
-                    tr("登录时启动 Blinker", "Launch Blinker at Login"),
+                    "登录时启动 Blinker",
                     isOn: $launchAtLogin
                 )
                 .onChange(of: launchAtLogin) { _, newValue in
@@ -57,20 +46,13 @@ struct GeneralTab: View {
                 }
             } header: {
                 SectionHeader(
-                    title: tr("启动", "Startup"),
-                    info: tr(
-                        "开启后 Blinker 随系统登录自动启动，常驻菜单栏。",
-                        "Blinker starts automatically when you log in and lives in the menu bar."
-                    )
+                    title: String(localized: "启动"),
+                    info: String(localized: "开启后 Blinker 随系统登录自动启动，常驻菜单栏。")
                 )
             } footer: {
                 if launchAtLoginError {
-                    Text(tr(
-                        "注册登录自启失败，请重试或检查系统设置 → 通用 → 登录项。",
-                        "Could not update the login item; retry or check System Settings"
-                            + " → General → Login Items."
-                    ))
-                    .foregroundStyle(.red)
+                    Text("注册登录自启失败，请重试或检查系统设置 → 通用 → 登录项。")
+                        .foregroundStyle(.red)
                 }
             }
         }
@@ -90,22 +72,18 @@ struct GeneralTab: View {
             Toggle(isOn: interceptionBinding) {
                 // The feature's master switch carries a leading glyph, the
                 // same weight the sidebar gives each section.
-                Label(tr("开启红绿灯拦截", "Enable Interception"), systemImage: "hand.raised.fill")
+                Label("开启红绿灯拦截", systemImage: "hand.raised.fill")
             }
         } header: {
             SectionHeader(
-                title: tr("拦截", "Interception"),
-                info: tr(
-                    "开启后，红绿灯的点击与悬停放大由 Blinker 接管；关闭后恢复系统默认行为。",
-                    "While on, Blinker handles traffic-light clicks and the hover overlay;"
-                        + " turning it off restores system defaults."
-                )
+                title: String(localized: "拦截"),
+                info: String(localized: "开启后，红绿灯的点击与悬停放大由 Blinker 接管；关闭后恢复系统默认行为。")
             )
         } footer: {
             Text(
-                tr("当前状态：", "Current status: ")
+                String(localized: "当前状态：")
                     + appDelegate.status.localizedLabel
-                    + tr("。", ".")
+                    + String(localized: "。")
             )
         }
     }
@@ -142,19 +120,13 @@ struct GeneralTab: View {
 /// rows, matching the minimal first-party macOS 26 about pages — no
 /// marketing cards, gradient tiles or capsule badges.
 struct AboutTab: View {
-    @ObservedObject private var preferences = AppPreferences.shared
-
     var body: some View {
         ScrollView {
             VStack(spacing: 20) {
                 identityHeader
                 featureGrid
                 linksColumn
-                Text(tr(
-                    "使用需在系统设置中授予辅助功能权限；红绿灯行为由你为每个应用单独定义。",
-                    "Grant Accessibility permission to get started;"
-                        + " each app's buttons are remapped individually."
-                ))
+                Text("使用需在系统设置中授予辅助功能权限；红绿灯行为由你为每个应用单独定义。")
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
@@ -199,7 +171,7 @@ struct AboutTab: View {
         }
         let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String
         let buildSuffix = build.map { " (\($0))" } ?? ""
-        return tr("版本", "Version") + " \(release)\(buildSuffix) · MIT"
+        return String(localized: "版本") + " \(release)\(buildSuffix) · MIT"
     }
 
     // MARK: Feature rows
@@ -215,22 +187,22 @@ struct AboutTab: View {
             featureRow(
                 icon: "xmark.circle.fill",
                 color: .red,
-                text: tr("红灯重定义：退出应用或关闭窗口", "Red: quit the app or close the window")
+                text: String(localized: "红灯重定义：退出应用或关闭窗口")
             )
             featureRow(
                 icon: "arrow.up.left.and.arrow.down.right",
                 color: .green,
-                text: tr("绿灯重定义：最大化、全屏或贴靠", "Green: maximize, fullscreen, or tiling")
+                text: String(localized: "绿灯重定义：最大化、全屏或贴靠")
             )
             featureRow(
                 icon: "hand.point.up.left.fill",
                 color: .purple,
-                text: tr("悬停放大与纯热区，防误触进度环", "Hover overlay & hotspot with a dwell ring")
+                text: String(localized: "悬停放大与纯热区，防误触进度环")
             )
             featureRow(
                 icon: "sparkles",
                 color: .blue,
-                text: tr("macOS 26+ 原生液态玻璃质感", "Native Liquid Glass on macOS 26+")
+                text: String(localized: "macOS 26+ 原生液态玻璃质感")
             )
         }
     }
@@ -271,7 +243,7 @@ struct AboutTab: View {
                 url: Self.githubURL
             )
             linkRow(
-                title: tr("小红书主页", "Xiaohongshu Profile"),
+                title: String(localized: "小红书主页"),
                 systemImage: "book.closed",
                 url: Self.xiaohongshuURL
             )

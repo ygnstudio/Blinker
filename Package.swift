@@ -13,12 +13,14 @@ let package = Package(
     targets: [
         .target(
             name: "BlinkerCore",
-            path: "Sources/BlinkerCore"
+            path: "Sources/BlinkerCore",
+            resources: [.process("Resources")]
         ),
         .executableTarget(
             name: "BlinkerApp",
             dependencies: ["BlinkerCore"],
-            path: "Sources/BlinkerApp"
+            path: "Sources/BlinkerApp",
+            resources: [.process("Resources")]
         ),
         .testTarget(
             name: "BlinkerCoreTests",

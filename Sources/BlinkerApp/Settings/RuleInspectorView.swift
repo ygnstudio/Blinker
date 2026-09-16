@@ -40,20 +40,20 @@ struct RuleInspectorView: View {
     static let optionGroups: [ActionOptionGroup] = [
         ActionOptionGroup(label: nil, options: [nil]),
         ActionOptionGroup(
-            label: tr("窗口", "Window"),
+            label: String(localized: "窗口"),
             options: [
                 .closeWindow, .minimize, .maximize, .almostMaximize,
                 .fullscreen, .centerWindow, .moveToNextDisplay,
             ]
         ),
         ActionOptionGroup(
-            label: tr("贴靠", "Snapping"),
+            label: String(localized: "贴靠"),
             options: [
                 .tileLeft, .tileRight, .tileTop, .tileBottom,
                 .tileTopLeft, .tileTopRight, .tileBottomLeft, .tileBottomRight,
             ]
         ),
-        ActionOptionGroup(label: tr("应用", "App"), options: [.quitApp, .hideApp]),
+        ActionOptionGroup(label: String(localized: "应用"), options: [.quitApp, .hideApp]),
         ActionOptionGroup(label: nil, options: [ButtonAction.none]),
     ]
 
@@ -68,7 +68,7 @@ struct RuleInspectorView: View {
             Section {
                 matrix
             } header: {
-                SectionHeader(title: tr("动作矩阵", "Action Matrix"), info: longPressNote)
+                SectionHeader(title: String(localized: "动作矩阵"), info: longPressNote)
             }
         }
         .formStyle(.grouped)
@@ -78,11 +78,7 @@ struct RuleInspectorView: View {
     /// info popover (the app-wide convention for long explanations) instead
     /// of a low-weight caption below the grid.
     private var longPressNote: String {
-        tr(
-            "默认保持系统行为；配置长按后，该按钮的普通点击也会由 Blinker 接管。",
-            "Default keeps system behavior; with a long press set, plain clicks on"
-                + " that button are handled by Blinker too."
-        )
+        String(localized: "默认保持系统行为；配置长按后，该按钮的普通点击也会由 Blinker 接管。")
     }
 
     // MARK: - Header
@@ -102,7 +98,7 @@ struct RuleInspectorView: View {
                     .lineLimit(1)
             }
             Spacer(minLength: 12)
-            Toggle(tr("开启", "Enabled"), isOn: enabledBinding)
+            Toggle("开启", isOn: enabledBinding)
                 .toggleStyle(.switch)
         }
     }
@@ -118,9 +114,9 @@ struct RuleInspectorView: View {
     /// labels (mirrors the column headers).
     private func lightName(_ button: TrafficButton) -> String {
         switch button {
-        case .close: tr("红灯", "Red")
-        case .minimize: tr("黄灯", "Yellow")
-        case .zoom: tr("绿灯", "Green")
+        case .close: String(localized: "红灯")
+        case .minimize: String(localized: "黄灯")
+        case .zoom: String(localized: "绿灯")
         }
     }
 
@@ -129,9 +125,9 @@ struct RuleInspectorView: View {
             GridRow {
                 Color.clear
                     .gridCellUnsizedAxes([.horizontal, .vertical])
-                lightHeader(tr("红灯", "Red"), color: Color(nsColor: .systemRed))
-                lightHeader(tr("黄灯", "Yellow"), color: Color(nsColor: .systemYellow))
-                lightHeader(tr("绿灯", "Green"), color: Color(nsColor: .systemGreen))
+                lightHeader("红灯", color: Color(nsColor: .systemRed))
+                lightHeader("黄灯", color: Color(nsColor: .systemYellow))
+                lightHeader("绿灯", color: Color(nsColor: .systemGreen))
             }
             ForEach(Self.matrixVariants, id: \.rawValue) { variant in
                 GridRow {
@@ -181,7 +177,7 @@ struct RuleInspectorView: View {
         // semantics live in the matrix headers, which VoiceOver does not
         // associate — so name each popup explicitly. The separator is
         // localized so English VoiceOver does not pause on a fullwidth comma.
-        .accessibilityLabel("\(variant.localizedLabel)\(tr("，", ", "))\(lightName(button))")
+        .accessibilityLabel("\(variant.localizedLabel)\(String(localized: "，"))\(lightName(button))")
     }
 
     // MARK: - Bindings

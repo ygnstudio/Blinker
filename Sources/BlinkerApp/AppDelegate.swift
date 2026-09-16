@@ -1,6 +1,5 @@
 import AppKit
 import BlinkerCore
-import Combine
 import os
 import SwiftUI
 
@@ -14,11 +13,11 @@ enum InterceptorStatus {
 
     var localizedLabel: String {
         switch self {
-        case .checking: tr("检查辅助功能权限…", "Checking accessibility permission…")
-        case .running: tr("已启用", "Enabled")
-        case .noPermission: tr("未授权辅助功能", "Accessibility not granted")
-        case .tapFailed: tr("事件监听启动失败", "Event tap failed to start")
-        case .paused: tr("已关闭", "Disabled")
+        case .checking: String(localized: "检查辅助功能权限…")
+        case .running: String(localized: "已启用")
+        case .noPermission: String(localized: "未授权辅助功能")
+        case .tapFailed: String(localized: "事件监听启动失败")
+        case .paused: String(localized: "已关闭")
         }
     }
 }
@@ -49,18 +48,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, Observ
     private var hoverOverlay: HoverOverlayController?
     private var retryTimer: Timer?
     private var statusItem: NSStatusItem?
-    private var preferencesCancellable: AnyCancellable?
     private var hasPromptedForPermission = false
     private let logger = Logger(subsystem: "com.ygnstudio.blinker", category: "app")
 
     func applicationDidFinishLaunching(_: Notification) {
         // Menu bar app: no Dock icon, no main window.
         NSApp.setActivationPolicy(.accessory)
-        // The HUD lives in Core and cannot observe AppPreferences; mirror
-        // the language choice so overlay text matches the settings UI.
-        OverlayL10n.preferEnglish = AppPreferences.shared.isEnglish
         observeAccessibilityTrustChanges()
-        observePreferenceChanges()
         setupStatusItem()
         attemptStartInterceptor()
         wireHoverToggleHotkey()
@@ -129,7 +123,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, Observ
 
         if status == .tapFailed {
             let retryItem = NSMenuItem(
-                title: tr("重试启动拦截", "Retry Starting Interception"),
+                title: String(localized: "重试启动拦截"),
                 action: #selector(retryInterceptorClicked),
                 keyEquivalent: ""
             )
@@ -138,7 +132,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, Observ
         }
 
         let settingsItem = NSMenuItem(
-            title: tr("设置…", "Settings…"),
+            title: String(localized: "设置…"),
             action: #selector(openSettingsClicked),
             keyEquivalent: ","
         )
@@ -147,7 +141,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, Observ
         menu.addItem(.separator())
         menu.addItem(
             NSMenuItem(
-                title: tr("退出 Blinker", "Quit Blinker"),
+                title: String(localized: "退出 Blinker"),
                 action: #selector(NSApplication.terminate(_:)),
                 keyEquivalent: "q"
             )
@@ -194,24 +188,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, Observ
         }), let action = settingsItem.action {
             NSApp.sendAction(action, to: settingsItem.target, from: settingsItem)
         }
-    }
-
-    /// Keeps the HUD's language in sync with the General tab: the overlay
-    /// lives in Core and cannot observe `AppPreferences`, so the mirrored
-    /// preference is refreshed here. The settings window itself needs no
-    /// window-side work anymore — the scene follows
-    /// `preferredColorScheme`, and language changes re-render the SwiftUI
-    /// tree in place.
-    private func observePreferenceChanges() {
-        preferencesCancellable = AppPreferences.shared.objectWillChange
-            .receive(on: DispatchQueue.main)
-            .sink { _ in
-                // objectWillChange fires before the new value lands; reading
-                // the preference on the next turn picks up the fresh value.
-                DispatchQueue.main.async {
-                    OverlayL10n.preferEnglish = AppPreferences.shared.isEnglish
-                }
-            }
     }
 
     /// Starts (or restarts, e.g. after the permission was granted) interception.
@@ -379,7 +355,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, Observ
 /// Live status row shown at the top of the menu bar menu.
 struct InterceptorStatusRow: View {
     @ObservedObject var appDelegate: AppDelegate
-    @ObservedObject private var preferences = AppPreferences.shared
 
     var body: some View {
         HStack(spacing: 6) {

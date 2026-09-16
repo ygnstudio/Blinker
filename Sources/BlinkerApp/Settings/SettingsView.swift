@@ -13,11 +13,11 @@ enum SettingsSection: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .rules: tr("规则", "Rules")
-        case .windows: tr("窗口管理", "Windows")
-        case .hover: tr("悬停放大", "Hover")
-        case .general: tr("通用", "General")
-        case .about: tr("关于", "About")
+        case .rules: String(localized: "规则")
+        case .windows: String(localized: "窗口管理")
+        case .hover: String(localized: "悬停放大")
+        case .general: String(localized: "通用")
+        case .about: String(localized: "关于")
         }
     }
 
@@ -39,8 +39,7 @@ enum SettingsSection: String, CaseIterable, Identifiable {
 /// single-section sidebar with monochrome glyphs (Liquid Glass on
 /// macOS 26+), the pane title in the toolbar row, and grouped form cards
 /// on the standard window background. Every view observes
-/// `AppPreferences`, so language and appearance changes re-render in
-/// place.
+/// `AppPreferences`, so appearance changes re-render in place.
 struct SettingsView: View {
     @ObservedObject var ruleStore: RuleStore
     @ObservedObject var hoverSettingsStore: HoverOverlaySettingsStore
@@ -123,7 +122,7 @@ struct SettingsView: View {
             Button {
                 showingAppLibrary = true
             } label: {
-                Label(tr("添加应用", "Add App"), systemImage: "plus")
+                Label("添加应用", systemImage: "plus")
             }
             .buttonStyle(.borderless)
             Spacer()

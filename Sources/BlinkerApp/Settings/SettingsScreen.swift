@@ -80,7 +80,7 @@ struct RulesTab: View {
             // delete gestures, and the selected-row highlight all survive.
             if !enabledRules.isEmpty {
                 Section {
-                    groupHeader(tr("已启用", "Enabled"))
+                    groupHeader(String(localized: "已启用"))
                     ForEach(enabledRules) { rule in
                         ruleRow(rule)
                     }
@@ -89,7 +89,7 @@ struct RulesTab: View {
             }
             if !disabledRules.isEmpty {
                 Section {
-                    groupHeader(tr("已停用", "Disabled"))
+                    groupHeader(String(localized: "已停用"))
                     ForEach(disabledRules) { rule in
                         ruleRow(rule)
                     }
@@ -120,7 +120,7 @@ struct RulesTab: View {
                 Button(role: .destructive) {
                     ruleStore.remove(bundleIdentifier: rule.bundleIdentifier)
                 } label: {
-                    Label(tr("删除规则", "Delete Rule"), systemImage: "trash")
+                    Label("删除规则", systemImage: "trash")
                 }
             }
     }
@@ -134,12 +134,9 @@ struct RulesTab: View {
 
     private var placeholder: some View {
         ContentUnavailableView {
-            Label(tr("选择一个应用", "Select an App"), systemImage: "sidebar.right")
+            Label("选择一个应用", systemImage: "sidebar.right")
         } description: {
-            Text(tr(
-                "在左侧选择一个应用，即可在右侧为它的红绿灯配置各点击方式的动作。",
-                "Pick an app on the left to map its traffic lights per click variant."
-            ))
+            Text("在左侧选择一个应用，即可在右侧为它的红绿灯配置各点击方式的动作。")
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
@@ -150,16 +147,12 @@ struct RulesTab: View {
         // action mirrors the sidebar's add button so the empty tab does
         // not dead-end below the fold.
         ContentUnavailableView {
-            Label(tr("还没有配置任何应用", "No Apps Configured"), systemImage: "list.bullet.rectangle")
+            Label("还没有配置任何应用", systemImage: "list.bullet.rectangle")
         } description: {
-            Text(tr(
-                "点击下方按钮或侧栏中的「添加应用」，即可单独定义它的红绿灯行为；未添加的应用保持系统默认。",
-                "Add an app below or from the sidebar to remap its traffic lights;"
-                    + " everything else keeps system defaults."
-            ))
+            Text("点击下方按钮或侧栏中的「添加应用」，即可单独定义它的红绿灯行为；未添加的应用保持系统默认。")
         } actions: {
             Button(action: onAddApp) {
-                Label(tr("从应用库添加", "Add from App Library"), systemImage: "plus")
+                Label("从应用库添加", systemImage: "plus")
             }
             .buttonStyle(.bordered)
         }

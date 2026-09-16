@@ -235,10 +235,7 @@ final class HotkeyManager: ObservableObject {
         guard carbonModifiers != 0 else {
             // A key without modifiers cannot be a global hotkey (it would
             // shadow normal typing everywhere); keep recording and explain.
-            recordingHint = tr(
-                "需按住至少一个修饰键（⌘ ⌥ ⌃ ⇧）",
-                "Hold at least one modifier key (⌘ ⌥ ⌃ ⇧)"
-            )
+            recordingHint = String(localized: "需按住至少一个修饰键（⌘ ⌥ ⌃ ⇧）")
             return true
         }
 
@@ -392,33 +389,27 @@ extension HotkeyManager {
     static func systemConflictWarning(for combo: HotkeyCombo) -> String? {
         let conflicts: [HotkeyCombo: String] = [
             HotkeyCombo(keyCode: UInt32(kVK_Space), modifiers: UInt32(cmdKey)): "Spotlight",
-            HotkeyCombo(keyCode: UInt32(kVK_Space), modifiers: UInt32(controlKey)): tr(
-                "输入法切换",
-                "Input Source"
-            ),
-            HotkeyCombo(keyCode: UInt32(kVK_UpArrow), modifiers: UInt32(controlKey)): tr(
-                "调度中心",
-                "Mission Control"
-            ),
-            HotkeyCombo(keyCode: UInt32(kVK_ANSI_3), modifiers: UInt32(cmdKey | shiftKey)): tr(
-                "截屏",
-                "Screenshot"
-            ),
-            HotkeyCombo(keyCode: UInt32(kVK_ANSI_4), modifiers: UInt32(cmdKey | shiftKey)): tr(
-                "截屏",
-                "Screenshot"
-            ),
-            HotkeyCombo(keyCode: UInt32(kVK_ANSI_5), modifiers: UInt32(cmdKey | shiftKey)): tr(
-                "截屏",
-                "Screenshot"
-            ),
-            HotkeyCombo(keyCode: UInt32(kVK_Escape), modifiers: UInt32(cmdKey | optionKey)): tr(
-                "强制退出",
-                "Force Quit"
-            ),
+            HotkeyCombo(
+                keyCode: UInt32(kVK_Space), modifiers: UInt32(controlKey)
+            ): String(localized: "输入法切换"),
+            HotkeyCombo(
+                keyCode: UInt32(kVK_UpArrow), modifiers: UInt32(controlKey)
+            ): String(localized: "调度中心"),
+            HotkeyCombo(
+                keyCode: UInt32(kVK_ANSI_3), modifiers: UInt32(cmdKey | shiftKey)
+            ): String(localized: "截屏"),
+            HotkeyCombo(
+                keyCode: UInt32(kVK_ANSI_4), modifiers: UInt32(cmdKey | shiftKey)
+            ): String(localized: "截屏"),
+            HotkeyCombo(
+                keyCode: UInt32(kVK_ANSI_5), modifiers: UInt32(cmdKey | shiftKey)
+            ): String(localized: "截屏"),
+            HotkeyCombo(
+                keyCode: UInt32(kVK_Escape), modifiers: UInt32(cmdKey | optionKey)
+            ): String(localized: "强制退出"),
         ]
         guard let name = conflicts[combo] else { return nil }
-        return tr("与系统快捷键冲突：", "Conflicts with a system shortcut: ") + name
+        return String(localized: "与系统快捷键冲突：") + name
     }
 
     /// Warns when `combo` is already bound to another Blinker command —
@@ -428,14 +419,11 @@ extension HotkeyManager {
     func internalConflictWarning(for combo: HotkeyCombo, action: ButtonAction?) -> String? {
         for other in Self.bindableActions where other != action {
             if bindings[other.rawValue] == combo {
-                return tr(
-                    "已用于「\(other.localizedLabel)」",
-                    "Already used by \"\(other.localizedLabel)\""
-                )
+                return String(localized: "已用于「\(other.localizedLabel)」")
             }
         }
         if action != nil, hoverToggleCombo == combo {
-            return tr("已用于「悬停放大开关」", "Already used by the hover toggle")
+            return String(localized: "已用于「悬停放大开关」")
         }
         return nil
     }

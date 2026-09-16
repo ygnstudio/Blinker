@@ -18,7 +18,7 @@ struct SectionInfoButton: View {
                 .foregroundStyle(.secondary)
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(tr("详情", "Details"))
+        .accessibilityLabel("详情")
         .popover(isPresented: $isShowingPopover, arrowEdge: .bottom) {
             Text(text)
                 .font(.callout)

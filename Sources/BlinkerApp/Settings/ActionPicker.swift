@@ -8,25 +8,25 @@ import SwiftUI
 extension ButtonAction {
     var localizedLabel: String {
         switch self {
-        case .closeWindow: tr("关闭窗口", "Close Window")
-        case .quitApp: tr("退出应用", "Quit App")
-        case .minimize: tr("最小化", "Minimize")
-        case .hideApp: tr("隐藏应用", "Hide App")
-        case .maximize: tr("最大化", "Maximize")
-        case .fullscreen: tr("全屏", "Fullscreen")
-        case .tileLeft: tr("左半屏", "Tile Left")
-        case .tileRight: tr("右半屏", "Tile Right")
-        case .tileTop: tr("上半屏", "Tile Top")
-        case .tileBottom: tr("下半屏", "Tile Bottom")
-        case .tileTopLeft: tr("左上屏", "Tile Top Left")
-        case .tileTopRight: tr("右上屏", "Tile Top Right")
-        case .tileBottomLeft: tr("左下屏", "Tile Bottom Left")
-        case .tileBottomRight: tr("右下屏", "Tile Bottom Right")
-        case .centerWindow: tr("窗口居中", "Center")
-        case .almostMaximize: tr("准最大化", "Almost Maximize")
-        case .moveToNextDisplay: tr("下一显示器", "Next Display")
-        case .none: tr("无操作", "Do Nothing")
-        case .windowManagerPanel: tr("窗口面板", "Window Panel")
+        case .closeWindow: String(localized: "关闭窗口")
+        case .quitApp: String(localized: "退出应用")
+        case .minimize: String(localized: "最小化")
+        case .hideApp: String(localized: "隐藏应用")
+        case .maximize: String(localized: "最大化")
+        case .fullscreen: String(localized: "全屏")
+        case .tileLeft: String(localized: "左半屏")
+        case .tileRight: String(localized: "右半屏")
+        case .tileTop: String(localized: "上半屏")
+        case .tileBottom: String(localized: "下半屏")
+        case .tileTopLeft: String(localized: "左上屏")
+        case .tileTopRight: String(localized: "右上屏")
+        case .tileBottomLeft: String(localized: "左下屏")
+        case .tileBottomRight: String(localized: "右下屏")
+        case .centerWindow: String(localized: "窗口居中")
+        case .almostMaximize: String(localized: "准最大化")
+        case .moveToNextDisplay: String(localized: "下一显示器")
+        case .none: String(localized: "无操作")
+        case .windowManagerPanel: String(localized: "窗口面板")
         }
     }
 }
@@ -35,11 +35,11 @@ extension ButtonAction {
 extension ClickVariant {
     var localizedLabel: String {
         switch self {
-        case .left: tr("左键", "Left Click")
-        case .right: tr("右键", "Right Click")
-        case .optionLeft: tr("⌥+左键", "⌥+Left Click")
-        case .globeLeft: tr("🌐+左键", "🌐+Left Click")
-        case .longPressLeft: tr("长按", "Long Press")
+        case .left: String(localized: "左键")
+        case .right: String(localized: "右键")
+        case .optionLeft: String(localized: "⌥+左键")
+        case .globeLeft: String(localized: "🌐+左键")
+        case .longPressLeft: String(localized: "长按")
         }
     }
 }
@@ -61,7 +61,7 @@ struct ActionPicker: View {
     @Binding var selection: ButtonAction?
     /// Label for the `nil` option; traffic rows use "默认", extra-button
     /// rows use "不显示".
-    var emptyLabel: String = tr("默认", "Default")
+    var emptyLabel: String = String(localized: "默认")
     /// Minimum menu width; fits four CJK characters ("关闭窗口") without
     /// ellipsis. Uniform across the rules matrix and the hover extra-button
     /// slots (previously the latter used a narrower 88 that truncated

@@ -33,7 +33,7 @@ struct HotkeyCombo: Codable, Hashable {
         case kVK_RightArrow: "→"
         case kVK_UpArrow: "↑"
         case kVK_DownArrow: "↓"
-        case kVK_Space: tr("空格", "Space")
+        case kVK_Space: String(localized: "空格")
         case kVK_Return: "↩"
         case kVK_Tab: "⇥"
         case _ where isLetter(keyCode): letterName(keyCode)

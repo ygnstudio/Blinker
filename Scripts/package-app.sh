@@ -46,11 +46,36 @@ else
   echo "warning: $ICON_PATH not found — bundling without an app icon" >&2
 fi
 
+# Localizations. SwiftPM compiles each target's String Catalog into a
+# resource bundle next to the binary:
+#   Blinker_BlinkerApp.bundle  — the app target's strings, which resolve via
+#     Bundle.main: unpack its .lproj tables straight into Contents/Resources.
+#   Blinker_BlinkerCore.bundle — Core resolves via Bundle.module, whose
+#     search path is Bundle.main.resourceURL: copy the bundle whole.
+BUILD_DIR="$(cd "$(dirname "$BINARY_PATH")" && pwd)"
+APP_RESOURCE_BUNDLE="$BUILD_DIR/Blinker_BlinkerApp.bundle"
+CORE_RESOURCE_BUNDLE="$BUILD_DIR/Blinker_BlinkerCore.bundle"
+mkdir -p "$APP_DIR/Contents/Resources"
+if [[ -d "$APP_RESOURCE_BUNDLE/Contents/Resources" ]]; then
+  for LPROJ in "$APP_RESOURCE_BUNDLE"/Contents/Resources/*.lproj; do
+    [[ -d "$LPROJ" ]] && cp -R "$LPROJ" "$APP_DIR/Contents/Resources/"
+  done
+else
+  echo "warning: $APP_RESOURCE_BUNDLE missing — the app falls back to source-language keys" >&2
+fi
+if [[ -d "$CORE_RESOURCE_BUNDLE" ]]; then
+  cp -R "$CORE_RESOURCE_BUNDLE" "$APP_DIR/Contents/Resources/"
+else
+  echo "warning: $CORE_RESOURCE_BUNDLE missing — the hover HUD falls back to source-language keys" >&2
+fi
+
 cat > "$APP_DIR/Contents/Info.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+    <key>CFBundleDevelopmentRegion</key>
+    <string>zh-Hans</string>
     <key>CFBundleExecutable</key>
     <string>Blinker</string>
     <key>CFBundleIdentifier</key>

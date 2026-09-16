@@ -97,10 +97,7 @@ struct HoverOverlayHUDContent: View {
                                 .font(.caption)
                                 .lineLimit(1)
                             Spacer()
-                            Text(hudText(
-                                "\(workspace.windowCount) 窗",
-                                workspace.windowCount == 1 ? "1 window" : "\(workspace.windowCount) windows"
-                            ))
+                            Text(String(localized: "\(workspace.windowCount) 窗", bundle: .module))
                             .font(.caption2)
                             .foregroundStyle(.secondary)
                         }
@@ -248,31 +245,31 @@ final class HoverOverlayHUDPanel: NSPanel {
 // MARK: - Core-side labels
 
 extension ButtonAction {
-    /// Locale-based label for HUD rendering. The settings UI has its own
-    /// preference-aware `localizedLabel`; this one follows the system locale
-    /// because the HUD lives outside the settings window. The wording
-    /// matches the settings labels so the two surfaces share one vocabulary.
+    /// Locale-based label for HUD rendering, resolved from Core's own String
+    /// Catalog (`Bundle.module`) so the HUD follows the system language. The
+    /// wording matches the settings labels so the two surfaces share one
+    /// vocabulary.
     var overlayLocalizedLabel: String {
         switch self {
-        case .closeWindow: hudText("关闭窗口", "Close Window")
-        case .quitApp: hudText("退出应用", "Quit App")
-        case .minimize: hudText("最小化", "Minimize")
-        case .hideApp: hudText("隐藏应用", "Hide App")
-        case .maximize: hudText("最大化", "Maximize")
-        case .almostMaximize: hudText("准最大化", "Almost Maximize")
-        case .fullscreen: hudText("全屏", "Fullscreen")
-        case .tileLeft: hudText("左半屏", "Tile Left")
-        case .tileRight: hudText("右半屏", "Tile Right")
-        case .tileTop: hudText("上半屏", "Tile Top")
-        case .tileBottom: hudText("下半屏", "Tile Bottom")
-        case .tileTopLeft: hudText("左上屏", "Tile Top Left")
-        case .tileTopRight: hudText("右上屏", "Tile Top Right")
-        case .tileBottomLeft: hudText("左下屏", "Tile Bottom Left")
-        case .tileBottomRight: hudText("右下屏", "Tile Bottom Right")
-        case .centerWindow: hudText("窗口居中", "Center")
-        case .moveToNextDisplay: hudText("下一显示器", "Next Display")
-        case .none: hudText("无操作", "Do Nothing")
-        case .windowManagerPanel: hudText("窗口面板", "Window Panel")
+        case .closeWindow: String(localized: "关闭窗口", bundle: .module)
+        case .quitApp: String(localized: "退出应用", bundle: .module)
+        case .minimize: String(localized: "最小化", bundle: .module)
+        case .hideApp: String(localized: "隐藏应用", bundle: .module)
+        case .maximize: String(localized: "最大化", bundle: .module)
+        case .almostMaximize: String(localized: "准最大化", bundle: .module)
+        case .fullscreen: String(localized: "全屏", bundle: .module)
+        case .tileLeft: String(localized: "左半屏", bundle: .module)
+        case .tileRight: String(localized: "右半屏", bundle: .module)
+        case .tileTop: String(localized: "上半屏", bundle: .module)
+        case .tileBottom: String(localized: "下半屏", bundle: .module)
+        case .tileTopLeft: String(localized: "左上屏", bundle: .module)
+        case .tileTopRight: String(localized: "右上屏", bundle: .module)
+        case .tileBottomLeft: String(localized: "左下屏", bundle: .module)
+        case .tileBottomRight: String(localized: "右下屏", bundle: .module)
+        case .centerWindow: String(localized: "窗口居中", bundle: .module)
+        case .moveToNextDisplay: String(localized: "下一显示器", bundle: .module)
+        case .none: String(localized: "无操作", bundle: .module)
+        case .windowManagerPanel: String(localized: "窗口面板", bundle: .module)
         }
     }
 }
