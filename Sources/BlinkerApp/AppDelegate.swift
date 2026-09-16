@@ -208,15 +208,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, Observ
             }
             window.styleMask.insert(.fullSizeContentView)
             window.styleMask.insert(.miniaturizable)
-            // Width floor for the rules tab's three columns: 180 (sidebar
-            // min) + 232 (rule list min + leading glass inset) + ~460
-            // (inspector: grouped-form card insets plus the matrix — 64
-            // label column + 3×104 pickers + grid gaps) ≈ 873 on paper,
-            // but the grouped Form's real system insets run wider than the
-            // estimate and clipped the green-light column at 880 — verified
-            // on-screen. 920 leaves ~45pt of slack over the measured need.
-            window.setContentSize(NSSize(width: 920, height: 500))
-            window.contentMinSize = NSSize(width: 920, height: 460)
+            // Width floor for the rules tab's three columns. On-paper math
+            // (sidebar 180–230 + list 224 with glass inset + inspector
+            // ~460 for the matrix and grouped-form card insets) lands near
+            // 870, but the grouped Form's real system insets run wider and
+            // clipped the green-light column at both 880 and 920 — verified
+            // on-screen twice. 980 gives the inspector ~530 at default
+            // column widths, with headroom even at sidebar/list maxima.
+            window.setContentSize(NSSize(width: 980, height: 500))
+            window.contentMinSize = NSSize(width: 980, height: 460)
             window.center()
             window.isReleasedWhenClosed = false
             // Normal level: `bringToFront()` handles the initial fronting;

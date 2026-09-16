@@ -41,11 +41,15 @@ struct RulesTab: View {
     private var listDetail: some View {
         HStack(spacing: 0) {
             ruleList
-                .frame(minWidth: 220, idealWidth: 240, maxWidth: 300, maxHeight: .infinity)
-                // The Liquid Glass sidebar's floating hot zone spills a few
-                // points into the detail column; the leading inset keeps the
-                // "已启用" section header (and every list row) fully visible.
-                .padding(.leading, 12)
+                .frame(minWidth: 200, idealWidth: 220, maxWidth: 260, maxHeight: .infinity)
+                // The Liquid Glass sidebar's floating shadow spills a wide
+                // band into the detail column — 12pt only cleared the
+                // header text; the selected-row highlight still ran under
+                // it. 24pt clears the whole list. The top inset keeps the
+                // "已启用" section header below the toolbar edge (the inset
+                // list has no top content inset of its own, unlike Form).
+                .padding(.leading, 24)
+                .padding(.top, 12)
             // No divider between the columns: the inset list's own edge and
             // the grouped-form cards already read as two distinct surfaces.
             if let rule = selectedRule {
