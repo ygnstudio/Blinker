@@ -46,7 +46,8 @@ struct RulesTab: View {
                 // points into the detail column; the leading inset keeps the
                 // "已启用" section header (and every list row) fully visible.
                 .padding(.leading, 12)
-            Divider()
+            // No divider between the columns: the inset list's own edge and
+            // the grouped-form cards already read as two distinct surfaces.
             if let rule = selectedRule {
                 RuleInspectorView(rule: rule, onUpdate: { ruleStore.upsert($0) })
             } else {
@@ -82,6 +83,8 @@ struct RulesTab: View {
     private func ruleRow(_ rule: AppRule) -> some View {
         RuleListRow(rule: rule)
             .tag(rule.id)
+            // Separator-free list: section headers alone carry the grouping.
+            .listRowSeparator(.hidden)
             .contextMenu {
                 Button(role: .destructive) {
                     ruleStore.remove(bundleIdentifier: rule.bundleIdentifier)
@@ -157,8 +160,9 @@ enum AppIconStore {
     }
 }
 
-/// One compact row of the rule list: app icon, name and a summary of how
-/// many slots are customized — the Notes-style title + subtitle density.
+/// One compact single-line row of the rule list: app icon + name. The old
+/// mapping summary line ("红=退出 · 绿=最大化") was dropped — the selected
+/// rule's actual mappings are fully visible in the inspector matrix.
 private struct RuleListRow: View {
     let rule: AppRule
 
@@ -167,54 +171,14 @@ private struct RuleListRow: View {
         AppIconStore.icon(forBundleIdentifier: rule.bundleIdentifier)
     }
 
-    /// How many of the fifteen slots carry a non-default action.
-    private var customizedCount: Int {
-        ClickVariant.allCases.reduce(0) { count, variant in
-            count + TrafficButton.allCases
-                .filter { rule.action(for: $0, variant: variant) != nil }
-                .count
-        }
-    }
-
-    /// Red/yellow/green left-click mappings as a compact "红=退出 · 绿=最大化"
-    /// line — the actual mappings at a glance, instead of a bare count.
-    /// Falls back to the count when only enhanced variants are customized.
-    private var summaryLine: String {
-        let segments = [
-            mapping(.close, tr("红", "Red")),
-            mapping(.minimize, tr("黄", "Yellow")),
-            mapping(.zoom, tr("绿", "Green")),
-        ].compactMap(\.self)
-
-        if segments.isEmpty {
-            return customizedCount == 0
-                ? tr("系统默认行为", "System defaults")
-                : tr("\(customizedCount) 项自定义", "\(customizedCount) customized")
-        }
-        return segments.joined(separator: tr(" · ", " · "))
-    }
-
-    /// The button's left-click mapping as "红=退出"; `nil` when default.
-    private func mapping(_ button: TrafficButton, _ label: String) -> String? {
-        guard let action = rule.action(for: button, variant: .left) else { return nil }
-        return "\(label)=\(action.localizedLabel)"
-    }
-
     var body: some View {
         HStack(spacing: 10) {
             Image(nsImage: appIcon)
                 .resizable()
                 .frame(width: 22, height: 22)
-            VStack(alignment: .leading, spacing: 1) {
-                Text(rule.displayName)
-                    .font(.body.weight(.medium))
-                    .lineLimit(1)
-                Text(summaryLine)
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
-                    .truncationMode(.tail)
-            }
+            Text(rule.displayName)
+                .font(.body.weight(.medium))
+                .lineLimit(1)
             Spacer(minLength: 0)
         }
         .padding(.vertical, 2)
