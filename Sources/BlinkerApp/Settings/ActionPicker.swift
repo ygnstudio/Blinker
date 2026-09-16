@@ -94,7 +94,13 @@ struct ActionPicker: View {
                 EmptyView()
             }
             .labelsHidden()
-            .frame(width: pickerWidth)
+            // minWidth (not a fixed frame): the popup button hugs its
+            // content inside a fixed-width frame, so short labels like
+            // "默认" rendered a narrower button than "关闭窗口" and the
+            // chevrons misaligned across matrix rows. Proposing at least
+            // `pickerWidth` — and letting the Form grid equalize column
+            // widths — keeps every button the same width.
+            .frame(minWidth: pickerWidth, alignment: .leading)
         }
     }
 

@@ -64,20 +64,28 @@ struct RulesTab: View {
         List(selection: $selection) {
             // Notes-style grouping: headers separate live groups so disabled
             // rules stay discoverable instead of sinking to the bottom.
+            // Headers hide their own separator too — with the rows' hidden,
+            // a lone line under "已启用" reads as a rendering leftover.
             if !enabledRules.isEmpty {
-                Section(tr("已启用", "Enabled")) {
+                Section {
                     ForEach(enabledRules) { rule in
                         ruleRow(rule)
                     }
                     .onDelete { removeRules(at: $0, from: enabledRules) }
+                } header: {
+                    Text(tr("已启用", "Enabled"))
+                        .listRowSeparator(.hidden)
                 }
             }
             if !disabledRules.isEmpty {
-                Section(tr("已停用", "Disabled")) {
+                Section {
                     ForEach(disabledRules) { rule in
                         ruleRow(rule)
                     }
                     .onDelete { removeRules(at: $0, from: disabledRules) }
+                } header: {
+                    Text(tr("已停用", "Disabled"))
+                        .listRowSeparator(.hidden)
                 }
             }
         }
