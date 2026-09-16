@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.2.3] - 2026-09-16
+
 ### Added
 - **Workspaces**: capture every visible window's position and size as a
   named layout and restore it in one click (per-app largest-window capture,
