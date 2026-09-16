@@ -64,32 +64,46 @@ struct RulesTab: View {
         List(selection: $selection) {
             // Notes-style grouping: headers separate live groups so disabled
             // rules stay discoverable instead of sinking to the bottom.
-            // Headers hide their own separator too — with the rows' hidden,
-            // a lone line under "已启用" reads as a rendering leftover.
+            //
+            // macOS quirk (a29f29c proved it the hard way): on the inset
+            // list, `.listRowSeparator(.hidden)` is ignored on Section
+            // *header* rows — the table view draws their separator no matter
+            // what — so the header closure left a lone line under "已启用".
+            // The group titles are therefore plain rows inside the section:
+            // a regular row's separator hides fine, and an untagged row
+            // never joins the selection set, so grouping semantics, the
+            // delete gestures, and the selected-row highlight all survive.
             if !enabledRules.isEmpty {
                 Section {
+                    groupHeader(tr("已启用", "Enabled"))
                     ForEach(enabledRules) { rule in
                         ruleRow(rule)
                     }
                     .onDelete { removeRules(at: $0, from: enabledRules) }
-                } header: {
-                    Text(tr("已启用", "Enabled"))
-                        .listRowSeparator(.hidden)
                 }
             }
             if !disabledRules.isEmpty {
                 Section {
+                    groupHeader(tr("已停用", "Disabled"))
                     ForEach(disabledRules) { rule in
                         ruleRow(rule)
                     }
                     .onDelete { removeRules(at: $0, from: disabledRules) }
-                } header: {
-                    Text(tr("已停用", "Disabled"))
-                        .listRowSeparator(.hidden)
                 }
             }
         }
         .listStyle(.inset)
+    }
+
+    /// A group title rendered as an ordinary, untagged list row (see the
+    /// rule list's comment for why it cannot be a Section header).
+    private func groupHeader(_ title: String) -> some View {
+        Text(title)
+            .font(.callout.weight(.semibold))
+            .foregroundStyle(.secondary)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.top, 4)
+            .listRowSeparator(.hidden)
     }
 
     private func ruleRow(_ rule: AppRule) -> some View {
