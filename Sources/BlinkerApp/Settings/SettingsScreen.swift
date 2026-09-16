@@ -17,8 +17,13 @@ struct RulesTab: View {
     /// mirroring the sidebar's add-app affordance.
     let onAddApp: () -> Void
 
-    private var enabledRules: [AppRule] { ruleStore.rules.filter(\.isEnabled) }
-    private var disabledRules: [AppRule] { ruleStore.rules.filter { !$0.isEnabled } }
+    private var enabledRules: [AppRule] {
+        ruleStore.rules.filter(\.isEnabled)
+    }
+
+    private var disabledRules: [AppRule] {
+        ruleStore.rules.filter { !$0.isEnabled }
+    }
 
     /// A deleted selection gracefully falls back to the placeholder
     /// instead of showing a stale rule.
@@ -27,12 +32,10 @@ struct RulesTab: View {
     }
 
     var body: some View {
-        Group {
-            if ruleStore.rules.isEmpty {
-                emptyState
-            } else {
-                listDetail
-            }
+        if ruleStore.rules.isEmpty {
+            emptyState
+        } else {
+            listDetail
         }
     }
 
@@ -93,6 +96,49 @@ struct RulesTab: View {
             }
         }
         .listStyle(.inset)
+        // The trio legend stays pinned to the list's foot, mirroring the
+        // sidebar footer's constant-height pattern.
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            trioLegend
+        }
+    }
+
+    /// The key to the rule rows' light-status trio: filled = at least one
+    /// action configured on that light, hollow = fully system default.
+    private var trioLegend: some View {
+        HStack(spacing: 14) {
+            trio(filled: true)
+            Text(String(localized: "已重定义"))
+            trio(filled: false)
+            Text(String(localized: "系统默认"))
+        }
+        .font(.caption2)
+        .foregroundStyle(.tertiary)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 6)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(String(localized: "圆点图例：实心为已重定义，空心为系统默认"))
+    }
+
+    private func trio(filled: Bool) -> some View {
+        HStack(spacing: 3) {
+            ForEach(TrafficButton.allCases, id: \.self) { button in
+                Circle()
+                    .strokeBorder(
+                        Color(nsColor: OverlayChipDrawing.vividColor(for: button)).opacity(0.6),
+                        lineWidth: 1
+                    )
+                    .background(
+                        Circle().fill(
+                            filled
+                                ? Color(nsColor: OverlayChipDrawing.vividColor(for: button))
+                                : .clear
+                        )
+                    )
+                    .frame(width: 6, height: 6)
+            }
+        }
     }
 
     /// A group title rendered as an ordinary, untagged list row (see the
@@ -179,15 +225,45 @@ enum AppIconStore {
     }
 }
 
-/// One compact single-line row of the rule list: app icon + name. The old
-/// mapping summary line ("红=退出 · 绿=最大化") was dropped — the selected
-/// rule's actual mappings are fully visible in the inspector matrix.
+/// One compact single-line row of the rule list: app icon, name and the
+/// three-light status trio — a filled dot marks a light carrying at least
+/// one custom action, a hollow ring a fully default light. The trio makes
+/// each rule's configuration depth scannable without opening it.
 private struct RuleListRow: View {
     let rule: AppRule
 
     /// The app's cached icon (see `AppIconStore`); no per-render disk I/O.
     private var appIcon: NSImage {
         AppIconStore.icon(forBundleIdentifier: rule.bundleIdentifier)
+    }
+
+    /// Per light: whether any of the five click variants carries an action.
+    private var remappedLights: [TrafficButton: Bool] {
+        var states: [TrafficButton: Bool] = [:]
+        for button in TrafficButton.allCases {
+            let variants = [ClickVariant.left] + ClickVariant.extraSlots
+            states[button] = variants.contains { rule.action(for: button, variant: $0) != nil }
+        }
+        return states
+    }
+
+    /// The trio's spoken summary, e.g. "已重定义：红灯、绿灯".
+    private var trioAccessibilityLabel: String {
+        let remapped = TrafficButton.allCases
+            .filter { remappedLights[$0] == true }
+            .map { lightName($0) }
+        if remapped.isEmpty {
+            return String(localized: "三灯均为系统默认")
+        }
+        return String(localized: "已重定义：") + remapped.joined(separator: String(localized: "、"))
+    }
+
+    private func lightName(_ button: TrafficButton) -> String {
+        switch button {
+        case .close: String(localized: "红灯")
+        case .minimize: String(localized: "黄灯")
+        case .zoom: String(localized: "绿灯")
+        }
     }
 
     var body: some View {
@@ -198,7 +274,19 @@ private struct RuleListRow: View {
             Text(rule.displayName)
                 .font(.body.weight(.medium))
                 .lineLimit(1)
-            Spacer(minLength: 0)
+            Spacer(minLength: 4)
+            HStack(spacing: 3) {
+                ForEach(TrafficButton.allCases, id: \.self) { button in
+                    let color = Color(nsColor: OverlayChipDrawing.vividColor(for: button))
+                    let isRemapped = remappedLights[button] == true
+                    Circle()
+                        .strokeBorder(isRemapped ? .clear : color.opacity(0.6), lineWidth: 1)
+                        .background(Circle().fill(isRemapped ? color : .clear))
+                        .frame(width: 6, height: 6)
+                }
+            }
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(trioAccessibilityLabel)
         }
         .padding(.vertical, 2)
     }

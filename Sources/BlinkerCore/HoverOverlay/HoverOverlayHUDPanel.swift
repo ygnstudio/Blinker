@@ -65,7 +65,7 @@ struct HoverOverlayHUDContent: View {
                         VStack(spacing: 3) {
                             miniScreen(for: action)
                             Text(action.overlayLocalizedLabel)
-                                .font(.system(size: 10))
+                                .font(.caption2)
                                 .foregroundStyle(.secondary)
                                 .lineLimit(1)
                         }
@@ -97,9 +97,9 @@ struct HoverOverlayHUDContent: View {
                                 .font(.caption)
                                 .lineLimit(1)
                             Spacer()
-                            Text(String(localized: "\(workspace.windowCount) 窗", bundle: .module))
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
+                            Text(String(localized: "\(workspace.windowCount) 个窗口", bundle: .module))
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
                         }
                         // The padding grows the row's hit area and gives the
                         // hover background room; the panel's height math in

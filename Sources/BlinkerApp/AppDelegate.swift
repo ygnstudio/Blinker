@@ -431,13 +431,25 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, Observ
 struct InterceptorStatusRow: View {
     @ObservedObject var appDelegate: AppDelegate
 
+    /// Status color by severity, not a binary on/off: failures (missing
+    /// permission, tap failure) read red; transitional and paused states
+    /// read orange; only a running interceptor reads green.
+    private var statusColor: Color {
+        switch appDelegate.status {
+        case .running: .green
+        case .checking, .paused: .orange
+        case .noPermission, .tapFailed: .red
+        }
+    }
+
     var body: some View {
         HStack(spacing: 6) {
             Circle()
-                .fill(appDelegate.isIntercepting ? Color.green : Color.orange)
+                .fill(statusColor)
                 .frame(width: 8, height: 8)
             Text(appDelegate.status.localizedLabel)
                 .font(.callout)
         }
+        .accessibilityElement(children: .combine)
     }
 }

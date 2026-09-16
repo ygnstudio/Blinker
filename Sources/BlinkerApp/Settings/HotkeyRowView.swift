@@ -51,6 +51,9 @@ struct HotkeyRowView: View {
                 .accessibilityLabel("清除快捷键")
                 .disabled(combo == nil)
                 .opacity(combo == nil ? 0 : 1)
+                // Invisible-but-disabled must also be silent for VoiceOver;
+                // opacity alone keeps the control in the traversal order.
+                .accessibilityHidden(combo == nil)
             }
         }
         if isRecording {

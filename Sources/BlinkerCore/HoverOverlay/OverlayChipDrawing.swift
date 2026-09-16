@@ -11,11 +11,13 @@ protocol OverlayDwellPanel: AnyObject {
 
 /// Shared chip-drawing primitives used by both the traffic-light button view
 /// and the extra-action button view, so the two chip styles stay identical.
-enum OverlayChipDrawing {
+/// `vividColor` and `symbolInk` are public so the settings UI's previews can
+/// render chips with the exact colors the overlay draws.
+public enum OverlayChipDrawing {
     /// The vivid fill color of an enlarged traffic dot — the native traffic
     /// light colors at full saturation, opaque so the native button can
     /// never tint the dot through the glass tray.
-    static func vividColor(for button: TrafficButton) -> NSColor {
+    public static func vividColor(for button: TrafficButton) -> NSColor {
         switch button {
         case .close:
             NSColor(srgbRed: 1.0, green: 0.37255, blue: 0.34118, alpha: 1.0)
@@ -63,7 +65,7 @@ enum OverlayChipDrawing {
     /// always take a dark glyph, but accent-filled chips (whose fill follows
     /// the user's accent color) need a light glyph on dark fills to stay
     /// readable — graphite, purple or brown accents bury a 55%-black glyph.
-    static func symbolInk(onFill color: NSColor) -> NSColor {
+    public static func symbolInk(onFill color: NSColor) -> NSColor {
         guard let srgb = color.usingColorSpace(.sRGB) else {
             return NSColor.black.withAlphaComponent(0.55)
         }

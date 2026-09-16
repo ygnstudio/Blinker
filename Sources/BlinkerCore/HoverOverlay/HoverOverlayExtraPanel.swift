@@ -1,8 +1,9 @@
 import AppKit
 
 /// SF Symbol name for each extra-button action; `nil` actions are never
-/// rendered so `.none` needs no symbol.
-extension ButtonAction {
+/// rendered so `.none` needs no symbol. Public so the settings preview can
+/// render the same chips the overlay draws.
+public extension ButtonAction {
     var extraSymbolName: String? {
         switch self {
         case .closeWindow: "xmark"

@@ -66,7 +66,9 @@ struct GeneralTab: View {
     }
 
     /// Pause/resume for click interception — moved out of the menu bar menu
-    /// so the icon click can open settings directly.
+    /// so the icon click can open settings directly. The footer carries the
+    /// live status plus, in the two failure states, the adjacent recovery
+    /// action: an error is only actionable when its fix sits next to it.
     private var interceptionSection: some View {
         Section {
             Toggle(isOn: interceptionBinding) {
@@ -80,11 +82,24 @@ struct GeneralTab: View {
                 info: String(localized: "开启后，红绿灯的点击与悬停放大由 Blinker 接管；关闭后恢复系统默认行为。")
             )
         } footer: {
-            Text(
-                String(localized: "当前状态：")
-                    + appDelegate.status.localizedLabel
-                    + String(localized: "。")
-            )
+            VStack(alignment: .leading, spacing: 8) {
+                Text(
+                    String(localized: "当前状态：")
+                        + appDelegate.status.localizedLabel
+                        + String(localized: "。")
+                )
+                if appDelegate.status == .noPermission {
+                    Button(String(localized: "打开系统设置…")) {
+                        AccessibilityPermission.prompt()
+                    }
+                    .controlSize(.small)
+                } else if appDelegate.status == .tapFailed {
+                    Button(String(localized: "重试启动拦截")) {
+                        appDelegate.attemptStartInterceptor()
+                    }
+                    .controlSize(.small)
+                }
+            }
         }
     }
 
@@ -127,9 +142,9 @@ struct AboutTab: View {
                 featureGrid
                 linksColumn
                 Text("使用需在系统设置中授予辅助功能权限；红绿灯行为由你为每个应用单独定义。")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
             }
             .padding(24)
             .frame(maxWidth: .infinity)

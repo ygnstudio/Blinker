@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Blinker 设置 · 重设计提案</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root[data-theme="dark"] {
+    --stage-bg: radial-gradient(1200px 700px at 30% -10%, #232329 0%, #101013 55%, #0a0a0c 100%);
+    --win-bg: #1d1d20;
+    --win-border: rgba(255,255,255,.09);
+    --win-shadow: 0 40px 90px rgba(0,0,0,.55), 0 0 0 .5px rgba(255,255,255,.06);
+    --sidebar-bg: linear-gradient(180deg, rgba(255,255,255,.055), rgba(255,255,255,.025));
+    --sidebar-line: rgba(255,255,255,.07);
+    --card: #26262a;
+    --card-border: rgba(255,255,255,.065);
+    --text-1: rgba(255,255,255,.93);
+    --text-2: rgba(235,235,245,.62);
+    --text-3: rgba(235,235,245,.36);
+    --hairline: rgba(255,255,255,.055);
+    --hover: rgba(255,255,255,.07);
+    --cell-hover: rgba(255,255,255,.06);
+    --lane-red: rgba(255,95,87,.06);
+    --lane-amber: rgba(254,188,46,.055);
+    --lane-green: rgba(40,200,64,.055);
+    --track: rgba(255,255,255,.14);
+    --accent: #0a84ff;
+    --switch-on: #34c759;
+    --seg-bg: rgba(255,255,255,.06);
+    --seg-on: rgba(255,255,255,.13);
+    --red: #ff5f57; --amber: #febc2e; --green: #28c840;
+    --pill-bg: rgba(120,120,128,.18);
+    --pill-border: rgba(255,255,255,.14);
+    --fake-win: #2c2c31;
+    --fake-bar: #38383e;
+    --stage-text: rgba(235,235,245,.5);
+    --toggle-btn: rgba(255,255,255,.08);
+  }
+  :root[data-theme="light"] {
+    --stage-bg: radial-gradient(1200px 700px at 30% -10%, #d7d7de 0%, #e9e9ee 55%, #f2f2f5 100%);
+    --win-bg: #f4f4f6;
+    --win-border: rgba(0,0,0,.12);
+    --win-shadow: 0 40px 90px rgba(0,0,0,.28), 0 0 0 .5px rgba(0,0,0,.05);
+    --sidebar-bg: linear-gradient(180deg, rgba(0,0,0,.045), rgba(0,0,0,.02));
+    --sidebar-line: rgba(0,0,0,.09);
+    --card: #ffffff;
+    --card-border: rgba(0,0,0,.07);
+    --text-1: rgba(0,0,0,.86);
+    --text-2: rgba(60,60,67,.6);
+    --text-3: rgba(60,60,67,.34);
+    --hairline: rgba(0,0,0,.06);
+    --hover: rgba(0,0,0,.06);
+    --cell-hover: rgba(0,0,0,.05);
+    --lane-red: rgba(255,95,87,.075);
+    --lane-amber: rgba(254,188,46,.08);
+    --lane-green: rgba(40,200,64,.07);
+    --track: rgba(0,0,0,.12);
+    --accent: #0a66e8;
+    --switch-on: #34c759;
+    --seg-bg: rgba(0,0,0,.05);
+    --seg-on: rgba(0,0,0,.09);
+    --red: #e74c40; --amber: #d99a0b; --green: #1f9e3a;
+    --pill-bg: rgba(255,255,255,.5);
+    --pill-border: rgba(0,0,0,.1);
+    --fake-win: #e8e8ec;
+    --fake-bar: #d8d8de;
+    --stage-text: rgba(60,60,67,.55);
+    --toggle-btn: rgba(0,0,0,.06);
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    background: var(--stage-bg);
+    min-height: 100vh;
+    display: flex; flex-direction: column; align-items: center;
+    padding: 34px 24px 48px;
+    -webkit-font-smoothing: antialiased;
+    letter-spacing: 0;
+  }
+
+  .stage-head { width: 1120px; max-width: 100%; display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 18px; }
+  .stage-title { font-size: 15px; font-weight: 600; color: var(--text-1); }
+  .stage-sub { font-size: 12px; color: var(--stage-text); margin-left: 12px; font-weight: 400; }
+  #themeToggle {
+    font: 500 12px/1 inherit; font-family: inherit;
+    color: var(--text-1); background: var(--toggle-btn);
+    border: none; border-radius: 7px; padding: 7px 12px; cursor: pointer;
+  }
+
+  /* ---------- Window chrome ---------- */
+  .window {
+    width: 1120px; max-width: 100%; height: 680px;
+    background: var(--win-bg);
+    border: 1px solid var(--win-border);
+    border-radius: 12px;
+    box-shadow: var(--win-shadow);
+    display: flex; flex-direction: column;
+    overflow: hidden; position: relative;
+  }
+  .titlebar { position: absolute; top: 0; left: 0; right: 0; height: 52px; display: flex; align-items: center; padding: 0 0 0 15px; z-index: 10; pointer-events: none; }
+  .tl { width: 12px; height: 12px; border-radius: 50%; margin-right: 8px; }
+  .tl.r { background: var(--red); } .tl.a { background: var(--amber); } .tl.g { background: var(--green); }
+
+  .win-body { display: flex; flex: 1; min-height: 0; }
+
+  /* ---------- Sidebar ---------- */
+  .sidebar {
+    width: 212px; flex: none; padding: 60px 10px 12px;
+    background: var(--sidebar-bg);
+    border-right: 1px solid var(--sidebar-line);
+    display: flex; flex-direction: column;
+  }
+  .side-item {
+    display: flex; align-items: center; gap: 8px;
+    height: 34px; padding: 0 9px; margin-bottom: 1px;
+    border-radius: 7px; cursor: pointer;
+    font-size: 13px; font-weight: 500; color: var(--text-2);
+  }
+  .side-item:hover { background: var(--hover); }
+  .side-item.active { background: var(--seg-on); color: var(--text-1); }
+  .side-item svg { width: 15px; height: 15px; flex: none; opacity: .85; }
+  .sidebar-foot {
+    margin-top: auto; padding: 9px 9px 2px;
+    border-top: 1px solid var(--sidebar-line);
+  }
+  .sidebar-foot button {
+    display: flex; align-items: center; gap: 6px;
+    font: 500 13px/1 inherit; font-family: inherit;
+    color: var(--accent); background: none; border: none; cursor: pointer; padding: 2px 0;
+  }
+
+  /* ---------- Content ---------- */
+  .content { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+  .content-title { height: 52px; flex: none; display: flex; align-items: center; padding: 0 26px; font-size: 19px; font-weight: 700; color: var(--text-1); }
+  .pane { display: none; flex: 1; min-height: 0; overflow-y: auto; padding: 2px 26px 22px; }
+  .pane.on { display: block; }
+
+  /* ---------- Rules pane ---------- */
+  .rules-split { display: flex; gap: 0; height: 100%; }
+  .app-list { width: 188px; flex: none; padding-right: 14px; }
+  .list-group-title { font-size: 11px; font-weight: 600; color: var(--text-3); padding: 4px 8px 6px; }
+  .app-row {
+    display: flex; align-items: center; gap: 8px;
+    height: 34px; padding: 0 8px; border-radius: 7px; cursor: pointer;
+  }
+  .app-row:hover { background: var(--hover); }
+  .app-row.sel { background: var(--seg-on); }
+  .app-icon { width: 20px; height: 20px; border-radius: 5.5px; flex: none; }
+  .app-name { font-size: 13px; font-weight: 500; color: var(--text-1); flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .minis { display: flex; gap: 3px; flex: none; }
+  .mini { width: 5px; height: 5px; border-radius: 50%; }
+  .mini.red.on { background: var(--red); } .mini.amber.on { background: var(--amber); } .mini.green.on { background: var(--green); }
+  .mini.red.off { border: 1.3px solid color-mix(in srgb, var(--red) 55%, transparent); }
+  .mini.amber.off { border: 1.3px solid color-mix(in srgb, var(--amber) 55%, transparent); }
+  .mini.green.off { border: 1.3px solid color-mix(in srgb, var(--green) 55%, transparent); }
+  .list-legend { font-size: 10.5px; color: var(--text-3); padding: 10px 8px 0; line-height: 1.6; }
+
+  .inspector { flex: 1; min-width: 0; border-left: 1px solid var(--sidebar-line); padding-left: 20px; }
+
+  .card {
+    background: var(--card); border: 1px solid var(--card-border);
+    border-radius: 10px; padding: 14px 16px; margin-bottom: 14px;
+  }
+  .card-title-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  .card-title { font-size: 13px; font-weight: 600; color: var(--text-1); }
+
+  /* Signal card (hero) */
+  .sig-top { display: flex; align-items: center; gap: 12px; }
+  .sig-icon { width: 42px; height: 42px; border-radius: 9px; flex: none; }
+  .sig-name { font-size: 15px; font-weight: 600; color: var(--text-1); }
+  .sig-bundle { font-size: 11px; color: var(--text-3); margin-top: 2px; font-variant-numeric: tabular-nums; }
+  .sig-toggle { margin-left: auto; }
+
+  .switch { position: relative; width: 40px; height: 24px; border-radius: 12px; background: var(--track); cursor: pointer; transition: background .15s; flex: none; }
+  .switch::after { content: ""; position: absolute; top: 2px; left: 2px; width: 20px; height: 20px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.35); transition: left .15s; }
+  .switch.on { background: var(--switch-on); }
+  .switch.on::after { left: 18px; }
+
+  .sig-divider { height: 1px; background: var(--hairline); margin: 14px 0 12px; }
+  .sig-lights { display: flex; }
+  .sig-light { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 5px; }
+  .sig-dot { width: 17px; height: 17px; border-radius: 50%; position: relative; }
+  .sig-dot.red { background: var(--red); box-shadow: 0 0 13px 1px color-mix(in srgb, var(--red) 45%, transparent); }
+  .sig-dot.amber { background: var(--amber); box-shadow: 0 0 13px 1px color-mix(in srgb, var(--amber) 45%, transparent); }
+  .sig-dot.green { background: var(--green); box-shadow: 0 0 13px 1px color-mix(in srgb, var(--green) 45%, transparent); }
+  .sig-dot svg { position: absolute; inset: 0; margin: auto; width: 46%; height: 46%; }
+  .sig-light-name { font-size: 11px; color: var(--text-2); font-weight: 500; }
+  .sig-action { font-size: 13px; color: var(--text-1); font-weight: 600; }
+
+  /* Matrix lanes */
+  .matrix { display: flex; gap: 10px; }
+  .mx-labels { width: 62px; flex: none; }
+  .mx-corner { height: 26px; }
+  .mx-lab { height: 31px; display: flex; align-items: center; justify-content: flex-end; padding-right: 2px; font-size: 12px; color: var(--text-2); }
+  .mx-lab.strong { color: var(--text-1); font-weight: 600; }
+  .lane { flex: 1; min-width: 0; border-radius: 10px; padding: 6px 7px 7px; }
+  .lane.red { background: var(--lane-red); }
+  .lane.amber { background: var(--lane-amber); }
+  .lane.green { background: var(--lane-green); }
+  .lane-head { height: 26px; display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 12px; font-weight: 600; color: var(--text-1); }
+  .lane-dot { width: 8px; height: 8px; border-radius: 50%; }
+  .lane-dot.red { background: var(--red); } .lane-dot.amber { background: var(--amber); } .lane-dot.green { background: var(--green); }
+  .mx-cell {
+    display: flex; align-items: center; justify-content: space-between; gap: 6px;
+    height: 30px; width: 100%; padding: 0 9px; margin-top: 1px;
+    border: none; background: none; border-radius: 6px; cursor: pointer;
+    font: 400 12.5px/1 inherit; font-family: inherit; color: var(--text-3);
+    text-align: left; white-space: nowrap; overflow: hidden;
+  }
+  .mx-cell:hover { background: var(--cell-hover); }
+  .mx-cell.set { color: var(--text-1); font-weight: 500; }
+  .mx-cell .chev { flex: none; width: 9px; height: 9px; opacity: .55; }
+
+  /* ---------- Hover pane ---------- */
+  .preview-card { padding: 16px 16px 14px; }
+  .preview-stage { display: flex; justify-content: center; padding: 6px 0 4px; }
+  .fake-win {
+    width: 430px; border-radius: 11px; overflow: hidden;
+    background: var(--fake-win); border: 1px solid var(--win-border);
+    box-shadow: 0 10px 26px rgba(0,0,0,.25);
+  }
+  .fake-bar { height: 46px; background: var(--fake-bar); position: relative; display: flex; align-items: center; }
+  .native-dots { display: flex; gap: 8px; margin-left: 13px; }
+  .native-dots i { width: 12px; height: 12px; border-radius: 50%; display: block; }
+  .native-dots i:nth-child(1) { background: var(--red); }
+  .native-dots i:nth-child(2) { background: var(--amber); }
+  .native-dots i:nth-child(3) { background: var(--green); }
+  .fake-title { position: absolute; left: 0; right: 0; text-align: center; font-size: 12.5px; font-weight: 600; color: rgba(0,0,0,.5); pointer-events: none; }
+  .fake-body { height: 66px; padding: 14px 16px; display: flex; flex-direction: column; gap: 9px; }
+  .fake-line { height: 9px; border-radius: 4.5px; background: color-mix(in srgb, var(--text-3) 38%, transparent); }
+  .fake-line.short { width: 55%; }
+
+  .pill {
+    position: absolute; left: 9px; top: 50%; transform: translateY(-50%);
+    display: flex; align-items: center; gap: 11px;
+    padding: 0 10px; height: 52px; border-radius: 26px;
+    background: var(--pill-bg);
+    border: 1px solid var(--pill-border);
+    backdrop-filter: blur(18px) saturate(1.4);
+    -webkit-backdrop-filter: blur(18px) saturate(1.4);
+    box-shadow: 0 6px 18px rgba(0,0,0,.22);
+  }
+  .chip-wrap { position: relative; width: 34px; height: 34px; flex: none; }
+  .chip-dot {
+    position: absolute; inset: 0; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 0 15px 1px color-mix(in srgb, currentColor 42%, transparent);
+  }
+  .chip-dot.red { background: #ff5f57; color: #ff5f57; }
+  .chip-dot.amber { background: #febc2e; color: #febc2e; }
+  .chip-dot.green { background: #28c840; color: #28c840; }
+  .chip-dot.accent { background: #0a84ff; color: #0a84ff; }
+  .chip-dot svg { width: 46%; height: 46%; }
+  .dwell-ring { position: absolute; inset: -7px; width: calc(100% + 14px); height: calc(100% + 14px); transform: rotate(-90deg); pointer-events: none; }
+  .dwell-ring circle { fill: none; stroke: #0a84ff; stroke-width: 2.2; stroke-linecap: round; }
+
+  .hotspot-zone {
+    position: absolute; left: 2px; top: 50%; transform: translateY(-50%);
+    height: 42px; width: 108px; border-radius: 9px;
+    border: 1.5px dashed rgba(10,132,255,.65);
+    display: none; align-items: center; justify-content: center;
+  }
+  .fake-bar.hotspot .pill { display: none; }
+  .fake-bar.hotspot .hotspot-zone { display: flex; }
+  .hotspot-zone span { font-size: 10px; color: #0a84ff; background: color-mix(in srgb, #0a84ff 12%, transparent); padding: 2px 7px; border-radius: 5px; }
+
+  .preview-caption { text-align: center; font-size: 11.5px; color: var(--text-3); margin-top: 12px; font-variant-numeric: tabular-nums; }
+
+  /* Form rows */
+  .frow { display: flex; align-items: center; min-height: 32px; padding: 6px 0; border-bottom: 1px solid var(--hairline); gap: 12px; }
+  .frow:last-child { border-bottom: none; }
+  .frow .lab { font-size: 13px; color: var(--text-1); }
+  .frow .lab.sub { color: var(--text-2); }
+  .frow .spacer { flex: 1; }
+
+  .seg { display: inline-flex; background: var(--seg-bg); border-radius: 7px; padding: 2px; }
+  .seg button {
+    font: 500 12px/1 inherit; font-family: inherit;
+    border: none; background: none; color: var(--text-2);
+    padding: 5px 12px; border-radius: 5px; cursor: pointer;
+  }
+  .seg button.on { background: var(--seg-on); color: var(--text-1); }
+
+  .slider-row { display: flex; align-items: center; gap: 12px; }
+  input[type="range"] {
+    -webkit-appearance: none; appearance: none;
+    width: 190px; height: 4px; border-radius: 2px;
+    background: var(--track); outline: none; cursor: pointer;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none; appearance: none;
+    width: 15px; height: 15px; border-radius: 50%; background: #fff;
+    box-shadow: 0 1px 4px rgba(0,0,0,.4); cursor: grab;
+  }
+  input[type="range"].dim { opacity: .35; pointer-events: none; }
+  .val { font-size: 12px; color: var(--text-2); width: 62px; text-align: right; font-variant-numeric: tabular-nums; flex: none; }
+
+  .chip-btn {
+    display: inline-flex; align-items: center; gap: 7px;
+    height: 26px; padding: 0 10px; border-radius: 7px;
+    border: 1px solid var(--card-border); background: var(--seg-bg);
+    font: 500 12px/1 inherit; font-family: inherit; color: var(--text-1); cursor: pointer;
+  }
+  .chip-btn .chev { width: 8px; height: 8px; opacity: .55; }
+  .chip-btn.ghost { color: var(--text-3); }
+  .kbb { font: 500 12px/1 inherit; font-family: inherit; color: var(--text-1); }
+  .icon-btn {
+    width: 24px; height: 24px; border-radius: 6px; border: none;
+    background: none; color: var(--text-2); cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center;
+  }
+  .icon-btn:hover { background: var(--hover); }
+  .icon-btn svg { width: 13px; height: 13px; }
+
+  .extra-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 22px; }
+  .extra-row { display: flex; align-items: center; justify-content: space-between; min-height: 30px; }
+
+  .stub { display: flex; align-items: center; justify-content: center; height: 100%; color: var(--text-3); font-size: 13px; text-align: center; line-height: 1.8; }
+
+  .stage-foot { width: 1120px; max-width: 100%; margin-top: 16px; font-size: 11.5px; color: var(--stage-text); line-height: 1.7; }
+</style>
+</head>
+<body>
+
+<div class="stage-head">
+  <div><span class="stage-title">Blinker · 设置窗口重设计提案</span><span class="stage-sub">「信号灯母题」· 交互原型，滑块可实时驱动预览</span></div>
+  <button id="themeToggle">切换浅色</button>
+</div>
+
+<div class="window">
+  <div class="titlebar"><span class="tl r"></span><span class="tl a"></span><span class="tl g"></span></div>
+  <div class="win-body">
+
+    <aside class="sidebar">
+      <div class="side-item active" data-pane="rules" data-title="规则">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="1.5" y="2.5" width="13" height="11" rx="2"/><path d="M4.5 6h4M4.5 9h7"/></svg>
+        规则
+      </div>
+      <div class="side-item" data-pane="stub" data-title="窗口管理">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="1.5" y="2.5" width="6" height="5" rx="1"/><rect x="8.5" y="2.5" width="6" height="5" rx="1"/><rect x="1.5" y="8.5" width="6" height="5" rx="1"/><rect x="8.5" y="8.5" width="6" height="5" rx="1"/></svg>
+        窗口管理
+      </div>
+      <div class="side-item" data-pane="hover" data-title="悬停放大">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M2 6V2h4M10 2h4v4M14 10v4h-4M6 14H2v-4"/></svg>
+        悬停放大
+      </div>
+      <div class="side-item" data-pane="stub" data-title="通用">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="8" cy="8" r="2.4"/><path d="M8 1.5v2M8 12.5v2M1.5 8h2M12.5 8h2M3.4 3.4l1.4 1.4M11.2 11.2l1.4 1.4M12.6 3.4l-1.4 1.4M4.8 11.2l-1.4 1.4"/></svg>
+        通用
+      </div>
+      <div class="side-item" data-pane="stub" data-title="关于">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="8" cy="8" r="6.5"/><path d="M8 7.2v4M8 4.8v.2"/></svg>
+        关于
+      </div>
+      <div class="sidebar-foot">
+        <button><svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M6 1.5v9M1.5 6h9"/></svg>添加应用</button>
+      </div>
+    </aside>
+
+    <main class="content">
+      <div class="content-title" id="paneTitle">规则</div>
+
+      <!-- ================= RULES ================= -->
+      <section class="pane on" id="pane-rules">
+        <div class="rules-split">
+
+          <div class="app-list">
+            <div class="list-group-title">已启用</div>
+            <div class="app-row sel">
+              <span class="app-icon" style="background:conic-gradient(from 210deg,#1e9be0,#0a63c9,#4db6f0,#1e9be0)"></span>
+              <span class="app-name">Safari</span>
+              <span class="minis"><i class="mini red on"></i><i class="mini amber on"></i><i class="mini green on"></i></span>
+            </div>
+            <div class="app-row">
+              <span class="app-icon" style="background:linear-gradient(180deg,#3fa8f5 50%,#1b7ce0 50%)"></span>
+              <span class="app-name">访达</span>
+              <span class="minis"><i class="mini red off"></i><i class="mini amber off"></i><i class="mini green on"></i></span>
+            </div>
+            <div class="app-row">
+              <span class="app-icon" style="background:linear-gradient(135deg,#37c05b,#1f9e3a)"></span>
+              <span class="app-name">微信</span>
+              <span class="minis"><i class="mini red off"></i><i class="mini amber off"></i><i class="mini green off"></i></span>
+            </div>
+            <div class="list-group-title" style="margin-top:8px">已停用</div>
+            <div class="app-row" style="opacity:.5">
+              <span class="app-icon" style="background:linear-gradient(135deg,#8b5cf6,#6d3fd4)"></span>
+              <span class="app-name">Arc</span>
+              <span class="minis"><i class="mini red on"></i><i class="mini amber on"></i><i class="mini green off"></i></span>
+            </div>
+            <div class="list-legend">● 已重定义的灯<br>○ 保持系统默认</div>
+          </div>
+
+          <div class="inspector">
+
+            <!-- Signal card -->
+            <div class="card">
+              <div class="sig-top">
+                <span class="sig-icon" style="background:conic-gradient(from 210deg,#1e9be0,#0a63c9,#4db6f0,#1e9be0)"></span>
+                <div>
+                  <div class="sig-name">Safari</div>
+                  <div class="sig-bundle">com.apple.Safari</div>
+                </div>
+                <div class="sig-toggle"><div class="switch on"></div></div>
+              </div>
+              <div class="sig-divider"></div>
+              <div class="sig-lights">
+                <div class="sig-light">
+                  <span class="sig-dot red"><svg viewBox="0 0 12 12"><path d="M2.6 2.6l6.8 6.8M9.4 2.6L2.6 9.4" stroke="rgba(0,0,0,.55)" stroke-width="1.5" stroke-linecap="round"/></svg></span>
+                  <span class="sig-light-name">红灯</span>
+                  <span class="sig-action">退出应用</span>
+                </div>
+                <div class="sig-light">
+                  <span class="sig-dot amber"><svg viewBox="0 0 12 12"><path d="M2.4 6h7.2" stroke="rgba(0,0,0,.55)" stroke-width="1.5" stroke-linecap="round"/></svg></span>
+                  <span class="sig-light-name">黄灯</span>
+                  <span class="sig-action">最小化</span>
+                </div>
+                <div class="sig-light">
+                  <span class="sig-dot green"><svg viewBox="0 0 12 12"><path d="M1.2 6L5 3.4v5.2ZM10.8 6L7 3.4v5.2Z" fill="rgba(0,0,0,.55)"/></svg></span>
+                  <span class="sig-light-name">绿灯</span>
+                  <span class="sig-action">最大化</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Matrix lanes -->
+            <div class="card">
+              <div class="card-title-row">
+                <span class="card-title">动作矩阵</span>
+                <span style="font-size:11px;color:var(--text-3)">左键列即上方摘要 · 点击任一格修改动作</span>
+              </div>
+              <div class="matrix">
+                <div class="mx-labels">
+                  <div class="mx-corner"></div>
+                  <div class="mx-lab strong">左键</div>
+                  <div class="mx-lab">右键</div>
+                  <div class="mx-lab">⌥+左键</div>
+                  <div class="mx-lab">🌐+左键</div>
+                  <div class="mx-lab">长按</div>
+                </div>
+                <div class="lane red">
+                  <div class="lane-head"><span class="lane-dot red"></span>红灯</div>
+                  <button class="mx-cell set">退出应用<svg class="chev" viewBox="0 0 9 9" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M1.5 3l3 3 3-3"/></svg></button>
+                  <button class="mx-cell">默认<svg class="chev" viewBox="0 0 9 9" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M1.5 3l3 3 3-3"/></svg></button>
+                  <button class="mx-cell">默认<svg class="chev" viewBox="0 0 9 9" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M1.5 3l3 3 3-3"/></svg></button>
+                  <button class="mx-cell">默认<svg class="chev" viewBox="0 0 9 9" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M1.5 3l3 3 3-3"/></svg></button>
+                  <button class="mx-cell set">关闭窗口<svg class="chev" viewBox="0 0 9 9" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M1.5 3l3 3 3-3"/></svg></button>
+                </div>
+                <div class="lane amber">
+                  <div class="lane-head"><span class="lane-dot amber"></span>黄灯</div>
+                  <button class="mx-cell set">最小化<svg class="chev" viewBox="0 0 9 9" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M1.5 3l3 3 3-3"/></svg></button>
+                  <button class="mx-cell">默认<svg class="chev" viewBox="0 0 9 9" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M1.5 3l3 3 3-3"/></svg></button>
+                  <button class="mx-cell set">隐藏应用<svg class="chev" viewBox="0 0 9 9" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M1.5 3l3 3 3-3"/></svg></button>
+                  <button class="mx-cell">默认<svg class="chev" viewBox="0 0 9 9" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M1.5 3l3 3 3-3"/></svg></button>
+                  <button class="mx-cell">默认<svg class="chev" viewBox="0 0 9 9" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M1.5 3l3 3 3-3"/></svg></button>
+                </div>
+                <div class="lane green">
+                  <div class="lane-head"><span class="lane-dot green"></span>绿灯</div>
+                  <button class="mx-cell set">最大化<svg class="chev" viewBox="0 0 9 9" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M1.5 3l3 3 3-3"/></svg></button>
+                  <button class="mx-cell">默认<svg class="chev" viewBox="0 0 9 9" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M1.5 3l3 3 3-3"/></svg></button>
+                  <button class="mx-cell">默认<svg class="chev" viewBox="0 0 9 9" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M1.5 3l3 3 3-3"/></svg></button>
+                  <button class="mx-cell">默认<svg class="chev" viewBox="0 0 9 9" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M1.5 3l3 3 3-3"/></svg></button>
+                  <button class="mx-cell set">全屏<svg class="chev" viewBox="0 0 9 9" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M1.5 3l3 3 3-3"/></svg></button>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= HOVER ================= -->
+      <section class="pane" id="pane-hover">
+
+        <div class="card preview-card">
+          <div class="card-title-row">
+            <span class="card-title">实时预览</span>
+            <span style="font-size:11px;color:var(--text-3)">按下方设置即时渲染</span>
+          </div>
+          <div class="preview-stage">
+            <div class="fake-win">
+              <div class="fake-bar" id="fakeBar">
+                <div class="native-dots"><i></i><i></i><i></i></div>
+                <div class="fake-title">访达</div>
+                <div class="hotspot-zone"><span>不可见热区</span></div>
+                <div class="pill" id="pill">
+                  <div class="chip-wrap">
+                    <svg class="dwell-ring" viewBox="0 0 40 40"><circle id="dwellArc" cx="20" cy="20" r="17"/></svg>
+                    <span class="chip-dot red"><svg viewBox="0 0 12 12"><path d="M2.6 2.6l6.8 6.8M9.4 2.6L2.6 9.4" stroke="rgba(0,0,0,.55)" stroke-width="1.5" stroke-linecap="round"/></svg></span>
+                  </div>
+                  <span class="chip-dot amber"><svg viewBox="0 0 12 12"><path d="M2.4 6h7.2" stroke="rgba(0,0,0,.55)" stroke-width="1.5" stroke-linecap="round"/></svg></span>
+                  <span class="chip-dot green"><svg viewBox="0 0 12 12"><path d="M1.2 6L5 3.4v5.2ZM10.8 6L7 3.4v5.2Z" fill="rgba(0,0,0,.55)"/></svg></span>
+                  <span class="chip-dot accent"><svg viewBox="0 0 12 12" fill="rgba(255,255,255,.92)"><rect x="1.6" y="1.6" width="3.6" height="3.6" rx="1"/><rect x="6.8" y="1.6" width="3.6" height="3.6" rx="1"/><rect x="1.6" y="6.8" width="3.6" height="3.6" rx="1"/><rect x="6.8" y="6.8" width="3.6" height="3.6" rx="1"/></svg></span>
+                </div>
+              </div>
+              <div class="fake-body">
+                <div class="fake-line"></div>
+                <div class="fake-line short"></div>
+              </div>
+            </div>
+          </div>
+          <div class="preview-caption" id="previewCaption">悬停任意窗口的红绿灯即出现此效果 · 液态玻璃托盘 + 防误触进度环</div>
+        </div>
+
+        <div class="card">
+          <div class="frow">
+            <span class="lab">开启悬停放大</span><span class="spacer"></span>
+            <div class="switch on" id="hoverSwitch"></div>
+          </div>
+          <div class="frow">
+            <span class="lab">模式</span><span class="spacer"></span>
+            <div class="seg">
+              <button class="on" id="modeOverlay">覆盖放大</button>
+              <button id="modeHotspot">纯热区</button>
+            </div>
+          </div>
+          <div class="frow">
+            <span class="lab">放大尺寸</span><span class="spacer"></span>
+            <div class="slider-row">
+              <input type="range" id="sizeSlider" min="28" max="48" step="1" value="34">
+              <span class="val" id="sizeVal">34 pt</span>
+            </div>
+          </div>
+          <div class="frow">
+            <span class="lab">防误触延迟</span><span class="spacer"></span>
+            <div class="slider-row">
+              <input type="range" id="dwellSlider" min="0" max="800" step="50" value="400">
+              <span class="val" id="dwellVal">400 ms</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title-row"><span class="card-title">作用范围</span></div>
+          <div class="frow" style="border-bottom:none">
+            <div class="seg">
+              <button class="on">全部窗口</button>
+              <button>仅规则应用</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title-row">
+            <span class="card-title">扩展按钮</span>
+            <span style="font-size:11px;color:var(--text-3)">悬停时出现在绿灯右侧</span>
+          </div>
+          <div class="extra-grid">
+            <div class="extra-row"><span class="lab sub">按钮 1</span><button class="chip-btn">窗口面板<svg class="chev" viewBox="0 0 9 9" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M1.5 3l3 3 3-3"/></svg></button></div>
+            <div class="extra-row"><span class="lab sub">按钮 2</span><button class="chip-btn">下一显示器<svg class="chev" viewBox="0 0 9 9" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M1.5 3l3 3 3-3"/></svg></button></div>
+            <div class="extra-row"><span class="lab sub">按钮 3</span><button class="chip-btn ghost">不显示<svg class="chev" viewBox="0 0 9 9" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M1.5 3l3 3 3-3"/></svg></button></div>
+            <div class="extra-row"><span class="lab sub">按钮 4</span><button class="chip-btn ghost">不显示<svg class="chev" viewBox="0 0 9 9" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M1.5 3l3 3 3-3"/></svg></button></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title-row"><span class="card-title">快捷键</span></div>
+          <div class="frow" style="border-bottom:none">
+            <span class="lab">悬停放大开关</span><span class="spacer"></span>
+            <span class="kbb">⌃⌥H</span>
+            <button class="icon-btn" title="清除快捷键"><svg viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.3"><circle cx="6.5" cy="6.5" r="5.2"/><path d="M4.5 4.5l4 4M8.5 4.5l-4 4"/></svg></button>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- ================= STUB ================= -->
+      <section class="pane" id="pane-stub">
+        <div class="stub">本提案聚焦「规则」与「悬停放大」两个核心面板。<br>窗口管理 / 通用 / 关于 沿用现有信息架构，套用同一套新版式语言。</div>
+      </section>
+
+    </main>
+  </div>
+</div>
+
+<div class="stage-foot">
+  设计要点：① 信号卡 = 选中 App 的三灯左键动作摘要，是规则页的视觉主角；② 动作矩阵改为红/黄/绿三条灯色泳道，去按钮边框改扁平菜单单元，消灭 15 连排弹出按钮的表格感；③ 规则列表行尾三灯状态点（●已改 ○默认），一眼扫出配置深度；④ 悬停页顶部实时预览，滑块直接驱动渲染。提案稿 — 确认方向后在 Blinker 源码落地。
+</div>
+
+<script>
+  const $ = s => document.querySelector(s);
+  const $$ = s => document.querySelectorAll(s);
+
+  /* Sidebar navigation */
+  $$('.side-item[data-pane]').forEach(item => {
+    item.addEventListener('click', () => {
+      $$('.side-item').forEach(i => i.classList.remove('active'));
+      item.classList.add('active');
+      $$('.pane').forEach(p => p.classList.remove('on'));
+      $('#pane-' + item.dataset.pane).classList.add('on');
+      $('#paneTitle').textContent = item.dataset.title;
+    });
+  });
+
+  /* Theme */
+  $('#themeToggle').addEventListener('click', () => {
+    const root = document.documentElement;
+    const dark = root.dataset.theme === 'dark';
+    root.dataset.theme = dark ? 'light' : 'dark';
+    $('#themeToggle').textContent = dark ? '切换深色' : '切换浅色';
+  });
+
+  /* Switches (visual only) */
+  $$('.switch').forEach(sw => sw.addEventListener('click', () => sw.classList.toggle('on')));
+
+  /* Segmented (visual only, except mode) */
+  $$('.seg').forEach(seg => {
+    if (seg.id === 'modeSeg') return;
+    seg.querySelectorAll('button').forEach(b => b.addEventListener('click', () => {
+      seg.querySelectorAll('button').forEach(x => x.classList.remove('on'));
+      b.classList.add('on');
+    }));
+  });
+
+  /* Hover mode */
+  const bar = $('#fakeBar');
+  function setMode(hotspot) {
+    bar.classList.toggle('hotspot', hotspot);
+    $('#modeOverlay').classList.toggle('on', !hotspot);
+    $('#modeHotspot').classList.toggle('on', hotspot);
+    $('#dwellSlider').classList.toggle('dim', hotspot);
+    $('#previewCaption').textContent = hotspot
+      ? '纯热区：外观完全不变，仅在按钮周围扩大不可见点击区，点击立即响应'
+      : '悬停任意窗口的红绿灯即出现此效果 · 液态玻璃托盘 + 防误触进度环';
+    renderPreview();
+  }
+  $('#modeOverlay').addEventListener('click', () => setMode(false));
+  $('#modeHotspot').addEventListener('click', () => setMode(true));
+
+  /* Live preview */
+  const C = 2 * Math.PI * 17;
+  function paintSlider(el) {
+    const p = (el.value - el.min) / (el.max - el.min) * 100;
+    el.style.background = `linear-gradient(to right, var(--accent) ${p}%, var(--track) ${p}%)`;
+  }
+  function renderPreview() {
+    const s = +$('#sizeSlider').value;
+    const t = +$('#dwellSlider').value;
+    $$('.chip-dot').forEach(d => { d.style.width = d.style.height = s + 'px'; });
+    $$('.chip-wrap').forEach(w => { w.style.width = w.style.height = s + 'px'; });
+    const pill = $('#pill');
+    pill.style.height = (s + 18) + 'px';
+    pill.style.borderRadius = ((s + 18) / 2) + 'px';
+    pill.style.gap = (s * 0.32 + 3) + 'px';
+    $('#sizeVal').textContent = s + ' pt';
+    $('#dwellVal').textContent = t === 0 ? '立即响应' : t + ' ms';
+    const arc = $('#dwellArc');
+    arc.style.strokeDasharray = (C * t / 800) + ' ' + C;
+    arc.style.opacity = (t === 0 || bar.classList.contains('hotspot')) ? 0 : 1;
+    paintSlider($('#sizeSlider'));
+    paintSlider($('#dwellSlider'));
+  }
+  $('#sizeSlider').addEventListener('input', renderPreview);
+  $('#dwellSlider').addEventListener('input', renderPreview);
+  renderPreview();
+</script>
+</body>
+</html>

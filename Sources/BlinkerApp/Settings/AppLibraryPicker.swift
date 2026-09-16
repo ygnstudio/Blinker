@@ -75,6 +75,10 @@ struct AppLibraryPicker: View {
 
     @State private var installedApps: [InstalledApp] = []
     @State private var searchText = ""
+    /// True until the (backgrounded) library scan finishes; the scan takes
+    /// real disk time, and without this flag the empty list briefly reads
+    /// as "no results" — an honest loading state instead.
+    @State private var isScanning = true
 
     private var filteredApps: [InstalledApp] {
         if searchText.isEmpty {
@@ -89,7 +93,9 @@ struct AppLibraryPicker: View {
     var body: some View {
         NavigationStack {
             Group {
-                if filteredApps.isEmpty {
+                if isScanning {
+                    scanningState
+                } else if filteredApps.isEmpty {
                     ContentUnavailableView.search(text: searchText)
                 } else {
                     appList
@@ -114,7 +120,20 @@ struct AppLibraryPicker: View {
             installedApps = await Task.detached(priority: .userInitiated) {
                 ApplicationLibrary.installedApps()
             }.value
+            isScanning = false
         }
+    }
+
+    /// The scan's honest loading state: a centered progress indicator, not
+    /// a mislabeled empty state.
+    private var scanningState: some View {
+        VStack(spacing: 10) {
+            ProgressView()
+            Text("正在扫描应用库…")
+                .font(.callout)
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     private var appList: some View {

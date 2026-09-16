@@ -21,6 +21,17 @@ struct HoverSettingsTab: View {
 
     var body: some View {
         Form {
+            // The live preview leads the page: every control below answers
+            // here first, so the feature explains itself.
+            Section {
+                HoverPreviewCard(settings: settings)
+            } header: {
+                SectionHeader(
+                    title: String(localized: "实时预览"),
+                    info: String(localized: "按当前设置渲染悬停时的实际效果；真实效果出现在所有窗口的标题栏上。")
+                )
+            }
+
             Section {
                 Toggle("开启悬停放大", isOn: isEnabledBinding)
                 modePicker
@@ -58,8 +69,9 @@ struct HoverSettingsTab: View {
             } header: {
                 SectionHeader(
                     title: String(localized: "快捷键"),
-                    // swiftlint:disable:next line_length
-                    info: String(localized: "在任意应用下按下即可直接开关悬停放大；点击右侧录制新的快捷键，Esc 取消，减号清除。默认 ⌃⌥H；受「窗口管理 → 全局快捷键」总开关控制。")
+                    info: String(
+                        localized: "在任意应用下按下即可直接开关悬停放大；点击右侧录制新的快捷键，Esc 取消，减号清除。默认 ⌃⌥H；受「窗口管理 → 全局快捷键」总开关控制。"
+                    )
                 )
             }
         }
@@ -177,12 +189,11 @@ struct HoverSettingsTab: View {
     /// shown from the section header's info popover.
     private var enlargementInfo: String {
         let intro = String(localized: "开启后，鼠标悬停到窗口红绿灯按钮上会临时放大，点击即执行对应动作。")
-        let hint: String
-        switch settings.mode {
+        let hint = switch settings.mode {
         case .overlay:
-            hint = String(localized: "覆盖放大：红绿灯上方绘制液态玻璃质感的放大按钮，带防误触进度环。")
+            String(localized: "覆盖放大：红绿灯上方绘制液态玻璃质感的放大按钮，带防误触进度环。")
         case .hotspot:
-            hint = String(localized: "纯热区：界面外观完全不变，仅在按钮周围扩大不可见点击区，点击立即响应。")
+            String(localized: "纯热区：界面外观完全不变，仅在按钮周围扩大不可见点击区，点击立即响应。")
         }
         return intro + "\n" + hint
     }
