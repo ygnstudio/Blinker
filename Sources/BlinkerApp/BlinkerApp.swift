@@ -19,9 +19,17 @@ struct BlinkerApp: App {
                 onSnapEnabledChange: appDelegate.applySnapEnabled,
                 appDelegate: appDelegate
             )
+            // Width floor for the rules tab's three columns, calibrated
+            // on-screen after the split-view migration: with no explicit
+            // floor the system opens at 900×450 and the grouped Form's
+            // system insets clip the green-light column. 980 (the old
+            // manual floor) and 1110 still clip or squeeze the sidebars
+            // below their column minima; 1208×492 is the first size where
+            // the green column renders complete with every column label
+            // readable (verified by screenshot at a clean layout state).
+            .frame(minWidth: 1208, minHeight: 492)
         }
-        // The floor is carried by the content: the splitview column minima
-        // plus the matrix's own minimum width (see RulesTab/ActionPicker).
+        // The floor above becomes the window's minimum size.
         .windowResizability(.contentMinSize)
     }
 }
