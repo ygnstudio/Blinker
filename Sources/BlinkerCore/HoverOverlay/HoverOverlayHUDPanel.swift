@@ -272,7 +272,7 @@ extension ButtonAction {
         case .centerWindow: hudText("窗口居中", "Center")
         case .moveToNextDisplay: hudText("下一显示器", "Next Display")
         case .none: hudText("无操作", "Do Nothing")
-        case .windowManagerPanel: hudText("打开窗口管理面板", "Open Window Manager Panel")
+        case .windowManagerPanel: hudText("窗口面板", "Window Panel")
         }
     }
 }

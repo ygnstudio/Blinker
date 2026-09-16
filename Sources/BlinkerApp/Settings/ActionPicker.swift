@@ -26,7 +26,7 @@ extension ButtonAction {
         case .almostMaximize: tr("准最大化", "Almost Maximize")
         case .moveToNextDisplay: tr("下一显示器", "Next Display")
         case .none: tr("无操作", "Do Nothing")
-        case .windowManagerPanel: tr("打开窗口管理面板", "Open Window Manager Panel")
+        case .windowManagerPanel: tr("窗口面板", "Window Panel")
         }
     }
 }
