@@ -242,7 +242,7 @@ final class HotkeyManager: ObservableObject {
         endRecording()
         let combo = HotkeyCombo(keyCode: UInt32(event.keyCode), modifiers: carbonModifiers)
         switch target {
-        case .windowAction(let action):
+        case let .windowAction(action):
             bind(combo, for: action)
         case .hoverToggle:
             bindHoverToggle(combo)

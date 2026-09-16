@@ -314,9 +314,9 @@ public final class TrafficLightInterceptor {
 
 // MARK: - Decision
 
-extension TrafficLightInterceptor {
+private extension TrafficLightInterceptor {
     /// What to do with a click on a traffic button.
-    fileprivate struct Decision {
+    struct Decision {
         let action: ButtonAction
         /// The traffic button that was clicked; forwarded to the performer.
         let button: TrafficButton
@@ -327,7 +327,7 @@ extension TrafficLightInterceptor {
 
     /// Resolves whether the click should be intercepted and with which action.
     /// Logs every rejection reason; returns `nil` for pass-through.
-    fileprivate func resolveDecision(
+    func resolveDecision(
         location: CGPoint,
         window: AXQuery.WindowHit,
         isRightClick: Bool,
@@ -395,7 +395,7 @@ extension TrafficLightInterceptor {
 
     /// Maps a physical click to its configured variant. Modifier checks come
     /// first (⌥ then 🌐); a plain left click may become a long-press pending.
-    fileprivate static func clickVariant(isRightClick: Bool, flags: CGEventFlags) -> ClickVariant {
+    static func clickVariant(isRightClick: Bool, flags: CGEventFlags) -> ClickVariant {
         if isRightClick {
             return .right
         }

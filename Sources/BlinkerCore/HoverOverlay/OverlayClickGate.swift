@@ -29,7 +29,7 @@ public enum OverlayClickGate {
     /// never let a late mouse-up escape the protection window — keep the
     /// margin if the threshold changes.
     public static let suppressionMilliseconds: Int =
-        Int(TrafficLightInterceptor.longPressThreshold * 1000) + 200
+        .init(TrafficLightInterceptor.longPressThreshold * 1000) + 200
 
     /// Suppresses intercepted clicks for the given duration in milliseconds,
     /// scoped to `location` (CG global coordinates). Omitting the location

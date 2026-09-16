@@ -61,7 +61,7 @@ struct ActionPicker: View {
     @Binding var selection: ButtonAction?
     /// Label for the `nil` option; traffic rows use "默认", extra-button
     /// rows use "不显示".
-    var emptyLabel: String = String(localized: "默认")
+    var emptyLabel: String = .init(localized: "默认")
     /// Minimum menu width; fits four CJK characters ("关闭窗口") without
     /// ellipsis. Uniform across the rules matrix and the hover extra-button
     /// slots (previously the latter used a narrower 88 that truncated
@@ -138,7 +138,7 @@ private struct ActionPopupButton: NSViewRepresentable {
     /// Fill whatever width the layout proposes; the fitting size is only
     /// the fallback for unsized measurement (Grid's column pass), where the
     /// outer `minWidth: pickerWidth` frame enforces the 104pt floor.
-    func sizeThatFits(_ proposal: ProposedViewSize, nsView: NSPopUpButton, context: Context) -> CGSize? {
+    func sizeThatFits(_ proposal: ProposedViewSize, nsView: NSPopUpButton, context _: Context) -> CGSize? {
         CGSize(
             width: proposal.width ?? nsView.fittingSize.width,
             height: proposal.height ?? nsView.fittingSize.height

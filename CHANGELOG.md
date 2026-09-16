@@ -73,6 +73,37 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   overlay is visible, so the small originals no longer peek through the gaps
   between enlarged chips. Hotspot mode keeps the title bar untouched.
 
+### Changed
+- **Settings redesigned around the traffic-light motif**: the rules tab opens
+  with a signal card summarizing each light's left-click action, the
+  click-variant matrix renders as red/amber/green tinted lanes of bezel-free
+  menu cells (replacing the fifteen-popup grid), rule list rows carry a
+  three-light status trio (filled = customized, hollow = default), and the
+  hover tab leads with a live preview rendering the real enlarged chips,
+  glass tray and dwell ring from the current settings.
+
+### Fixed
+- Settings launch stall on macOS 26: a suppressed `Window` scene prevented
+  `applicationDidFinishLaunching` from ever running (no menu bar item, no
+  interceptor); the `Settings` placeholder scene is restored.
+- The app library sheet showed "no results" during its background scan; it
+  now shows an honest loading state.
+- The General tab's interception footer offers the adjacent recovery action
+  in failure states (open System Settings / retry the event tap).
+- The menu bar status row maps severity by color (failures red, transitional
+  states orange, running green) instead of a binary green/orange.
+- HUD placement-tile labels use the system caption2 size; workspace window
+  counts read "N 个窗口", matching the Settings wording.
+
+### Developer
+- Local dev builds carry a distinct bundle ID (`com.ygnstudio.Blinker.dev`)
+  so they never collide with an installed release in LaunchServices —
+  same-ID copies across /Applications, the repo and the Trash broke menu bar
+  icon rendering.
+- SwiftFormat disables `redundantSelf` and `wrapMultilineStatementBraces`
+  (they fought SwiftLint's `opening_brace` and stripped compiler-required
+  `self.`); the tree is reformatted to match.
+
 ## [0.2.2] - 2026-09-13
 
 ### Added

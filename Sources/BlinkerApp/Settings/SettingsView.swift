@@ -9,7 +9,9 @@ enum SettingsSection: String, CaseIterable, Identifiable {
     case general
     case about
 
-    var id: Self { self }
+    var id: Self {
+        self
+    }
 
     var title: String {
         switch self {
@@ -56,7 +58,9 @@ struct SettingsView: View {
     /// sheet can auto-select a newly added rule.
     @State private var ruleSelection: AppRule.ID?
 
-    private var selectedSection: SettingsSection { selection ?? .rules }
+    private var selectedSection: SettingsSection {
+        selection ?? .rules
+    }
 
     var body: some View {
         NavigationSplitView {

@@ -27,7 +27,7 @@ struct WindowManagementTab: View {
             hotkeyGroupSection(
                 title: String(localized: "四分屏"),
                 actions: [
-                    .tileTopLeft, .tileTopRight, .tileBottomLeft, .tileBottomRight
+                    .tileTopLeft, .tileTopRight, .tileBottomLeft, .tileBottomRight,
                 ]
             )
             hotkeyGroupSection(
@@ -82,8 +82,10 @@ struct WindowManagementTab: View {
         } header: {
             SectionHeader(
                 title: String(localized: "工作区"),
-                // swiftlint:disable:next line_length
-                info: String(localized: "把当前窗口排布存成命名预设，点「恢复」一键还原；最小化和其他桌面的窗口也会一并记录。开启「恢复时移回原桌面」后，窗口会一并回到保存时所在的桌面。同名保存会覆盖旧布局，已退出的应用会被跳过。")
+                info: String(
+                    // swiftlint:disable:next line_length
+                    localized: "把当前窗口排布存成命名预设，点「恢复」一键还原；最小化和其他桌面的窗口也会一并记录。开启「恢复时移回原桌面」后，窗口会一并回到保存时所在的桌面。同名保存会覆盖旧布局，已退出的应用会被跳过。"
+                )
             )
         }
     }
@@ -144,8 +146,10 @@ struct WindowManagementTab: View {
         } header: {
             SectionHeader(
                 title: String(localized: "全局快捷键"),
-                // swiftlint:disable:next line_length
-                info: String(localized: "在任意应用下按键即可对最前面的窗口执行动作。点击右侧录制新的快捷键，Esc 取消，减号清除。窗口动作默认方案为 ⌃⌥ 加方向键与 U/I/J/K；悬停放大开关的快捷键在「悬停放大」页配置。")
+                info: String(
+                    // swiftlint:disable:next line_length
+                    localized: "在任意应用下按键即可对最前面的窗口执行动作。点击右侧录制新的快捷键，Esc 取消，减号清除。窗口动作默认方案为 ⌃⌥ 加方向键与 U/I/J/K；悬停放大开关的快捷键在「悬停放大」页配置。"
+                )
             )
         }
     }
@@ -211,8 +215,8 @@ private struct SaveWorkspaceSheet: View {
             TextField("名称", text: $name)
                 .textFieldStyle(.roundedBorder)
             Text("记录当前所有可见窗口的位置和大小；同名保存会覆盖旧布局。")
-            .font(.callout)
-            .foregroundStyle(.secondary)
+                .font(.callout)
+                .foregroundStyle(.secondary)
             HStack {
                 Spacer()
                 Button("取消", role: .cancel) {
@@ -251,8 +255,8 @@ private struct WorkspaceRowView: View {
                 Text(workspace.name)
                     .font(.body)
                 Text(String(localized: "\(workspace.entries.count) 个窗口"))
-                .font(.caption2)
-                .foregroundStyle(.secondary)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
             }
             Spacer()
             Button("恢复", action: onRestore)

@@ -14,14 +14,14 @@ final class SkyLightSpacesTests: XCTestCase {
                 "Display Identifier": "Main",
                 "Spaces": [
                     ["id": 1, "uuid": "AAAA-1111"],
-                    ["id": 2, "uuid": "BBBB-2222"]
+                    ["id": 2, "uuid": "BBBB-2222"],
                 ],
-                "Current Space": ["id": 1, "uuid": "AAAA-1111"]
+                "Current Space": ["id": 1, "uuid": "AAAA-1111"],
             ],
             [
                 "Display Identifier": "Side",
-                "Spaces": [["id": 3, "uuid": "CCCC-3333"]]
-            ]
+                "Spaces": [["id": 3, "uuid": "CCCC-3333"]],
+            ],
         ]
 
         let infos = SkyLightSpaces.parseSpaceInfos(displays)
@@ -29,7 +29,7 @@ final class SkyLightSpacesTests: XCTestCase {
         XCTAssertEqual(infos, [
             SpaceInfo(id: 1, uuid: "AAAA-1111"),
             SpaceInfo(id: 2, uuid: "BBBB-2222"),
-            SpaceInfo(id: 3, uuid: "CCCC-3333")
+            SpaceInfo(id: 3, uuid: "CCCC-3333"),
         ])
     }
 
@@ -37,14 +37,14 @@ final class SkyLightSpacesTests: XCTestCase {
         let displays: [Any] = [
             [
                 "Spaces": [
-                    ["id": 1],                      // no uuid
-                    ["uuid": "BBBB-2222"],          // no id
+                    ["id": 1], // no uuid
+                    ["uuid": "BBBB-2222"], // no id
                     ["id": 2, "uuid": "CCCC-3333"], // valid
-                    "not-a-dictionary"
-                ]
+                    "not-a-dictionary",
+                ],
             ],
             "not-a-display",
-            ["Spaces": "not-an-array"]
+            ["Spaces": "not-an-array"],
         ]
 
         let infos = SkyLightSpaces.parseSpaceInfos(displays)
@@ -55,7 +55,7 @@ final class SkyLightSpacesTests: XCTestCase {
     func testParseSpaceInfosDeduplicatesByID() {
         let displays: [Any] = [
             ["Spaces": [["id": 7, "uuid": "AAAA-1111"]]],
-            ["Spaces": [["id": 7, "uuid": "BBBB-2222"]]] // same id, other display
+            ["Spaces": [["id": 7, "uuid": "BBBB-2222"]]], // same id, other display
         ]
 
         let infos = SkyLightSpaces.parseSpaceInfos(displays)
@@ -142,7 +142,7 @@ final class SkyLightSpacesTests: XCTestCase {
                 bundleIdentifier: "com.apple.Finder",
                 appName: "Finder",
                 frame: CGRect(x: 610, y: 0, width: 500, height: 400)
-            )
+            ),
         ])
 
         let data = try JSONEncoder().encode(workspace)

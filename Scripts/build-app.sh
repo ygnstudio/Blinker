@@ -8,6 +8,11 @@ CONFIGURATION="${1:-release}"
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 
 cd "$ROOT_DIR"
+# Local dev builds carry a distinct bundle ID so they never collide with an
+# installed release in LaunchServices (same-ID apps at multiple paths broke
+# the menu bar icon; see package-app.sh). Note: fresh ID = fresh defaults,
+# TCC grants and login-item registration on first launch.
+export BLINKER_BUNDLE_ID="com.ygnstudio.Blinker.dev"
 arch -arm64 swift build -c "$CONFIGURATION"
 
 BINARY="$ROOT_DIR/.build/$CONFIGURATION/Blinker"

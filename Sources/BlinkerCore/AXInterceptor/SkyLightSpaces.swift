@@ -28,7 +28,9 @@ public enum SkyLightSpaces {
     private static let bridge: Bridge? = Bridge(logger: logger)
 
     /// True when every required SkyLight symbol resolved at runtime.
-    public static var isAvailable: Bool { bridge != nil }
+    public static var isAvailable: Bool {
+        bridge != nil
+    }
 
     // MARK: - Queries
 
@@ -165,7 +167,7 @@ private final class Bridge {
     private static func load<T>(
         _ handle: UnsafeMutableRawPointer,
         _ names: [String],
-        _ type: T.Type
+        _: T.Type
     ) -> T? {
         for name in names {
             if let pointer = dlsym(handle, name) {

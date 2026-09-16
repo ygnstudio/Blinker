@@ -11,7 +11,10 @@ BINARY_PATH="${1:?usage: package-app.sh <binary-path> <version> [build-number] [
 APP_VERSION="${2:?missing version}"
 BUNDLE_VERSION="${3:-1}"
 APP_DIR="${4:-Blinker.app}"
-BUNDLE_ID="com.ygnstudio.Blinker"
+# Local dev builds override the bundle ID (see build-app.sh) so the dev app
+# and any installed release never share a LaunchServices identity — same-ID
+# apps across paths are exactly the pollution that broke the menu bar icon.
+BUNDLE_ID="${BLINKER_BUNDLE_ID:-com.ygnstudio.Blinker}"
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 ICON_PATH="$REPO_ROOT/Assets/Blinker.icns"
 
