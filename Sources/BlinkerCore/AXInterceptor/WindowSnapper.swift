@@ -19,7 +19,6 @@ public final class WindowSnapper {
     private let tapHost = EventTapThreadHost(threadName: "snapper-tap")
     private let logger = Logger(subsystem: "com.ygnstudio.blinker", category: "snapper")
 
-    private static let titleBarBandHeight: CGFloat = 32
     /// Guards the mutable drag state below (tap callback runs on the tap
     /// thread; `isEnabled` is toggled from the settings UI).
     private let stateLock = NSLock()
@@ -168,7 +167,7 @@ public final class WindowSnapper {
             ),
             // Only title-bar drags count, so in-app dragging (text selection,
             // file drags) never triggers a snap.
-            location.y - hit.bounds.minY <= Self.titleBarBandHeight
+            location.y - hit.bounds.minY <= InterceptorMetrics.titleBarBandHeight
         else { return }
 
         let screens = NSScreen.screens.map { screen in
@@ -281,22 +280,9 @@ public final class WindowSnapper {
 
 /// Borderless, non-activating panel drawing the snap target preview: a
 /// translucent accent rectangle with a rounded border.
-final class SnapPreviewPanel: NSPanel {
+final class SnapPreviewPanel: OverlayPanel {
     init(appKitFrame: CGRect) {
-        super.init(
-            contentRect: appKitFrame,
-            styleMask: [.borderless, .nonactivatingPanel],
-            backing: .buffered,
-            defer: false
-        )
-        isOpaque = false
-        backgroundColor = .clear
-        level = .popUpMenu
-        collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
-        hidesOnDeactivate = false
-        hasShadow = false
-        isReleasedWhenClosed = false
-        ignoresMouseEvents = true
+        super.init(appKitFrame: appKitFrame, ignoresMouseEvents: true)
         contentView = SnapPreviewView(frame: NSRect(origin: .zero, size: appKitFrame.size))
     }
 }

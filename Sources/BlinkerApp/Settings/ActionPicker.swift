@@ -4,32 +4,9 @@ import SwiftUI
 
 // MARK: - Localized labels
 
-/// Localized label for a remappable action, shared by every picker.
-extension ButtonAction {
-    var localizedLabel: String {
-        switch self {
-        case .closeWindow: String(localized: "关闭窗口")
-        case .quitApp: String(localized: "退出应用")
-        case .minimize: String(localized: "最小化")
-        case .hideApp: String(localized: "隐藏应用")
-        case .maximize: String(localized: "最大化")
-        case .fullscreen: String(localized: "全屏")
-        case .tileLeft: String(localized: "左半屏")
-        case .tileRight: String(localized: "右半屏")
-        case .tileTop: String(localized: "上半屏")
-        case .tileBottom: String(localized: "下半屏")
-        case .tileTopLeft: String(localized: "左上屏")
-        case .tileTopRight: String(localized: "右上屏")
-        case .tileBottomLeft: String(localized: "左下屏")
-        case .tileBottomRight: String(localized: "右下屏")
-        case .centerWindow: String(localized: "窗口居中")
-        case .almostMaximize: String(localized: "准最大化")
-        case .moveToNextDisplay: String(localized: "下一显示器")
-        case .none: String(localized: "无操作")
-        case .windowManagerPanel: String(localized: "窗口面板")
-        }
-    }
-}
+// `ButtonAction.localizedLabel` lives in BlinkerCore (see
+// HoverOverlayHUDPanel.swift) so the HUD and the settings pickers share one
+// implementation and one String Catalog.
 
 /// Localized label for a click variant, shown in the rules matrix.
 extension ClickVariant {

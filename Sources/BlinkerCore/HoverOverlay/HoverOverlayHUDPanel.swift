@@ -64,7 +64,7 @@ struct HoverOverlayHUDContent: View {
                     } label: {
                         VStack(spacing: 3) {
                             miniScreen(for: action)
-                            Text(action.overlayLocalizedLabel)
+                            Text(action.localizedLabel)
                                 .font(.caption2)
                                 .foregroundStyle(.secondary)
                                 .lineLimit(1)
@@ -168,7 +168,7 @@ private struct HUDHoverButtonStyle: ButtonStyle {
 /// cursor remains inside it. The backdrop uses the same glass material as
 /// the hover tray (`NSGlassEffectView` on macOS 26+, a masked
 /// `NSVisualEffectView` before), so the two surfaces read as one family.
-final class HoverOverlayHUDPanel: NSPanel {
+final class HoverOverlayHUDPanel: OverlayPanel {
     /// Corner radius matching the SwiftUI content's tile rounding.
     static let cornerRadius: CGFloat = 14
 
@@ -198,36 +198,14 @@ final class HoverOverlayHUDPanel: NSPanel {
         )
         axFrame = CGRect(origin: axOrigin, size: CGSize(width: size.width, height: size.height))
         super.init(
-            contentRect: appKitFrame,
-            styleMask: [.borderless, .nonactivatingPanel],
-            backing: .buffered,
-            defer: false
+            appKitFrame: appKitFrame,
+            level: NSWindow.Level(rawValue: NSWindow.Level.popUpMenu.rawValue + 1)
         )
-        isOpaque = false
-        backgroundColor = .clear
-        level = NSWindow.Level(rawValue: NSWindow.Level.popUpMenu.rawValue + 1)
-        collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
-        hidesOnDeactivate = false
-        hasShadow = false
-        isReleasedWhenClosed = false
 
         let container = NSView(frame: NSRect(origin: .zero, size: size))
-        let radius = Self.cornerRadius
-        if #available(macOS 26.0, *) {
-            let glass = NSGlassEffectView(frame: container.bounds)
-            glass.cornerRadius = radius
-            container.addSubview(glass)
-        } else {
-            let backdrop = NSVisualEffectView(frame: container.bounds)
-            backdrop.material = .underWindowBackground
-            backdrop.blendingMode = .behindWindow
-            backdrop.state = .active
-            backdrop.maskImage = HoverOverlayTrayPanel.roundedMaskImage(
-                size: container.bounds.size,
-                radius: radius
-            )
-            container.addSubview(backdrop)
-        }
+        container.addSubview(
+            GlassBackdrop.makeView(size: size, cornerRadius: Self.cornerRadius)
+        )
         hostingView.frame = NSRect(origin: .zero, size: size)
         hostingView.autoresizingMask = [.width, .height]
         container.addSubview(hostingView)
@@ -242,14 +220,13 @@ final class HoverOverlayHUDPanel: NSPanel {
     }
 }
 
-// MARK: - Core-side labels
+// MARK: - Shared labels
 
 extension ButtonAction {
-    /// Locale-based label for HUD rendering, resolved from Core's own String
-    /// Catalog (`Bundle.module`) so the HUD follows the system language. The
-    /// wording matches the settings labels so the two surfaces share one
-    /// vocabulary.
-    var overlayLocalizedLabel: String {
+    /// The single localized label for an action, shared by the HUD and the
+    /// settings pickers. Resolved from Core's String Catalog (`Bundle.module`)
+    /// so every surface follows the system language with one vocabulary.
+    public var localizedLabel: String {
         switch self {
         case .closeWindow: String(localized: "关闭窗口", bundle: .module)
         case .quitApp: String(localized: "退出应用", bundle: .module)

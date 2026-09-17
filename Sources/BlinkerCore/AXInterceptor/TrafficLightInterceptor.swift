@@ -36,8 +36,6 @@ public final class TrafficLightInterceptor {
     /// How long a left click must be held to count as a long press.
     static let longPressThreshold: TimeInterval = 0.45
 
-    private static let titleBarBandHeight: CGFloat = 32
-
     /// Guards `pendingPress`, `longPressWorkItem` and the swallow flags
     /// below, which are written from the event tap and the timer (work
     /// queue).
@@ -335,7 +333,7 @@ private extension TrafficLightInterceptor {
     ) -> Decision? {
         // Coarse rejection: only clicks inside the title bar band reach the
         // (comparatively expensive) AX hit test.
-        guard location.y - window.bounds.minY <= Self.titleBarBandHeight else {
+        guard location.y - window.bounds.minY <= InterceptorMetrics.titleBarBandHeight else {
             logger.debug("click outside title bar band; pass-through")
             return nil
         }

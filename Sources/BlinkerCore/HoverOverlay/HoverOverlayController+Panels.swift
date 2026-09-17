@@ -122,7 +122,10 @@ extension HoverOverlayController {
         let glows = zip(layout.buttons, layout.panelFrames).map { info, panelFrame in
             // The dot's circle rect (same inset rule as the chip drawing)
             // expressed in tray-local coordinates.
-            let circleFrame = panelFrame.insetBy(dx: 4, dy: 4)
+            let circleFrame = panelFrame.insetBy(
+                dx: OverlayChipDrawing.chipInset,
+                dy: OverlayChipDrawing.chipInset
+            )
             return HoverOverlayTrayPanel.Glow(
                 rect: HoverOverlayTrayPanel.localRect(
                     forAXRect: circleFrame,

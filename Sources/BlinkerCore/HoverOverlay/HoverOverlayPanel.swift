@@ -16,7 +16,7 @@ struct OverlayButtonInfo {
 /// .panelFrames`) so enlarged neighbors never overlap. The dot is an opaque
 /// vivid circle with a hairline rim; the glass capsule tray behind it
 /// (`HoverOverlayTrayPanel`) provides the chip's backdrop on every OS.
-final class HoverOverlayPanel: NSPanel {
+final class HoverOverlayPanel: OverlayPanel {
     let buttonView: HoverOverlayButtonView
 
     /// - Parameters:
@@ -51,19 +51,7 @@ final class HoverOverlayPanel: NSPanel {
             onActivate: onActivate,
             onLongPress: onLongPress
         )
-        super.init(
-            contentRect: appKitFrame,
-            styleMask: [.borderless, .nonactivatingPanel],
-            backing: .buffered,
-            defer: false
-        )
-        isOpaque = false
-        backgroundColor = .clear
-        level = .popUpMenu
-        collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
-        hidesOnDeactivate = false
-        hasShadow = false
-        isReleasedWhenClosed = false
+        super.init(appKitFrame: appKitFrame)
         contentView = buttonView
     }
 }

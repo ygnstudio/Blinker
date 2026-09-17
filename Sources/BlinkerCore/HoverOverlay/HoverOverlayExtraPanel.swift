@@ -34,7 +34,7 @@ public extension ButtonAction {
 /// `HoverOverlayPanel`: an opaque accent circle, dwell ring and an action
 /// symbol drawn directly on the glass tray — no glass wrapper of its own, so
 /// the chip language matches the enlarged dots exactly.
-final class HoverOverlayExtraPanel: NSPanel {
+final class HoverOverlayExtraPanel: OverlayPanel {
     let buttonView: HoverOverlayExtraButtonView
 
     /// - Parameters:
@@ -54,19 +54,7 @@ final class HoverOverlayExtraPanel: NSPanel {
             action: action,
             onActivate: onActivate
         )
-        super.init(
-            contentRect: appKitFrame,
-            styleMask: [.borderless, .nonactivatingPanel],
-            backing: .buffered,
-            defer: false
-        )
-        isOpaque = false
-        backgroundColor = .clear
-        level = .popUpMenu
-        collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
-        hidesOnDeactivate = false
-        hasShadow = false
-        isReleasedWhenClosed = false
+        super.init(appKitFrame: appKitFrame)
         contentView = buttonView
     }
 }

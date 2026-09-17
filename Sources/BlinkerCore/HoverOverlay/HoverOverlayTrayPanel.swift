@@ -16,7 +16,7 @@ import AppKit
 /// stays inside the tray margins and can never be clipped by the panel frame.
 /// It sits one window level below the chip panels and ignores mouse events,
 /// so clicks fall through to the enlarged chips above.
-final class HoverOverlayTrayPanel: NSPanel {
+final class HoverOverlayTrayPanel: OverlayPanel {
     /// Horizontal tray margin around the displayed chips' bounding box (pt).
     static let horizontalMargin: CGFloat = 16
     /// Vertical tray margin around the displayed chips' bounding box (pt).
@@ -39,41 +39,22 @@ final class HoverOverlayTrayPanel: NSPanel {
     ///     coordinates.
     init(trayFrame: CGRect, glows: [Glow]) {
         let appKitFrame = AXQuery.appKitFrame(fromAXRect: trayFrame)
-        super.init(
-            contentRect: appKitFrame,
-            styleMask: [.borderless, .nonactivatingPanel],
-            backing: .buffered,
-            defer: false
-        )
-        isOpaque = false
-        backgroundColor = .clear
         // One level below the enlarged chips: the tray must never cover
         // them, no matter the fronting order, while staying above regular
         // app windows.
-        level = NSWindow.Level(NSWindow.Level.popUpMenu.rawValue - 1)
-        collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
-        hidesOnDeactivate = false
-        hasShadow = false
-        isReleasedWhenClosed = false
+        super.init(
+            appKitFrame: appKitFrame,
+            level: NSWindow.Level(NSWindow.Level.popUpMenu.rawValue - 1),
+            ignoresMouseEvents: true
+        )
         acceptsMouseMovedEvents = false
-        ignoresMouseEvents = true
 
         let size = appKitFrame.size
         let container = NSView(frame: NSRect(origin: .zero, size: size))
         // Pill shape: the corner radius is derived from the frame height.
-        let radius = size.height / 2
-        if #available(macOS 26.0, *) {
-            let glass = NSGlassEffectView(frame: NSRect(origin: .zero, size: size))
-            glass.cornerRadius = radius
-            container.addSubview(glass)
-        } else {
-            let backdrop = NSVisualEffectView(frame: NSRect(origin: .zero, size: size))
-            backdrop.material = .underWindowBackground
-            backdrop.blendingMode = .behindWindow
-            backdrop.state = .active
-            backdrop.maskImage = Self.pillMaskImage(size: size, radius: radius)
-            container.addSubview(backdrop)
-        }
+        container.addSubview(
+            GlassBackdrop.makeView(size: size, cornerRadius: size.height / 2)
+        )
         let glowView = TrayGlowView(frame: NSRect(origin: .zero, size: size))
         glowView.glows = glows
         container.addSubview(glowView)
@@ -115,15 +96,7 @@ final class HoverOverlayTrayPanel: NSPanel {
     /// White rounded-rect mask for `NSVisualEffectView.maskImage`, shared by
     /// every glass-backed overlay panel (tray pill, management HUD).
     static func roundedMaskImage(size: NSSize, radius: CGFloat) -> NSImage {
-        NSImage(size: size, flipped: false) { rect in
-            NSColor.white.setFill()
-            NSBezierPath(roundedRect: rect, xRadius: radius, yRadius: radius).fill()
-            return true
-        }
-    }
-
-    private static func pillMaskImage(size: NSSize, radius: CGFloat) -> NSImage {
-        roundedMaskImage(size: size, radius: radius)
+        GlassBackdrop.roundedMaskImage(size: size, radius: radius)
     }
 }
 

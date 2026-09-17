@@ -77,10 +77,13 @@ public enum OverlayChipDrawing {
             : NSColor.black.withAlphaComponent(0.55)
     }
 
+    /// The gap between a chip's outer bounds and its inner circle, shared by
+    /// the chip drawing and the tray glow layout.
+    static let chipInset: CGFloat = 4
+
     /// The inner circle rect for a chip of the given bounds (4 pt inset).
     static func circleRect(in bounds: NSRect) -> NSRect {
-        let inset: CGFloat = 4
-        let diameter = min(bounds.width, bounds.height) - inset * 2
+        let diameter = min(bounds.width, bounds.height) - chipInset * 2
         return CGRect(
             x: (bounds.width - diameter) / 2,
             y: (bounds.height - diameter) / 2,

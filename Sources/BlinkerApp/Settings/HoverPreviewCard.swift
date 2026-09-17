@@ -261,35 +261,12 @@ final class PreviewGlassView: NSView {
 
     private func rebuild(size: NSSize) {
         effectView?.removeFromSuperview()
-        let frame = NSRect(origin: .zero, size: size)
-        if #available(macOS 26.0, *) {
-            let glass = NSGlassEffectView(frame: frame)
-            glass.cornerRadius = size.height / 2
-            glass.autoresizingMask = [.width, .height]
-            addSubview(glass)
-            effectView = glass
-        } else {
-            let backdrop = NSVisualEffectView(frame: frame)
-            backdrop.material = .underWindowBackground
-            backdrop.blendingMode = .behindWindow
-            backdrop.state = .active
-            backdrop.maskImage = Self.capsuleMaskImage(size: size)
-            backdrop.autoresizingMask = [.width, .height]
-            addSubview(backdrop)
-            effectView = backdrop
-        }
-    }
-
-    /// White capsule mask for the pre-26 `NSVisualEffectView` path.
-    private static func capsuleMaskImage(size: NSSize) -> NSImage {
-        NSImage(size: size, flipped: false) { rect in
-            NSColor.white.setFill()
-            NSBezierPath(
-                roundedRect: rect,
-                xRadius: rect.height / 2,
-                yRadius: rect.height / 2
-            ).fill()
-            return true
-        }
+        let glass = GlassBackdrop.makeView(
+            size: size,
+            cornerRadius: size.height / 2,
+            autoresizingMask: [.width, .height]
+        )
+        addSubview(glass)
+        effectView = glass
     }
 }
