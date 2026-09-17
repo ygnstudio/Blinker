@@ -80,20 +80,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
         settingsWindowController.show()
     }
 
-    func bringToFront() {
-        settingsWindowController.bringToFront()
-    }
-
-    /// Pauses or resumes click interception from the settings toggle.
-    func toggleInterception() {
-        interception.toggle()
-    }
-
-    /// Retries starting interception (General tab's tap-failed branch).
-    func retryInterception() {
-        interception.start()
-    }
-
     /// Persists the drag-to-snap toggle and applies it to the live snapper.
     func applySnapEnabled(_ enabled: Bool) {
         interception.applySnapEnabled(enabled)
