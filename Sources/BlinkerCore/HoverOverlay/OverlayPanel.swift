@@ -30,6 +30,32 @@ public class OverlayPanel: NSPanel {
         isReleasedWhenClosed = false
         self.ignoresMouseEvents = ignoresMouseEvents
     }
+
+    /// Orders the panel front with a two-phase fade-in. The system glass
+    /// renders its unblended base color — a solid light-or-dark rectangle,
+    /// depending on appearance — for an indeterminate stretch after the
+    /// window first appears, until the behind-window blend engages (no
+    /// public signal announces readiness). A fast or ease-out fade reveals
+    /// that base mid-ramp: the pill reads as "white, then translucent".
+    ///
+    /// Phase one holds the window at zero alpha for `hold` seconds, so the
+    /// blend settles while the panel is fully invisible. Phase two fades
+    /// in with an ease-in curve, whose near-zero early frames act as extra
+    /// insurance against a slower-than-expected blend. Only for glass-backed
+    /// surfaces (tray, management HUD): plain drawn panels (chips, snap
+    /// preview) have no unblended frame to hide.
+    public func orderFrontFadingIn(hold: TimeInterval = 0.2, duration: TimeInterval = 0.3) {
+        alphaValue = 0
+        orderFrontRegardless()
+        DispatchQueue.main.asyncAfter(deadline: .now() + hold) { [weak self] in
+            guard let self, self.isVisible else { return }
+            NSAnimationContext.runAnimationGroup { context in
+                context.duration = duration
+                context.timingFunction = CAMediaTimingFunction(name: .easeIn)
+                self.animator().alphaValue = 1
+            }
+        }
+    }
 }
 
 /// The glass backdrop shared by the tray, the management HUD and the settings

@@ -135,9 +135,25 @@ extension HoverOverlayController {
                 color: OverlayChipDrawing.vividColor(for: info.button)
             )
         }
-        let tray = HoverOverlayTrayPanel(trayFrame: trayFrame, glows: glows)
-        tray.orderFrontRegardless()
-        trayPanel = tray
+        // The tray is kept alive across hide/show cycles: a reused window
+        // carries its established glass blend, so later appearances come up
+        // clean instead of replaying the unblended-base flash. Only the
+        // very first tray still needs the two-phase fade.
+        if let tray = trayPanel {
+            tray.update(trayFrame: trayFrame, glows: glows)
+            if tray.alphaValue < 1 {
+                // A first fade that was cut short by a quick hover-out can
+                // leave the window at zero alpha; restart the fade rather
+                // than showing an invisible (or half-blended) tray.
+                tray.orderFrontFadingIn()
+            } else {
+                tray.orderFrontRegardless()
+            }
+        } else {
+            let tray = HoverOverlayTrayPanel(trayFrame: trayFrame, glows: glows)
+            tray.orderFrontFadingIn()
+            trayPanel = tray
+        }
     }
 
     func hidePanels() {
@@ -148,8 +164,9 @@ extension HoverOverlayController {
         extraPanels.forEach { $0.orderOut(nil) }
         extraPanels = []
         panelExtraActions = []
+        // The tray window is only hidden, never released: keeping it alive
+        // preserves the glass blend so the next appearance is flash-free.
         trayPanel?.orderOut(nil)
-        trayPanel = nil
         panelSignature = []
         panelPID = 0
     }

@@ -118,7 +118,7 @@ final class OverlayHUDManager {
         frame.origin.y = min(frame.minY, container.maxY - frame.height - 4)
         hudPanel.setAXFrame(frame)
 
-        hudPanel.orderFrontRegardless()
+        hudPanel.orderFrontFadingIn()
         panel = hudPanel
         stateLock.withLock {
             keepAliveFrameAX = frame

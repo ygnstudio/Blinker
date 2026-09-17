@@ -52,13 +52,35 @@ final class HoverOverlayTrayPanel: OverlayPanel {
         let size = appKitFrame.size
         let container = NSView(frame: NSRect(origin: .zero, size: size))
         // Pill shape: the corner radius is derived from the frame height.
+        // The subviews track the container so a reused tray can simply be
+        // resized (see `update`) instead of torn down and rebuilt.
         container.addSubview(
-            GlassBackdrop.makeView(size: size, cornerRadius: size.height / 2)
+            GlassBackdrop.makeView(
+                size: size,
+                cornerRadius: size.height / 2,
+                autoresizingMask: [.width, .height]
+            )
         )
         let glowView = TrayGlowView(frame: NSRect(origin: .zero, size: size))
+        glowView.autoresizingMask = [.width, .height]
         glowView.glows = glows
         container.addSubview(glowView)
         contentView = container
+    }
+
+    /// Re-points a kept-alive tray at a new layout: moves the window to the
+    /// new capsule frame and redraws the glows. The glass blend belongs to
+    /// the (still-existing) window, so re-showing a reused tray never
+    /// re-flashes the unblended base color the way a freshly created panel
+    /// does.
+    func update(trayFrame: CGRect, glows: [Glow]) {
+        setFrame(AXQuery.appKitFrame(fromAXRect: trayFrame), display: true)
+        guard
+            let container = contentView as? NSView,
+            let glowView = container.subviews.compactMap({ $0 as? TrayGlowView }).first
+        else { return }
+        glowView.glows = glows
+        glowView.needsDisplay = true
     }
 
     /// The displayed chips' bounding box inflated by the tray margins, or
