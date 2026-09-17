@@ -28,12 +28,14 @@ Sources/
 │   │   ├── RuleEngine.swift   # (bundleID, 按钮) → ButtonAction?
 │   │   └── RuleStore.swift    # 规则的持久化（UserDefaults）
 │   ├── Models/                # AppRule / ButtonAction / TrafficButton 值类型
-│   ├── HoverOverlay/          # 悬停放大覆盖层（10 个文件，见下）
+│   ├── HoverOverlay/          # 悬停放大覆盖层（14 个文件，见下）
 │   └── Permission/            # 辅助功能权限检测与引导
 └── BlinkerApp/                # SwiftUI 应用壳
-    ├── AppDelegate.swift      # 长生命周期状态：拦截器 + 覆盖层 + 贴靠 + 快捷键 + store
-    ├── BlinkerApp.swift       # @main，MenuBarExtra 场景
-    ├── Onboarding/            # 首次启动权限引导
+    ├── AppDelegate.swift      # 组合根：持有 store，接线三个协作者
+    ├── BlinkerApp.swift       # @main；仅含空 Settings 占位场景（真实设置窗走 NSWindow）
+    ├── InterceptionCoordinator.swift # 长生命周期运行时：拦截器 + 覆盖层 + 贴靠
+    ├── StatusItemController.swift    # 菜单栏图标与菜单
+    ├── SettingsWindowController.swift # 设置窗口生命周期（懒建 NSWindow）
     ├── Settings/              # 五 tab 设置页 + 应用库选择器
     └── WindowManagement/      # 全局快捷键：Carbon 注册 + 录制 + 持久化
 
@@ -45,10 +47,9 @@ Scripts/                        # build-app.sh / package-app.sh / release 产物
 
 | 层 | 文件 | 职责 |
 |---|---|---|
-| 编排 | `HoverOverlayController(+Detection/+Panels)` | 鼠标跟踪、触发判定、面板生命周期、异步采样调度 |
-| 几何 | `HoverOverlayGeometry` | `panelFrames`（整组布局 + 窗口∩屏幕钳制）、触发区判定 |
-| 呈现 | `HoverOverlayPanel` / `HoverOverlayMaskPanel` | 放大芯片（NSGlassEffectView）/ 原生按钮遮罩 |
-| 采样 | `TitlebarSampler` / `TitlebarPixelScan` | SCScreenshotManager 抓条带 → 逐列干净度分析 → 选最宽干净段 |
+| 编排 | `HoverOverlayController(+Detection/+Panels)`、`OverlayHUDManager`、`OverlayDwellController` | 鼠标跟踪、触发判定、面板生命周期、管理 HUD、驻留门（进度环） |
+| 几何 | `HoverOverlayGeometry` | `panelFrames`（整组布局 + 窗口∩屏幕钳制）、触发区判定、安全走廊 |
+| 呈现 | `OverlayPanel`（基类 + 玻璃底衬）、`HoverOverlayPanel` / `HoverOverlayExtraPanel` / `HoverOverlayTrayPanel` / `HoverOverlayHUDPanel`、`OverlayChipDrawing`、`OverlayClickGate` | 放大芯片（不透明自绘）、玻璃胶囊托盘（单窗复用）、点击门控 |
 
 ### 数据流一：点击拦截（冷路径，每次点击）
 
@@ -66,9 +67,11 @@ CGEventTap（独立线程）
 
 ```
 鼠标移动检测（事件节流 + 拖拽停摆 + latest-wins 合并）
-  → HoverOverlayController+Detection：isCursorInTriggerZone（按钮组外扩 12pt）
+  → HoverOverlayController+Detection：isCursorInTriggerZone（按钮组外扩 12pt；唤醒只认原生按钮组，
+    面板/托盘帧仅在已显示时作存活区，防止唤醒区被放大组撑大）
   → HoverOverlayGeometry.panelFrames：整组左缘锚定布局 + 钳制到窗口∩屏幕
-  → rebuildPanels：先铺玻璃托盘（Level = popUpMenu - 1，点击穿透 + 三灯受控辉光），再铺放大芯片
+  → rebuildPanels：先铺玻璃托盘（Level = popUpMenu - 1，点击穿透 + 三灯受控辉光），再铺放大芯片；
+    托盘为单窗常驻复用（换窗口仅原位改 frame + 辉光），玻璃混合不重建
 ```
 
 ### 线程模型
@@ -87,6 +90,7 @@ CGEventTap（独立线程）
 |---|---|
 | NSPanel 覆盖层 + CGEventTap 拦截（而非 AXObserver 抢点击） | 保留原生按钮的可访问性语义；覆盖层只做视觉替换 |
 | 玻璃托盘 + 不透明放大珠（而非采样遮罩） | 玻璃由系统合成器实时取景，任意背景自动融合，零权限零延迟；不透明珠从源头杜绝偏色；受控辉光（衰减边界 < 托盘边距）吸收原生按钮残影，永不溢出或被裁剪 |
+| 托盘单窗复用（而非每次 hover 重建） | 玻璃混合属于窗口本身且生效时机不定（无就绪信号）；复用存活窗口让第二次起瞬时干净就位，首次以两段式淡入（零 alpha 保持 + easeIn）兜底未混合底色 |
 | 布局左缘锚定（而非组中心对齐） | 放大珠组从原生组左缘向右生长：红灯玻璃残影始终被首珠盖住，组也永不越出窗口左缘 |
 | 不沙盒，Developer ID + 公证官网直发 | 辅助功能权限与沙盒互斥，无法上 MAS |
 | 无日志/统计/遥测 | 隐私优先，local-only 是产品承诺（见 CONTRIBUTING） |
@@ -119,9 +123,11 @@ Sources/
 │   ├── HoverOverlay/          # Hover-to-enlarge overlay (see table below)
 │   └── Permission/            # Accessibility permission detection & onboarding
 └── BlinkerApp/                # SwiftUI app shell
-    ├── AppDelegate.swift      # Long-lived state: interceptor + overlay + snapper + hotkeys
-    ├── BlinkerApp.swift       # @main, MenuBarExtra scene
-    ├── Onboarding/            # First-launch permission flow
+    ├── AppDelegate.swift      # Composition root: owns the stores, wires the collaborators
+    ├── BlinkerApp.swift       # @main; empty Settings placeholder scene (real window is NSWindow)
+    ├── InterceptionCoordinator.swift # Long-lived runtime: interceptor + overlay + snapper
+    ├── StatusItemController.swift    # Menu bar icon and menu
+    ├── SettingsWindowController.swift # Settings window lifecycle (lazily built NSWindow)
     ├── Settings/              # Five-tab settings + app library picker
     └── WindowManagement/      # Global hotkeys: Carbon registration + recorder
 
@@ -133,9 +139,9 @@ Inside `HoverOverlay/`:
 
 | Layer | Files | Responsibility |
 |---|---|---|
-| Orchestration | `HoverOverlayController(+Detection/+Panels)` | Mouse tracking, trigger decision, panel lifecycle |
-| Geometry | `HoverOverlayGeometry` | `panelFrames` (leading-anchored group layout, clamped to window∩screen), trigger zone |
-| Presentation | `HoverOverlayPanel` / `HoverOverlayTrayPanel` | Enlarged chips (opaque vivid dots) / click-through glass tray with bounded glows |
+| Orchestration | `HoverOverlayController(+Detection/+Panels)`, `OverlayHUDManager`, `OverlayDwellController` | Mouse tracking, trigger decision, panel lifecycle, management HUD, dwell gate (progress ring) |
+| Geometry | `HoverOverlayGeometry` | `panelFrames` (leading-anchored group layout, clamped to window∩screen), trigger zone, safe corridor |
+| Presentation | `OverlayPanel` (base + glass backdrop), `HoverOverlayPanel` / `HoverOverlayExtraPanel` / `HoverOverlayTrayPanel` / `HoverOverlayHUDPanel`, `OverlayChipDrawing`, `OverlayClickGate` | Enlarged chips (opaque vivid dots), click-through glass tray (single reused window), click gating |
 
 ### Data flow 1: click interception (cold path, per click)
 
@@ -153,9 +159,12 @@ The pre-filter is the performance contract: most clicks die in step one and neve
 
 ```
 Mouse-move detection (throttled + drag stand-down + latest-wins coalescing)
-  → HoverOverlayController+Detection: isCursorInTriggerZone (button group + 12pt)
+  → HoverOverlayController+Detection: isCursorInTriggerZone (button group + 12pt; waking requires
+    the native button group only — panel/tray frames extend the keep-alive zone while visible)
   → HoverOverlayGeometry.panelFrames: leading-anchored group layout, clamped to window∩screen
-  → rebuildPanels: glass tray first (Level = popUpMenu - 1, click-through + bounded dot glows), then enlarged chips
+  → rebuildPanels: glass tray first (Level = popUpMenu - 1, click-through + bounded dot glows), then
+    enlarged chips; the tray is one long-lived reused window (in-place frame + glow updates), so
+    the glass blend is never rebuilt
 ```
 
 ### Threading model
@@ -174,6 +183,7 @@ Mouse-move detection (throttled + drag stand-down + latest-wins coalescing)
 |---|---|
 | NSPanel overlays + CGEventTap (not AXObserver click stealing) | Preserves native button accessibility semantics; overlays only replace visuals |
 | Glass tray + opaque enlarged dots (not a sampled mask) | The glass is composited live by the system — any background blends with zero permission and zero latency; opaque dots eliminate color bleed at the source; bounded glows (decay edge < tray margin) absorb the native buttons' ghosts without ever spilling or clipping |
+| Single reused tray window (not rebuilt per hover) | The glass blend belongs to the window itself and engages at an indeterminate time (no readiness signal); reusing the live window makes every appearance after the first come up instantly clean, while the first one fades in two phases (zero-alpha hold + easeIn) to mask the unblended base |
 | Leading-edge-anchored layout (not group-center alignment) | The enlarged group grows rightward from the native group's left edge: the red button's glass ghost stays covered by the first dot, and the group never crosses the window's left edge |
 | Non-sandboxed, Developer ID + notarized website distribution | Accessibility permission is mutually exclusive with App Sandbox |
 | No logging / statistics / telemetry | Privacy-first; local-only is a product promise (see CONTRIBUTING) |

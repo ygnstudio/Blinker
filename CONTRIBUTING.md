@@ -40,7 +40,7 @@ model, and why key decisions were made. Quick reference:
 2. Map it to its native AX subrole in
    `Sources/BlinkerCore/AXInterceptor/WindowActionPerformer.swift`
    (`nativeSubrole(for:)`).
-3. Expose it in the `ActionPicker` UI (`Sources/BlinkerApp/Settings/SettingsScreen.swift`).
+3. Expose it in the `ActionPicker` UI (`Sources/BlinkerApp/Settings/RulesTab.swift`).
 4. Add unit tests: engine lookup + lenient decoding round-trip.
 
 ### Add a rule field (like `minimizeAction`)
@@ -48,7 +48,7 @@ model, and why key decisions were made. Quick reference:
 1. Add the optional field to `AppRule` (`Sources/BlinkerCore/Models/AppRule.swift`)
    with lenient decoding so old stored rules still load.
 2. Wire it through `RuleEngine.swift` (remove any hard-coded `nil` returns).
-3. Add a picker row in `SettingsScreen.swift` (follow the color-dot pattern).
+3. Add a picker row in `RulesTab.swift` (follow the color-dot pattern).
 4. Add decoding-compatibility and engine tests.
 
 ### Adjust the enlarge layout
