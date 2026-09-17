@@ -172,7 +172,6 @@ extension HoverOverlayController {
             workQueue.async { [actionPerformer] in
                 actionPerformer.perform(
                     action,
-                    button: info.button,
                     window: axWindow,
                     processIdentifier: processIdentifier
                 )
@@ -217,7 +216,6 @@ extension HoverOverlayController {
         workQueue.async { [actionPerformer] in
             actionPerformer.perform(
                 action,
-                button: button,
                 window: axWindow,
                 processIdentifier: processIdentifier
             )
@@ -240,7 +238,6 @@ extension HoverOverlayController {
         workQueue.async { [actionPerformer] in
             actionPerformer.perform(
                 context.action,
-                button: .zoom,
                 window: context.axWindow,
                 processIdentifier: context.processIdentifier
             )
@@ -278,7 +275,6 @@ extension HoverOverlayController {
                 workQueue.async { [actionPerformer] in
                     actionPerformer.perform(
                         action,
-                        button: .zoom,
                         window: context.axWindow,
                         processIdentifier: context.processIdentifier
                     )

@@ -88,9 +88,7 @@ public final class RuleStore: ObservableObject {
     }
 
     private func persist(_ current: [AppRule]) {
-        if let data = try? JSONEncoder().encode(current) {
-            defaults.set(data, forKey: storageKey)
-        }
+        storeEncoded(current, forKey: storageKey, in: defaults, category: "rules")
     }
 
     /// Loads the flat rule table. A build briefly stored rules as named

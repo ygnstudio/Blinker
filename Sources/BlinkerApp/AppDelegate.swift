@@ -41,8 +41,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, Observ
     /// Global hotkeys; independent of click interception, always available.
     private(set) lazy var hotkeyManager = HotkeyManager(frontWindowPerformer: frontWindowPerformer)
 
-    @Published private(set) var isIntercepting = false
     @Published private(set) var status: InterceptorStatus = .checking
+
+    /// True while the click-interception stack is running; derived from
+    /// `status` so the two can never disagree.
+    var isIntercepting: Bool { status == .running }
 
     private var interceptor: TrafficLightInterceptor?
     private var windowSnapper: WindowSnapper?
@@ -343,7 +346,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, Observ
             logger.error("snapper tap failed to start; drag-to-snap unavailable")
         }
 
-        isIntercepting = true
         status = .running
         cancelPermissionRetry()
         logger.info("interceptor started; event tap active")
@@ -365,7 +367,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, Observ
         windowSnapper = nil
         hoverOverlay?.stop()
         hoverOverlay = nil
-        isIntercepting = false
         status = .paused
         logger.info("interceptor stopped")
     }

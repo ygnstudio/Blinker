@@ -27,7 +27,7 @@ public final class WorkspaceStore: ObservableObject {
     /// Capture runs on the AX work queue; `completion` fires on the main
     /// thread once the store has been updated.
     public func saveCurrentLayout(named name: String, completion: (() -> Void)? = nil) {
-        WorkspaceManager.captureVisibleWindowsAsync { [weak self] entries in
+        WorkspaceManager.captureAllWindowsAsync { [weak self] entries in
             guard let self else { return }
             if let index = workspaces.firstIndex(where: { $0.name == name }) {
                 workspaces[index].entries = entries
@@ -47,7 +47,7 @@ public final class WorkspaceStore: ObservableObject {
             completion?()
             return
         }
-        WorkspaceManager.captureVisibleWindowsAsync { [weak self] entries in
+        WorkspaceManager.captureAllWindowsAsync { [weak self] entries in
             guard
                 let self,
                 let index = workspaces.firstIndex(where: { $0.id == id })
@@ -82,9 +82,7 @@ public final class WorkspaceStore: ObservableObject {
     // MARK: - Persistence
 
     private func persist() {
-        if let data = try? JSONEncoder().encode(workspaces) {
-            defaults.set(data, forKey: storageKey)
-        }
+        storeEncoded(workspaces, forKey: storageKey, in: defaults, category: "workspaces")
     }
 
     private static func load(defaults: UserDefaults, key: String) -> [SavedWorkspace] {

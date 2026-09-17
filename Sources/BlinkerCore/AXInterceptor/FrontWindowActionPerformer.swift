@@ -37,7 +37,6 @@ public final class FrontWindowActionPerformer {
             else { return }
             performer.perform(
                 action,
-                button: .close,
                 window: window,
                 processIdentifier: app.processIdentifier
             )

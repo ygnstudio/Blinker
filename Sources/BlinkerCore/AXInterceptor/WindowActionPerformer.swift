@@ -10,13 +10,11 @@ import os
 public protocol WindowActionPerforming: AnyObject {
     /// Performs `action` on `window` (owned by `processIdentifier`).
     ///
-    /// `button` is the traffic button the action was triggered from —
-    /// informational only. Remaps that equal a native behavior press the
-    /// *action's* native button (e.g. red → minimize presses the yellow
-    /// button), so implementations must not assume it equals `button`.
+    /// Remaps that equal a native behavior press the *action's* native
+    /// button (e.g. red → minimize presses the yellow button), never the
+    /// button that was actually clicked.
     func perform(
         _ action: ButtonAction,
-        button: TrafficButton,
         window: AXUIElement,
         processIdentifier: pid_t
     )
@@ -30,7 +28,6 @@ public final class DefaultWindowActionPerformer: WindowActionPerforming {
 
     public func perform(
         _ action: ButtonAction,
-        button _: TrafficButton,
         window: AXUIElement,
         processIdentifier: pid_t
     ) {

@@ -160,9 +160,7 @@ public final class HoverOverlaySettingsStore: ObservableObject {
     }
 
     private func persist(_ current: HoverOverlaySettings) {
-        if let data = try? JSONEncoder().encode(current) {
-            defaults.set(data, forKey: storageKey)
-        }
+        storeEncoded(current, forKey: storageKey, in: defaults, category: "hover-overlay")
     }
 
     private static func load(defaults: UserDefaults, key: String) -> HoverOverlaySettings {

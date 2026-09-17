@@ -145,12 +145,13 @@ final class HotkeyManager: ObservableObject {
             bindings = Self.defaultBindings
             hoverToggleCombo = Self.defaultHoverToggleCombo
             defaults.set(true, forKey: Self.enabledKey)
-            if let data = try? JSONEncoder().encode(bindings) {
-                defaults.set(data, forKey: Self.storageKey)
-            }
-            if let data = try? JSONEncoder().encode(hoverToggleCombo) {
-                defaults.set(data, forKey: Self.hoverToggleStorageKey)
-            }
+            storeEncoded(bindings, forKey: Self.storageKey, in: defaults, category: "hotkeys")
+            storeEncoded(
+                hoverToggleCombo,
+                forKey: Self.hoverToggleStorageKey,
+                in: defaults,
+                category: "hotkeys"
+            )
         } else {
             isEnabled = defaults.bool(forKey: Self.enabledKey)
             if let data = defaults.data(forKey: Self.storageKey) {
@@ -380,9 +381,7 @@ final class HotkeyManager: ObservableObject {
     // MARK: - Persistence
 
     private func persist() {
-        if let data = try? JSONEncoder().encode(bindings) {
-            defaults.set(data, forKey: Self.storageKey)
-        }
+        storeEncoded(bindings, forKey: Self.storageKey, in: defaults, category: "hotkeys")
     }
 
     private func persistEnabled() {
@@ -475,10 +474,6 @@ extension HotkeyManager {
     private func persistHoverToggleCombo() {
         // Encodes `nil` as JSON `null`, so an explicitly cleared binding is
         // distinguishable from "never stored" on the next launch.
-        if let data = try? JSONEncoder().encode(hoverToggleCombo) {
-            defaults.set(data, forKey: Self.hoverToggleStorageKey)
-        } else {
-            defaults.removeObject(forKey: Self.hoverToggleStorageKey)
-        }
+        storeEncoded(hoverToggleCombo, forKey: Self.hoverToggleStorageKey, in: defaults, category: "hotkeys")
     }
 }

@@ -67,11 +67,11 @@ public enum WorkspaceManager {
 
     /// Captures the current arrangement on the AX queue; `completion`
     /// receives the entries on the main thread.
-    public static func captureVisibleWindowsAsync(
+    public static func captureAllWindowsAsync(
         completion: @escaping ([WorkspaceEntry]) -> Void
     ) {
         axQueue.async {
-            let entries = captureVisibleWindows()
+            let entries = captureAllWindows()
             DispatchQueue.main.async { completion(entries) }
         }
     }
@@ -106,7 +106,7 @@ public enum WorkspaceManager {
     /// workspaces look empty (and restore a no-op) for most real layouts.
     /// Each entry also records the window's desktop (Space) UUID when the
     /// SkyLight bridge is available.
-    public static func captureVisibleWindows() -> [WorkspaceEntry] {
+    public static func captureAllWindows() -> [WorkspaceEntry] {
         let candidates = captureCandidates()
         let spaceUUIDs = spaceUUIDsByWindowID(candidates.map(\.windowID))
         return candidates

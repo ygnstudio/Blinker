@@ -163,7 +163,7 @@ public final class TrafficLightInterceptor {
         guard pending != nil || swallowUp else { return Unmanaged.passUnretained(event) }
         if let pending, !pending.didFireLong, let shortAction = pending.shortAction {
             workQueue.async { [weak self] in
-                self?.perform(shortAction, button: pending.button, window: pending.windowHit)
+                self?.perform(shortAction, window: pending.windowHit)
             }
         }
         return nil
@@ -216,7 +216,7 @@ public final class TrafficLightInterceptor {
             scheduleLongPress(pending)
         } else {
             workQueue.async { [weak self] in
-                self?.perform(decision.action, button: decision.button, window: window)
+                self?.perform(decision.action, window: window)
             }
         }
         return nil
@@ -262,12 +262,12 @@ public final class TrafficLightInterceptor {
         pendingLock.unlock()
 
         logger.info("long press threshold reached; firing long-press action")
-        perform(longAction, button: pending.button, window: windowHit)
+        perform(longAction, window: windowHit)
     }
 
     // MARK: - Action execution
 
-    private func perform(_ action: ButtonAction, button: TrafficButton, window hit: AXQuery.WindowHit) {
+    private func perform(_ action: ButtonAction, window hit: AXQuery.WindowHit) {
         // Resolve the AX window that was actually clicked. The swallowed
         // mouse-down never activates the app, so the focused window can be a
         // different one; matching by frame keeps the action on the right
@@ -283,7 +283,6 @@ public final class TrafficLightInterceptor {
         }
         actionPerformer.perform(
             action,
-            button: button,
             window: targetWindow,
             processIdentifier: hit.processIdentifier
         )
