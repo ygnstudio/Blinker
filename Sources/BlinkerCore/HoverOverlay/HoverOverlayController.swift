@@ -13,9 +13,10 @@ import os
 /// thread. A dwell gate (progress ring fill) protects against accidental
 /// clicks.
 ///
-/// The implementation is split across extensions in the same module:
-/// `HoverOverlayController+Detection.swift` (work-queue detection) and
-/// `HoverOverlayController+Panels.swift` (main-thread panels and dwell).
+/// The implementation is split across focused collaborators and extensions
+/// in the same module: `OverlayHUDManager` (management HUD), `OverlayDwellController`
+/// (dwell gate), `HoverOverlayController+Detection.swift` (work-queue
+/// detection) and `HoverOverlayController+Panels.swift` (main-thread panels).
 public final class HoverOverlayController {
     let ruleEngine: RuleEngine
     let actionPerformer: WindowActionPerforming
@@ -56,46 +57,11 @@ public final class HoverOverlayController {
     /// The extra actions the current chips were built with; a change also
     /// triggers a rebuild.
     var panelExtraActions: [ButtonAction] = []
-    var hoveredPanel: (any OverlayDwellPanel)?
-    var dwellTimer: Timer?
-    var dwellStartedAt: Date?
-    var activeDwellMilliseconds = 0
     var workspaceObserver: NSObjectProtocol?
-    /// The open management HUD, if any. Main-thread owned.
-    var hudPanel: HoverOverlayHUDPanel?
-    /// Guards the keep-alive frame below, read from the work queue's cursor
-    /// detection while the main thread opens/closes the HUD.
-    let hudStateLock = NSLock()
-    var hudKeepAliveFrameAX: CGRect = .null
-    /// The chip frame that opened the HUD; anchors the safe corridor.
-    var hudAnchorFrameAX: CGRect = .null
-
-    /// Whether the cursor is inside the open HUD or the safe corridor
-    /// between the HUD and the chip that opened it (work-queue safe).
-    /// Inside this zone the HUD stays open while the cursor travels from
-    /// the chip to the panel.
-    func hudSafeZoneContains(_ point: CGPoint) -> Bool {
-        hudStateLock.withLock {
-            guard !hudKeepAliveFrameAX.isNull else { return false }
-            if hudKeepAliveFrameAX.contains(point) {
-                return true
-            }
-            guard !hudAnchorFrameAX.isNull else { return false }
-            // Still hovering the chip that opened the HUD: safe.
-            if hudAnchorFrameAX.contains(point) {
-                return true
-            }
-            return HoverOverlayGeometry.safeCorridorContains(
-                cursor: point,
-                anchor: hudAnchorFrameAX,
-                panel: hudKeepAliveFrameAX
-            )
-        }
-    }
-
-    var isHUDOpen: Bool {
-        hudStateLock.withLock { !hudKeepAliveFrameAX.isNull }
-    }
+    /// The management HUD (open/close/keep-alive geometry).
+    let hud: OverlayHUDManager
+    /// Dwell tracking for the displayed chips (main-thread only).
+    let dwell = OverlayDwellController()
 
     public init(
         ruleEngine: RuleEngine,
@@ -109,6 +75,13 @@ public final class HoverOverlayController {
         self.settingsStore = settingsStore
         self.workspacesProvider = workspacesProvider
         self.workspaceRestorer = workspaceRestorer
+        hud = OverlayHUDManager(
+            workspacesProvider: workspacesProvider,
+            workspaceRestorer: workspaceRestorer,
+            actionPerformer: actionPerformer,
+            workQueue: workQueue,
+            logger: logger
+        )
     }
 
     public var isRunning: Bool {
@@ -164,6 +137,22 @@ public final class HoverOverlayController {
             self?.hidePanels()
         }
         logger.info("hover overlay controller stopped")
+    }
+
+    /// Any app activation change hides the overlay; the next mouse move
+    /// re-creates it when still hovering a title bar. Activation can also
+    /// reorder windows under a stationary cursor, so the window-hit cache
+    /// is dropped as well.
+    private func observeWorkspaceActivation() {
+        guard workspaceObserver == nil else { return }
+        workspaceObserver = NSWorkspace.shared.notificationCenter.addObserver(
+            forName: NSWorkspace.didActivateApplicationNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            AXQuery.invalidateWindowUnderPointCache()
+            self?.hidePanels()
+        }
     }
 
     deinit {

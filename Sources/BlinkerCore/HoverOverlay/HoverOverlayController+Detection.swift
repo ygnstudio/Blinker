@@ -39,12 +39,12 @@ extension HoverOverlayController {
         // inside the HUD — or the safe corridor between the HUD and the
         // chip that opened it — everything stays as-is; outside it the HUD
         // closes and normal detection resumes.
-        if isHUDOpen {
-            if hudSafeZoneContains(location) {
+        if hud.isOpen {
+            if hud.safeZoneContains(location) {
                 return
             }
             DispatchQueue.main.async { [weak self] in
-                self?.closeHUD()
+                self?.hud.close()
             }
         }
         let settings = settingsStore.snapshot

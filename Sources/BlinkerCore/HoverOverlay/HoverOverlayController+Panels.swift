@@ -2,7 +2,7 @@ import AppKit
 import ApplicationServices
 import CoreGraphics
 
-// MARK: - Panels and dwell (main thread only)
+// MARK: - Panels and activation (main thread only)
 
 extension HoverOverlayController {
     func syncPanels(layout: OverlayLayout, hoveredIndex: Int?, settings: HoverOverlaySettings) {
@@ -29,7 +29,8 @@ extension HoverOverlayController {
                 panels.forEach { $0.orderFrontRegardless() }
                 extraPanels.forEach { $0.orderFrontRegardless() }
             }
-            applyHoverTransition(
+            dwell.applyHoverTransition(
+                dwellPanels: allDwellPanels,
                 hoveredIndex: hoveredIndex,
                 dwellMilliseconds: settings.effectiveDwellMilliseconds
             )
@@ -140,8 +141,8 @@ extension HoverOverlayController {
     }
 
     func hidePanels() {
-        closeHUD()
-        stopDwell()
+        hud.close()
+        dwell.stop()
         panels.forEach { $0.orderOut(nil) }
         panels = []
         extraPanels.forEach { $0.orderOut(nil) }
@@ -232,7 +233,7 @@ extension HoverOverlayController {
         let actionName = String(describing: context.action)
         logger.info("extra chip activated: \(actionName, privacy: .public)")
         if context.action == .windowManagerPanel {
-            openHUD(context)
+            hud.open(context)
             return
         }
         workQueue.async { [actionPerformer] in
@@ -248,167 +249,10 @@ extension HoverOverlayController {
         }
     }
 
-    // MARK: - Management HUD
-
-    /// The placement grid shown in the HUD, in reading order.
-    private static let hudPlacements: [ButtonAction] = [
-        .tileTopLeft, .tileTop, .tileTopRight,
-        .tileLeft, .centerWindow, .tileRight,
-        .tileBottomLeft, .tileBottom, .tileBottomRight,
-        .maximize, .almostMaximize, .moveToNextDisplay,
-    ]
-
-    /// Opens the management HUD below the enlarged group. All actions act on
-    /// the hovered window (`axWindow`) — never on the frontmost one. The
-    /// panel measures its own size from the SwiftUI content; this method
-    /// only anchors and clamps the position.
-    private func openHUD(_ context: ExtraChipContext) {
-        closeHUD()
-
-        let workspaces = workspacesProvider()
-        let content = HoverOverlayHUDContent(
-            appName: context.appName,
-            placements: Self.hudPlacements,
-            workspaces: workspaces,
-            onAction: { [weak self] action in
-                guard let self else { return }
-                workQueue.async { [actionPerformer] in
-                    actionPerformer.perform(
-                        action,
-                        window: context.axWindow,
-                        processIdentifier: context.processIdentifier
-                    )
-                }
-                closeHUD()
-            },
-            onRestore: { [weak self] id in
-                guard let self else { return }
-                workspaceRestorer(id)
-                closeHUD()
-            },
-            onClose: { [weak self] in
-                self?.closeHUD()
-            }
-        )
-        let panel = HoverOverlayHUDPanel(
-            axOrigin: CGPoint(x: context.anchorFrame.minX, y: context.anchorFrame.maxY + 6),
-            content: content
-        )
-
-        // Clamp the measured frame into the window ∩ screen container so the
-        // HUD never drifts off-screen.
-        let container = Self.overlayContainerBounds(
-            forButtonFrames: context.buttonFrames,
-            windowBounds: context.windowBounds
-        ) ?? context.windowBounds
-        var frame = panel.axFrame
-        frame.origin.x = min(max(frame.minX, container.minX + 4), container.maxX - frame.width - 4)
-        frame.origin.y = min(frame.minY, container.maxY - frame.height - 4)
-        panel.setAXFrame(frame)
-
-        panel.orderFrontRegardless()
-        hudPanel = panel
-        hudStateLock.withLock {
-            hudKeepAliveFrameAX = frame
-            hudAnchorFrameAX = context.anchorFrame
-        }
-        logger.info("management HUD opened")
-    }
-
-    /// Closes the management HUD (idempotent).
-    func closeHUD() {
-        hudStateLock.withLock {
-            hudKeepAliveFrameAX = .null
-            hudAnchorFrameAX = .null
-        }
-        hudPanel?.orderOut(nil)
-        hudPanel = nil
-    }
-
-    // MARK: - Dwell
-
     /// All dwell-capable chips, in display order (traffic lights, then the
     /// extra action chips).
     private var allDwellPanels: [any OverlayDwellPanel] {
         panels + extraPanels
-    }
-
-    /// Applies a hover transition: resets the previous panel's dwell and
-    /// starts (or skips, when dwell is 0 ms) dwell on the newly hovered one.
-    private func applyHoverTransition(hoveredIndex: Int?, dwellMilliseconds: Int) {
-        let dwellPanels = allDwellPanels
-        guard let index = hoveredIndex, dwellPanels.indices.contains(index) else {
-            stopDwell()
-            return
-        }
-        let panel = dwellPanels[index]
-        guard panel !== hoveredPanel else { return }
-        hoveredPanel?.resetDwell()
-        hoveredPanel = panel
-        activeDwellMilliseconds = dwellMilliseconds
-        dwellStartedAt = Date()
-        if dwellMilliseconds <= 0 {
-            panel.setDwellProgress(1)
-            stopDwellTimer()
-        } else {
-            startDwellTimer()
-        }
-    }
-
-    func stopDwell() {
-        hoveredPanel?.resetDwell()
-        hoveredPanel = nil
-        dwellStartedAt = nil
-        stopDwellTimer()
-    }
-
-    private func startDwellTimer() {
-        stopDwellTimer()
-        let timer = Timer(timeInterval: 1.0 / 30.0, repeats: true) { [weak self] timer in
-            guard let self else {
-                timer.invalidate()
-                return
-            }
-            tickDwell()
-        }
-        RunLoop.main.add(timer, forMode: .common)
-        dwellTimer = timer
-    }
-
-    private func stopDwellTimer() {
-        dwellTimer?.invalidate()
-        dwellTimer = nil
-    }
-
-    private func tickDwell() {
-        guard let panel = hoveredPanel, let start = dwellStartedAt else { return }
-        let elapsedMilliseconds = Date().timeIntervalSince(start) * 1000
-        let progress = HoverOverlayGeometry.dwellProgress(
-            elapsedMilliseconds: elapsedMilliseconds,
-            dwellMilliseconds: activeDwellMilliseconds
-        )
-        panel.setDwellProgress(progress)
-        if progress >= 1 {
-            stopDwellTimer()
-        }
-    }
-
-    // MARK: - Workspace observation
-
-    /// Any app activation change hides the overlay; the next mouse move
-    /// re-creates it when still hovering a title bar. Activation can also
-    /// reorder windows under a stationary cursor, so the window-hit cache
-    /// is dropped as well.
-    func observeWorkspaceActivation() {
-        guard workspaceObserver == nil else { return }
-        workspaceObserver = NSWorkspace.shared.notificationCenter.addObserver(
-            forName: NSWorkspace.didActivateApplicationNotification,
-            object: nil,
-            queue: .main
-        ) { [weak self] _ in
-            AXQuery.invalidateWindowUnderPointCache()
-            self?.hidePanels()
-        }
     }
 }
 
