@@ -255,11 +255,11 @@ final class HoverOverlayHUDPanel: OverlayPanel {
 
 // MARK: - Shared labels
 
-extension ButtonAction {
+public extension ButtonAction {
     /// The single localized label for an action, shared by the HUD and the
     /// settings pickers. Resolved from Core's String Catalog (`Bundle.module`)
     /// so every surface follows the system language with one vocabulary.
-    public var localizedLabel: String {
+    var localizedLabel: String {
         switch self {
         case .closeWindow: String(localized: "关闭窗口", bundle: .module)
         case .quitApp: String(localized: "退出应用", bundle: .module)

@@ -30,7 +30,9 @@ final class InterceptionCoordinator: ObservableObject {
 
     /// True while the click-interception stack is running; derived from
     /// `status` so the two can never disagree.
-    var isIntercepting: Bool { status == .running }
+    var isIntercepting: Bool {
+        status == .running
+    }
 
     private var interceptor: TrafficLightInterceptor?
     private var windowSnapper: WindowSnapper?

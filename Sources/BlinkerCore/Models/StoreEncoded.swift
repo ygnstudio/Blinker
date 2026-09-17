@@ -12,7 +12,7 @@ public func storeEncoded<T: Encodable>(
     category: String
 ) {
     do {
-        defaults.set(try JSONEncoder().encode(value), forKey: key)
+        try defaults.set(JSONEncoder().encode(value), forKey: key)
     } catch {
         Logger(subsystem: "com.ygnstudio.blinker", category: category).error(
             "Failed to encode \(String(describing: T.self)) for key \(key, privacy: .public): \(error)"

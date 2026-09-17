@@ -6,7 +6,7 @@ import XCTest
 /// shape must keep the wake-up area at the native corner no matter how
 /// wide the enlarged group is.
 final class HoverOverlayTriggerZoneTests: XCTestCase {
-    func testWakeUpCallShapeIgnoresEnlargedGroup() {
+    func testWakeUpCallShapeIgnoresEnlargedGroup() throws {
         // Pre-activation the controller passes no panel/tray frames: the
         // wake-up zone must be just the native group + padding, so enabling
         // extra chips (which grow the enlarged group and tray far to the
@@ -20,7 +20,7 @@ final class HoverOverlayTriggerZoneTests: XCTestCase {
             enlargedSize: 28,
             extraCount: 2
         )
-        let tray = HoverOverlayTrayPanel.frame(forDisplayFrames: panels)
+        let tray = try XCTUnwrap(HoverOverlayTrayPanel.frame(forDisplayFrames: panels))
 
         // The wake-up call shape: empty panels, no tray. A point over the
         // enlarged group — well past the native group + 12pt padding (which
@@ -40,6 +40,6 @@ final class HoverOverlayTriggerZoneTests: XCTestCase {
             trayFrame: tray
         ))
         // Sanity: the same point really is inside the tray/enlarged group.
-        XCTAssertTrue(tray!.contains(CGPoint(x: 170, y: 507)))
+        XCTAssertTrue(tray.contains(CGPoint(x: 170, y: 507)))
     }
 }
