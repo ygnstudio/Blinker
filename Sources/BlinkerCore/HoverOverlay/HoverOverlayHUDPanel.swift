@@ -211,10 +211,14 @@ final class HoverOverlayHUDPanel: OverlayPanel {
             height: max(minimumHeight, measured.height)
         )
         let container = NSView(frame: NSRect(origin: .zero, size: size))
+        // `.clear` is the see-through glass: the HUD grid buttons carry
+        // their own subtle fills, so readability survives the thinner
+        // material (the default `.regular` reads as a dense milky plate).
         container.addSubview(
             GlassBackdrop.makeView(
                 size: size,
                 cornerRadius: Self.cornerRadius,
+                style: .clear,
                 autoresizingMask: [.width, .height]
             )
         )

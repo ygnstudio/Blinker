@@ -62,18 +62,33 @@ public class OverlayPanel: NSPanel {
 /// preview card: native `NSGlassEffectView` on macOS 26+, with a masked
 /// `NSVisualEffectView` fallback below.
 public enum GlassBackdrop {
+    /// Glass density, decoupled from the macOS-26-only `NSGlassEffectView.
+    /// Style` so the parameter can live in an always-available signature.
+    public enum GlassStyle {
+        /// Dense frosted plate (the system default).
+        case regular
+        /// Neutral, see-through glass.
+        case clear
+    }
+
     /// Builds the backdrop view for the given size and corner radius. The
     /// caller owns layout: position the returned view in its container (or
     /// pass `autoresizingMask` so it follows container resizes).
+    ///
+    /// `style` maps to `NSGlassEffectView.style` on macOS 26+; the pre-26
+    /// `NSVisualEffectView` fallback ignores it — its closest material is
+    /// already fairly clear.
     public static func makeView(
         size: NSSize,
         cornerRadius: CGFloat,
+        style: GlassStyle = .regular,
         autoresizingMask: NSView.AutoresizingMask = []
     ) -> NSView {
         let frame = NSRect(origin: .zero, size: size)
         if #available(macOS 26.0, *) {
             let glass = NSGlassEffectView(frame: frame)
             glass.cornerRadius = cornerRadius
+            glass.style = style == .clear ? .clear : .regular
             glass.autoresizingMask = autoresizingMask
             return glass
         }
