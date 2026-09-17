@@ -79,21 +79,7 @@ extension HoverOverlayController {
             resetDetectionAndHide()
             return
         }
-        // Only wake up near the traffic lights themselves — not across the
-        // whole title bar band. The enlarged panels and the glass tray widen
-        // the *alive* zone only while the overlay is already on screen
-        // (gliding across the pill's padding between chips must not close
-        // it); before that they would balloon the wake-up area far past the
-        // native corner — especially with extra chips enabled.
-        let keepAlive = isOverlayVisible
-        guard HoverOverlayGeometry.isCursorInTriggerZone(
-            cursor: location,
-            buttonFrames: layout.buttons.map(\.frame),
-            panelFrames: keepAlive ? layout.allPanelFrames : [],
-            trayFrame: keepAlive
-                ? HoverOverlayTrayPanel.frame(forDisplayFrames: layout.allPanelFrames)
-                : nil
-        ) else {
+        guard isCursorInWakeOrKeepAliveZone(location, layout: layout) else {
             resetDetectionAndHide()
             return
         }
@@ -101,6 +87,24 @@ extension HoverOverlayController {
             HoverOverlayGeometry.isCursorInPanel(cursor: location, panelFrame: $0)
         }
         syncPanels(layout: layout, hoveredIndex: hoveredIndex, settings: settings)
+    }
+
+    /// Only wake up near the traffic lights themselves — not across the
+    /// whole title bar band. The enlarged panels and the glass tray widen
+    /// the *alive* zone only while the overlay is already on screen
+    /// (gliding across the pill's padding between chips must not close
+    /// it); before that they would balloon the wake-up area far past the
+    /// native corner — especially with extra chips enabled.
+    private func isCursorInWakeOrKeepAliveZone(_ location: CGPoint, layout: OverlayLayout) -> Bool {
+        let keepAlive = isOverlayVisible
+        return HoverOverlayGeometry.isCursorInTriggerZone(
+            cursor: location,
+            buttonFrames: layout.buttons.map(\.frame),
+            panelFrames: keepAlive ? layout.allPanelFrames : [],
+            trayFrame: keepAlive
+                ? HoverOverlayTrayPanel.frame(forDisplayFrames: layout.allPanelFrames)
+                : nil
+        )
     }
 
     /// Resolves the traffic buttons for the window under the cursor and lays

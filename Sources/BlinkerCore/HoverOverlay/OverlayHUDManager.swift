@@ -77,11 +77,51 @@ final class OverlayHUDManager {
     func open(_ context: ExtraChipContext) {
         close()
 
-        let workspaces = workspacesProvider()
-        let content = HoverOverlayHUDContent(
+        let content = makeContent(context)
+        // The HUD panel is kept alive across open/close cycles: a reused
+        // window carries its established glass blend, so later opens come up
+        // instantly clean. Only the very first one still fades in.
+        let hudPanel: HoverOverlayHUDPanel
+        if let existing = panel {
+            existing.update(content: content, axOrigin: anchorOrigin(context))
+            hudPanel = existing
+        } else {
+            hudPanel = HoverOverlayHUDPanel(
+                axOrigin: anchorOrigin(context),
+                content: content
+            )
+            panel = hudPanel
+        }
+
+        let frame = clampedFrame(of: hudPanel, in: context)
+        hudPanel.setAXFrame(frame)
+
+        if hudPanel.alphaValue < 1 {
+            // A first fade that was cut short by a quick close can leave the
+            // window at zero alpha; restart the fade rather than showing an
+            // invisible (or half-blended) HUD.
+            hudPanel.orderFrontFadingIn()
+        } else {
+            hudPanel.orderFrontRegardless()
+        }
+        stateLock.withLock {
+            keepAliveFrameAX = frame
+            anchorFrameAX = context.anchorFrame
+        }
+        logger.info("management HUD opened")
+    }
+
+    /// The HUD's top-left origin, six points below the anchor chip.
+    private func anchorOrigin(_ context: ExtraChipContext) -> CGPoint {
+        CGPoint(x: context.anchorFrame.minX, y: context.anchorFrame.maxY + 6)
+    }
+
+    /// Builds the HUD's SwiftUI content with all action wiring.
+    private func makeContent(_ context: ExtraChipContext) -> HoverOverlayHUDContent {
+        HoverOverlayHUDContent(
             appName: context.appName,
             placements: Self.placements,
-            workspaces: workspaces,
+            workspaces: workspacesProvider(),
             onAction: { [weak self] action in
                 guard let self else { return }
                 workQueue.async { [actionPerformer] in
@@ -102,23 +142,14 @@ final class OverlayHUDManager {
                 self?.close()
             }
         )
-        // The HUD panel is kept alive across open/close cycles: a reused
-        // window carries its established glass blend, so later opens come up
-        // instantly clean. Only the very first one still fades in.
-        let hudPanel: HoverOverlayHUDPanel
-        if let existing = panel {
-            existing.update(content: content, axOrigin: CGPoint(x: context.anchorFrame.minX, y: context.anchorFrame.maxY + 6))
-            hudPanel = existing
-        } else {
-            hudPanel = HoverOverlayHUDPanel(
-                axOrigin: CGPoint(x: context.anchorFrame.minX, y: context.anchorFrame.maxY + 6),
-                content: content
-            )
-            panel = hudPanel
-        }
+    }
 
-        // Clamp the measured frame into the window ∩ screen container so the
-        // HUD never drifts off-screen.
+    /// Clamps the measured frame into the window ∩ screen container so the
+    /// HUD never drifts off-screen.
+    private func clampedFrame(
+        of hudPanel: HoverOverlayHUDPanel,
+        in context: ExtraChipContext
+    ) -> CGRect {
         let container = HoverOverlayController.overlayContainerBounds(
             forButtonFrames: context.buttonFrames,
             windowBounds: context.windowBounds
@@ -126,21 +157,7 @@ final class OverlayHUDManager {
         var frame = hudPanel.axFrame
         frame.origin.x = min(max(frame.minX, container.minX + 4), container.maxX - frame.width - 4)
         frame.origin.y = min(frame.minY, container.maxY - frame.height - 4)
-        hudPanel.setAXFrame(frame)
-
-        if hudPanel.alphaValue < 1 {
-            // A first fade that was cut short by a quick close can leave the
-            // window at zero alpha; restart the fade rather than showing an
-            // invisible (or half-blended) HUD.
-            hudPanel.orderFrontFadingIn()
-        } else {
-            hudPanel.orderFrontRegardless()
-        }
-        stateLock.withLock {
-            keepAliveFrameAX = frame
-            anchorFrameAX = context.anchorFrame
-        }
-        logger.info("management HUD opened")
+        return frame
     }
 
     /// Closes the management HUD (idempotent). The panel is only hidden,
