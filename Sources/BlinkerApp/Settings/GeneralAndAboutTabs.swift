@@ -95,7 +95,7 @@ struct GeneralTab: View {
                     .controlSize(.small)
                 } else if appDelegate.status == .tapFailed {
                     Button(String(localized: "重试启动拦截")) {
-                        appDelegate.attemptStartInterceptor()
+                        appDelegate.retryInterception()
                     }
                     .controlSize(.small)
                 }
