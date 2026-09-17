@@ -15,6 +15,11 @@ public enum HoverOverlayGeometry {
     /// alive. Including the panels prevents a hide/flicker loop when the
     /// cursor moves from a native button onto its enlarged neighbor.
     ///
+    /// Callers pass `panelFrames`/`trayFrame` only while the overlay is
+    /// already visible: they extend the keep-alive zone, never the wake-up
+    /// zone. Passing them before activation would balloon the trigger area
+    /// to the whole enlarged group plus tray margins.
+    ///
     /// `trayFrame` extends the alive zone to the glass tray's margins: the
     /// tray visually wraps the whole chip group, so gliding across its
     /// padding (the gaps between chips, the pill's rounded ends) must not

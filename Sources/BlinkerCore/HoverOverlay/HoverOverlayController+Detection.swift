@@ -79,15 +79,20 @@ extension HoverOverlayController {
             resetDetectionAndHide()
             return
         }
-        // Only wake up near the traffic lights themselves (or on top of an
-        // already-enlarged panel) — not across the whole title bar band. The
-        // glass tray's margins count too: gliding across the pill's padding
-        // between chips must not close the overlay.
+        // Only wake up near the traffic lights themselves — not across the
+        // whole title bar band. The enlarged panels and the glass tray widen
+        // the *alive* zone only while the overlay is already on screen
+        // (gliding across the pill's padding between chips must not close
+        // it); before that they would balloon the wake-up area far past the
+        // native corner — especially with extra chips enabled.
+        let keepAlive = isOverlayVisible
         guard HoverOverlayGeometry.isCursorInTriggerZone(
             cursor: location,
             buttonFrames: layout.buttons.map(\.frame),
-            panelFrames: layout.allPanelFrames,
-            trayFrame: HoverOverlayTrayPanel.frame(forDisplayFrames: layout.allPanelFrames)
+            panelFrames: keepAlive ? layout.allPanelFrames : [],
+            trayFrame: keepAlive
+                ? HoverOverlayTrayPanel.frame(forDisplayFrames: layout.allPanelFrames)
+                : nil
         ) else {
             resetDetectionAndHide()
             return
