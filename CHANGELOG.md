@@ -5,6 +5,38 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-09-17
+
+### Added
+- **Transparent management HUD**: the window-manager HUD floats on a
+  see-through dim backdrop with dark-appearance content, reading as glass
+  over the window it acts on, readable against any background.
+
+### Fixed
+- **Trigger zone**: the hover overlay wakes only at the native
+  traffic-light corner (plus 12 pt) instead of a wide band of the title
+  bar — previously the wake-up area ballooned across the whole enlarged
+  group, especially wide with extra chips enabled.
+- **First-hover glass flash**: the tray no longer flashes an unblended
+  light-or-dark rectangle before turning translucent. The tray and HUD
+  panels are kept alive across hide/show cycles and reused, so every
+  appearance after the first is instant and clean.
+- **First-hover ghost**: tray glows render from the very first frame
+  (only the glass backdrop fades in), so the native buttons no longer
+  peek through the gaps between the enlarged chips during the fade.
+- **Corrupt store safety**: an undecodable rules or workspaces blob is
+  quarantined under a `.corrupt-backup` key instead of being silently
+  overwritten by the next save.
+- **Workspace restore honesty**: the restored-window count now reflects
+  windows that actually moved (apps rejecting the position write are no
+  longer counted).
+
+### Changed
+- Internal refactor: AppDelegate split into focused collaborators
+  (status item, settings window, interception coordinator); HUD manager
+  and dwell controller extracted; settings rebuilt on environment
+  injection. No user-visible change beyond the fixes above.
+
 ## [0.2.3] - 2026-09-16
 
 ### Added
