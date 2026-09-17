@@ -7,14 +7,16 @@ import SwiftUI
 final class SettingsWindowController {
     private var window: NSWindow?
     private var preferencesCancellable: AnyCancellable?
-    /// Builds the settings root view on first open; a closure so this
-    /// controller does not depend on every store behind the settings UI.
-    private let makeRootView: () -> SettingsView
+    /// Builds the settings content controller (an `NSHostingController`)
+    /// on first open; a closure so this controller does not depend on every
+    /// store behind the settings UI. Returns `NSViewController` because the
+    /// view's environment-modifier chain has no nameable concrete type.
+    private let makeContentController: () -> NSViewController
 
-    /// - Parameter makeRootView: Invoked once, when the window is first
-    ///   created. Capture dependencies weakly where a cycle is possible.
-    init(makeRootView: @escaping () -> SettingsView) {
-        self.makeRootView = makeRootView
+    /// - Parameter makeContentController: Invoked once, when the window is
+    ///   first created. Capture dependencies weakly where a cycle is possible.
+    init(makeContentController: @escaping () -> NSViewController) {
+        self.makeContentController = makeContentController
     }
 
     /// Shows the settings window, creating it on first open. A plain NSWindow
@@ -24,7 +26,7 @@ final class SettingsWindowController {
     func show() {
         bringToFront()
         if window == nil {
-            let window = NSWindow(contentViewController: NSHostingController(rootView: makeRootView()))
+            let window = NSWindow(contentViewController: makeContentController())
             // System Settings–style chrome: the content fills the window and
             // the traffic-light buttons float on the sidebar's own material.
             // The pane name lives inside the detail column, so the window

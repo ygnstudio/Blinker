@@ -9,10 +9,10 @@ import SwiftUI
 /// Per-row `.disabled` only (never section-level), so the master toggle
 /// never locks itself.
 struct HoverSettingsTab: View {
-    @ObservedObject var store: HoverOverlaySettingsStore
+    @EnvironmentObject var store: HoverOverlaySettingsStore
     /// Owns the hover-toggle hotkey binding; observed here so the row moved
     /// from the window-management tab keeps its live recording state.
-    @ObservedObject var hotkeyManager: HotkeyManager
+    @EnvironmentObject var hotkeyManager: HotkeyManager
     let onApply: (HoverOverlaySettings) -> Void
 
     private var settings: HoverOverlaySettings {
@@ -91,26 +91,24 @@ struct HoverSettingsTab: View {
     }
 
     private var sizeSlider: some View {
-        LabeledContent("放大尺寸") {
-            Slider(value: enlargedSizeBinding, in: 28 ... 48, step: 1)
-                .frame(width: 200)
-            Text("\(Int(settings.enlargedSize)) pt")
-                .monospacedDigit()
-                .foregroundStyle(.secondary)
-                .frame(width: 56, alignment: .trailing)
-        }
+        SliderReadoutRow(
+            label: String(localized: "放大尺寸"),
+            readout: "\(Int(settings.enlargedSize)) pt",
+            value: enlargedSizeBinding,
+            range: 28 ... 48,
+            step: 1
+        )
     }
 
     private var dwellSlider: some View {
-        LabeledContent("防误触延迟") {
-            Slider(value: dwellBinding, in: 0 ... 800, step: 50)
-                .frame(width: 200)
-                .disabled(settings.mode == .hotspot)
-            Text(dwellLabel)
-                .monospacedDigit()
-                .foregroundStyle(.secondary)
-                .frame(width: 56, alignment: .trailing)
-        }
+        SliderReadoutRow(
+            label: String(localized: "防误触延迟"),
+            readout: dwellLabel,
+            value: dwellBinding,
+            range: 0 ... 800,
+            step: 50,
+            sliderDisabled: settings.mode == .hotspot
+        )
     }
 
     private var scopePicker: some View {
@@ -255,5 +253,32 @@ struct HoverSettingsTab: View {
         var updated = settings
         mutate(&updated)
         onApply(updated)
+    }
+}
+
+/// `LabeledContent` row with a fixed-width slider and a fixed-width,
+/// monospaced trailing readout — the shared shape of the hover tab's two
+/// numeric sliders, so the readouts align across rows.
+private struct SliderReadoutRow: View {
+    let label: String
+    let readout: String
+    @Binding var value: Double
+    let range: ClosedRange<Double>
+    let step: Double
+
+    /// Disables the slider only, keeping the label and readout at full
+    /// opacity — the dwell row's "不适用" state.
+    var sliderDisabled = false
+
+    var body: some View {
+        LabeledContent(label) {
+            Slider(value: $value, in: range, step: step)
+                .frame(width: 200)
+                .disabled(sliderDisabled)
+            Text(readout)
+                .monospacedDigit()
+                .foregroundStyle(.secondary)
+                .frame(width: 56, alignment: .trailing)
+        }
     }
 }

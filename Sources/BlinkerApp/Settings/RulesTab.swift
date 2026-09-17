@@ -9,7 +9,7 @@ import SwiftUI
 /// for the selected rule on the right — the Notes-style three-column
 /// density, one screen for all fifteen slots.
 struct RulesTab: View {
-    @ObservedObject var ruleStore: RuleStore
+    @EnvironmentObject var ruleStore: RuleStore
     /// The rule whose matrix the inspector shows; owned by the settings
     /// root so the app-library sheet can auto-select a newly added rule.
     @Binding var selection: AppRule.ID?
@@ -107,9 +107,9 @@ struct RulesTab: View {
     /// action configured on that light, hollow = fully system default.
     private var trioLegend: some View {
         HStack(spacing: 14) {
-            trio(filled: true)
+            TrafficLightTrio(allFilled: true)
             Text(String(localized: "已重定义"))
-            trio(filled: false)
+            TrafficLightTrio(allFilled: false)
             Text(String(localized: "系统默认"))
         }
         .font(.caption2)
@@ -119,26 +119,6 @@ struct RulesTab: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(String(localized: "圆点图例：实心为已重定义，空心为系统默认"))
-    }
-
-    private func trio(filled: Bool) -> some View {
-        HStack(spacing: 3) {
-            ForEach(TrafficButton.allCases, id: \.self) { button in
-                Circle()
-                    .strokeBorder(
-                        Color(nsColor: OverlayChipDrawing.vividColor(for: button)).opacity(0.6),
-                        lineWidth: 1
-                    )
-                    .background(
-                        Circle().fill(
-                            filled
-                                ? Color(nsColor: OverlayChipDrawing.vividColor(for: button))
-                                : .clear
-                        )
-                    )
-                    .frame(width: 6, height: 6)
-            }
-        }
     }
 
     /// A group title rendered as an ordinary, untagged list row (see the
@@ -201,30 +181,6 @@ struct RulesTab: View {
     }
 }
 
-/// Resolves and caches app icons by bundle identifier. `NSWorkspace` icon
-/// resolution hits the disk (bundle lookup + icns read), so list rows must
-/// never compute it inline — every render would pay the cost.
-enum AppIconStore {
-    private static let cache = NSCache<NSString, NSImage>()
-
-    /// The app's icon, falling back to the generic application icon when
-    /// the app is no longer installed. The fallback is deliberately *not*
-    /// cached: if the app gets installed later, the next lookup resolves
-    /// the real icon within the same session instead of showing the
-    /// placeholder until relaunch.
-    static func icon(forBundleIdentifier bundleIdentifier: String) -> NSImage {
-        if let cached = cache.object(forKey: bundleIdentifier as NSString) {
-            return cached
-        }
-        guard let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleIdentifier) else {
-            return NSWorkspace.shared.icon(for: .applicationBundle)
-        }
-        let resolved = NSWorkspace.shared.icon(forFile: url.path)
-        cache.setObject(resolved, forKey: bundleIdentifier as NSString)
-        return resolved
-    }
-}
-
 /// One compact single-line row of the rule list: app icon, name and the
 /// three-light status trio — a filled dot marks a light carrying at least
 /// one custom action, a hollow ring a fully default light. The trio makes
@@ -275,18 +231,9 @@ private struct RuleListRow: View {
                 .font(.body.weight(.medium))
                 .lineLimit(1)
             Spacer(minLength: 4)
-            HStack(spacing: 3) {
-                ForEach(TrafficButton.allCases, id: \.self) { button in
-                    let color = Color(nsColor: OverlayChipDrawing.vividColor(for: button))
-                    let isRemapped = remappedLights[button] == true
-                    Circle()
-                        .strokeBorder(isRemapped ? .clear : color.opacity(0.6), lineWidth: 1)
-                        .background(Circle().fill(isRemapped ? color : .clear))
-                        .frame(width: 6, height: 6)
-                }
-            }
-            .accessibilityElement(children: .ignore)
-            .accessibilityLabel(trioAccessibilityLabel)
+            TrafficLightTrio(remappedLights: remappedLights)
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(trioAccessibilityLabel)
         }
         .padding(.vertical, 2)
     }

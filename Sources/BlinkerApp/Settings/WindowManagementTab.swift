@@ -9,8 +9,8 @@ import SwiftUI
 /// eleven-row list reads as browsable chunks; the hover-toggle hotkey lives
 /// on the hover tab, next to the feature it controls.
 struct WindowManagementTab: View {
-    @ObservedObject var hotkeyManager: HotkeyManager
-    @ObservedObject var workspaceStore: WorkspaceStore
+    @EnvironmentObject var hotkeyManager: HotkeyManager
+    @EnvironmentObject var workspaceStore: WorkspaceStore
     let onSnapEnabledChange: (Bool) -> Void
     @ObservedObject private var preferences = AppPreferences.shared
     @State private var showingSaveWorkspaceSheet = false

@@ -39,14 +39,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
         guard let self else {
             fatalError("AppDelegate deallocated before the settings window was created")
         }
-        return SettingsView(
-            ruleStore: ruleStore,
-            hoverSettingsStore: hoverOverlaySettingsStore,
-            onApplyHoverSettings: applyHoverOverlaySettings,
-            hotkeyManager: hotkeyManager,
-            workspaceStore: workspaceStore,
-            onSnapEnabledChange: applySnapEnabled,
-            interception: interception
+        // The single injection point for the settings tree: the stores flow
+        // down to the tabs through the environment, while the two behavior
+        // callbacks stay explicit.
+        return NSHostingController(
+            rootView: SettingsView(
+                onApplyHoverSettings: applyHoverOverlaySettings,
+                onSnapEnabledChange: applySnapEnabled
+            )
+            .environmentObject(ruleStore)
+            .environmentObject(hoverOverlaySettingsStore)
+            .environmentObject(hotkeyManager)
+            .environmentObject(workspaceStore)
+            .environmentObject(interception)
         )
     }
 

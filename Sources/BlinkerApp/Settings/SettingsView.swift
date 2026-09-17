@@ -40,16 +40,20 @@ enum SettingsSection: String, CaseIterable, Identifiable {
 /// The settings window's root, mirroring the system split layout: a flat
 /// single-section sidebar with monochrome glyphs (Liquid Glass on
 /// macOS 26+), the pane title in the toolbar row, and grouped form cards
-/// on the standard window background. Every view observes
+/// on the standard window background. The long-lived stores
+/// (`RuleStore`, hover settings, `HotkeyManager`, `WorkspaceStore`,
+/// `InterceptionCoordinator`) flow in through the environment — injected
+/// once at the single construction site — while the two behavior
+/// callbacks stay explicit constructor parameters. Every view observes
 /// `AppPreferences`, so appearance changes re-render in place.
 struct SettingsView: View {
-    @ObservedObject var ruleStore: RuleStore
-    @ObservedObject var hoverSettingsStore: HoverOverlaySettingsStore
+    /// Referenced at this level only (the sheet's add-rule flow and the
+    /// recorder teardown); the remaining stores flow past this root to the
+    /// tabs via the environment without a declaration here.
+    @EnvironmentObject var ruleStore: RuleStore
+    @EnvironmentObject var hotkeyManager: HotkeyManager
     let onApplyHoverSettings: (HoverOverlaySettings) -> Void
-    @ObservedObject var hotkeyManager: HotkeyManager
-    @ObservedObject var workspaceStore: WorkspaceStore
     let onSnapEnabledChange: (Bool) -> Void
-    @ObservedObject var interception: InterceptionCoordinator
 
     @ObservedObject private var preferences = AppPreferences.shared
     @State private var selection: SettingsSection? = .rules
@@ -148,24 +152,19 @@ struct SettingsView: View {
         switch selectedSection {
         case .rules:
             RulesTab(
-                ruleStore: ruleStore,
                 selection: $ruleSelection,
                 onAddApp: { showingAppLibrary = true }
             )
         case .windows:
             WindowManagementTab(
-                hotkeyManager: hotkeyManager,
-                workspaceStore: workspaceStore,
                 onSnapEnabledChange: onSnapEnabledChange
             )
         case .hover:
             HoverSettingsTab(
-                store: hoverSettingsStore,
-                hotkeyManager: hotkeyManager,
                 onApply: onApplyHoverSettings
             )
         case .general:
-            GeneralTab(coordinator: interception)
+            GeneralTab()
         case .about:
             AboutTab()
         }

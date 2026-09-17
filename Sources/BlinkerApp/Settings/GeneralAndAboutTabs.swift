@@ -8,7 +8,7 @@ import SwiftUI
 /// Appearance and interception preferences; both lookups default
 /// to following the system.
 struct GeneralTab: View {
-    @ObservedObject var coordinator: InterceptionCoordinator
+    @EnvironmentObject var coordinator: InterceptionCoordinator
     @ObservedObject private var preferences = AppPreferences.shared
     @State private var launchAtLogin = false
     @State private var launchAtLoginError = false
