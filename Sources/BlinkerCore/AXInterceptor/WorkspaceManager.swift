@@ -186,7 +186,8 @@ public enum WorkspaceManager {
     /// window instead of just the first. When the Space-restore preference
     /// is on (and the SkyLight bridge is available), restored windows are
     /// also moved back to the desktop they were captured on. Returns how
-    /// many entries were restored; apps that are not running (or expose no
+    /// many windows actually moved — an entry counts only when the app
+    /// accepted the position write; apps that are not running (or expose no
     /// AX window) are skipped silently — callers may log the miss.
     @discardableResult
     public static func restore(_ workspace: SavedWorkspace) -> Int {
@@ -230,8 +231,9 @@ public enum WorkspaceManager {
                    )] {
                     pendingMoves.append((windowID, spaceID))
                 }
-                AXQuery.setWindowFrame(axFrame: entry.frame, of: windows[index])
-                restored += 1
+                if AXQuery.setWindowFrame(axFrame: entry.frame, of: windows[index]) {
+                    restored += 1
+                }
             }
         }
         moveWindowsToSpaces(pendingMoves)

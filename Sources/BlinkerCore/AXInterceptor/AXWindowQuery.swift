@@ -149,31 +149,39 @@ enum AXQuery {
     /// origin) coordinates; `globalMaxY` is the primary screen's top edge in
     /// AppKit coordinates and acts as the axis pivot. Size is applied before
     /// position: apps that clamp to min/max sizes resize around the window's
-    /// center, which would undo a position set first.
-    static func setWindowFrame(_ window: AXUIElement, appKitFrame: CGRect, globalMaxY: CGFloat) {
+    /// center, which would undo a position set first. Returns whether the
+    /// position write was accepted.
+    @discardableResult
+    static func setWindowFrame(_ window: AXUIElement, appKitFrame: CGRect, globalMaxY: CGFloat) -> Bool {
         var size = CGSize(width: appKitFrame.width, height: appKitFrame.height)
         if let sizeValue = AXValueCreate(.cgSize, &size) {
             AXUIElementSetAttributeValue(window, kAXSizeAttribute as CFString, sizeValue)
         }
         var position = CGPoint(x: appKitFrame.minX, y: globalMaxY - appKitFrame.maxY)
-        if let positionValue = AXValueCreate(.cgPoint, &position) {
-            AXUIElementSetAttributeValue(window, kAXPositionAttribute as CFString, positionValue)
-        }
+        guard let positionValue = AXValueCreate(.cgPoint, &position) else { return false }
+        return AXUIElementSetAttributeValue(
+            window, kAXPositionAttribute as CFString, positionValue
+        ) == .success
     }
 
     /// Moves and resizes a window to a frame already in AX (top-left origin)
     /// coordinates — the space `CGWindowList` reports and `elementFrame`
     /// reads, so workspace capture/restore round-trips without conversion.
-    /// Size first, then position (see the AppKit variant above).
-    static func setWindowFrame(axFrame frame: CGRect, of window: AXUIElement) {
+    /// Size first, then position (see the AppKit variant above). Returns
+    /// whether the position write was accepted — the honest signal that the
+    /// window actually moved (some apps reject size writes on fixed-size
+    /// windows while still accepting the move).
+    @discardableResult
+    static func setWindowFrame(axFrame frame: CGRect, of window: AXUIElement) -> Bool {
         var size = CGSize(width: frame.width, height: frame.height)
         if let sizeValue = AXValueCreate(.cgSize, &size) {
             AXUIElementSetAttributeValue(window, kAXSizeAttribute as CFString, sizeValue)
         }
         var position = CGPoint(x: frame.minX, y: frame.minY)
-        if let positionValue = AXValueCreate(.cgPoint, &position) {
-            AXUIElementSetAttributeValue(window, kAXPositionAttribute as CFString, positionValue)
-        }
+        guard let positionValue = AXValueCreate(.cgPoint, &position) else { return false }
+        return AXUIElementSetAttributeValue(
+            window, kAXPositionAttribute as CFString, positionValue
+        ) == .success
     }
 
     /// Cheaply finds the topmost standard (layer 0) on-screen window containing
