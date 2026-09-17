@@ -46,25 +46,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
             hotkeyManager: hotkeyManager,
             workspaceStore: workspaceStore,
             onSnapEnabledChange: applySnapEnabled,
-            appDelegate: self
+            interception: interception
         )
     }
-
-    /// Mirrors `interception.status` so SwiftUI views observing the app
-    /// delegate keep updating (the coordinator's changes land on the main
-    /// thread already).
-    @Published private(set) var status: InterceptorStatus = .checking
-
-    /// True while the click-interception stack is running; derived from
-    /// `status` so the two can never disagree.
-    var isIntercepting: Bool { status == .running }
-
-    private var statusCancellable: AnyCancellable?
 
     func applicationDidFinishLaunching(_: Notification) {
         // Menu bar app: no Dock icon, no main window.
         NSApp.setActivationPolicy(.accessory)
-        statusCancellable = interception.$status.sink { [weak self] in self?.status = $0 }
         statusItemController.install()
         interception.start()
         wireHoverToggleHotkey()

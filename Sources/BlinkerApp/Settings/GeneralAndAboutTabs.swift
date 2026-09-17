@@ -8,7 +8,7 @@ import SwiftUI
 /// Appearance and interception preferences; both lookups default
 /// to following the system.
 struct GeneralTab: View {
-    @ObservedObject var appDelegate: AppDelegate
+    @ObservedObject var coordinator: InterceptionCoordinator
     @ObservedObject private var preferences = AppPreferences.shared
     @State private var launchAtLogin = false
     @State private var launchAtLoginError = false
@@ -85,17 +85,17 @@ struct GeneralTab: View {
             VStack(alignment: .leading, spacing: 8) {
                 Text(
                     String(localized: "当前状态：")
-                        + appDelegate.status.localizedLabel
+                        + coordinator.status.localizedLabel
                         + String(localized: "。")
                 )
-                if appDelegate.status == .noPermission {
+                if coordinator.status == .noPermission {
                     Button(String(localized: "打开系统设置…")) {
                         AccessibilityPermission.prompt()
                     }
                     .controlSize(.small)
-                } else if appDelegate.status == .tapFailed {
+                } else if coordinator.status == .tapFailed {
                     Button(String(localized: "重试启动拦截")) {
-                        appDelegate.retryInterception()
+                        coordinator.start()
                     }
                     .controlSize(.small)
                 }
@@ -105,10 +105,10 @@ struct GeneralTab: View {
 
     private var interceptionBinding: Binding<Bool> {
         Binding(
-            get: { appDelegate.isIntercepting },
+            get: { coordinator.isIntercepting },
             set: { newValue in
-                if appDelegate.isIntercepting != newValue {
-                    appDelegate.toggleInterception()
+                if coordinator.isIntercepting != newValue {
+                    coordinator.toggle()
                 }
             }
         )

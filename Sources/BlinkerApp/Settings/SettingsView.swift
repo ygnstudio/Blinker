@@ -49,7 +49,7 @@ struct SettingsView: View {
     @ObservedObject var hotkeyManager: HotkeyManager
     @ObservedObject var workspaceStore: WorkspaceStore
     let onSnapEnabledChange: (Bool) -> Void
-    let appDelegate: AppDelegate
+    @ObservedObject var interception: InterceptionCoordinator
 
     @ObservedObject private var preferences = AppPreferences.shared
     @State private var selection: SettingsSection? = .rules
@@ -165,7 +165,7 @@ struct SettingsView: View {
                 onApply: onApplyHoverSettings
             )
         case .general:
-            GeneralTab(appDelegate: appDelegate)
+            GeneralTab(coordinator: interception)
         case .about:
             AboutTab()
         }
