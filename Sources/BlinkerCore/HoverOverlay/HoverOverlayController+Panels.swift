@@ -141,10 +141,11 @@ extension HoverOverlayController {
         // very first tray still needs the two-phase fade.
         if let tray = trayPanel {
             tray.update(trayFrame: trayFrame, glows: glows)
-            if tray.alphaValue < 1 {
-                // A first fade that was cut short by a quick hover-out can
-                // leave the window at zero alpha; restart the fade rather
-                // than showing an invisible (or half-blended) tray.
+            if tray.needsGlassFade {
+                // A first glass fade that was cut short by a quick
+                // hover-out can leave the backdrop at zero alpha; restart
+                // it rather than showing a glow-only (or half-blended)
+                // tray.
                 tray.orderFrontFadingIn()
             } else {
                 tray.orderFrontRegardless()

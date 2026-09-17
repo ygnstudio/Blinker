@@ -22,6 +22,10 @@ final class HoverOverlayTrayPanel: OverlayPanel {
     /// Vertical tray margin around the displayed chips' bounding box (pt).
     static let verticalMargin: CGFloat = 12
 
+    /// The glass backdrop, faded in separately from the window so the glow
+    /// layer can show immediately (see `orderFrontFadingIn`).
+    private var glassView: NSView?
+
     /// One traffic dot's glow descriptor.
     struct Glow {
         /// The dot's circle rect in tray-local (AppKit, bottom-left origin)
@@ -53,10 +57,11 @@ final class HoverOverlayTrayPanel: OverlayPanel {
         let container = NSView(frame: NSRect(origin: .zero, size: size))
         // Pill shape: the corner radius is derived from the frame height.
         // The subviews track the container so a reused tray can simply be
-        // resized (see `update`) instead of torn down and rebuilt. The
-        // glow view goes into the glass's contentView — that's what makes
-        // the material actually attach (a sibling subview degrades to
-        // static frost).
+        // resized (see `update`) instead of torn down and rebuilt. The glow
+        // view stays a sibling above the glass — not hosted inside it — so
+        // fading the glass in (see `orderFrontFadingIn`) never hides the
+        // glows: they absorb the native buttons' ghosts from the very
+        // first frame.
         let glass = GlassBackdrop.makeView(
             size: size,
             cornerRadius: size.height / 2,
@@ -65,9 +70,35 @@ final class HoverOverlayTrayPanel: OverlayPanel {
         let glowView = TrayGlowView(frame: NSRect(origin: .zero, size: size))
         glowView.autoresizingMask = [.width, .height]
         glowView.glows = glows
-        GlassBackdrop.host(glowView, in: glass)
         container.addSubview(glass)
+        container.addSubview(glowView)
+        glassView = glass
         contentView = container
+    }
+
+    /// Orders the tray front with only the glass backdrop fading in. The
+    /// window itself appears immediately at full alpha — the glow layer
+    /// must cover the native buttons' ghosts from the first frame — while
+    /// the glass hides the unblended base color behind a zero-alpha hold
+    /// and eases in once the blend has settled.
+    override func orderFrontFadingIn(hold: TimeInterval = 0.2, duration: TimeInterval = 0.3) {
+        let glass = glassView
+        glass?.alphaValue = 0
+        orderFrontRegardless()
+        DispatchQueue.main.asyncAfter(deadline: .now() + hold) { [weak self, weak glass] in
+            guard let self, self.isVisible, let glass else { return }
+            NSAnimationContext.runAnimationGroup { context in
+                context.duration = duration
+                context.timingFunction = CAMediaTimingFunction(name: .easeIn)
+                glass.animator().alphaValue = 1
+            }
+        }
+    }
+
+    /// Whether the glass backdrop has not finished (re)appearing — the
+    /// restart signal reused appearances check.
+    var needsGlassFade: Bool {
+        glassView.map { $0.alphaValue < 1 } ?? false
     }
 
     /// Re-points a kept-alive tray at a new layout: moves the window to the
