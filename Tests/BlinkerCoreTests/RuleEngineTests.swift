@@ -122,4 +122,26 @@ final class RuleEngineTests: XCTestCase {
         reloaded.remove(bundleIdentifier: "com.apple.Safari")
         XCTAssertTrue(RuleStore(defaults: defaults).snapshot.isEmpty)
     }
+
+    /// A corrupt rules blob must not be silently erased: it is quarantined
+    /// under a backup key before the store starts empty, and survives the
+    /// next save.
+    func testCorruptRulesBlobIsQuarantinedNotErased() throws {
+        let suiteName = "RuleStoreTests.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let key = "test.rules"
+        let garbage = Data("not json at all".utf8)
+        defaults.set(garbage, forKey: key)
+
+        let store = RuleStore(defaults: defaults, storageKey: key)
+        XCTAssertTrue(store.snapshot.isEmpty, "corrupt blob loads as no rules")
+
+        // The original blob is untouched until an explicit save happens…
+        XCTAssertEqual(defaults.data(forKey: key), garbage)
+        // …and preserved under the quarantine key even afterwards.
+        store.upsert(AppRule(bundleIdentifier: "com.x", displayName: "X"))
+        XCTAssertEqual(defaults.data(forKey: key + ".corrupt-backup"), garbage)
+        XCTAssertEqual(store.snapshot.count, 1)
+    }
 }

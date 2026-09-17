@@ -93,7 +93,9 @@ public final class RuleStore: ObservableObject {
 
     /// Loads the flat rule table. A build briefly stored rules as named
     /// profiles; unwrap that archive's active profile so no configuration
-    /// was lost, then fall back to the plain blob.
+    /// was lost, then fall back to the plain blob. An undecodable blob is
+    /// quarantined under a backup key before starting empty, so the next
+    /// save cannot silently erase the remains.
     private static func load(
         defaults: UserDefaults,
         key: String,
@@ -107,6 +109,9 @@ public final class RuleStore: ObservableObject {
         let archive = archiveData.flatMap { try? JSONDecoder().decode(ProfileArchive.self, from: $0) }
         if let active = archive?.profiles.first(where: { $0.id == archive?.activeProfileID }) {
             return active.rules
+        }
+        if let data {
+            quarantineCorruptBlob(data, forKey: key, in: defaults, category: "rules")
         }
         return []
     }

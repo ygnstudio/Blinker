@@ -99,4 +99,20 @@ final class WorkspaceStoreTests: XCTestCase {
         XCTAssertEqual(SpaceSwitcher.Direction.previous.keyCode, 123)
         XCTAssertEqual(SpaceSwitcher.Direction.next.keyCode, 124)
     }
+
+    /// A corrupt workspaces blob must not be silently erased: it is
+    /// quarantined under a backup key before the store starts empty.
+    func testCorruptWorkspacesBlobIsQuarantinedNotErased() throws {
+        let (defaults, suite) = try makeDefaults()
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let key = "test.workspaces"
+        let garbage = Data("}{ definitely not json".utf8)
+        defaults.set(garbage, forKey: key)
+
+        let store = WorkspaceStore(defaults: defaults, storageKey: key)
+        XCTAssertTrue(store.workspaces.isEmpty, "corrupt blob loads as no workspaces")
+
+        XCTAssertEqual(defaults.data(forKey: key), garbage)
+        XCTAssertEqual(defaults.data(forKey: key + ".corrupt-backup"), garbage)
+    }
 }

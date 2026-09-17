@@ -87,6 +87,12 @@ public final class WorkspaceStore: ObservableObject {
 
     private static func load(defaults: UserDefaults, key: String) -> [SavedWorkspace] {
         guard let data = defaults.data(forKey: key) else { return [] }
-        return (try? JSONDecoder().decode([SavedWorkspace].self, from: data)) ?? []
+        if let workspaces = try? JSONDecoder().decode([SavedWorkspace].self, from: data) {
+            return workspaces
+        }
+        // Quarantine the corrupt blob before starting empty: the next save
+        // would otherwise overwrite whatever was recoverable.
+        quarantineCorruptBlob(data, forKey: key, in: defaults, category: "workspaces")
+        return []
     }
 }

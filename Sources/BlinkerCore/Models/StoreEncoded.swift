@@ -19,3 +19,21 @@ public func storeEncoded<T: Encodable>(
         )
     }
 }
+
+/// Preserves an undecodable blob under `<key>.corrupt-backup` before the
+/// caller starts empty. Without this, a corrupt store would decode to an
+/// empty list and the very next save would overwrite the blob — silently
+/// erasing whatever was recoverable. The backup keeps the latest corrupt
+/// state; the logger entry names both keys so support can find it.
+public func quarantineCorruptBlob(
+    _ data: Data,
+    forKey key: String,
+    in defaults: UserDefaults,
+    category: String
+) {
+    let backupKey = key + ".corrupt-backup"
+    defaults.set(data, forKey: backupKey)
+    Logger(subsystem: "com.ygnstudio.blinker", category: category).error(
+        "Undecodable data for key \(key, privacy: .public); quarantined as \(backupKey, privacy: .public)"
+    )
+}
