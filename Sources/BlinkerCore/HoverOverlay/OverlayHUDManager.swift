@@ -102,10 +102,20 @@ final class OverlayHUDManager {
                 self?.close()
             }
         )
-        let hudPanel = HoverOverlayHUDPanel(
-            axOrigin: CGPoint(x: context.anchorFrame.minX, y: context.anchorFrame.maxY + 6),
-            content: content
-        )
+        // The HUD panel is kept alive across open/close cycles: a reused
+        // window carries its established glass blend, so later opens come up
+        // instantly clean. Only the very first one still fades in.
+        let hudPanel: HoverOverlayHUDPanel
+        if let existing = panel {
+            existing.update(content: content, axOrigin: CGPoint(x: context.anchorFrame.minX, y: context.anchorFrame.maxY + 6))
+            hudPanel = existing
+        } else {
+            hudPanel = HoverOverlayHUDPanel(
+                axOrigin: CGPoint(x: context.anchorFrame.minX, y: context.anchorFrame.maxY + 6),
+                content: content
+            )
+            panel = hudPanel
+        }
 
         // Clamp the measured frame into the window ∩ screen container so the
         // HUD never drifts off-screen.
@@ -118,8 +128,14 @@ final class OverlayHUDManager {
         frame.origin.y = min(frame.minY, container.maxY - frame.height - 4)
         hudPanel.setAXFrame(frame)
 
-        hudPanel.orderFrontFadingIn()
-        panel = hudPanel
+        if hudPanel.alphaValue < 1 {
+            // A first fade that was cut short by a quick close can leave the
+            // window at zero alpha; restart the fade rather than showing an
+            // invisible (or half-blended) HUD.
+            hudPanel.orderFrontFadingIn()
+        } else {
+            hudPanel.orderFrontRegardless()
+        }
         stateLock.withLock {
             keepAliveFrameAX = frame
             anchorFrameAX = context.anchorFrame
@@ -127,13 +143,14 @@ final class OverlayHUDManager {
         logger.info("management HUD opened")
     }
 
-    /// Closes the management HUD (idempotent).
+    /// Closes the management HUD (idempotent). The panel is only hidden,
+    /// never released: keeping it alive preserves the glass blend so the
+    /// next open is flash-free.
     func close() {
         stateLock.withLock {
             keepAliveFrameAX = .null
             anchorFrameAX = .null
         }
         panel?.orderOut(nil)
-        panel = nil
     }
 }

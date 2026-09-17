@@ -184,6 +184,23 @@ final class HoverOverlayHUDPanel: OverlayPanel {
     ///     content, and a too-short panel would clip the workspace rows.
     ///   - content: The SwiftUI content to host.
     init(axOrigin: CGPoint, content: HoverOverlayHUDContent) {
+        let appKitFrame = AXQuery.appKitFrame(
+            fromAXRect: CGRect(origin: axOrigin, size: CGSize(width: 252, height: 150))
+        )
+        axFrame = .null
+        super.init(
+            appKitFrame: appKitFrame,
+            level: NSWindow.Level(rawValue: NSWindow.Level.popUpMenu.rawValue + 1)
+        )
+        update(content: content, axOrigin: axOrigin)
+    }
+
+    /// (Re)builds the hosted content and re-points the panel at a new
+    /// origin, re-measuring the size. A kept-alive panel is updated in place
+    /// instead of being torn down and rebuilt: the glass blend belongs to
+    /// the still-existing window, so re-showing a reused HUD never
+    /// re-flashes the unblended base color.
+    func update(content: HoverOverlayHUDContent, axOrigin: CGPoint) {
         let hostingView = NSHostingView(rootView: content)
         let measured = hostingView.fittingSize
         // Grid (3 rows) + header + divider + one workspace row + padding:
@@ -193,23 +210,24 @@ final class HoverOverlayHUDPanel: OverlayPanel {
             width: max(252, measured.width),
             height: max(minimumHeight, measured.height)
         )
-        let appKitFrame = AXQuery.appKitFrame(
-            fromAXRect: CGRect(origin: axOrigin, size: CGSize(width: size.width, height: size.height))
-        )
-        axFrame = CGRect(origin: axOrigin, size: CGSize(width: size.width, height: size.height))
-        super.init(
-            appKitFrame: appKitFrame,
-            level: NSWindow.Level(rawValue: NSWindow.Level.popUpMenu.rawValue + 1)
-        )
-
         let container = NSView(frame: NSRect(origin: .zero, size: size))
         container.addSubview(
-            GlassBackdrop.makeView(size: size, cornerRadius: Self.cornerRadius)
+            GlassBackdrop.makeView(
+                size: size,
+                cornerRadius: Self.cornerRadius,
+                autoresizingMask: [.width, .height]
+            )
         )
         hostingView.frame = NSRect(origin: .zero, size: size)
         hostingView.autoresizingMask = [.width, .height]
         container.addSubview(hostingView)
         contentView = container
+
+        let appKitFrame = AXQuery.appKitFrame(
+            fromAXRect: CGRect(origin: axOrigin, size: CGSize(width: size.width, height: size.height))
+        )
+        setFrame(appKitFrame, display: true)
+        axFrame = CGRect(origin: axOrigin, size: CGSize(width: size.width, height: size.height))
     }
 
     /// Repositions the panel to a new frame in AX (top-left origin)
