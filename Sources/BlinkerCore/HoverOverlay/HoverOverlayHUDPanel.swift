@@ -211,19 +211,30 @@ final class HoverOverlayHUDPanel: OverlayPanel {
             height: max(minimumHeight, measured.height)
         )
         let container = NSView(frame: NSRect(origin: .zero, size: size))
-        // `.clear` is the see-through glass: the HUD grid buttons carry
-        // their own subtle fills, so readability survives the thinner
-        // material (the default `.regular` reads as a dense milky plate).
-        container.addSubview(
-            GlassBackdrop.makeView(
-                size: size,
-                cornerRadius: Self.cornerRadius,
-                style: .clear,
-                autoresizingMask: [.width, .height]
-            )
-        )
+        // True see-through backdrop: a faint dark fill with a hairline
+        // border, no material. NSGlassEffectView stayed a milky plate in
+        // this panel setup even with `.clear` and contentView attachment
+        // (a standalone probe with identical properties rendered clear, so
+        // the style itself works — just not here), so the HUD trades the
+        // blur for guaranteed transparency. The grid buttons carry their
+        // own fills for readability.
+        container.wantsLayer = true
+        // 0.55: enough dimming to keep the tile labels readable over any
+        // background (the WWDC "Clear needs a dimming layer" rule), while
+        // the backdrop still reads through.
+        container.layer?.backgroundColor = NSColor.black.withAlphaComponent(0.55).cgColor
+        container.layer?.cornerRadius = Self.cornerRadius
+        container.layer?.borderWidth = 1
+        container.layer?.borderColor = NSColor.white.withAlphaComponent(0.18).cgColor
+        container.layer?.masksToBounds = true
         hostingView.frame = NSRect(origin: .zero, size: size)
         hostingView.autoresizingMask = [.width, .height]
+        // The dim backdrop is always dark, so the content always speaks
+        // dark-appearance colors — white primary, light secondary — no
+        // matter the system appearance (light-mode primary is near-black
+        // and would vanish against the dim layer). Same convention as the
+        // system's own HUDs.
+        hostingView.appearance = NSAppearance(named: .darkAqua)
         container.addSubview(hostingView)
         contentView = container
 

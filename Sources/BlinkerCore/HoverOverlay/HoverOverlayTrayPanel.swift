@@ -53,18 +53,20 @@ final class HoverOverlayTrayPanel: OverlayPanel {
         let container = NSView(frame: NSRect(origin: .zero, size: size))
         // Pill shape: the corner radius is derived from the frame height.
         // The subviews track the container so a reused tray can simply be
-        // resized (see `update`) instead of torn down and rebuilt.
-        container.addSubview(
-            GlassBackdrop.makeView(
-                size: size,
-                cornerRadius: size.height / 2,
-                autoresizingMask: [.width, .height]
-            )
+        // resized (see `update`) instead of torn down and rebuilt. The
+        // glow view goes into the glass's contentView — that's what makes
+        // the material actually attach (a sibling subview degrades to
+        // static frost).
+        let glass = GlassBackdrop.makeView(
+            size: size,
+            cornerRadius: size.height / 2,
+            autoresizingMask: [.width, .height]
         )
         let glowView = TrayGlowView(frame: NSRect(origin: .zero, size: size))
         glowView.autoresizingMask = [.width, .height]
         glowView.glows = glows
-        container.addSubview(glowView)
+        GlassBackdrop.host(glowView, in: glass)
+        container.addSubview(glass)
         contentView = container
     }
 

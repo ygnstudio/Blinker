@@ -101,6 +101,19 @@ public enum GlassBackdrop {
         return backdrop
     }
 
+    /// Hosts `content` inside the backdrop. `NSGlassEffectView` only
+    /// renders its live material when the content is assigned through its
+    /// `contentView` — a plain `addSubview` sibling silently degrades to a
+    /// static frost where the style makes no difference. The pre-26
+    /// `NSVisualEffectView` fallback takes a normal subview.
+    public static func host(_ content: NSView, in backdrop: NSView) {
+        if #available(macOS 26.0, *), let glass = backdrop as? NSGlassEffectView {
+            glass.contentView = content
+        } else {
+            backdrop.addSubview(content)
+        }
+    }
+
     /// White rounded-rect mask for `NSVisualEffectView.maskImage`, shared by
     /// every pre-26 glass fallback.
     public static func roundedMaskImage(size: NSSize, radius: CGFloat) -> NSImage {
