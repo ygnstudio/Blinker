@@ -41,6 +41,7 @@ struct HoverOverlayHUDContent: View {
     let onAction: (ButtonAction) -> Void
     let onRestore: (UUID) -> Void
     let onClose: () -> Void
+    var onBrowseWindows: () -> Void = {}
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -77,14 +78,13 @@ struct HoverOverlayHUDContent: View {
                 }
             }
 
-            Divider()
+            Button(action: onBrowseWindows) {
+                Label(hudText("此应用的窗口…", "Windows of This App…"), systemImage: "macwindow.on.rectangle")
+            }
+            .buttonStyle(.borderless)
 
-            if workspaces.isEmpty {
-                Text(hudText("尚未保存工作区", "No workspaces saved"))
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-                    .frame(maxWidth: .infinity, alignment: .center)
-            } else {
+            if !workspaces.isEmpty {
+                Divider()
                 ForEach(workspaces) { workspace in
                     Button {
                         onRestore(workspace.id)
@@ -131,6 +131,7 @@ struct HoverOverlayHUDContent: View {
                 RoundedRectangle(cornerRadius: 2.5)
                     .fill(Color.accentColor.opacity(0.8))
                     .frame(width: max(6, frame.width * 52), height: max(4, frame.height * 30))
+                    .offset(x: (frame.midX - 0.5) * 52, y: (0.5 - frame.midY) * 30)
             }
             .frame(width: 56, height: 34)
         } else {
@@ -236,7 +237,13 @@ public extension ButtonAction {
         case .tileTopRight: String(localized: "右上屏", bundle: .module)
         case .tileBottomLeft: String(localized: "左下屏", bundle: .module)
         case .tileBottomRight: String(localized: "右下屏", bundle: .module)
+        case .tileFirstThird: String(localized: "前 1/3", bundle: .module)
+        case .tileCenterThird: String(localized: "中间 1/3", bundle: .module)
+        case .tileLastThird: String(localized: "后 1/3", bundle: .module)
+        case .tileFirstTwoThirds: String(localized: "前 2/3", bundle: .module)
+        case .tileLastTwoThirds: String(localized: "后 2/3", bundle: .module)
         case .centerWindow: String(localized: "窗口居中", bundle: .module)
+        case .restorePreviousFrame: String(localized: "还原上次布局", bundle: .module)
         case .moveToNextDisplay: String(localized: "下一显示器", bundle: .module)
         case .none: String(localized: "无操作", bundle: .module)
         case .windowManagerPanel: String(localized: "窗口面板", bundle: .module)

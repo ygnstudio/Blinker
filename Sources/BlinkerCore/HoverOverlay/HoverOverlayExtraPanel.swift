@@ -21,7 +21,13 @@ public extension ButtonAction {
         case .tileTopRight: "rectangle.toprightthird.inset.filled"
         case .tileBottomLeft: "rectangle.bottomleftthird.inset.filled"
         case .tileBottomRight: "rectangle.bottomrightthird.inset.filled"
+        case .tileFirstThird: "rectangle.leadingthird.inset.filled"
+        case .tileCenterThird: "rectangle.centerthird.inset.filled"
+        case .tileLastThird: "rectangle.trailingthird.inset.filled"
+        case .tileFirstTwoThirds: "rectangle.leadinghalf.inset.filled"
+        case .tileLastTwoThirds: "rectangle.trailinghalf.inset.filled"
         case .centerWindow: "rectangle.center.inset.filled"
+        case .restorePreviousFrame: "arrow.uturn.backward"
         case .moveToNextDisplay: "display.2"
         case .none: nil
         case .windowManagerPanel: "rectangle.grid.3x3"

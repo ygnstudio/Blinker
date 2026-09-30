@@ -18,6 +18,10 @@ public final class RuleStore: ObservableObject {
 
     /// Internal source of truth; every access is guarded by `lock`.
     private var storage: [AppRule] = []
+    private var undoHistory: [[AppRule]] = []
+    private var redoHistory: [[AppRule]] = []
+    @Published public private(set) var canUndo = false
+    @Published public private(set) var canRedo = false
 
     /// Published for SwiftUI observation; read on the main thread only.
     @Published public private(set) var rules: [AppRule] = []
@@ -44,46 +48,75 @@ public final class RuleStore: ObservableObject {
     }
 
     public func upsert(_ rule: AppRule) {
-        assert(Thread.isMainThread, "RuleStore mutations must happen on the main thread")
-        var updated: [AppRule] = []
-        lock.withLock {
-            var copy = storage
-            if let index = copy.firstIndex(where: { $0.bundleIdentifier == rule.bundleIdentifier }) {
-                copy[index] = rule
-            } else {
-                copy.append(rule)
-            }
-            storage = copy
-            updated = copy
+        var updated = snapshot
+        if let index = updated.firstIndex(where: { $0.id == rule.id }) {
+            updated[index] = rule
+        } else {
+            updated.append(rule)
         }
-        rules = updated
-        persist(updated)
+        commit(updated)
     }
 
     public func remove(bundleIdentifier: String) {
-        assert(Thread.isMainThread, "RuleStore mutations must happen on the main thread")
-        var updated: [AppRule] = []
-        lock.withLock {
-            let copy = storage.filter { $0.bundleIdentifier != bundleIdentifier }
-            storage = copy
-            updated = copy
-        }
-        rules = updated
-        persist(updated)
+        commit(snapshot.filter { $0.id != bundleIdentifier })
     }
 
     public func setEnabled(_ isEnabled: Bool, bundleIdentifier: String) {
-        assert(Thread.isMainThread, "RuleStore mutations must happen on the main thread")
-        var updated: [AppRule] = []
-        lock.withLock {
-            var copy = storage
-            if let index = copy.firstIndex(where: { $0.bundleIdentifier == bundleIdentifier }) {
-                copy[index].isEnabled = isEnabled
+        guard var rule = snapshot.first(where: { $0.id == bundleIdentifier }) else { return }
+        rule.isEnabled = isEnabled
+        upsert(rule)
+    }
+
+    /// Import merges by application ID; the entire import is one undoable edit.
+    public func merge(_ imported: [AppRule]) {
+        var updated = snapshot
+        var indices = Dictionary(uniqueKeysWithValues: updated.enumerated().map {
+            ($0.element.id, $0.offset)
+        })
+        for rule in imported {
+            if let index = indices[rule.id] {
+                updated[index] = rule
+            } else {
+                indices[rule.id] = updated.count
+                updated.append(rule)
             }
-            storage = copy
-            updated = copy
         }
+        commit(updated)
+    }
+
+    public func reset(bundleIdentifier: String) {
+        guard let rule = snapshot.first(where: { $0.id == bundleIdentifier }) else { return }
+        upsert(AppRule(bundleIdentifier: rule.id, displayName: rule.displayName))
+    }
+
+    public func undo() {
+        assert(Thread.isMainThread)
+        guard let previous = undoHistory.popLast() else { return }
+        redoHistory.append(snapshot)
+        publish(previous)
+    }
+
+    public func redo() {
+        assert(Thread.isMainThread)
+        guard let next = redoHistory.popLast() else { return }
+        undoHistory.append(snapshot)
+        publish(next)
+    }
+
+    private func commit(_ updated: [AppRule]) {
+        assert(Thread.isMainThread)
+        guard updated != snapshot else { return }
+        undoHistory.append(snapshot)
+        undoHistory = Array(undoHistory.suffix(50))
+        redoHistory = []
+        publish(updated)
+    }
+
+    private func publish(_ updated: [AppRule]) {
+        lock.withLock { storage = updated }
         rules = updated
+        canUndo = !undoHistory.isEmpty
+        canRedo = !redoHistory.isEmpty
         persist(updated)
     }
 
@@ -102,12 +135,15 @@ public final class RuleStore: ObservableObject {
         profileArchiveKey: String
     ) -> [AppRule] {
         let data = defaults.data(forKey: key)
-        if let rules = data.flatMap({ try? JSONDecoder().decode([AppRule].self, from: $0) }) {
+        if let data,
+           let rules = try? JSONDecoder().decode([AppRule].self, from: data),
+           RuleTransfer.validRules(rules) {
             return rules
         }
         let archiveData = defaults.data(forKey: profileArchiveKey)
         let archive = archiveData.flatMap { try? JSONDecoder().decode(ProfileArchive.self, from: $0) }
-        if let active = archive?.profiles.first(where: { $0.id == archive?.activeProfileID }) {
+        if let active = archive?.profiles.first(where: { $0.id == archive?.activeProfileID }),
+           RuleTransfer.validRules(active.rules) {
             return active.rules
         }
         if let data {

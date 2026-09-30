@@ -12,6 +12,8 @@ final class HotkeyManager: ObservableObject {
         .tileLeft, .tileRight, .tileTop, .tileBottom,
         .tileTopLeft, .tileTopRight, .tileBottomLeft, .tileBottomRight,
         .maximize, .almostMaximize, .centerWindow, .moveToNextDisplay,
+        .restorePreviousFrame, .tileFirstThird, .tileCenterThird, .tileLastThird,
+        .tileFirstTwoThirds, .tileLastTwoThirds,
     ]
 
     /// The scheme shipped on first launch: ⌃⌥ plus arrows and corner keys.
@@ -124,6 +126,7 @@ final class HotkeyManager: ObservableObject {
     /// bare key without modifiers); cleared on the next valid press.
     @Published private(set) var recordingHint: String?
 
+    private var sessionPaused = false
     private var registeredRefs: [String: EventHotKeyRef?] = [:]
     private var eventHandler: EventHandlerRef?
     private var localMonitor: Any?
@@ -329,6 +332,7 @@ final class HotkeyManager: ObservableObject {
     /// unregister any previous ref for the target, register the combo, then
     /// store or clear the ref.
     private func register(_ combo: HotkeyCombo, for target: BindingTarget) {
+        guard !sessionPaused else { return }
         if let existing = registeredRefs[target.registrationKey], let existing {
             UnregisterEventHotKey(existing)
         }
@@ -358,8 +362,17 @@ final class HotkeyManager: ObservableObject {
         }
     }
 
+    func setSessionPaused(_ paused: Bool) {
+        sessionPaused = paused
+        if paused {
+            unregisterAll()
+        } else {
+            reregisterAll()
+        }
+    }
+
     private func reregisterAll() {
-        guard isEnabled else { return }
+        guard isEnabled, !sessionPaused else { return }
         for action in Self.bindableActions {
             guard let combo = bindings[action.rawValue] else { continue }
             register(combo, for: .windowAction(action))

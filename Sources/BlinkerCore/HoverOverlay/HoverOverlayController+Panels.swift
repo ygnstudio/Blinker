@@ -34,6 +34,7 @@ extension HoverOverlayController {
                 removePanelViews()
                 return
             }
+            updateButtonPresentations(layout: layout, settings: settings)
             // An already-visible window needs no ordering call on mouse moves.
             dwell.applyHoverTransition(
                 dwellPanels: allDwellPanels,
@@ -61,17 +62,32 @@ extension HoverOverlayController {
         panelExtraActions = layout.extraActions
     }
 
+    private func updateButtonPresentations(layout: OverlayLayout, settings: HoverOverlaySettings) {
+        let variant = OverlayActionPresentation.variant(for: NSEvent.modifierFlags)
+        for (control, info) in zip(panels, layout.buttons) {
+            let resolve: (ClickVariant) -> OverlayActionPresentation = { [ruleEngine] variant in
+                OverlayActionPresentation.resolve(engine: ruleEngine,
+                                                  bundleID: layout.target.bundleIdentifier,
+                                                  button: info.button, variant: variant)
+            }
+            control.updatePresentation(resolve(variant))
+            control.requiresDwell = { !settings.protectQuitOnly || resolve($0).action == .quitApp }
+        }
+        for (control, action) in zip(extraPanels, layout.extraActions) {
+            control.requiresDwell = { _ in !settings.protectQuitOnly || action == .quitApp }
+        }
+    }
+
     private func makeTrafficButtons(layout: OverlayLayout) -> [HoverOverlayButtonView] {
         zip(layout.buttons, layout.panelFrames).map { info, frame in
-            let action: ButtonAction = switch info.button {
-            case .close: .closeWindow
-            case .minimize: .minimize
-            case .zoom: .fullscreen
-            }
+            let presentation = OverlayActionPresentation.resolve(
+                engine: ruleEngine, bundleID: layout.target.bundleIdentifier, button: info.button,
+                variant: .left
+            )
             return HoverOverlayButtonView(
                 frame: NSRect(origin: .zero, size: frame.size),
-                symbol: action.extraSymbolName ?? "circle",
-                label: action.localizedLabel,
+                symbol: presentation.symbol,
+                label: presentation.label,
                 color: OverlayChipDrawing.vividColor(for: info.button),
                 hasLongPressAction: { [ruleEngine] in
                     ruleEngine.action(
@@ -158,14 +174,12 @@ extension HoverOverlayController {
                 )
             }
         case (nil, .left):
-            workQueue.async { [weak self] in
-                // The click was swallowed by the panel; log a failed press so
-                // the user's dead click is at least diagnosable.
-                if !AXQuery.pressButton(subrole: info.axSubrole, in: axWindow) {
-                    self?.logger.error(
-                        "native AXPress failed for \(info.axSubrole, privacy: .public); click was consumed"
-                    )
-                }
+            workQueue.async { [actionPerformer] in
+                actionPerformer.perform(
+                    info.button.nativeAction,
+                    window: axWindow,
+                    processIdentifier: processIdentifier
+                )
             }
         case (nil, _):
             // Unconfigured enhanced variant: nothing to do (the click is

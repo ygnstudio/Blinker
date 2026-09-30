@@ -42,6 +42,9 @@ public final class HoverOverlayController {
     /// (close + reopen at the same spot) are caught by comparing it.
     var cachedWindowID: CGWindowID = 0
     var cachedWindowBounds: CGRect?
+    var wakeGate = OverlayWakeGate()
+    var wakeCheckScheduled = false
+    var wakeCheckRevision: UInt64 = 0
 
     /// UI state; only touched on the main thread.
     var panels: [HoverOverlayButtonView] = []
@@ -109,6 +112,7 @@ public final class HoverOverlayController {
         }
         let mask = CGEventMask(
             (1 << CGEventType.mouseMoved.rawValue)
+                | (1 << CGEventType.flagsChanged.rawValue)
                 | (1 << CGEventType.leftMouseDown.rawValue)
                 | (1 << CGEventType.leftMouseDragged.rawValue)
                 | (1 << CGEventType.leftMouseUp.rawValue)
@@ -177,19 +181,19 @@ public final class HoverOverlayController {
     static let screenEdgeMargin: CGFloat = 4
 
     /// The screen (in AX top-left coordinates) containing the center of the
-    /// given button frames, inset by the edge margin. HUDs are additionally
-    /// confined to the target window; covering controls may extend over its
-    /// edge so their centers stay aligned with the native traffic lights.
+    /// given button frames, intersected with the target window and inset to
+    /// keep the tray away from both window and display edges.
     static func overlayContainerBounds(
         forButtonFrames buttonFrames: [CGRect],
-        windowBounds: CGRect,
-        confinesToWindow: Bool = true
+        windowBounds: CGRect
     ) -> CGRect? {
         guard let groupBounds = HoverOverlayGeometry.unionedBounds(of: buttonFrames) else {
             return nil
         }
         let screens = NSScreen.screens
-        guard !screens.isEmpty else { return windowBounds }
+        guard !screens.isEmpty else {
+            return windowBounds.insetBy(dx: screenEdgeMargin, dy: screenEdgeMargin)
+        }
         let globalMaxY = AXQuery.coordinatePivotY
         let axFrame: (NSScreen) -> CGRect = { screen in
             CGRect(
@@ -201,10 +205,10 @@ public final class HoverOverlayController {
         }
         let center = CGPoint(x: groupBounds.midX, y: groupBounds.midY)
         let screen = screens.first { axFrame($0).contains(center) } ?? screens[0]
-        let container = confinesToWindow ? axFrame(screen).intersection(windowBounds) : axFrame(screen)
-        return container.isNull
-            ? axFrame(screen).insetBy(dx: screenEdgeMargin, dy: screenEdgeMargin)
-            : container.insetBy(dx: screenEdgeMargin, dy: screenEdgeMargin)
+        let container = axFrame(screen).intersection(windowBounds)
+        guard !container.isNull, container.width > 2 * screenEdgeMargin,
+              container.height > 2 * screenEdgeMargin else { return nil }
+        return container.insetBy(dx: screenEdgeMargin, dy: screenEdgeMargin)
     }
 
     // MARK: - Tap events
@@ -214,6 +218,12 @@ public final class HoverOverlayController {
     /// `workQueue`; both touch these fields through `moveStateLock`.
     private let moveStateLock = NSLock()
     private var isDragging = false
+    private var isMouseButtonDown = false
+
+    var canDetectCursor: Bool {
+        moveStateLock.withLock { !isDragging && !isMouseButtonDown }
+    }
+
     private var isDetecting = false
     private var pendingMoveLocation: CGPoint?
 
@@ -224,10 +234,12 @@ public final class HoverOverlayController {
             tapHost.enableTap()
         case .leftMouseDown:
             moveStateLock.lock()
+            isMouseButtonDown = true
             isDragging = false
             moveStateLock.unlock()
         case .leftMouseUp:
             moveStateLock.lock()
+            isMouseButtonDown = false
             isDragging = false
             moveStateLock.unlock()
         case .leftMouseDragged:
@@ -246,7 +258,7 @@ public final class HoverOverlayController {
                     self?.hidePanels()
                 }
             }
-        case .mouseMoved:
+        case .mouseMoved, .flagsChanged:
             scheduleCursorMove(event.location)
         default:
             break

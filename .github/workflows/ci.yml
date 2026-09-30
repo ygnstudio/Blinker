@@ -20,6 +20,9 @@ jobs:
       - name: Run tests
         run: swift test
 
+      - name: Packaging safety checks
+        run: python3 Scripts/test-package-app.py
+
   lint:
     runs-on: macos-26
     env:

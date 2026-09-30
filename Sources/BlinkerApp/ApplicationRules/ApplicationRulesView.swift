@@ -6,20 +6,15 @@ struct ApplicationRulesView: View {
     @EnvironmentObject var ruleStore: RuleStore
     let onEdit: (AppRule) -> Void
     let onOpenSettings: () -> Void
-    @ObservedObject private var preferences = AppPreferences.shared
+    @AppStorage("appAppearance") private var appearance = AppAppearance.system
     @State private var searchText = ""
     @State private var selection: AppRule.ID?
     @State private var showingAppLibrary = false
     @State private var ruleToDelete: AppRule?
-
-    private var rules: [AppRule] {
-        ruleStore.rules.filter {
-            searchText.isEmpty || $0.displayName.localizedCaseInsensitiveContains(searchText)
-        }.sorted { $0.displayName.localizedStandardCompare($1.displayName) == .orderedAscending }
-    }
+    @State private var visibleRules: [AppRule] = []
 
     private var selectedRule: AppRule? {
-        rules.first { $0.id == selection }
+        visibleRules.first { $0.id == selection }
     }
 
     var body: some View {
@@ -33,7 +28,7 @@ struct ApplicationRulesView: View {
                     } actions: {
                         Button("添加应用", systemImage: "plus") { showingAppLibrary = true }
                     }
-                } else if rules.isEmpty {
+                } else if visibleRules.isEmpty {
                     ContentUnavailableView.search(text: searchText)
                 } else {
                     ruleList
@@ -51,12 +46,17 @@ struct ApplicationRulesView: View {
                         .disabled(selectedRule == nil)
                 }
                 ToolbarItem {
+                    RuleToolsMenu(store: ruleStore)
+                }
+                ToolbarItem {
                     Button("设置…", systemImage: "gearshape", action: onOpenSettings)
                         .keyboardShortcut(",", modifiers: .command)
                 }
             }
         }
-        .preferredColorScheme(preferences.appearance.resolvedScheme)
+        .preferredColorScheme(appearance.resolvedScheme)
+        .onChange(of: ruleStore.rules, initial: true) { rebuildList() }
+        .onChange(of: searchText) { rebuildList() }
         .sheet(isPresented: $showingAppLibrary) {
             AppLibraryPicker { app in
                 let rule = ruleStore.rules.first { $0.id == app.bundleIdentifier }
@@ -84,31 +84,22 @@ struct ApplicationRulesView: View {
                 ruleToDelete = nil
             }
         } message: {
-            Text("删除后，此应用的红绿灯将恢复系统默认行为。")
+            Text("删除后，此应用的按钮恢复系统默认行为，悬停放大跟随全局作用范围。")
         }
     }
 
     private var ruleList: some View {
-        List(rules, selection: $selection) { rule in
-            HStack(spacing: 12) {
-                Image(nsImage: AppIconStore.icon(forBundleIdentifier: rule.id))
-                    .resizable().frame(width: 32, height: 32)
-                Text(rule.displayName)
-                Spacer()
-                Text(rule.isEnabled ? String(localized: "已启用") : String(localized: "已停用"))
-                    .foregroundStyle(.secondary)
-                Button("编辑…") { onEdit(rule) }
-            }
-            .padding(.vertical, 6)
-            .tag(rule.id)
-            .contextMenu {
-                Button("编辑规则") { onEdit(rule) }
-                Button("删除规则…", role: .destructive) { ruleToDelete = rule }
-            }
+        List(visibleRules, selection: $selection) { rule in
+            ApplicationRuleRow(rule: rule)
+                .tag(rule.id)
+                .contextMenu {
+                    Button("编辑规则") { onEdit(rule) }
+                    Button("删除规则…", role: .destructive) { ruleToDelete = rule }
+                }
         }
         .listStyle(.inset)
         .contextMenu(forSelectionType: AppRule.ID.self) { _ in } primaryAction: { ids in
-            if let rule = rules.first(where: { ids.contains($0.id) }) {
+            if let rule = visibleRules.first(where: { ids.contains($0.id) }) {
                 onEdit(rule)
             }
         }
@@ -119,6 +110,17 @@ struct ApplicationRulesView: View {
         }
     }
 
+    private func rebuildList() {
+        let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+        visibleRules = ruleStore.rules.filter {
+            query.isEmpty || $0.displayName.localizedCaseInsensitiveContains(query)
+                || $0.bundleIdentifier.localizedCaseInsensitiveContains(query)
+        }.sorted { $0.displayName.localizedStandardCompare($1.displayName) == .orderedAscending }
+        if !visibleRules.contains(where: { $0.id == selection }) {
+            selection = nil
+        }
+    }
+
     private func editSelection() {
         if let rule = selectedRule {
             onEdit(rule)
@@ -126,19 +128,26 @@ struct ApplicationRulesView: View {
     }
 }
 
-struct ApplicationRuleEditor: View {
-    @ObservedObject var ruleStore: RuleStore
-    let ruleID: AppRule.ID
-    @ObservedObject private var preferences = AppPreferences.shared
+private struct ApplicationRuleRow: View {
+    let rule: AppRule
 
     var body: some View {
-        Group {
-            if let rule = ruleStore.rules.first(where: { $0.id == ruleID }) {
-                RuleInspectorView(rule: rule, onUpdate: { ruleStore.upsert($0) })
-            } else {
-                ContentUnavailableView("规则已删除", systemImage: "macwindow")
+        HStack(spacing: 12) {
+            Image(nsImage: AppIconStore.icon(forBundleIdentifier: rule.id))
+                .resizable().frame(width: 32, height: 32)
+                .accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: 3) {
+                Text(rule.displayName).lineLimit(1)
+                Text(rule.bundleIdentifier).font(.caption).foregroundStyle(.secondary).lineLimit(1)
             }
+            Spacer()
+            VStack(alignment: .trailing, spacing: 3) {
+                Text(rule.isEnabled ? String(localized: "按钮规则已启用") : String(localized: "按钮规则已停用"))
+                Text(rule.isHoverEnabled ? String(localized: "允许悬停放大") : String(localized: "已关闭悬停放大"))
+                    .font(.caption)
+            }
+            .foregroundStyle(.secondary)
         }
-        .preferredColorScheme(preferences.appearance.resolvedScheme)
+        .padding(.vertical, 6)
     }
 }

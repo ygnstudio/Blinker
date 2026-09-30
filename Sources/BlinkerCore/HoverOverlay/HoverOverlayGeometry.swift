@@ -116,9 +116,18 @@ public enum HoverOverlayGeometry {
         return frames
     }
 
-    /// Centers the first enlarged control on the original first traffic light.
-    /// Clamp controls to the display, not the target window or transparent panel
-    /// margins: otherwise large controls shift down into a second title-bar row.
+    public static let controlGap: CGFloat = 8
+    public static let trayHorizontalPadding: CGFloat = 12
+    public static let trayVerticalPadding: CGFloat = 8
+
+    public static func paletteSize(buttonCount: Int, buttonSize: CGFloat) -> CGSize {
+        CGSize(width: CGFloat(buttonCount) * buttonSize + CGFloat(max(0, buttonCount - 1)) * controlGap
+            + 2 * trayHorizontalPadding,
+            height: buttonSize + 2 * trayVerticalPadding)
+    }
+
+    /// Start on the native traffic-light row, then shift only as far as needed
+    /// to fit the entire tray inside the visible portion of its owner window.
     public static func coveringPanelFrames(
         forButtonFrames buttonFrames: [CGRect],
         enlargedSize: CGFloat,
@@ -127,9 +136,10 @@ public enum HoverOverlayGeometry {
     ) -> [CGRect] {
         guard let first = buttonFrames.first, let anchor = unionedBounds(of: buttonFrames) else { return [] }
         let count = buttonFrames.count + extraCount
-        let available = containerBounds
-        guard available.width > 0, available.height > 0 else { return [] }
-        let gap: CGFloat = 4
+        guard count > 0, containerBounds.width > 2 * trayHorizontalPadding,
+              containerBounds.height > 2 * trayVerticalPadding else { return [] }
+        let available = containerBounds.insetBy(dx: trayHorizontalPadding, dy: trayVerticalPadding)
+        let gap = controlGap
         let size = min(enlargedSize, available.height,
                        (available.width - gap * CGFloat(count - 1)) / CGFloat(count))
         guard size > 0 else { return [] }

@@ -1,150 +1,167 @@
 import AppKit
 import ApplicationServices
-import os
 
-/// Executes window-management actions on a specific AX window.
-///
-/// Implementations receive the already-resolved target window and its process
-/// identifier; resolving *which* window was clicked stays the caller's job
-/// (frame matching in the interceptor, AX lookup in the hover overlay).
 public protocol WindowActionPerforming: AnyObject {
-    /// Performs `action` on `window` (owned by `processIdentifier`).
-    ///
-    /// Remaps that equal a native behavior press the *action's* native
-    /// button (e.g. red → minimize presses the yellow button), never the
-    /// button that was actually clicked.
-    func perform(
-        _ action: ButtonAction,
-        window: AXUIElement,
-        processIdentifier: pid_t
-    )
+    func perform(_ action: ButtonAction, window: AXUIElement, processIdentifier: pid_t)
 }
 
-/// The production implementation, driven by AX APIs and `NSRunningApplication`.
+/// One shared performer lets hotkeys and hover controls restore each other's
+/// layout changes. AX work stays on caller worker queues, serialized by the lock.
 public final class DefaultWindowActionPerformer: WindowActionPerforming {
-    private let logger = Logger(subsystem: "com.ygnstudio.blinker", category: "action-performer")
+    public static let shared = DefaultWindowActionPerformer()
+    private let lock = NSLock()
+    private var history = WindowLayoutHistory<WindowIdentity>()
+    private let operation: ((ButtonAction, AXUIElement, pid_t) -> WindowActionResult)?
 
-    public init() {}
+    public init() {
+        operation = nil
+    }
 
-    public func perform(
-        _ action: ButtonAction,
-        window: AXUIElement,
-        processIdentifier: pid_t
-    ) {
-        let runningApp = NSRunningApplication(processIdentifier: processIdentifier)
+    init(operation: @escaping (ButtonAction, AXUIElement, pid_t) -> WindowActionResult) {
+        self.operation = operation
+    }
+
+    public func perform(_ action: ButtonAction, window: AXUIElement, processIdentifier: pid_t) {
+        if processIdentifier == ProcessInfo.processInfo.processIdentifier {
+            // The test window belongs to Blinker. A process-wide action must
+            // never remove the utility or its settings during a window test.
+            guard action != .quitApp, action != .hideApp else {
+                ActionFeedback.report(.unsupportedWindow)
+                return
+            }
+            // AX requests targeting our own process execute AppKit inline;
+            // unlike cross-process IPC, they do not hop onto the target's main thread.
+            if !Thread.isMainThread {
+                DispatchQueue.main.async { [self] in
+                    perform(action, window: window, processIdentifier: processIdentifier)
+                }
+                return
+            }
+        }
+        let result = lock.withLock {
+            operation?(action, window, processIdentifier)
+                ?? execute(action, window: window, pid: processIdentifier)
+        }
+        ActionFeedback.report(result)
+    }
+
+    private func execute(_ action: ButtonAction, window: AXUIElement, pid: pid_t) -> WindowActionResult {
+        guard AccessibilityPermission.isTrusted else { return .permissionRequired }
+        AXQuery.applyMessagingTimeout(window)
+        let app = NSRunningApplication(processIdentifier: pid)
+        if let bundleID = app?.bundleIdentifier, SessionPause.shared.contains(bundleID) {
+            return .completed
+        }
         switch action {
         case .closeWindow, .minimize, .fullscreen:
-            // The remap equals a native press — possibly of a *different*
-            // button than the one clicked (e.g. red → minimize), so the
-            // press targets the action's native button, not the clicked one.
-            AXQuery.pressButton(subrole: Self.nativeSubrole(for: action), in: window)
+            let button: TrafficButton = action == .closeWindow ? .close : action == .minimize ? .minimize :
+                .zoom
+            return AXQuery
+                .pressButton(subrole: button.axSubrole, in: window) ? .completed : .unsupportedWindow
         case .quitApp:
-            logger.info("terminating pid \(processIdentifier)")
-            runningApp?.terminate()
+            return app?.terminate() == true ? .completed : .requestRejected
         case .hideApp:
-            logger.info("hiding pid \(processIdentifier)")
-            runningApp?.hide()
+            return app?.hide() == true ? .completed : .requestRejected
         case .none, .windowManagerPanel:
-            // `.windowManagerPanel` is overlay-only and never routed here.
-            break
+            return .completed
         default:
-            performGeometry(action, window: window, processIdentifier: processIdentifier)
+            return performGeometry(action, window: window, pid: pid)
         }
     }
 
-    /// Handles the frame-manipulation actions; the screen is chosen by the
-    /// window center and the target frame math lives in `WindowGeometry`.
-    private func performGeometry(
-        _ action: ButtonAction,
-        window: AXUIElement,
-        processIdentifier: pid_t
-    ) {
-        if action == .moveToNextDisplay {
-            logger.info("moving pid \(processIdentifier) window to next display")
-            moveToNextDisplay(window)
-            return
+    private func performGeometry(_ action: ButtonAction, window: AXUIElement,
+                                 pid: pid_t) -> WindowActionResult {
+        guard let axFrame = AXQuery.elementFrame(window) else { return .unsupportedWindow }
+        let current = AXQuery.appKitFrame(fromAXRect: axFrame)
+        let screens = NSScreen.screens
+        guard let screen = screens
+            .first(where: { $0.frame.contains(CGPoint(x: current.midX, y: current.midY)) })
+            ?? NSScreen.main else { return .unsupportedWindow }
+        let key = WindowIdentity(pid: pid, element: window)
+        let restoring = action == .restorePreviousFrame
+            || history.toggleFrame(for: key, action: action, current: current) != nil
+        let target: CGRect
+        var destinationBounds = screen.visibleFrame
+        if restoring {
+            guard let previous = history.previousFrame(for: key) else { return .noPreviousLayout }
+            // A disconnected monitor must not leave the restored window offscreen.
+            let destination = screens.first { $0.frame.contains(CGPoint(x: previous.midX, y: previous.midY)) }
+                ?? screen
+            destinationBounds = destination.visibleFrame
+            target = Self.fitting(previous, inside: destinationBounds)
+        } else if action == .moveToNextDisplay {
+            guard screens.count > 1,
+                  let index = screens.firstIndex(of: screen) else { return .noOtherDisplay }
+            let destination = screens[(index + 1) % screens.count].visibleFrame
+            destinationBounds = destination
+            target = WindowGeometry.transferredFrame(current, from: screen.visibleFrame, to: destination)
+        } else {
+            guard let placement = WindowPlacement(action: action) else { return .unsupportedWindow }
+            target = WindowGeometry.targetFrame(
+                for: placement,
+                originalFrame: current,
+                in: screen.visibleFrame
+            )
         }
-        guard let placement = WindowPlacement(action: action) else { return }
-        logger.info("placing pid \(processIdentifier) window: \(String(describing: placement))")
-        place(window, placement: placement)
+        guard AXQuery.setWindowFrame(window, appKitFrame: target, globalMaxY: AXQuery.coordinatePivotY),
+              let actualAX = AXQuery.elementFrame(window) else { return .unsupportedWindow }
+        var actual = AXQuery.appKitFrame(fromAXRect: actualAX)
+        guard Self.accepted(actual: actual, current: current, target: target) else { return .requestRejected }
+        let constrained = Self.isConstrained(actual, target: target)
+        if constrained {
+            actual = keepVisible(actual, window: window, inside: destinationBounds)
+        }
+        recordLayout(key: key, action: action, before: current, after: actual, restoring: restoring)
+        return constrained ? .sizeConstrained : .completed
     }
 
-    /// The AX subrole of the button whose native behavior matches `action`.
-    private static func nativeSubrole(for action: ButtonAction) -> String {
-        switch action {
-        case .closeWindow: TrafficButton.close.axSubrole
-        case .minimize: TrafficButton.minimize.axSubrole
-        case .fullscreen: TrafficButton.zoom.axSubrole
-        default: TrafficButton.close.axSubrole
+    private func recordLayout(key: WindowIdentity, action: ButtonAction,
+                              before: CGRect, after: CGRect, restoring: Bool) {
+        if restoring {
+            history.didRestore(key)
+        } else {
+            history.record(key: key, action: action, before: before, after: after)
         }
     }
 
-    // MARK: - Geometry actions
+    private static func isConstrained(_ actual: CGRect, target: CGRect) -> Bool {
+        actual.width > target.width + 3 || actual.height > target.height + 3
+    }
 
-    /// Zooms the window to fill the visible frame of the screen it is mostly
-    /// on, without entering fullscreen.
-    ///
-    /// The `AXZoomWindow` attribute is read-only in practice, so the zoom is
-    /// performed by setting the window position and size directly — the same
-    /// approach Rectangle and Magnet use.
-    private func place(_ window: AXUIElement, placement: WindowPlacement) {
-        guard let appKitFrame = Self.appKitFrame(of: window) else { return }
-        guard let visibleFrame = Self.screen(containing: appKitFrame)?.visibleFrame else { return }
-        let target = WindowGeometry.targetFrame(
-            for: placement,
-            originalFrame: appKitFrame,
-            in: visibleFrame
+    private static func accepted(actual: CGRect, current: CGRect, target: CGRect) -> Bool {
+        !WindowLayoutHistory<WindowIdentity>.matches(actual, current)
+            || WindowLayoutHistory<WindowIdentity>.matches(actual, target)
+    }
+
+    private func keepVisible(_ actual: CGRect, window: AXUIElement, inside bounds: CGRect) -> CGRect {
+        let corrected = CGRect(
+            x: max(bounds.minX, min(actual.minX, bounds.maxX - actual.width)),
+            y: max(bounds.minY, min(actual.minY, bounds.maxY - actual.height)),
+            width: actual.width, height: actual.height
         )
-        AXQuery.setWindowFrame(window, appKitFrame: target, globalMaxY: Self.globalMaxY)
+        AXQuery.setWindowFrame(window, appKitFrame: corrected, globalMaxY: AXQuery.coordinatePivotY)
+        return AXQuery.elementFrame(window).map(AXQuery.appKitFrame) ?? actual
     }
 
-    /// Moves the window to the next display (wrapping around), keeping its
-    /// size and centering it in the target screen's visible frame.
-    private func moveToNextDisplay(_ window: AXUIElement) {
-        guard NSScreen.screens.count > 1,
-              let appKitFrame = Self.appKitFrame(of: window),
-              let current = Self.screen(containing: appKitFrame),
-              let index = NSScreen.screens.firstIndex(of: current)
-        else { return }
-        let target = NSScreen.screens[(index + 1) % NSScreen.screens.count]
-        let visible = target.visibleFrame
-        var frame = appKitFrame
-        if frame.width > visible.width {
-            frame.size.width = visible.width
-        }
-        if frame.height > visible.height {
-            frame.size.height = visible.height
-        }
-        frame.origin = CGPoint(
-            x: visible.midX - frame.width / 2,
-            y: visible.midY - frame.height / 2
-        )
-        AXQuery.setWindowFrame(window, appKitFrame: frame, globalMaxY: Self.globalMaxY)
+    private static func fitting(_ frame: CGRect, inside visible: CGRect) -> CGRect {
+        let width = min(frame.width, visible.width)
+        let height = min(frame.height, visible.height)
+        return CGRect(x: min(max(frame.minX, visible.minX), visible.maxX - width),
+                      y: min(max(frame.minY, visible.minY), visible.maxY - height), width: width,
+                      height: height)
+    }
+}
+
+private struct WindowIdentity: Hashable {
+    let pid: pid_t
+    let element: AXUIElement
+
+    static func == (lhs: Self, rhs: Self) -> Bool {
+        lhs.pid == rhs.pid && CFEqual(lhs.element, rhs.element)
     }
 
-    /// The primary screen's top edge in AppKit coordinates; the pivot for
-    /// converting between AppKit and AX (top-left origin) frames.
-    private static var globalMaxY: CGFloat {
-        AXQuery.coordinatePivotY
-    }
-
-    /// Reads the window frame and converts it from AX to AppKit coordinates.
-    private static func appKitFrame(of window: AXUIElement) -> CGRect? {
-        guard let axFrame = AXQuery.elementFrame(window) else { return nil }
-        let maxY = globalMaxY
-        return CGRect(
-            x: axFrame.minX,
-            y: maxY - axFrame.maxY,
-            width: axFrame.width,
-            height: axFrame.height
-        )
-    }
-
-    /// Finds the screen containing the frame's center, falling back to the
-    /// main screen.
-    private static func screen(containing frame: CGRect) -> NSScreen? {
-        NSScreen.screens.first {
-            $0.frame.contains(CGPoint(x: frame.midX, y: frame.midY))
-        } ?? NSScreen.main
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(pid)
+        hasher.combine(CFHash(element))
     }
 }

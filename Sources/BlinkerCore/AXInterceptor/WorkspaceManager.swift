@@ -191,7 +191,8 @@ public enum WorkspaceManager {
     /// AX window) are skipped silently — callers may log the miss.
     @discardableResult
     public static func restore(_ workspace: SavedWorkspace) -> Int {
-        let restoreSpaces = UserDefaults.standard.bool(forKey: spaceRestoreDefaultsKey)
+        let restoreSpaces = UserDefaults.standard.bool(forKey: "workspaceExperimentsEnabled")
+            && UserDefaults.standard.bool(forKey: spaceRestoreDefaultsKey)
             && SkyLightSpaces.isAvailable
         var spaceIDByUUID: [String: Int64] = [:]
         var windowIDByFrame: [String: Int] = [:]

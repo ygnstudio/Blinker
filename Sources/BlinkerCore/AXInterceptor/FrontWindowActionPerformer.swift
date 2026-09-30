@@ -34,7 +34,7 @@ public final class FrontWindowActionPerformer {
         workQueue.async { [performer] in
             guard
                 let window = AXQuery.focusedWindowElement(processIdentifier: app.processIdentifier)
-            else { return }
+            else { ActionFeedback.report(.unsupportedWindow); return }
             performer.perform(
                 action,
                 window: window,

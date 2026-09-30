@@ -22,41 +22,45 @@ final class CoveringOverlayGeometryTests: XCTestCase {
         XCTAssertTrue(frames[0].contains(buttons[0]))
     }
 
-    func testLargeOverlayAtWindowTopRemainsCenteredOnNativeRow() throws {
-        let screen = CGRect(x: 0, y: 0, width: 1200, height: 800)
+    func testLargeOverlayAtWindowTopKeepsWholeTrayInsideWindow() throws {
+        let window = CGRect(x: 100, y: 100, width: 800, height: 600)
+        let container = window.insetBy(dx: 4, dy: 4)
         let frames = HoverOverlayGeometry.coveringPanelFrames(
-            forButtonFrames: buttons, enlargedSize: 48, containerBounds: screen
+            forButtonFrames: buttons, enlargedSize: 48, containerBounds: container, extraCount: 4
         )
         let first = try XCTUnwrap(frames.first)
-        XCTAssertEqual(first.midY, buttons[0].midY)
-        XCTAssertEqual(first.midX, buttons[0].midX)
-        XCTAssertTrue(first.contains(buttons[0]))
-        // The window begins at y=100. A genuine covering panel may extend above it.
-        XCTAssertLessThan(first.minY, 100)
+        let tray = try XCTUnwrap(HoverOverlayTrayPanel.frame(forDisplayFrames: frames))
+        XCTAssertTrue(container.contains(tray))
+        XCTAssertEqual(tray.minX, container.minX)
+        XCTAssertEqual(tray.minY, container.minY)
+        // Still overlaps the native row instead of becoming a row below it.
+        XCTAssertTrue(first.intersects(buttons[0]))
     }
 
-    func testScreenEdgeClampsControlsWithoutReservingInvisibleMargins() throws {
+    func testScreenEdgeReservesVisibleTrayPadding() throws {
         let screen = CGRect(x: 0, y: 0, width: 1200, height: 800)
         let native = CGRect(x: 16, y: 14, width: 14, height: 14)
         let frames = HoverOverlayGeometry.coveringPanelFrames(
             forButtonFrames: [native], enlargedSize: 48, containerBounds: screen
         )
         let first = try XCTUnwrap(frames.first)
-        XCTAssertEqual(first.minX, 0)
-        XCTAssertEqual(first.minY, 0)
+        let tray = try XCTUnwrap(HoverOverlayTrayPanel.frame(forDisplayFrames: frames))
+        XCTAssertEqual(tray.minX, 0)
+        XCTAssertEqual(tray.minY, 0)
+        XCTAssertTrue(screen.contains(tray))
         XCTAssertTrue(first.contains(native))
     }
 
-    func testAllControlsFitNarrowDisplay() throws {
+    func testWholeTrayFitsNarrowWindowWithoutClosingButtonGaps() throws {
         let container = CGRect(x: 100, y: 100, width: 220, height: 200)
         let frames = HoverOverlayGeometry.coveringPanelFrames(
             forButtonFrames: buttons, enlargedSize: 48, containerBounds: container, extraCount: 4
         )
         XCTAssertEqual(frames.count, 7)
-        let controls = try XCTUnwrap(HoverOverlayGeometry.unionedBounds(of: frames))
-        XCTAssertTrue(container.insetBy(dx: -0.001, dy: -0.001).contains(controls))
+        let tray = try XCTUnwrap(HoverOverlayTrayPanel.frame(forDisplayFrames: frames))
+        XCTAssertTrue(container.insetBy(dx: -0.001, dy: -0.001).contains(tray))
         for pair in zip(frames, frames.dropFirst()) {
-            XCTAssertLessThan(pair.0.maxX, pair.1.minX)
+            XCTAssertEqual(pair.1.minX - pair.0.maxX, 8, accuracy: 0.001)
         }
     }
 
@@ -66,8 +70,8 @@ final class CoveringOverlayGeometryTests: XCTestCase {
         let frames = HoverOverlayGeometry.coveringPanelFrames(
             forButtonFrames: anchor, enlargedSize: 48, containerBounds: container, extraCount: 4
         )
-        let controls = try XCTUnwrap(HoverOverlayGeometry.unionedBounds(of: frames))
-        XCTAssertTrue(container.contains(controls))
+        let tray = try XCTUnwrap(HoverOverlayTrayPanel.frame(forDisplayFrames: frames))
+        XCTAssertTrue(container.contains(tray))
     }
 
     func testNoControlsForMissingAnchorOrImpossibleContainer() {
@@ -79,6 +83,21 @@ final class CoveringOverlayGeometryTests: XCTestCase {
             forButtonFrames: buttons, enlargedSize: 40,
             containerBounds: CGRect(x: 0, y: 0, width: 0, height: 0)
         ).isEmpty)
+    }
+
+    func testPreviewSizeMatchesLiveTrayForAllSupportedSizesAndCounts() throws {
+        for size in [28.0, 31, 48] {
+            for extras in 0 ... 4 {
+                let frames = HoverOverlayGeometry.coveringPanelFrames(
+                    forButtonFrames: buttons, enlargedSize: size,
+                    containerBounds: CGRect(x: 0, y: 0, width: 1200, height: 800), extraCount: extras
+                )
+                let tray = try XCTUnwrap(HoverOverlayTrayPanel.frame(forDisplayFrames: frames))
+                XCTAssertEqual(tray.size, HoverOverlayGeometry.paletteSize(
+                    buttonCount: 3 + extras, buttonSize: size
+                ))
+            }
+        }
     }
 
     func testAXFramesBecomeTrayLocalFramesWithoutScreenDependence() {

@@ -67,7 +67,7 @@ final class OverlayHUDManager {
         .tileTopLeft, .tileTop, .tileTopRight,
         .tileLeft, .centerWindow, .tileRight,
         .tileBottomLeft, .tileBottom, .tileBottomRight,
-        .maximize, .almostMaximize, .moveToNextDisplay,
+        .maximize, .restorePreviousFrame, .moveToNextDisplay,
     ]
 
     /// Opens the management HUD below the enlarged group. All actions act on
@@ -131,6 +131,11 @@ final class OverlayHUDManager {
             },
             onClose: { [weak self] in
                 self?.close()
+            },
+            onBrowseWindows: { [weak self] in
+                self?.close()
+                NotificationCenter.default.post(name: WindowBrowserRequest.showApplication, object: nil,
+                                                userInfo: ["pid": context.processIdentifier])
             }
         )
     }

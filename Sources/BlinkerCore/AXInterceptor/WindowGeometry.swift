@@ -13,6 +13,7 @@ public enum WindowPlacement: String, Sendable, CaseIterable {
     case bottomLeft
     case bottomRight
     case center
+    case firstThird, centerThird, lastThird, firstTwoThirds, lastTwoThirds
 
     /// The placement corresponding to `action`, or `nil` when the action is
     /// not a frame placement (e.g. `.moveToNextDisplay`, which the performer
@@ -34,6 +35,11 @@ public enum WindowPlacement: String, Sendable, CaseIterable {
         .tileBottomLeft: .bottomLeft,
         .tileBottomRight: .bottomRight,
         .centerWindow: .center,
+        .tileFirstThird: .firstThird,
+        .tileCenterThird: .centerThird,
+        .tileLastThird: .lastThird,
+        .tileFirstTwoThirds: .firstTwoThirds,
+        .tileLastTwoThirds: .lastTwoThirds,
     ]
 }
 
@@ -87,6 +93,33 @@ public enum WindowGeometry {
         )
     }
 
+    /// Preserve relative placement when transferring between unlike displays.
+    public static func transferredFrame(_ frame: CGRect, from source: CGRect,
+                                        to destination: CGRect) -> CGRect {
+        let width = min(frame.width, destination.width)
+        let height = min(frame.height, destination.height)
+        let relativeX = (frame.minX - source.minX) / max(1, source.width - frame.width)
+        let relativeY = (frame.minY - source.minY) / max(1, source.height - frame.height)
+        return CGRect(x: destination.minX + min(max(relativeX, 0), 1) * (destination.width - width),
+                      y: destination.minY + min(max(relativeY, 0), 1) * (destination.height - height),
+                      width: width, height: height)
+    }
+
+    private static func thirdsFrame(_ placement: WindowPlacement, in visibleFrame: CGRect) -> CGRect {
+        let start: CGFloat = placement == .centerThird || placement == .lastTwoThirds ? 1
+            : placement == .lastThird ? 2 : 0
+        let span: CGFloat = placement == .firstTwoThirds || placement == .lastTwoThirds ? 2 : 1
+        // Portrait displays use horizontal bands, ordered from the top.
+        if visibleFrame.height > visibleFrame.width {
+            let unit = visibleFrame.height / 3
+            return CGRect(x: visibleFrame.minX, y: visibleFrame.maxY - (start + span) * unit,
+                          width: visibleFrame.width, height: unit * span)
+        }
+        let unit = visibleFrame.width / 3
+        return CGRect(x: visibleFrame.minX + start * unit, y: visibleFrame.minY,
+                      width: unit * span, height: visibleFrame.height)
+    }
+
     /// One half or quadrant of `visibleFrame`, in AppKit's bottom-left-origin
     /// coordinates. The eight tile placements partition the screen exactly.
     /// Public so the settings UI can reuse the exact math for previews.
@@ -94,6 +127,8 @@ public enum WindowGeometry {
         let halfWidth = visibleFrame.width / 2
         let halfHeight = visibleFrame.height / 2
         switch placement {
+        case .firstThird, .centerThird, .lastThird, .firstTwoThirds, .lastTwoThirds:
+            return thirdsFrame(placement, in: visibleFrame)
         case .left:
             return CGRect(
                 x: visibleFrame.minX, y: visibleFrame.minY,

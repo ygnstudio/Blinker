@@ -6,34 +6,19 @@ struct RuleInspectorView: View {
     let rule: AppRule
     let onUpdate: (AppRule) -> Void
 
-    static let optionGroups: [ActionOptionGroup] = [
-        ActionOptionGroup(label: nil, options: [nil]),
-        ActionOptionGroup(
-            label: String(localized: "窗口"),
-            options: [
-                .closeWindow, .minimize, .maximize, .almostMaximize,
-                .fullscreen, .centerWindow, .moveToNextDisplay,
-            ]
-        ),
-        ActionOptionGroup(
-            label: String(localized: "贴靠"),
-            options: [
-                .tileLeft, .tileRight, .tileTop, .tileBottom,
-                .tileTopLeft, .tileTopRight, .tileBottomLeft, .tileBottomRight,
-            ]
-        ),
-        ActionOptionGroup(label: String(localized: "应用"), options: [.quitApp, .hideApp]),
-        ActionOptionGroup(label: nil, options: [ButtonAction.none]),
-    ]
-
     var body: some View {
         Form {
             Section {
-                Toggle("启用此应用的规则", isOn: enabledBinding)
+                Toggle("启用按钮规则", isOn: binding(\.isEnabled))
             } footer: {
                 Text(rule.isEnabled
                     ? String(localized: "更改立即生效。未配置的按钮保持系统默认行为。")
                     : String(localized: "规则已停用。配置会保留，启用后生效。"))
+            }
+            Section {
+                Toggle("启用此应用的悬停放大", isOn: binding(\.isHoverEnabled))
+            } footer: {
+                Text("独立于按钮规则；还需在设置中开启悬停放大。")
             }
             ForEach(TrafficButton.allCases, id: \.self) { button in
                 TrafficButtonEditor(
@@ -46,12 +31,12 @@ struct RuleInspectorView: View {
         .formStyle(.grouped)
     }
 
-    private var enabledBinding: Binding<Bool> {
+    private func binding<Value>(_ keyPath: WritableKeyPath<AppRule, Value>) -> Binding<Value> {
         Binding(
-            get: { rule.isEnabled },
+            get: { rule[keyPath: keyPath] },
             set: { newValue in
                 var updated = rule
-                updated.isEnabled = newValue
+                updated[keyPath: keyPath] = newValue
                 onUpdate(updated)
             }
         )
@@ -102,12 +87,17 @@ private struct TrafficButtonEditor: View {
             }
         }
         .onAppear { showsMore = hasExtraActions }
+        .onChange(of: hasExtraActions) {
+            if hasExtraActions {
+                showsMore = true
+            }
+        }
     }
 
     private func actionPicker(for variant: ClickVariant) -> some View {
         Picker(variant.localizedLabel, selection: binding(for: variant)) {
-            ForEach(RuleInspectorView.optionGroups.indices, id: \.self) { index in
-                let group = RuleInspectorView.optionGroups[index]
+            ForEach(RuleActionOptions.groups.indices, id: \.self) { index in
+                let group = RuleActionOptions.groups[index]
                 if let label = group.label {
                     Section(label) { options(group.options) }
                 } else {

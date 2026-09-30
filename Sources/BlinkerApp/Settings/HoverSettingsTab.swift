@@ -25,6 +25,7 @@ struct HoverSettingsTab: View {
             // here first, so the feature explains itself.
             Section {
                 HoverPreviewCard(settings: settings)
+                Button("打开真实测试窗口…") { CompatibilityWindowController.shared.showTestWindow() }
             } header: {
                 SectionHeader(
                     title: String(localized: "实时预览"),
@@ -36,7 +37,7 @@ struct HoverSettingsTab: View {
                 Toggle("开启悬停放大", isOn: isEnabledBinding)
                 sizeSlider
                     .disabled(!settings.isEnabled)
-                dwellSlider
+                HoverTimingSettings(settings: settings, onApply: onApply)
                     .disabled(!settings.isEnabled)
             } header: {
                 SectionHeader(title: String(localized: "放大"), info: enlargementInfo)
@@ -53,8 +54,7 @@ struct HoverSettingsTab: View {
             }
 
             Section {
-                extraSlotsGrid
-                    .disabled(!settings.isEnabled)
+                extraSlotsGrid.disabled(!settings.isEnabled)
             } header: {
                 SectionHeader(
                     title: String(localized: "扩展按钮"),
@@ -90,16 +90,6 @@ struct HoverSettingsTab: View {
         )
     }
 
-    private var dwellSlider: some View {
-        SliderReadoutRow(
-            label: String(localized: "防误触延迟"),
-            readout: dwellLabel,
-            value: dwellBinding,
-            range: 0 ... 800,
-            step: 50
-        )
-    }
-
     private var scopePicker: some View {
         Picker("作用范围", selection: appliesToAllWindowsBinding) {
             Text("全部窗口").tag(true)
@@ -118,18 +108,9 @@ struct HoverSettingsTab: View {
             ForEach(0 ..< HoverOverlaySettings.extraSlotCount, id: \.self) { index in
                 LabeledContent {
                     ActionPicker(
-                        dotColor: .controlAccentColor,
                         options: Self.extraOptions,
                         selection: extraBinding(index),
-                        emptyLabel: String(localized: "不显示"),
-                        // The same 104pt width as the rules matrix, so the
-                        // "下一显示器" option never truncates on either
-                        // surface (previously 88 here).
-                        pickerWidth: 104,
-                        // Every slot shares the same accent color, so the
-                        // dots carry no information — drop them (matching
-                        // the rules matrix).
-                        showsDot: false
+                        emptyLabel: String(localized: "不显示")
                     )
                 } label: {
                     Text("按钮 \(index + 1)")
@@ -163,14 +144,8 @@ struct HoverSettingsTab: View {
         return hotkeyManager.internalConflictWarning(for: combo, action: nil)
     }
 
-    private var dwellLabel: String {
-        settings.dwellMilliseconds == 0
-            ? String(localized: "立即响应")
-            : "\(settings.dwellMilliseconds) ms"
-    }
-
     private var enlargementInfo: String {
-        String(localized: "鼠标悬停时，放大按钮直接覆盖原生红绿灯，驻留后可点击；移开鼠标即收起。")
+        String(localized: "放大按钮覆盖原生红绿灯。出现延迟控制何时显示；点击保护单独控制需要驻留的操作。")
     }
 
     private var isEnabledBinding: Binding<Bool> {
@@ -205,13 +180,6 @@ struct HoverSettingsTab: View {
         )
     }
 
-    private var dwellBinding: Binding<Double> {
-        Binding(
-            get: { Double(settings.dwellMilliseconds) },
-            set: { newValue in update { $0.dwellMilliseconds = Int(newValue) } }
-        )
-    }
-
     private var appliesToAllWindowsBinding: Binding<Bool> {
         Binding(
             get: { settings.appliesToAllWindows },
@@ -229,7 +197,7 @@ struct HoverSettingsTab: View {
 /// `LabeledContent` row with a fixed-width slider and a fixed-width,
 /// monospaced trailing readout — the shared shape of the hover tab's two
 /// numeric sliders, so the readouts align across rows.
-private struct SliderReadoutRow: View {
+struct SliderReadoutRow: View {
     let label: String
     let readout: String
     @Binding var value: Double

@@ -195,6 +195,7 @@ enum AXQuery {
     static func windowUnderPoint(
         _ point: CGPoint,
         excludingProcessIdentifier excludedPID: pid_t? = nil,
+        includingTestWindow: Bool = false,
         usingCache: Bool = false,
         windowList: WindowListProvider = copyWindowList
     ) -> WindowHit? {
@@ -214,7 +215,10 @@ enum AXQuery {
         let list = candidates ?? windowList([.optionOnScreenOnly], kCGNullWindowID)
         let hit = list.lazy.compactMap { windowHit(from: $0) }.first { $0.bounds.contains(point) }
         // An excluded foreground window blocks hits behind it.
-        let result = hit?.processIdentifier == excludedPID ? nil : hit
+        let result = hit.flatMap { candidate in
+            let testException = includingTestWindow && HoverTestWindow.contains(candidate)
+            return candidate.processIdentifier == excludedPID && !testException ? nil : candidate
+        }
         cacheWindowHit(result)
         return result
     }

@@ -17,6 +17,8 @@ public struct HoverOverlaySettings: Codable, Hashable, Sendable {
     /// Dwell time in milliseconds before a hover click is accepted,
     /// clamped to 0...800. `0` activates immediately.
     public var dwellMilliseconds: Int
+    public var appearanceDelayMilliseconds: Int
+    public var protectQuitOnly: Bool
     /// When `false`, the overlay only appears for apps that have a rule.
     public var appliesToAllWindows: Bool
     /// Extra-button slots to the right of the traffic lights, in display
@@ -28,12 +30,16 @@ public struct HoverOverlaySettings: Codable, Hashable, Sendable {
         isEnabled: Bool = true,
         enlargedSize: CGFloat = 28,
         dwellMilliseconds: Int = 150,
+        appearanceDelayMilliseconds: Int = 100,
+        protectQuitOnly: Bool = true,
         appliesToAllWindows: Bool = true,
         extraButtonActions: [ButtonAction?] = []
     ) {
         self.isEnabled = isEnabled
         self.enlargedSize = min(max(enlargedSize, 28), 48)
         self.dwellMilliseconds = min(max(dwellMilliseconds, 0), 800)
+        self.appearanceDelayMilliseconds = min(max(appearanceDelayMilliseconds, 0), 800)
+        self.protectQuitOnly = protectQuitOnly
         self.appliesToAllWindows = appliesToAllWindows
         self.extraButtonActions = Self.normalizedExtraActions(extraButtonActions)
     }
@@ -58,7 +64,7 @@ public struct HoverOverlaySettings: Codable, Hashable, Sendable {
 
     private enum CodingKeys: String, CodingKey {
         case isEnabled, enlargedSize, dwellMilliseconds, appliesToAllWindows
-        case extraButtonActions
+        case extraButtonActions, appearanceDelayMilliseconds, protectQuitOnly
     }
 
     /// Missing fields use defaults. Obsolete `mode` and `maskStyle` keys
@@ -72,6 +78,14 @@ public struct HoverOverlaySettings: Codable, Hashable, Sendable {
             .decodeIfPresent(CGFloat.self, forKey: .enlargedSize) ?? fallback.enlargedSize
         dwellMilliseconds = try container
             .decodeIfPresent(Int.self, forKey: .dwellMilliseconds) ?? fallback.dwellMilliseconds
+        appearanceDelayMilliseconds = try min(max(container.decodeIfPresent(
+            Int.self, forKey: .appearanceDelayMilliseconds
+        ) ?? fallback.appearanceDelayMilliseconds, 0), 800)
+        // Existing users retain their click protection until they change it.
+        protectQuitOnly = try container.decodeIfPresent(Bool.self, forKey: .protectQuitOnly)
+            ?? !container.contains(.dwellMilliseconds)
+        enlargedSize = min(max(enlargedSize, 28), 48)
+        dwellMilliseconds = min(max(dwellMilliseconds, 0), 800)
         appliesToAllWindows = try container
             .decodeIfPresent(Bool.self, forKey: .appliesToAllWindows) ?? fallback.appliesToAllWindows
         extraButtonActions = try Self.normalizedExtraActions(

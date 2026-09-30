@@ -7,6 +7,9 @@ struct HoverPreviewCard: View {
     let settings: HoverOverlaySettings
 
     var body: some View {
+        let size = HoverOverlayGeometry.paletteSize(
+            buttonCount: 3 + settings.enabledExtraActions.count, buttonSize: settings.enlargedSize
+        )
         HStack(spacing: 16) {
             ZStack(alignment: .leading) {
                 if !settings.isEnabled {
@@ -24,8 +27,7 @@ struct HoverPreviewCard: View {
                         .allowsHitTesting(false)
                 }
             }
-            .frame(width: CGFloat(3 + settings.enabledExtraActions.count) * (settings.enlargedSize + 4) + 20,
-                   height: settings.enlargedSize + 16)
+            .frame(width: size.width, height: size.height)
             Spacer(minLength: 0)
             Text("悬停效果预览").font(.caption).foregroundStyle(.secondary)
         }
@@ -44,20 +46,29 @@ private struct PalettePreview: NSViewRepresentable {
         view.subviews.forEach { $0.removeFromSuperview() }
         let actions: [ButtonAction] = [.closeWindow, .minimize, .fullscreen] + settings.enabledExtraActions
         let size = settings.enlargedSize
-        let total = NSSize(width: CGFloat(actions.count) * (size + 4) + 20, height: size + 16)
+        let total = HoverOverlayGeometry.paletteSize(buttonCount: actions.count, buttonSize: size)
         let content = NSView(frame: NSRect(origin: .zero, size: total))
         content.autoresizingMask = [.width, .height]
         let colors = TrafficButton.allCases.map { OverlayChipDrawing.vividColor(for: $0) }
         for (index, action) in actions.enumerated() {
             let color = index < colors.count ? colors[index] : NSColor.controlAccentColor
+            let origin = NSPoint(
+                x: HoverOverlayGeometry.trayHorizontalPadding
+                    + CGFloat(index) * (size + HoverOverlayGeometry.controlGap),
+                y: HoverOverlayGeometry.trayVerticalPadding
+            )
             let button = HoverControlAppearance.makePreviewButton(
-                frame: NSRect(x: 12 + CGFloat(index) * (size + 4), y: 8, width: size, height: size),
+                frame: NSRect(origin: origin, size: NSSize(width: size, height: size)),
                 action: action, color: color
             )
             let surface = HoverControlAppearance.makeSurface(for: button)
-            surface.frame.origin = NSPoint(x: 12 + CGFloat(index) * (size + 4), y: 8)
+            surface.frame.origin = origin
             content.addSubview(surface)
         }
-        view.addSubview(HoverControlAppearance.makeGroup(content: content, size: total))
+        let group = HoverControlAppearance.makeGroup(content: content, size: total)
+        // SwiftUI sizes the initially empty host after this update. Keep the
+        // palette at its measured size instead of adding the host's size delta.
+        group.autoresizingMask = []
+        view.addSubview(group)
     }
 }

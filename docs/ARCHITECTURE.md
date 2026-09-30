@@ -1,190 +1,94 @@
-# 架构 / Architecture
+# Architecture
 
-Blinker 是一个原生 macOS 菜单栏应用，拦截窗口红绿灯按钮的点击并按应用重定义其行为，同时提供悬停放大的覆盖层。本文描述模块划分、两条核心数据流、线程与坐标系模型，以及关键设计决策的取舍原因。
+Blinker has two Swift Package targets: `BlinkerCore` owns rules and native window behavior; `BlinkerApp` owns application lifecycle, preferences and presentation. Core does not depend on the app target. It includes AppKit panels where native tracking, focus and glass composition are part of the behavior.
 
-Blinker is a native macOS menu bar app that intercepts clicks on window traffic-light buttons and remaps their behavior per app, with a hover-to-enlarge overlay. This document describes the module layout, the two core data flows, the threading and coordinate-space models, and the reasoning behind key design decisions.
+## Ownership
 
----
-
-## 中文
-
-### 模块地图
-
-```
-Sources/
-├── BlinkerCore/               # 无 UI 的核心逻辑（可独立测试）
-│   ├── AXInterceptor/         # 事件拦截与动作执行
-│   │   ├── TrafficLightInterceptor.swift   # CGEventTap 入口 + 4 步点击管线（右键/⌥/🌐/长按）
-│   │   ├── AXWindowQuery.swift             # AXUIElement 查询：命中的窗口/按钮
-│   │   ├── WindowActionPerformer.swift     # 通过 AXPress/AX 帧写入执行重映射后的动作
-│   │   ├── WindowGeometry.swift            # 纯摆放数学：17 种动作的目标帧
-│   │   ├── WindowSnapper.swift             # 拖拽贴靠：observe-only tap + 预览面板
-│   │   ├── SnapZones.swift                 # 纯命中测试：光标 → 贴靠分区
-│   │   ├── FrontWindowActionPerformer.swift # 对最前窗口执行动作（面板/快捷键共用）
-│   │   ├── WorkspaceManager.swift          # 工作区：CGWindowList 采集 + AX 恢复
-│   │   ├── WorkspaceStore.swift            # 工作区持久化（UserDefaults）
-│   │   └── SpaceSwitcher.swift             # 模拟 ⌃←/⌃→ 切换桌面
-│   ├── RuleEngine/            # 纯查找，无副作用
-│   │   ├── RuleEngine.swift   # (bundleID, 按钮) → ButtonAction?
-│   │   └── RuleStore.swift    # 规则的持久化（UserDefaults）
-│   ├── Models/                # AppRule / ButtonAction / TrafficButton 值类型
-│   ├── HoverOverlay/          # 悬停放大覆盖层（14 个文件，见下）
-│   └── Permission/            # 辅助功能权限检测与引导
-└── BlinkerApp/                # SwiftUI 应用壳
-    ├── AppDelegate.swift      # 组合根：持有 store，接线三个协作者
-    ├── BlinkerApp.swift       # @main；仅含空 Settings 占位场景（真实设置窗走 NSWindow）
-    ├── InterceptionCoordinator.swift # 长生命周期运行时：拦截器 + 覆盖层 + 贴靠
-    ├── StatusItemController.swift    # 菜单栏图标与菜单
-    ├── SettingsWindowController.swift # 设置窗口生命周期（懒建 NSWindow）
-    ├── Settings/              # 五 tab 设置页 + 应用库选择器
-    └── WindowManagement/      # 全局快捷键：Carbon 注册 + 录制 + 持久化
-
-Tests/BlinkerCoreTests/         # 仅测 BlinkerCore（纯逻辑，无需沙盒 UI）
-Scripts/                        # build-app.sh / package-app.sh / release 产物
-```
-
-`HoverOverlay/` 内部再分三层：
-
-| 层 | 文件 | 职责 |
-|---|---|---|
-| 编排 | `HoverOverlayController(+Detection/+Panels)`、`OverlayHUDManager`、`OverlayDwellController` | 鼠标跟踪、触发判定、面板生命周期、管理 HUD、驻留门（进度环） |
-| 几何 | `HoverOverlayGeometry` | `panelFrames`（整组布局 + 窗口∩屏幕钳制）、触发区判定、安全走廊 |
-| 呈现 | `OverlayPanel`（基类 + 玻璃底衬）、`HoverOverlayPanel` / `HoverOverlayExtraPanel` / `HoverOverlayTrayPanel` / `HoverOverlayHUDPanel`、`OverlayChipDrawing`、`OverlayClickGate` | 放大芯片（不透明自绘）、玻璃胶囊托盘（单窗复用）、点击门控 |
-
-### 数据流一：点击拦截（冷路径，每次点击）
-
-```
-CGEventTap（独立线程）
-  → TrafficLightInterceptor：便宜前置过滤（只看鼠标按下 + 坐标在标题栏带）
-  → AXWindowQuery：AXUIElement 查询命中窗口与按钮（工作队列）
-  → RuleEngine：bundleID + 按钮 → 重映射动作（纯查找）
-  → WindowActionPerformer：AXPress 原生执行（红=退出等）
-```
-
-前置过滤是性能关键：绝大多数点击在第一步就被丢弃，不会产生 AX 调用。
-
-### 数据流二：悬停放大（热路径，鼠标移动）
-
-```
-鼠标移动检测（事件节流 + 拖拽停摆 + latest-wins 合并）
-  → HoverOverlayController+Detection：isCursorInTriggerZone（按钮组外扩 12pt；唤醒只认原生按钮组，
-    面板/托盘帧仅在已显示时作存活区，防止唤醒区被放大组撑大）
-  → HoverOverlayGeometry.panelFrames：整组左缘锚定布局 + 钳制到窗口∩屏幕
-  → rebuildPanels：先铺玻璃托盘（Level = popUpMenu - 1，点击穿透 + 三灯受控辉光），再铺放大芯片；
-    托盘为单窗常驻复用（换窗口仅原位改 frame + 辉光），玻璃混合不重建
-```
-
-### 线程模型
-
-- **CGEventTap 回调**：专用线程（拦截器与悬停检测各持一个 tap 线程），永不触碰主线程。命中标题栏带的点击会在拦截器回调内同步做一次 AX hit test（250 ms 消息超时上限）——吞事件必须同步决策，这是唯一留在 tap 线程的 AX 调用。
-- **AX 动作执行**：串行工作队列，动作执行不占用 tap 线程。
-- **主线程**：只负责 NSPanel 显示/隐藏与 SwiftUI 设置页。
-
-### 坐标系
-
-`HoverOverlayGeometry` 统一使用**屏幕全局坐标**（`CGWindowListCopyWindowInfo` 与 NSPanel frame 的交集空间）。AX 返回的窗口/按钮坐标已换算为全局坐标后再参与布局；所有钳制在 `overlayContainerBounds`（窗口 ∩ 屏幕）内完成。AppKit（底左原点）与 AX/CG（顶左原点）之间的换轴枢轴统一为 `AXQuery.coordinatePivotY`（主屏顶边）——不要用全屏 `max()`，副屏摆在主屏上方时会错位。
-
-### 关键设计决策
-
-| 决策 | 原因 |
+| Area | Responsibility |
 |---|---|
-| NSPanel 覆盖层 + CGEventTap 拦截（而非 AXObserver 抢点击） | 保留原生按钮的可访问性语义；覆盖层只做视觉替换 |
-| 玻璃托盘 + 不透明放大珠（而非采样遮罩） | 玻璃由系统合成器实时取景，任意背景自动融合，零权限零延迟；不透明珠从源头杜绝偏色；受控辉光（衰减边界 < 托盘边距）吸收原生按钮残影，永不溢出或被裁剪 |
-| 托盘单窗复用（而非每次 hover 重建） | 玻璃混合属于窗口本身且生效时机不定（无就绪信号）；复用存活窗口让第二次起瞬时干净就位，首次以两段式淡入（零 alpha 保持 + easeIn）兜底未混合底色 |
-| 布局左缘锚定（而非组中心对齐） | 放大珠组从原生组左缘向右生长：红灯玻璃残影始终被首珠盖住，组也永不越出窗口左缘 |
-| 不沙盒，Developer ID + 公证官网直发 | 辅助功能权限与沙盒互斥，无法上 MAS |
-| 无日志/统计/遥测 | 隐私优先，local-only 是产品承诺（见 CONTRIBUTING） |
-| deployment target macOS 15 | 覆盖 Intel 末代系统（26 是最后支持 Intel 的版本），核心 API 无 `#available` 分支压力 |
+| `BlinkerCore/Models` | Persisted rule/action value types and compatible decoding |
+| `BlinkerCore/RuleEngine` | Rule lookup, independent remap/hover policies, session pause, transfer and undo |
+| `BlinkerCore/AXInterceptor` | Input filtering, AX queries, shared window actions, layout history, optional snapping and workspaces |
+| `BlinkerCore/HoverOverlay` | Hover detection, geometry, click protection, presentation state and native controls |
+| `BlinkerCore/WindowBrowser` | Window/tab identity, discovery, focus/Dock observation, thumbnails and preview geometry |
+| `BlinkerCore/Permission` | Accessibility status, read-only compatibility checks and explicit test-window registration |
+| `BlinkerApp/ApplicationRules` | Application library, rule list, rule editor and rule file UI |
+| `BlinkerApp/Settings` | Global settings, experimental workspace UI, About and diagnostics UI |
+| `BlinkerApp/WindowBrowser` | Browser preferences, Option-Tab handling and SwiftUI preview content |
+| `BlinkerApp/WindowManagement` | Global placement shortcuts and recording |
+| `BlinkerApp/AppWindowController` | Shared lifecycle for native settings, rule-list and per-app editor windows |
+| Other `BlinkerApp` controllers | Menu bar, interception coordination and failure feedback |
 
----
+Rules answer “what should happen for this app?” Settings answer “how should Blinker behave globally?” About identifies the product and links to help, feedback and licensing. Do not repeat feature catalogs or configuration controls across these surfaces.
 
-## English
+## Execution boundaries
 
-### Module map
-
-```
-Sources/
-├── BlinkerCore/               # UI-free core logic (unit-testable in isolation)
-│   ├── AXInterceptor/         # Event tap + action performance
-│   │   ├── TrafficLightInterceptor.swift   # CGEventTap entry + 4-step click pipeline (right/⌥/🌐/long press)
-│   │   ├── AXWindowQuery.swift             # AXUIElement queries: hit window/button
-│   │   ├── WindowActionPerformer.swift     # Performs remapped actions via AXPress / AX frames
-│   │   ├── WindowGeometry.swift            # Pure placement math: target frames for all actions
-│   │   ├── WindowSnapper.swift             # Drag-to-snap: observe-only tap + preview panel
-│   │   ├── SnapZones.swift                 # Pure hit-testing: cursor → snap placement
-│   │   ├── FrontWindowActionPerformer.swift # Acts on the frontmost window (panel/hotkeys)
-│   │   ├── WorkspaceManager.swift          # Workspaces: CGWindowList capture + AX restore
-│   │   ├── WorkspaceStore.swift            # Workspace persistence (UserDefaults)
-│   │   └── SpaceSwitcher.swift             # Simulated ⌃←/⌃→ desktop switching
-│   ├── RuleEngine/            # Pure lookup, no side effects
-│   │   ├── RuleEngine.swift   # (bundleID, button) → ButtonAction?
-│   │   └── RuleStore.swift    # Rule persistence (UserDefaults)
-│   ├── Models/                # AppRule / ButtonAction / TrafficButton value types
-│   ├── HoverOverlay/          # Hover-to-enlarge overlay (see table below)
-│   └── Permission/            # Accessibility permission detection & onboarding
-└── BlinkerApp/                # SwiftUI app shell
-    ├── AppDelegate.swift      # Composition root: owns the stores, wires the collaborators
-    ├── BlinkerApp.swift       # @main; empty Settings placeholder scene (real window is NSWindow)
-    ├── InterceptionCoordinator.swift # Long-lived runtime: interceptor + overlay + snapper
-    ├── StatusItemController.swift    # Menu bar icon and menu
-    ├── SettingsWindowController.swift # Settings window lifecycle (lazily built NSWindow)
-    ├── Settings/              # Five-tab settings + app library picker
-    └── WindowManagement/      # Global hotkeys: Carbon registration + recorder
-
-Tests/BlinkerCoreTests/         # BlinkerCore only (pure logic, no UI harness)
-Scripts/                        # build-app.sh / package-app.sh / release artifacts
-```
-
-Inside `HoverOverlay/`:
-
-| Layer | Files | Responsibility |
+| Context | Work | Constraints |
 |---|---|---|
-| Orchestration | `HoverOverlayController(+Detection/+Panels)`, `OverlayHUDManager`, `OverlayDwellController` | Mouse tracking, trigger decision, panel lifecycle, management HUD, dwell gate (progress ring) |
-| Geometry | `HoverOverlayGeometry` | `panelFrames` (leading-anchored group layout, clamped to window∩screen), trigger zone, safe corridor |
-| Presentation | `OverlayPanel` (base + glass backdrop), `HoverOverlayPanel` / `HoverOverlayExtraPanel` / `HoverOverlayTrayPanel` / `HoverOverlayHUDPanel`, `OverlayChipDrawing`, `OverlayClickGate` | Enlarged chips (opaque vivid dots), click-through glass tray (single reused window), click gating |
+| Event-tap thread | Coordinate filtering and synchronous bounded AX hit testing | Must decide whether to consume input; no capture, disk I/O or unbounded discovery |
+| Serial AX workers | Hover/window discovery and action execution | AX messaging timeouts, bounded traversal and retained target identities |
+| Main thread / `MainActor` | AppKit/SwiftUI state, panels, preferences and permission UI | UI updates only; consume worker results rather than scanning during view rendering |
+| Thumbnail task | Asynchronous ScreenCaptureKit requests | One batch in flight; session checks before publishing results |
 
-### Data flow 1: click interception (cold path, per click)
+Click hit testing is partly synchronous because the original event must be passed through or consumed before the callback returns. Do not describe the tap as AX-free. Actions execute on a worker queue; the shared performer serializes mutations. An AX timeout limits an individual call, not the sum of every call in a traversal.
 
-```
-CGEventTap (dedicated thread)
-  → TrafficLightInterceptor: cheap pre-filter (mouse-down + title-bar band)
-  → AXWindowQuery: AXUIElement hit-testing (worker queue)
-  → RuleEngine: bundleID + button → remapped action (pure lookup)
-  → WindowActionPerformer: native AXPress (e.g. red = quit)
-```
+Hover movement is coalesced to at most 60 detection passes per second. Discovery uses a serial worker; AppKit mutations return to the main thread. `OverlayPresentationState` protects pending/displayed state with a lock and invalidates stale detections with a revision. Appearance delay (`OverlayWakeGate`) and click protection (`OverlayClickGate`/dwell controls) remain separate policies.
 
-The pre-filter is the performance contract: most clicks die in step one and never reach AX.
+## Input to action
 
-### Data flow 2: hover enlarge (hot path, per mouse move)
-
-```
-Mouse-move detection (throttled + drag stand-down + latest-wins coalescing)
-  → HoverOverlayController+Detection: isCursorInTriggerZone (button group + 12pt; waking requires
-    the native button group only — panel/tray frames extend the keep-alive zone while visible)
-  → HoverOverlayGeometry.panelFrames: leading-anchored group layout, clamped to window∩screen
-  → rebuildPanels: glass tray first (Level = popUpMenu - 1, click-through + bounded dot glows), then
-    enlarged chips; the tray is one long-lived reused window (in-place frame + glow updates), so
-    the glass blend is never rebuilt
+```mermaid
+flowchart LR
+    Input[Traffic-light click] --> Filter[Coordinate prefilter]
+    Filter --> Hit[Bounded AX hit test]
+    Hit --> Rules[Rule and pause policy]
+    Rules --> Native[Pass through]
+    Rules --> Action[Shared window action performer]
+    Hover[Hover controls] --> Action
+    Browser[Window browser] --> Action
+    Shortcut[Placement shortcut or snap] --> Action
 ```
 
-### Threading model
+Unconfigured enhanced clicks do not silently become ordinary-left-click actions. Per-app `isEnabled` controls remapping and `isHoverEnabled` controls enlargement independently. Session pauses override both without rewriting saved preferences. Pausing globally suspends hotkeys while preserving their saved enabled state.
 
-- **CGEventTap callbacks**: dedicated threads (the interceptor and hover detection each own one); the main thread is never touched. Clicks inside a title-bar band run one synchronous AX hit test inside the interceptor callback (capped at 250 ms messaging timeout) — swallowing an event requires a synchronous decision, the only AX call that stays on the tap thread.
-- **AX action performance**: serial worker queue; action execution never occupies the tap thread.
-- **Main thread**: NSPanel show/hide and SwiftUI settings only.
+All action entry points use `DefaultWindowActionPerformer.shared`. Action targets retain a PID and AX element; neither window title nor current rectangle is an identity. Screenshot matching is separate and cannot redirect an action. Failures are reported through `ActionFeedback` to a transient nonactivating panel and the General diagnostics section. An accepted Quit request still allows the target app to ask about unsaved changes.
 
-### Coordinate spaces
+## Presentation and layout
 
-`HoverOverlayGeometry` works exclusively in **global screen coordinates**. AX-returned window/button rects are converted to global coordinates before layout; all clamping happens inside `overlayContainerBounds` (window ∩ screen). The y-axis pivot between AppKit (bottom-left origin) and AX/CG (top-left origin) is unified in `AXQuery.coordinatePivotY` (the primary screen's top edge) — never use a max() across all screens, which breaks when a secondary display sits above the primary.
+One nonactivating `NSPanel` hosts the hover controls. A continuous capsule tray fills gaps and outer padding; the glass effect container groups button materials and does not replace that tray. macOS 26+ uses `NSGlassEffectView` and `NSGlassEffectContainerView`; older systems use `NSVisualEffectView`. Native buttons retain tracking and accessibility behavior. Reduced transparency/high contrast use the supported opaque fallback.
 
-### Key design decisions
+Hover geometry uses AX/CG coordinates with a top-left origin and converts using `AXQuery.coordinatePivotY`. The full tray is constrained to the intersection of its owner window and screen; the settings preview shares the geometry policy. Screens are read on the main thread. Window placement validates writes and keeps constrained or restored windows reachable.
 
-| Decision | Rationale |
+`WindowBrowserPresentation` owns the preview panel and reuses its hosting view across sessions. The controller owns selection and behavior; stable session ordering is assembled by identity in linear passes. Preview panels have their own geometry. Scale affects content and frame together, while grid layout fits the available display. [Window browser](WINDOW_BROWSER.md) owns the details; do not duplicate layout rules in the settings preview or controller.
+
+Application-library metadata scanning is separate from picker rendering. Resolve app icons on demand with a bounded cache; do not load every icon during a library scan. Rule file UI delegates bounded reads and validation to the transfer layer, with file I/O off the main thread.
+
+## Persistence and bounds
+
+| State | Lifetime and boundary |
 |---|---|
-| NSPanel overlays + CGEventTap (not AXObserver click stealing) | Preserves native button accessibility semantics; overlays only replace visuals |
-| Glass tray + opaque enlarged dots (not a sampled mask) | The glass is composited live by the system — any background blends with zero permission and zero latency; opaque dots eliminate color bleed at the source; bounded glows (decay edge < tray margin) absorb the native buttons' ghosts without ever spilling or clipping |
-| Single reused tray window (not rebuilt per hover) | The glass blend belongs to the window itself and engages at an indeterminate time (no readiness signal); reusing the live window makes every appearance after the first come up instantly clean, while the first one fades in two phases (zero-alpha hold + easeIn) to mask the unblended base |
-| Leading-edge-anchored layout (not group-center alignment) | The enlarged group grows rightward from the native group's left edge: the red button's glass ghost stays covered by the first dot, and the group never crosses the window's left edge |
-| Non-sandboxed, Developer ID + notarized website distribution | Accessibility permission is mutually exclusive with App Sandbox |
-| No logging / statistics / telemetry | Privacy-first; local-only is a product promise (see CONTRIBUTING) |
-| Deployment target macOS 15 | Covers final Intel systems; no `#available` branching pressure |
+| Rules | Local persisted values; compatible decoding and bounded undo/redo |
+| Rule transfer | Versioned, validated JSON; merge by app ID as one undoable edit |
+| Session pause | Temporary override, separate from saved enabled flags |
+| Layout history | Successful changes only; up to 10 per window and 128 windows per run |
+| Thumbnail cache | In memory; cost/count limits, bounded visible-image references, cleared on explicit disable or detected permission loss |
+| Workspace layouts | Local persisted experimental data; preserve when the experiment is disabled |
+
+Rule import must bound file reads before decoding, reject unsupported/invalid archives without partial edits, and preserve the original store on failure. Export excludes machine-specific permissions, thumbnail images and layout history. Legacy profile decoding remains only for migration.
+
+Maximize and near-maximize toggle back when the current frame still matches the applied frame. Manual resizing starts a new operation. Restoring an old frame after a display disconnect clamps it to an available screen.
+
+## Permission and failure policy
+
+Accessibility enables window/control discovery and actions. Screen Recording is requested only by an explicit settings action and is used for optional thumbnails. No app-managed thumbnail files, upload pipeline, analytics or automatic network requests are present. Project/help links intentionally open in the user's browser.
+
+Missing permissions or unsupported controls must leave a usable fallback: icons and titles for missing capture access; ordinary windows for unsupported tab bars; feedback for an unavailable target. Pending work must not revive a dismissed panel or publish images into a later session. Keep user document/web content outside tab discovery.
+
+Workspace restoration is the only explicit experiment using private Space APIs. Matching similar windows is approximate; unavailable symbols degrade to position restoration. It is not document/session restoration, and disabling its UI must not erase saved layouts or migration readers.
+
+## Packaging boundary
+
+`Scripts/package-app.sh` is shared by local and release builds. It rejects non-`.app` output paths, symlink outputs and an existing bundle with a different identity. Build in a temporary sibling directory, validate the property list and signature, then replace the installed bundle. Do not erase an existing installation before a candidate is verified or silently fall back after a requested signature fails.
+
+## Verification
+
+Use the commands in [Contributing](../CONTRIBUTING.md). Tests cover rule compatibility, imports, pause policy, geometry, history, target selection, capture matching and asynchronous presentation state. Native UI validation covers focus, permissions, real mouse travel, multiple displays, target-app AX differences and material appearance. Those checks complement tests; test counts and single-machine observations are not compatibility or performance guarantees.

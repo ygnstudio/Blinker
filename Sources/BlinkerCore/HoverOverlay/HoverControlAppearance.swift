@@ -34,13 +34,9 @@ public enum HoverControlAppearance {
         }
         let content = NSView(frame: bounds)
         content.autoresizingMask = [.width, .height]
-        // Traffic-light colors are semantic state, not window emphasis. Keep
-        // their colored face inside the native glass rim even when AppKit
-        // desaturates inactive glass. No custom blur, shadow or glass drawing.
-        let face = NSView(frame: bounds.insetBy(dx: 2, dy: 2))
-        face.wantsLayer = true
-        face.layer?.backgroundColor = button.bezelColor?.cgColor
-        face.layer?.cornerRadius = face.frame.height / 2
+        // Keep semantic color in an inactive panel without covering the
+        // entire native material with an opaque face.
+        let face = SemanticGlassFace(frame: bounds.insetBy(dx: 2, dy: 2), color: button.bezelColor ?? .clear)
         face.autoresizingMask = [.width, .height]
         face.setAccessibilityElement(false)
         content.addSubview(face)
@@ -51,21 +47,99 @@ public enum HoverControlAppearance {
         return surface
     }
 
-    /// Glass buttons share one sampling pass instead of sitting on another
-    /// glass plate. The container also owns the joining of nearby glass shapes.
+    /// The effect container only groups button materials; it does not draw a
+    /// tray. A separate continuous capsule underneath gives the whole palette
+    /// a visible base, including the gaps and outer padding.
     public static func makeGroup(content: NSView, size: NSSize) -> NSView {
+        let controls: NSView
         if #available(macOS 26.0, *) {
             let group = NSGlassEffectContainerView(frame: NSRect(origin: .zero, size: size))
             group.wantsLayer = true
-            group.spacing = 8
+            group.spacing = 2
             group.contentView = content
-            group.autoresizingMask = [.width, .height]
-            return group
+            controls = group
+        } else {
+            controls = content
         }
-        let backdrop = GlassBackdrop.makeView(
-            size: size, cornerRadius: size.height / 2, autoresizingMask: [.width, .height]
-        )
-        GlassBackdrop.host(content, in: backdrop)
-        return backdrop
+        return GlassTrayGroupView(controls: controls, size: size)
+    }
+}
+
+/// Keep the continuous tray and button glass as siblings in one window so the
+/// tray is not nested around the button materials. Both share the same bounds.
+private final class GlassTrayGroupView: NSView {
+    private let backdrop: NSView
+    private let controls: NSView
+
+    init(controls: NSView, size: NSSize) {
+        self.controls = controls
+        backdrop = GlassBackdrop.makeView(size: size, cornerRadius: size.height / 2)
+        super.init(frame: NSRect(origin: .zero, size: size))
+        wantsLayer = true
+        autoresizingMask = [.width, .height]
+        backdrop.setAccessibilityElement(false)
+        addSubview(backdrop)
+        addSubview(controls)
+        resizeContents()
+    }
+
+    @available(*, unavailable)
+    required init?(coder _: NSCoder) {
+        fatalError("init(coder:) is not supported")
+    }
+
+    override func setFrameSize(_ newSize: NSSize) {
+        super.setFrameSize(newSize)
+        resizeContents()
+    }
+
+    private func resizeContents() {
+        backdrop.frame = bounds
+        controls.frame = bounds
+        if #available(macOS 26.0, *), let glass = backdrop as? NSGlassEffectView {
+            glass.cornerRadius = bounds.height / 2
+        } else if let effect = backdrop as? NSVisualEffectView {
+            effect.maskImage = GlassBackdrop.roundedMaskImage(size: bounds.size, radius: bounds.height / 2)
+        }
+    }
+}
+
+private final class SemanticGlassFace: NSView {
+    private let color: NSColor
+    private var observer: NSObjectProtocol?
+
+    init(frame: NSRect, color: NSColor) {
+        self.color = color
+        super.init(frame: frame)
+        wantsLayer = true
+        observer = NSWorkspace.shared.notificationCenter.addObserver(
+            forName: NSWorkspace.accessibilityDisplayOptionsDidChangeNotification, object: nil, queue: .main
+        ) { [weak self] _ in self?.needsDisplay = true }
+    }
+
+    @available(*, unavailable)
+    required init?(coder _: NSCoder) {
+        fatalError("init(coder:) is not supported")
+    }
+
+    override var wantsUpdateLayer: Bool {
+        true
+    }
+
+    override func updateLayer() {
+        let opaque = NSWorkspace.shared.accessibilityDisplayShouldReduceTransparency
+            || NSWorkspace.shared.accessibilityDisplayShouldIncreaseContrast
+        layer?.backgroundColor = color.withAlphaComponent(opaque ? 1 : 0.72).cgColor
+        layer?.cornerRadius = bounds.height / 2
+    }
+
+    override func viewDidChangeEffectiveAppearance() {
+        needsDisplay = true
+    }
+
+    deinit {
+        if let observer {
+            NSWorkspace.shared.notificationCenter.removeObserver(observer)
+        }
     }
 }

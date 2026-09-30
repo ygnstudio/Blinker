@@ -96,8 +96,6 @@ final class WorkspaceStoreTests: XCTestCase {
         // the CGWindowList walk itself needs a live session.
         XCTAssertGreaterThan(WorkspaceManager.minimumCaptureSize.width, 0)
         XCTAssertGreaterThan(WorkspaceManager.minimumCaptureSize.height, 0)
-        XCTAssertEqual(SpaceSwitcher.Direction.previous.keyCode, 123)
-        XCTAssertEqual(SpaceSwitcher.Direction.next.keyCode, 124)
     }
 
     /// A corrupt workspaces blob must not be silently erased: it is

@@ -12,6 +12,7 @@ final class HoverOverlayButtonView: NSButton, OverlayDwellPanel {
     private let hasLongPressAction: () -> Bool
     private let onActivate: (ClickVariant) -> Void
     private let onLongPress: () -> Void
+    var requiresDwell: (ClickVariant) -> Bool = { _ in true }
     private var dwellProgress: Double = 0
     private let dwellIndicator = HoverDwellIndicatorView()
     private var clickVariant: ClickVariant = .left
@@ -50,11 +51,18 @@ final class HoverOverlayButtonView: NSButton, OverlayDwellPanel {
         fatalError("init(coder:) is not supported")
     }
 
+    func updatePresentation(_ presentation: OverlayActionPresentation) {
+        toolTip = presentation.label
+        setAccessibilityLabel(presentation.label)
+        image = NSImage(systemSymbolName: presentation.symbol, accessibilityDescription: presentation.label)
+    }
+
     func setDwellProgress(_ progress: Double) {
         let value = min(max(progress, 0), 1)
         guard dwellProgress != value else { return }
         dwellProgress = value
-        dwellIndicator.progress = value
+        dwellIndicator.progress = requiresDwell(OverlayActionPresentation.variant(for: NSEvent.modifierFlags))
+            ? value : 0
     }
 
     func resetDwell() {
@@ -62,9 +70,8 @@ final class HoverOverlayButtonView: NSButton, OverlayDwellPanel {
     }
 
     override func mouseDown(with event: NSEvent) {
-        guard dwellProgress >= 1 else { return }
-        clickVariant = event.modifierFlags.contains(.option) ? .optionLeft
-            : event.modifierFlags.contains(.function) ? .globeLeft : .left
+        clickVariant = OverlayActionPresentation.variant(for: event.modifierFlags)
+        guard !requiresDwell(clickVariant) || dwellProgress >= 1 else { return }
         didFireLongPress = false
         if clickVariant == .left, hasLongPressAction() {
             let timer = Timer(
@@ -74,6 +81,7 @@ final class HoverOverlayButtonView: NSButton, OverlayDwellPanel {
                 let location = convert(window.convertPoint(fromScreen: NSEvent.mouseLocation), from: nil)
                 guard bounds.contains(location) else { return }
                 didFireLongPress = true
+                guard !requiresDwell(.longPressLeft) || dwellProgress >= 1 else { return }
                 onLongPress()
             }
             longPressTimer = timer
@@ -88,7 +96,7 @@ final class HoverOverlayButtonView: NSButton, OverlayDwellPanel {
     }
 
     override func rightMouseDown(with _: NSEvent) {
-        guard dwellProgress >= 1 else { return }
+        guard !requiresDwell(.right) || dwellProgress >= 1 else { return }
         onActivate(.right)
     }
 

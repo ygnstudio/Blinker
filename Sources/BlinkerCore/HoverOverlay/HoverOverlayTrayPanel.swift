@@ -3,8 +3,6 @@ import AppKit
 /// A single nonactivating window owns the glass and all of its controls.
 /// No sampled pixels, masking glows or independently composited button windows.
 final class HoverOverlayTrayPanel: OverlayPanel {
-    static let horizontalMargin: CGFloat = 12
-    static let verticalMargin: CGFloat = 8
     private let controlsView: NSView
     private let backdrop: NSView
 
@@ -21,11 +19,6 @@ final class HoverOverlayTrayPanel: OverlayPanel {
 
     func update(trayFrame: CGRect, controls: [NSButton], frames: [CGRect]) {
         setFrame(AXQuery.appKitFrame(fromAXRect: trayFrame), display: false)
-        if let effect = backdrop as? NSVisualEffectView {
-            effect.maskImage = GlassBackdrop.roundedMaskImage(
-                size: trayFrame.size, radius: trayFrame.height / 2
-            )
-        }
         controlsView.subviews.forEach { $0.removeFromSuperview() }
         for (control, frame) in zip(controls, frames) {
             control.frame = CGRect(origin: .zero, size: frame.size)
@@ -38,7 +31,7 @@ final class HoverOverlayTrayPanel: OverlayPanel {
 
     static func frame(forDisplayFrames frames: [CGRect]) -> CGRect? {
         HoverOverlayGeometry.unionedBounds(of: frames)?.insetBy(
-            dx: -horizontalMargin, dy: -verticalMargin
+            dx: -HoverOverlayGeometry.trayHorizontalPadding, dy: -HoverOverlayGeometry.trayVerticalPadding
         )
     }
 

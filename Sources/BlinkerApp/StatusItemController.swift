@@ -1,4 +1,5 @@
 import AppKit
+import BlinkerCore
 import SwiftUI
 
 /// Left click opens app rules; the context menu also exposes preferences.
@@ -7,6 +8,9 @@ final class StatusItemController: NSObject, NSMenuDelegate {
     private let coordinator: InterceptionCoordinator
     /// Invoked for the settings entries (left click and menu item).
     var onOpenSettings: (() -> Void)?
+    var onPauseAll: ((Int?) -> Void)?
+    var onResumeAll: (() -> Void)?
+    private var targetApp: NSRunningApplication?
     var onOpenApplications: (() -> Void)?
 
     init(coordinator: InterceptionCoordinator) {
@@ -41,6 +45,7 @@ final class StatusItemController: NSObject, NSMenuDelegate {
 
     private func showContextMenu() {
         guard let statusItem else { return }
+        targetApp = NSWorkspace.shared.frontmostApplication
         let menu = NSMenu()
         menu.delegate = self
 
@@ -57,7 +62,8 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         menu.addItem(statusRow)
         menu.addItem(.separator())
 
-        if coordinator.status == .tapFailed {
+        addPauseItems(to: menu)
+        if coordinator.status == .tapFailed || coordinator.status == .partial {
             let retryItem = NSMenuItem(
                 title: String(localized: "重试启动拦截"),
                 action: #selector(retryInterceptorClicked),
@@ -98,7 +104,46 @@ final class StatusItemController: NSObject, NSMenuDelegate {
     }
 
     @objc private func retryInterceptorClicked() {
+        coordinator.stop()
         coordinator.start()
+    }
+
+    private func addPauseItems(to menu: NSMenu) {
+        let title = coordinator.isIntercepting ? String(localized: "暂停全部") : String(localized: "恢复 Blinker")
+        let toggle = NSMenuItem(title: title, action: #selector(togglePause), keyEquivalent: "")
+        toggle.target = self
+        menu.addItem(toggle)
+        let timed = NSMenuItem(title: String(localized: "暂停 10 分钟"), action: #selector(pauseTenMinutes),
+                               keyEquivalent: "")
+        timed.target = self
+        menu.addItem(timed)
+        if let app = targetApp, let bundleID = app.bundleIdentifier,
+           bundleID != Bundle.main.bundleIdentifier {
+            let prefix = coordinator.sessionPause.contains(bundleID)
+                ? String(localized: "恢复当前应用：") : String(localized: "暂停当前应用：")
+            let item = NSMenuItem(title: prefix + (app.localizedName ?? bundleID),
+                                  action: #selector(toggleCurrentApp), keyEquivalent: "")
+            item.target = self
+            menu.addItem(item)
+        }
+        menu.addItem(.separator())
+    }
+
+    @objc private func togglePause() {
+        if coordinator.isIntercepting {
+            onPauseAll?(nil)
+        } else {
+            onResumeAll?()
+        }
+    }
+
+    @objc private func pauseTenMinutes() {
+        onPauseAll?(10)
+    }
+
+    @objc private func toggleCurrentApp() {
+        guard let bundleID = targetApp?.bundleIdentifier else { return }
+        coordinator.toggleAppPause(bundleID)
     }
 
     func menuDidClose(_: NSMenu) {
@@ -124,7 +169,7 @@ struct InterceptorStatusRow: View {
     private var statusColor: Color {
         switch coordinator.status {
         case .running: .green
-        case .checking, .paused: .orange
+        case .checking, .paused, .partial: .orange
         case .noPermission, .tapFailed: .red
         }
     }

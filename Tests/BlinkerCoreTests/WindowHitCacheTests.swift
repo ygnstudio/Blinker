@@ -52,6 +52,25 @@ final class WindowHitCacheTests: XCTestCase {
         ))
     }
 
+    func testOwnTestWindowRemainsExcludedFromNonHoverOperations() {
+        let ownPID = ProcessInfo.processInfo.processIdentifier
+        HoverTestWindow.register(windowID: 71)
+        defer { HoverTestWindow.register(windowID: nil) }
+        let target = info(id: 71, pid: ownPID, originX: 0)
+        XCTAssertNil(AXQuery.windowUnderPoint(
+            CGPoint(x: 50, y: 50), excludingProcessIdentifier: ownPID,
+            windowList: { _, _ in [target] }
+        ))
+        XCTAssertEqual(AXQuery.windowUnderPoint(
+            CGPoint(x: 50, y: 50), excludingProcessIdentifier: ownPID, includingTestWindow: true,
+            usingCache: true, windowList: { _, _ in [target] }
+        )?.windowID, 71)
+        XCTAssertNil(AXQuery.windowUnderPoint(
+            CGPoint(x: 50, y: 50), excludingProcessIdentifier: ownPID,
+            usingCache: true, windowList: { _, _ in [target] }
+        ))
+    }
+
     func testVanishedCachedWindowFallsBackToFullList() {
         let back = info(id: 1, pid: 10, originX: 0)
         let replacement = info(id: 2, pid: 10, originX: 0)

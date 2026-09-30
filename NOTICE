@@ -1,0 +1,37 @@
+Blinker — native macOS window controls, previews and management
+Copyright (C) 2026 ygnstudio
+
+SPDX-License-Identifier: GPL-3.0-only
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, version 3 of the License only.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program. If not, see <https://www.gnu.org/licenses/>.
+
+The complete, unmodified license text is in LICENSE. The project's choice
+is version 3 only; it does not include an option to use later versions.
+
+Historical licensing
+--------------------
+This license change applies to the current source and releases based on
+it. Earlier versions distributed under the MIT License remain available
+under their original MIT terms; this change does not revoke those grants.
+Their applicable license notices remain in the corresponding Git history
+and release source archives.
+
+Third-party material retains its own applicable copyright and license
+notices. References to other projects in the documentation do not change
+those projects' licenses.
+
+Official references
+-------------------
+GNU license text: https://www.gnu.org/licenses/gpl-3.0.txt
+SPDX identifier: https://spdx.org/licenses/GPL-3.0-only.html
+Project: https://github.com/ygnstudio/Blinker

@@ -2,7 +2,7 @@ import BlinkerCore
 import SwiftUI
 
 private enum SettingsDestination: String, CaseIterable, Identifiable {
-    case general, hover, windows, about
+    case general, hover, browser, windows, experiments, about
 
     var id: Self {
         self
@@ -12,7 +12,9 @@ private enum SettingsDestination: String, CaseIterable, Identifiable {
         switch self {
         case .general: String(localized: "通用")
         case .hover: String(localized: "悬停放大")
+        case .browser: String(localized: "窗口预览与切换")
         case .windows: String(localized: "窗口管理")
+        case .experiments: String(localized: "实验功能")
         case .about: String(localized: "关于")
         }
     }
@@ -21,7 +23,9 @@ private enum SettingsDestination: String, CaseIterable, Identifiable {
         switch self {
         case .general: "gearshape"
         case .hover: "arrow.up.left.and.arrow.down.right"
+        case .browser: "macwindow.on.rectangle"
         case .windows: "rectangle.split.2x2"
+        case .experiments: "flask"
         case .about: "info.circle"
         }
     }
@@ -33,6 +37,7 @@ struct SettingsView: View {
     let onApplyHoverSettings: (HoverOverlaySettings) -> Void
     let onSnapEnabledChange: (Bool) -> Void
     let onOpenApplications: () -> Void
+    let onShowOnboarding: () -> Void
     @ObservedObject private var preferences = AppPreferences.shared
     @State private var selection: SettingsDestination? = .general
 
@@ -62,9 +67,11 @@ struct SettingsView: View {
     @ViewBuilder
     private var detail: some View {
         switch selection ?? .general {
-        case .general: GeneralTab()
+        case .general: GeneralTab(onShowOnboarding: onShowOnboarding)
         case .hover: HoverSettingsTab(onApply: onApplyHoverSettings)
+        case .browser: WindowBrowserSettingsTab()
         case .windows: WindowManagementTab(onSnapEnabledChange: onSnapEnabledChange)
+        case .experiments: ExperimentalSettingsTab()
         case .about: AboutTab()
         }
     }

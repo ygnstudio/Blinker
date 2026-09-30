@@ -195,6 +195,7 @@ public final class WindowSnapper {
         guard let screen = Self.screen(containing: appKitLocation, in: context.screens) else { return }
         let visibleFrame = screen.visibleFrame
         guard let placement = SnapZones.placement(at: appKitLocation, in: visibleFrame) else {
+            stateLock.withLock { drag?.previewedPlacement = nil }
             hidePreview()
             return
         }
@@ -218,9 +219,9 @@ public final class WindowSnapper {
         stateLock.unlock()
         hidePreview()
 
-        guard let context, let placement = context.previewedPlacement else { return }
-        guard
-            let screen = Self.screen(containing: appKitLocation, in: context.screens)
+        guard let context, context.previewedPlacement != nil,
+              let screen = Self.screen(containing: appKitLocation, in: context.screens),
+              let placement = SnapZones.placement(at: appKitLocation, in: screen.visibleFrame)
         else { return }
         let target = WindowGeometry.targetFrame(
             for: placement,

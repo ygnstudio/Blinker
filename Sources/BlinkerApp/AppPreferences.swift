@@ -24,11 +24,27 @@ enum AppAppearance: String, CaseIterable, Codable {
         case .dark: .dark
         }
     }
+
+    /// `NSAppearance` for the hand-built settings window's chrome; `nil`
+    /// follows the system. Applying it on the NSWindow keeps the titlebar
+    /// in sync with the content's `preferredColorScheme` instantly.
+    var nsAppearance: NSAppearance? {
+        switch self {
+        case .system: nil
+        case .light: NSAppearance(named: .aqua)
+        case .dark: NSAppearance(named: .darkAqua)
+        }
+    }
 }
 
 /// Appearance and feature preferences shared by every window.
 final class AppPreferences: ObservableObject {
     static let shared = AppPreferences()
+
+    /// Completing or dismissing the guide suppresses automatic presentation on later launches.
+    @Published var hasSeenOnboarding: Bool {
+        didSet { defaults.set(hasSeenOnboarding, forKey: "hasSeenOnboarding") }
+    }
 
     @Published var appearance: AppAppearance {
         didSet { defaults.set(appearance.rawValue, forKey: "appAppearance") }
@@ -48,24 +64,19 @@ final class AppPreferences: ObservableObject {
         }
     }
 
-    private let defaults = UserDefaults.standard
-
-    /// `NSAppearance` for the hand-built settings window's chrome; `nil`
-    /// follows the system. Applying it on the NSWindow keeps the titlebar
-    /// in sync with the content's `preferredColorScheme` instantly.
-    var nsAppearance: NSAppearance? {
-        switch appearance {
-        case .system: nil
-        case .light: NSAppearance(named: .aqua)
-        case .dark: NSAppearance(named: .darkAqua)
-        }
+    @Published var workspaceExperimentsEnabled: Bool {
+        didSet { defaults.set(workspaceExperimentsEnabled, forKey: "workspaceExperimentsEnabled") }
     }
 
+    private let defaults = UserDefaults.standard
+
     private init() {
+        hasSeenOnboarding = defaults.bool(forKey: "hasSeenOnboarding")
         appearance = AppAppearance(
             rawValue: defaults.string(forKey: "appAppearance") ?? ""
         ) ?? .system
-        isSnapEnabled = defaults.object(forKey: "isSnapEnabled") as? Bool ?? true
+        isSnapEnabled = defaults.object(forKey: "isSnapEnabled") as? Bool ?? false
+        workspaceExperimentsEnabled = defaults.bool(forKey: "workspaceExperimentsEnabled")
         isWorkspaceSpaceRestoreEnabled = defaults.bool(forKey: "workspaceSpaceRestoreEnabled")
     }
 }
