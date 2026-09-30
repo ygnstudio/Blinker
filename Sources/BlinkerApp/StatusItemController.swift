@@ -1,15 +1,13 @@
 import AppKit
 import SwiftUI
 
-/// The menu bar icon and its context menu. The app's front door: a plain
-/// left click opens the settings window; the context menu (right click)
-/// only carries the live status row, settings and quit — interception
-/// pause lives in the settings' General tab instead of the menu.
+/// Left click opens app rules; the context menu also exposes preferences.
 final class StatusItemController: NSObject, NSMenuDelegate {
     private var statusItem: NSStatusItem?
     private let coordinator: InterceptionCoordinator
     /// Invoked for the settings entries (left click and menu item).
     var onOpenSettings: (() -> Void)?
+    var onOpenApplications: (() -> Void)?
 
     init(coordinator: InterceptionCoordinator) {
         self.coordinator = coordinator
@@ -37,7 +35,7 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         if isSecondaryClick {
             showContextMenu()
         } else {
-            onOpenSettings?()
+            onOpenApplications?()
         }
     }
 
@@ -69,6 +67,13 @@ final class StatusItemController: NSObject, NSMenuDelegate {
             menu.addItem(retryItem)
         }
 
+        let applicationsItem = NSMenuItem(
+            title: String(localized: "应用规则…"),
+            action: #selector(openApplicationsClicked),
+            keyEquivalent: ""
+        )
+        applicationsItem.target = self
+        menu.addItem(applicationsItem)
         let settingsItem = NSMenuItem(
             title: String(localized: "设置…"),
             action: #selector(openSettingsClicked),
@@ -102,6 +107,10 @@ final class StatusItemController: NSObject, NSMenuDelegate {
 
     @objc private func openSettingsClicked() {
         onOpenSettings?()
+    }
+
+    @objc private func openApplicationsClicked() {
+        onOpenApplications?()
     }
 }
 

@@ -31,4 +31,23 @@ final class OverlayClickGateTests: XCTestCase {
         OverlayClickGate.reset()
         XCTAssertFalse(OverlayClickGate.isSuppressed)
     }
+
+    func testVisibleOverlaySuppressesFirstClickBeforeMouseDown() {
+        OverlayClickGate.setOverlayFrames([CGRect(x: 100, y: 100, width: 120, height: 44)])
+        XCTAssertTrue(OverlayClickGate.isSuppressed(at: CGPoint(x: 130, y: 120)))
+        XCTAssertFalse(OverlayClickGate.isSuppressed(at: CGPoint(x: 80, y: 120)))
+    }
+
+    func testHidingOverlayReleasesItsHitRegion() {
+        OverlayClickGate.setOverlayFrames([CGRect(x: 100, y: 100, width: 120, height: 44)])
+        OverlayClickGate.setOverlayFrames([])
+        XCTAssertFalse(OverlayClickGate.isSuppressed(at: CGPoint(x: 130, y: 120)))
+    }
+
+    func testReplacingOverlayDoesNotKeepOldRegions() {
+        OverlayClickGate.setOverlayFrames([CGRect(x: 100, y: 100, width: 120, height: 44)])
+        OverlayClickGate.setOverlayFrames([CGRect(x: 300, y: 300, width: 120, height: 44)])
+        XCTAssertFalse(OverlayClickGate.isSuppressed(at: CGPoint(x: 130, y: 120)))
+        XCTAssertTrue(OverlayClickGate.isSuppressed(at: CGPoint(x: 330, y: 320)))
+    }
 }

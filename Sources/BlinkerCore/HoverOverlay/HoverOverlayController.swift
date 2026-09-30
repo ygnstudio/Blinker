@@ -42,17 +42,16 @@ public final class HoverOverlayController {
     /// (close + reopen at the same spot) are caught by comparing it.
     var cachedWindowID: CGWindowID = 0
     var cachedWindowBounds: CGRect?
-    var isOverlayVisible = false
 
     /// UI state; only touched on the main thread.
-    var panels: [HoverOverlayPanel] = []
+    var panels: [HoverOverlayButtonView] = []
     /// Extra action chips appended after `panels`; the combined array order
     /// matches `OverlayLayout.allPanelFrames`.
-    var extraPanels: [HoverOverlayExtraPanel] = []
+    var extraPanels: [HoverOverlayButtonView] = []
+    var panelWindowID: CGWindowID = 0
     var panelSignature: [CGRect] = []
     var panelPID: pid_t = 0
-    /// The glass capsule tray behind the enlarged chips. Click-through; one
-    /// window level below the chip panels.
+    /// One glass panel hosts all visible controls in the same view hierarchy.
     var trayPanel: HoverOverlayTrayPanel?
     /// The extra actions the current chips were built with; a change also
     /// triggers a rebuild.
@@ -62,6 +61,7 @@ public final class HoverOverlayController {
     let hud: OverlayHUDManager
     /// Dwell tracking for the displayed chips (main-thread only).
     let dwell = OverlayDwellController()
+    let presentationState = OverlayPresentationState()
 
     public init(
         ruleEngine: RuleEngine,
@@ -177,13 +177,13 @@ public final class HoverOverlayController {
     static let screenEdgeMargin: CGFloat = 4
 
     /// The screen (in AX top-left coordinates) containing the center of the
-    /// given button frames, intersected with the window's own bounds and inset
-    /// by the edge margin. Clamping to the window keeps the enlarged group
-    /// inside windowed windows; intersecting with the screen additionally
-    /// covers edge-anchored (fullscreen, tiled) windows.
+    /// given button frames, inset by the edge margin. HUDs are additionally
+    /// confined to the target window; covering controls may extend over its
+    /// edge so their centers stay aligned with the native traffic lights.
     static func overlayContainerBounds(
         forButtonFrames buttonFrames: [CGRect],
-        windowBounds: CGRect
+        windowBounds: CGRect,
+        confinesToWindow: Bool = true
     ) -> CGRect? {
         guard let groupBounds = HoverOverlayGeometry.unionedBounds(of: buttonFrames) else {
             return nil
@@ -201,7 +201,7 @@ public final class HoverOverlayController {
         }
         let center = CGPoint(x: groupBounds.midX, y: groupBounds.midY)
         let screen = screens.first { axFrame($0).contains(center) } ?? screens[0]
-        let container = axFrame(screen).intersection(windowBounds)
+        let container = confinesToWindow ? axFrame(screen).intersection(windowBounds) : axFrame(screen)
         return container.isNull
             ? axFrame(screen).insetBy(dx: screenEdgeMargin, dy: screenEdgeMargin)
             : container.insetBy(dx: screenEdgeMargin, dy: screenEdgeMargin)
@@ -270,37 +270,36 @@ public final class HoverOverlayController {
         }
         isDetecting = true
         moveStateLock.unlock()
-        workQueue.async { [weak self] in
+        workQueue.asyncAfter(deadline: .now() + 1.0 / 60.0) { [weak self] in
             self?.drainCursorMoves(from: location)
         }
     }
 
-    /// Processes one cursor move, then keeps draining the newest queued
-    /// location until none is left, finally releasing the detecting slot.
-    /// `workQueue` is serial, so the detection passes themselves never
-    /// overlap; the flags only decide whether a new drain gets scheduled.
+    /// One detection per frame at most. Keep the detecting flag set while
+    /// AX work runs so new input replaces the pending point, not the queue.
     private func drainCursorMoves(from location: CGPoint) {
-        var current = location
-        while true {
-            moveStateLock.lock()
-            if isDragging {
-                // A drag started mid-drain: abandon the stale positions.
-                pendingMoveLocation = nil
-                isDetecting = false
-                moveStateLock.unlock()
-                return
+        moveStateLock.lock()
+        if isDragging || !tapHost.isRunning {
+            pendingMoveLocation = nil
+            isDetecting = false
+            moveStateLock.unlock()
+            return
+        }
+        let current = pendingMoveLocation ?? location
+        pendingMoveLocation = nil
+        moveStateLock.unlock()
+        handleCursorMove(to: current)
+
+        moveStateLock.lock()
+        let pending = pendingMoveLocation
+        if pending == nil {
+            isDetecting = false
+        }
+        moveStateLock.unlock()
+        if let pending {
+            workQueue.asyncAfter(deadline: .now() + 1.0 / 60.0) { [weak self] in
+                self?.drainCursorMoves(from: pending)
             }
-            if let pending = pendingMoveLocation {
-                pendingMoveLocation = nil
-                moveStateLock.unlock()
-                current = pending
-            } else {
-                isDetecting = false
-                moveStateLock.unlock()
-                handleCursorMove(to: current)
-                return
-            }
-            handleCursorMove(to: current)
         }
     }
 }

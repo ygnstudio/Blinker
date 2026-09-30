@@ -19,6 +19,13 @@ public enum OverlayClickGate {
     /// Where the consumed click happened, in CG (top-left origin) global
     /// coordinates; `nil` means the suppression is global.
     private static var suppressedLocation: CGPoint?
+    private static var overlayFrames: [CGRect] = []
+
+    /// Publish hit regions before ordering the overlay front. Event taps run
+    /// before NSButton tracking, so suppression cannot start in mouseDown.
+    static func setOverlayFrames(_ frames: [CGRect]) {
+        lock.withLock { overlayFrames = frames }
+    }
 
     /// Radius (pt) around the consumed click within which the interceptor
     /// stands down — comfortably covers one enlarged chip.
@@ -54,6 +61,9 @@ public enum OverlayClickGate {
     /// near the consumed click (or globally, when no location was recorded).
     public static func isSuppressed(at location: CGPoint) -> Bool {
         lock.withLock {
+            if overlayFrames.contains(where: { $0.contains(location) }) {
+                return true
+            }
             guard Date().timeIntervalSince1970 < suppressedUntil else { return false }
             guard let suppressedLocation else { return true }
             let deltaX = location.x - suppressedLocation.x
@@ -80,6 +90,7 @@ public enum OverlayClickGate {
         lock.withLock {
             suppressedUntil = 0
             suppressedLocation = nil
+            overlayFrames = []
         }
     }
 }

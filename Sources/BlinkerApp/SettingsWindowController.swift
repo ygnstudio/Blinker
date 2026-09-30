@@ -12,10 +12,24 @@ final class SettingsWindowController {
     /// store behind the settings UI. Returns `NSViewController` because the
     /// view's environment-modifier chain has no nameable concrete type.
     private let makeContentController: () -> NSViewController
+    private let title: String
+    private let autosaveName: String
+    private let contentSize: NSSize
+    private let minimumSize: NSSize
 
     /// - Parameter makeContentController: Invoked once, when the window is
     ///   first created. Capture dependencies weakly where a cycle is possible.
-    init(makeContentController: @escaping () -> NSViewController) {
+    init(
+        title: String = "Blinker",
+        autosaveName: String = "BlinkerSettings",
+        contentSize: NSSize = NSSize(width: 860, height: 640),
+        minimumSize: NSSize = NSSize(width: 760, height: 480),
+        makeContentController: @escaping () -> NSViewController
+    ) {
+        self.title = title
+        self.autosaveName = autosaveName
+        self.contentSize = contentSize
+        self.minimumSize = minimumSize
         self.makeContentController = makeContentController
     }
 
@@ -27,14 +41,9 @@ final class SettingsWindowController {
         bringToFront()
         if window == nil {
             let window = NSWindow(contentViewController: makeContentController())
-            // System Settings–style chrome: the content fills the window and
-            // the traffic-light buttons float on the sidebar's own material.
-            // The pane name lives inside the detail column, so the window
-            // title stays hidden. The window keeps its standard opaque
-            // background — on macOS 26+ the sidebar's Liquid Glass and the
-            // toolbar materials are provided by the system automatically.
-            window.title = "Blinker"
-            window.titleVisibility = .hidden
+            // Native window chrome follows the current system appearance.
+            window.title = title
+            window.titleVisibility = .visible
             // Pre-26: draw no titlebar background so the sidebar material
             // runs under the traffic lights. 26+: leave it unset so the
             // system paints its Liquid Glass titlebar/toolbar material.
@@ -43,16 +52,11 @@ final class SettingsWindowController {
             }
             window.styleMask.insert(.fullSizeContentView)
             window.styleMask.insert(.miniaturizable)
-            // Width floor for the rules tab's three columns. On-paper math
-            // (sidebar 180–230 + list 224 with glass inset + inspector
-            // ~460 for the matrix and grouped-form card insets) lands near
-            // 870, but the grouped Form's real system insets run wider and
-            // clipped the green-light column at both 880 and 920 — verified
-            // on-screen twice. 980 gives the inspector ~530 at default
-            // column widths, with headroom even at sidebar/list maxima.
-            window.setContentSize(NSSize(width: 980, height: 500))
-            window.contentMinSize = NSSize(width: 980, height: 460)
+            window.toolbarStyle = .unified
+            window.setContentSize(contentSize)
+            window.contentMinSize = minimumSize
             window.center()
+            window.setFrameAutosaveName(autosaveName)
             window.isReleasedWhenClosed = false
             // Normal level: `bringToFront()` handles the initial fronting;
             // a floating window would permanently cover other apps' windows.

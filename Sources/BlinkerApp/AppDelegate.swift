@@ -32,6 +32,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
     private lazy var statusItemController: StatusItemController = {
         let controller = StatusItemController(coordinator: interception)
         controller.onOpenSettings = { [weak self] in self?.openSettings() }
+        controller.onOpenApplications = { [weak self] in self?.openApplications() }
         return controller
     }()
 
@@ -45,7 +46,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
         return NSHostingController(
             rootView: SettingsView(
                 onApplyHoverSettings: applyHoverOverlaySettings,
-                onSnapEnabledChange: applySnapEnabled
+                onSnapEnabledChange: applySnapEnabled,
+                onOpenApplications: openApplications
             )
             .environmentObject(ruleStore)
             .environmentObject(hoverOverlaySettingsStore)
@@ -55,12 +57,49 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
         )
     }
 
+    private lazy var applicationsWindowController = SettingsWindowController(
+        title: String(localized: "应用规则"),
+        autosaveName: "BlinkerApplications",
+        contentSize: NSSize(width: 600, height: 480),
+        minimumSize: NSSize(width: 480, height: 360)
+    ) { [unowned self] in
+        NSHostingController(rootView: ApplicationRulesView(
+            onEdit: openRule,
+            onOpenSettings: openSettings
+        ).environmentObject(ruleStore))
+    }
+
+    private var ruleWindows: [AppRule.ID: SettingsWindowController] = [:]
+
+    func openApplications() {
+        applicationsWindowController.show()
+    }
+
+    private func openRule(_ rule: AppRule) {
+        if ruleWindows[rule.id] == nil {
+            ruleWindows[rule.id] = SettingsWindowController(
+                title: rule.displayName,
+                autosaveName: "BlinkerRule-" + rule.id,
+                contentSize: NSSize(width: 500, height: 600),
+                minimumSize: NSSize(width: 420, height: 440)
+            ) { [ruleStore] in
+                NSHostingController(rootView: ApplicationRuleEditor(ruleStore: ruleStore, ruleID: rule.id))
+            }
+        }
+        ruleWindows[rule.id]?.show()
+    }
+
     func applicationDidFinishLaunching(_: Notification) {
         // Menu bar app: no Dock icon, no main window.
         NSApp.setActivationPolicy(.accessory)
         statusItemController.install()
         interception.start()
         wireHoverToggleHotkey()
+    }
+
+    func applicationShouldHandleReopen(_: NSApplication, hasVisibleWindows _: Bool) -> Bool {
+        openSettings()
+        return false
     }
 
     /// The ⌃⌥H global hotkey (configurable) flips hover enlargement without

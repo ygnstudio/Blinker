@@ -75,6 +75,7 @@ struct AppLibraryPicker: View {
 
     @State private var installedApps: [InstalledApp] = []
     @State private var searchText = ""
+    @State private var selection: InstalledApp.ID?
     /// True until the (backgrounded) library scan finishes; the scan takes
     /// real disk time, and without this flag the empty list briefly reads
     /// as "no results" — an honest loading state instead.
@@ -88,6 +89,10 @@ struct AppLibraryPicker: View {
             $0.name.localizedCaseInsensitiveContains(searchText)
                 || $0.bundleIdentifier.localizedCaseInsensitiveContains(searchText)
         }
+    }
+
+    private var selectedApp: InstalledApp? {
+        filteredApps.first { $0.id == selection }
     }
 
     var body: some View {
@@ -105,15 +110,21 @@ struct AppLibraryPicker: View {
             .searchable(
                 text: $searchText,
                 placement: .toolbar,
-                prompt: "搜索应用名称或 Bundle ID"
+                prompt: "搜索应用"
             )
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("取消") { dismiss() }
-                }
-            }
         }
-        .frame(width: 420, height: 520)
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            HStack {
+                Spacer()
+                Button("取消") { dismiss() }
+                    .keyboardShortcut(.cancelAction)
+                Button("添加") { addSelection() }
+                    .keyboardShortcut(.defaultAction)
+                    .disabled(selectedApp == nil)
+            }
+            .padding()
+        }
+        .frame(width: 460, height: 520)
         .task {
             // Scanning several directories hits the disk; keep it off the
             // first render pass so the sheet opens instantly.
@@ -137,26 +148,22 @@ struct AppLibraryPicker: View {
     }
 
     private var appList: some View {
-        List(filteredApps) { app in
-            Button {
-                onSelect(app)
-                dismiss()
-            } label: {
-                HStack(spacing: 10) {
-                    Image(nsImage: app.icon)
-                        .resizable()
-                        .frame(width: 24, height: 24)
-                    VStack(alignment: .leading, spacing: 1) {
-                        Text(app.name)
-                            .font(.body)
-                        Text(app.bundleIdentifier)
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
-                    }
-                }
+        List(filteredApps, selection: $selection) { app in
+            Label {
+                Text(app.name)
+            } icon: {
+                Image(nsImage: app.icon)
+                    .resizable()
+                    .frame(width: 24, height: 24)
             }
-            .buttonStyle(.plain)
+            .tag(app.id)
         }
         .listStyle(.inset)
+    }
+
+    private func addSelection() {
+        guard let app = selectedApp else { return }
+        onSelect(app)
+        dismiss()
     }
 }

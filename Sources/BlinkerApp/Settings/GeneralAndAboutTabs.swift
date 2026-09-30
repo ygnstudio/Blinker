@@ -212,7 +212,7 @@ struct AboutTab: View {
             featureRow(
                 icon: "hand.point.up.left.fill",
                 color: .purple,
-                text: String(localized: "悬停放大与纯热区，防误触进度环")
+                text: String(localized: "覆盖式悬停放大，防误触进度环")
             )
             featureRow(
                 icon: "sparkles",

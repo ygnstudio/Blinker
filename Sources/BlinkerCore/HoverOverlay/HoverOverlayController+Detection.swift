@@ -47,15 +47,38 @@ extension HoverOverlayController {
                 self?.hud.close()
             }
         }
+        let revision = presentationState.revision
         let settings = settingsStore.snapshot
+        guard settings.isEnabled else {
+            resetDetectionAndHide()
+            return
+        }
+        // Retain the visible palette's owner before asking what lies beneath
+        // the pointer. Covering controls can extend beyond the owner's frame.
+        if let layout = presentationState.displayedLayout(at: location) {
+            guard AXQuery.isWindowCurrent(layout.target.hit),
+                  settings.appliesToAllWindows
+                  || ruleEngine.hasRule(forBundleIdentifier: layout.target.bundleIdentifier) else {
+                resetDetectionAndHide()
+                return
+            }
+            syncPanels(
+                layout: layout, hoveredIndex: hoveredIndex(at: location, in: layout),
+                settings: settings, revision: revision
+            )
+            return
+        }
+        detectWakeTarget(at: location, settings: settings, revision: revision)
+    }
+
+    private func detectWakeTarget(
+        at location: CGPoint, settings: HoverOverlaySettings, revision: UInt64
+    ) {
         guard
-            settings.isEnabled,
             let hit = AXQuery.windowUnderPoint(
                 location,
                 excludingProcessIdentifier: ProcessInfo.processInfo.processIdentifier,
-                // Hot path (per mouse move): a validated cached hit avoids
-                // the full CGWindowList copy; invalidated on drags and app
-                // activations (see the controller).
+                // Check the cached window and all windows above it in z-order.
                 usingCache: true
             ),
             let app = NSRunningApplication(processIdentifier: hit.processIdentifier),
@@ -65,6 +88,12 @@ extension HoverOverlayController {
             return
         }
         if !settings.appliesToAllWindows, !ruleEngine.hasRule(forBundleIdentifier: bundleIdentifier) {
+            resetDetectionAndHide()
+            return
+        }
+        // Do not enumerate AX children for ordinary motion in a window's
+        // content. A visible palette may extend below this title-bar band.
+        if location.y - hit.bounds.minY > InterceptorMetrics.titleBarBandHeight {
             resetDetectionAndHide()
             return
         }
@@ -79,37 +108,27 @@ extension HoverOverlayController {
             resetDetectionAndHide()
             return
         }
-        guard isCursorInWakeOrKeepAliveZone(location, layout: layout) else {
+        guard HoverOverlayGeometry.isCursorInTriggerZone(
+            cursor: location, buttonFrames: layout.buttons.map(\.frame), panelFrames: [], trayFrame: nil
+        ) else {
             resetDetectionAndHide()
             return
         }
-        let hoveredIndex = layout.allPanelFrames.firstIndex {
-            HoverOverlayGeometry.isCursorInPanel(cursor: location, panelFrame: $0)
-        }
-        syncPanels(layout: layout, hoveredIndex: hoveredIndex, settings: settings)
+        syncPanels(
+            layout: layout, hoveredIndex: hoveredIndex(at: location, in: layout),
+            settings: settings, revision: revision
+        )
     }
 
-    /// Only wake up near the traffic lights themselves — not across the
-    /// whole title bar band. The enlarged panels and the glass tray widen
-    /// the *alive* zone only while the overlay is already on screen
-    /// (gliding across the pill's padding between chips must not close
-    /// it); before that they would balloon the wake-up area far past the
-    /// native corner — especially with extra chips enabled.
-    private func isCursorInWakeOrKeepAliveZone(_ location: CGPoint, layout: OverlayLayout) -> Bool {
-        let keepAlive = isOverlayVisible
-        return HoverOverlayGeometry.isCursorInTriggerZone(
-            cursor: location,
-            buttonFrames: layout.buttons.map(\.frame),
-            panelFrames: keepAlive ? layout.allPanelFrames : [],
-            trayFrame: keepAlive
-                ? HoverOverlayTrayPanel.frame(forDisplayFrames: layout.allPanelFrames)
-                : nil
-        )
+    private func hoveredIndex(at location: CGPoint, in layout: OverlayLayout) -> Int? {
+        layout.allPanelFrames.firstIndex {
+            HoverOverlayGeometry.isCursorInPanel(cursor: location, panelFrame: $0)
+        }
     }
 
     /// Resolves the traffic buttons for the window under the cursor and lays
     /// out the enlarged panels plus extra action chips (clamped to the
-    /// window ∩ screen container). Returns `nil` when the window exposes no
+    /// screen container, allowing them to cover the window edge). Returns `nil` when there are no
     /// traffic buttons.
     private func resolveWindowLayout(
         windowHit: AXQuery.WindowHit,
@@ -120,16 +139,17 @@ extension HoverOverlayController {
         guard !resolved.buttons.isEmpty, let axWindow = resolved.axWindow else { return nil }
         let frames = resolved.buttons.map(\.frame)
         let extraActions = settings.enabledExtraActions
-        let allFrames = HoverOverlayGeometry.panelFrames(
+        let container = Self.overlayContainerBounds(
+            forButtonFrames: frames, windowBounds: windowHit.bounds, confinesToWindow: false
+        ) ?? windowHit.bounds
+        let allFrames = HoverOverlayGeometry.coveringPanelFrames(
             forButtonFrames: frames,
             enlargedSize: settings.enlargedSize,
-            containerBounds: Self.overlayContainerBounds(
-                forButtonFrames: frames,
-                windowBounds: windowHit.bounds
-            ),
+            containerBounds: container,
             extraCount: extraActions.count
         )
         let panelFrames = Array(allFrames.prefix(frames.count))
+        guard allFrames.count == frames.count + extraActions.count else { return nil }
         let extraPanelFrames = Array(allFrames.dropFirst(frames.count))
         return OverlayLayout(
             buttons: resolved.buttons,
@@ -189,10 +209,10 @@ extension HoverOverlayController {
         cachedWindowPID = 0
         cachedWindowID = 0
         cachedWindowBounds = nil
-        guard isOverlayVisible else { return }
-        isOverlayVisible = false
+        let revision = presentationState.invalidate()
         DispatchQueue.main.async { [weak self] in
-            self?.hidePanels()
+            guard let self, presentationState.shouldRemoveViews(revision: revision) else { return }
+            removePanelViews()
         }
     }
 

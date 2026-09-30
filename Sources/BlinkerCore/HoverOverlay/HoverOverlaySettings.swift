@@ -1,15 +1,5 @@
 import Foundation
 
-/// Visual model of the hover enlargement.
-public enum HoverOverlayMode: String, Codable, Sendable, Hashable {
-    /// Draws enlarged buttons (circle, symbol, dwell ring)
-    /// above the native ones.
-    case overlay
-    /// Invisible enlarged click zones around the native buttons; the
-    /// title bar keeps its original look.
-    case hotspot
-}
-
 /// User-facing configuration for the hover overlay feature.
 public struct HoverOverlaySettings: Codable, Hashable, Sendable {
     /// Number of configurable extra-button slots shown to the right of the
@@ -25,13 +15,10 @@ public struct HoverOverlaySettings: Codable, Hashable, Sendable {
     /// = 20 pt is comfortably above a native traffic light.
     public var enlargedSize: CGFloat
     /// Dwell time in milliseconds before a hover click is accepted,
-    /// clamped to 0...800. `0` activates immediately. Ignored in hotspot
-    /// mode, which always activates immediately.
+    /// clamped to 0...800. `0` activates immediately.
     public var dwellMilliseconds: Int
     /// When `false`, the overlay only appears for apps that have a rule.
     public var appliesToAllWindows: Bool
-    /// Visual model; see `HoverOverlayMode`.
-    public var mode: HoverOverlayMode
     /// Extra-button slots to the right of the traffic lights, in display
     /// order. A `nil` slot renders no chip; non-nil slots render a chip that
     /// performs the mapped action on click.
@@ -42,14 +29,12 @@ public struct HoverOverlaySettings: Codable, Hashable, Sendable {
         enlargedSize: CGFloat = 28,
         dwellMilliseconds: Int = 150,
         appliesToAllWindows: Bool = true,
-        mode: HoverOverlayMode = .overlay,
         extraButtonActions: [ButtonAction?] = []
     ) {
         self.isEnabled = isEnabled
         self.enlargedSize = min(max(enlargedSize, 28), 48)
         self.dwellMilliseconds = min(max(dwellMilliseconds, 0), 800)
         self.appliesToAllWindows = appliesToAllWindows
-        self.mode = mode
         self.extraButtonActions = Self.normalizedExtraActions(extraButtonActions)
     }
 
@@ -71,21 +56,14 @@ public struct HoverOverlaySettings: Codable, Hashable, Sendable {
         return normalized
     }
 
-    /// Dwell that applies to the active mode: hotspot mode is always
-    /// immediate, so a fast click inside the enlarged zone is never eaten.
-    public var effectiveDwellMilliseconds: Int {
-        mode == .hotspot ? 0 : dwellMilliseconds
-    }
-
     private enum CodingKeys: String, CodingKey {
-        case isEnabled, enlargedSize, dwellMilliseconds, appliesToAllWindows, mode
+        case isEnabled, enlargedSize, dwellMilliseconds, appliesToAllWindows
         case extraButtonActions
     }
 
-    /// Decodes leniently so settings persisted by older versions (without a
-    /// `mode`, `maskStyle` or `extraButtonActions` key) still load instead of
-    /// resetting to defaults. A persisted `maskStyle` from versions that
-    /// sampled the title bar is ignored — the glass tray replaced sampling.
+    /// Missing fields use defaults. Obsolete `mode` and `maskStyle` keys
+    /// are ignored so existing settings migrate to the covering overlay
+    /// without resetting the user's size, dwell time or extra actions.
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         let fallback = HoverOverlaySettings()
@@ -96,7 +74,6 @@ public struct HoverOverlaySettings: Codable, Hashable, Sendable {
             .decodeIfPresent(Int.self, forKey: .dwellMilliseconds) ?? fallback.dwellMilliseconds
         appliesToAllWindows = try container
             .decodeIfPresent(Bool.self, forKey: .appliesToAllWindows) ?? fallback.appliesToAllWindows
-        mode = try container.decodeIfPresent(HoverOverlayMode.self, forKey: .mode) ?? fallback.mode
         extraButtonActions = try Self.normalizedExtraActions(
             container.decodeIfPresent([ButtonAction?].self, forKey: .extraButtonActions)
                 ?? fallback.extraButtonActions

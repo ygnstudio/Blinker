@@ -97,7 +97,6 @@ final class RuleEngineTests: XCTestCase {
         let data = try XCTUnwrap(legacyJSON.data(using: .utf8))
         let decoded = try JSONDecoder().decode(HoverOverlaySettings.self, from: data)
 
-        XCTAssertEqual(decoded.mode, .overlay)
         XCTAssertEqual(decoded.enlargedSize, 36)
     }
 

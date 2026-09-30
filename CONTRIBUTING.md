@@ -9,7 +9,7 @@ git clone https://github.com/ygnstudio/Blinker.git
 cd Blinker
 swift build
 swift test
-./Scripts/build-app.sh   # produce Blinker.app for manual testing
+./Scripts/build-app.sh   # install to ~/Applications/Blinker.app for manual testing
 ```
 
 CI runs the same gates: build, tests, SwiftLint (`--strict`) and SwiftFormat (`--lint`).

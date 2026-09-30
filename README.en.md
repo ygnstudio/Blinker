@@ -31,18 +31,15 @@ add; everything else keeps system defaults.
   restore, always acting on the hovered window. Settings additionally offer
   **drag to snap** (edge/corner preview, snapping on release) and **global
   hotkeys** (default ⌃⌥ with arrows and U/I/J/K, fully rebindable).
-- **Hover enlargement**: two modes. **Overlay** draws enlarged Liquid Glass
-  buttons with a mis-click dwell ring (0–800 ms; brushing past never
-  triggers). **Hotspot** keeps the title bar's original look and only
-  enlarges the invisible click zones, responding immediately.
-- **Glass tray**: while enlarged, a clear Liquid Glass capsule tray sits
-  behind the whole group of enlarged buttons and extra chips, composited
-  live by the system so it blends with any title-bar background — no
-  sampling, no Screen Recording permission. The enlarged dots are opaque
-  vivid circles, eliminating color bleed at the source, with bounded
-  same-color glows that absorb the native buttons' glass ghosts.
+- **Hover enlargement**: native AppKit buttons enlarge over the original traffic
+  lights, with a configurable dwell gate (0–800 ms). Move away to dismiss.
+- **Native glass**: one nonactivating panel hosts native Liquid Glass buttons
+  over the original traffic lights, grouped in a shared glass effect container. No screenshot sampling,
+  Screen Recording permission, painted glows, or delayed material fade.
+- **Separate windows**: app rules have a dedicated list window, and each app
+  opens its own editor. Preferences live in a separate settings window.
 - **Never out of bounds**: the enlarged panel is laid out as a whole group
-  and clamped to the intersection of the window and the screen.
+  and clamped to the screen; it can extend over the target window’s edge to stay aligned.
 - **App library picker**: adding an app lists every installed app with
   search — no need to launch it first.
 - **Useful without rules**: with no rule, an enlarged click still performs
@@ -73,7 +70,7 @@ flowchart LR
 - **Interception**: the CGEventTap thread only does coordinate-level
   filtering; AX queries and actions run on a serial worker queue.
 - **Hover enlargement**: entering the trigger zone (button group + 12 pt)
-  lays the glass tray first, then the enlarged chips; all geometry is
+  groups native glass buttons in one effect container; all geometry is
   clamped to window ∩ screen in global coordinates.
 
 ## Known limitations
@@ -102,8 +99,8 @@ both Homebrew upgrades and manually replacing the app.
 ```bash
 git clone https://github.com/ygnstudio/Blinker.git
 cd Blinker
-./Scripts/build-app.sh   # produces Blinker.app
-open Blinker.app
+./Scripts/build-app.sh   # installs to ~/Applications/Blinker.app
+open ~/Applications/Blinker.app
 ```
 
 Or run the tests:

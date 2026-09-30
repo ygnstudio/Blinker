@@ -116,6 +116,31 @@ public enum HoverOverlayGeometry {
         return frames
     }
 
+    /// Centers the first enlarged control on the original first traffic light.
+    /// Clamp controls to the display, not the target window or transparent panel
+    /// margins: otherwise large controls shift down into a second title-bar row.
+    public static func coveringPanelFrames(
+        forButtonFrames buttonFrames: [CGRect],
+        enlargedSize: CGFloat,
+        containerBounds: CGRect,
+        extraCount: Int = 0
+    ) -> [CGRect] {
+        guard let first = buttonFrames.first, let anchor = unionedBounds(of: buttonFrames) else { return [] }
+        let count = buttonFrames.count + extraCount
+        let available = containerBounds
+        guard available.width > 0, available.height > 0 else { return [] }
+        let gap: CGFloat = 4
+        let size = min(enlargedSize, available.height,
+                       (available.width - gap * CGFloat(count - 1)) / CGFloat(count))
+        guard size > 0 else { return [] }
+        let width = CGFloat(count) * size + CGFloat(count - 1) * gap
+        let originX = min(max(first.midX - size / 2, available.minX), available.maxX - width)
+        let originY = min(max(anchor.midY - size / 2, available.minY), available.maxY - size)
+        return (0 ..< count).map { index in
+            CGRect(x: originX + CGFloat(index) * (size + gap), y: originY, width: size, height: size)
+        }
+    }
+
     /// The bounding box union of the given frames, or `nil` when empty.
     public static func unionedBounds(of frames: [CGRect]) -> CGRect? {
         guard let first = frames.first else { return nil }
