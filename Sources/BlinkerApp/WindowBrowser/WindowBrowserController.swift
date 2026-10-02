@@ -24,9 +24,15 @@ final class WindowBrowserController: ObservableObject {
     private var anchor: CGRect?
     private var display = CGRect.zero
     private var mouseAtPresentation = CGPoint.zero
-    private var sessionID = UUID()
-    private var holdingOption = false
-    private var pendingCommit = false
+    private var keyboardSession = WindowBrowserKeyboardSession()
+    private var sessionID: UUID {
+        keyboardSession.id
+    }
+
+    private var holdingOption: Bool {
+        keyboardSession.isHoldingOption
+    }
+
     private var initialDirection = 0
     private var invokingPID: pid_t?
     private var paused = false
@@ -123,7 +129,9 @@ final class WindowBrowserController: ObservableObject {
             .keyDown,
             .flagsChanged,
         ]) { [weak self] event in
-            self?.handleKey(event) ?? event
+            WindowBrowserKeyRouting.route(event, context: self?.keyContext) { action in
+                self?.handleKeyAction(action)
+            }
         }
         applyPreferences()
         Task { await catalog.refresh() }
@@ -169,12 +177,11 @@ final class WindowBrowserController: ObservableObject {
     private func begin(pid: pid_t?, anchor: CGRect?, keyboard: Bool, direction: Int) {
         dismiss()
         guard AccessibilityPermission.isTrusted else { ActionFeedback.report(.permissionRequired); return }
-        sessionID = UUID()
+        keyboardSession.begin(holdingOption: keyboard)
         let token = sessionID
         pidFilter = pid
         self.anchor = anchor
         dockMode = anchor != nil
-        holdingOption = keyboard
         initialDirection = direction
         invokingPID = NSWorkspace.shared.frontmostApplication?.processIdentifier
         let point = anchor.map { CGPoint(x: $0.midX, y: $0.midY) } ?? NSEvent.mouseLocation
@@ -192,7 +199,7 @@ final class WindowBrowserController: ObservableObject {
             isLoading = false
             updateWindows()
             present()
-            if pendingCommit {
+            if keyboardSession.takePendingCommit(for: token) {
                 commit()
             }
         }
@@ -259,7 +266,7 @@ final class WindowBrowserController: ObservableObject {
     func commit(_ id: UUID? = nil) {
         guard let target = id ?? selectedID else {
             if isLoading {
-                pendingCommit = true
+                keyboardSession.deferCommitUntilLoaded()
             } else {
                 dismiss()
             }
@@ -283,10 +290,8 @@ final class WindowBrowserController: ObservableObject {
     }
 
     func dismiss() {
-        sessionID = UUID()
+        keyboardSession.dismiss()
         isOpen = false
-        holdingOption = false
-        pendingCommit = false
         dockDelay?.cancel()
         refreshTimer?.invalidate()
         leaveTimer?.invalidate()
@@ -301,7 +306,7 @@ final class WindowBrowserController: ObservableObject {
     }
 
     private func releaseOption() {
-        if isOpen, holdingOption {
+        if isOpen, keyboardSession.releaseOption() {
             commit()
         }
     }
@@ -374,32 +379,19 @@ extension WindowBrowserController {
         }
     }
 
-    private func handleKey(_ event: NSEvent) -> NSEvent? {
-        guard isOpen else { return event }
-        if event.type == .flagsChanged {
-            if !event.modifierFlags.contains(.option) {
-                releaseOption()
-            }
-            return event
-        }
-        guard panel?.isKeyWindow == true else { return event }
-        return handleNavigation(event)
+    private var keyContext: WindowBrowserKeyRouting.Context? {
+        guard isOpen else { return nil }
+        return .init(isOpen: true, isKeyWindow: panel?.isKeyWindow == true,
+                     rowStep: usesThumbnails ? layout.columns : 1)
     }
 
-    private func handleNavigation(_ event: NSEvent) -> NSEvent? {
-        let rowStep = usesThumbnails ? layout.columns : 1
-        let direction: [UInt16: Int] = [123: -1, 124: 1, 125: rowStep, 126: -rowStep]
-        if let delta = direction[event.keyCode] {
-            move(delta); return nil
+    private func handleKeyAction(_ action: WindowBrowserKeyRouting.Action) {
+        switch action {
+        case let .move(delta): move(delta)
+        case .commit: commit()
+        case .dismiss: dismiss()
+        case .releaseOption: releaseOption()
+        case let .perform(action): perform(action)
         }
-        switch event.keyCode {
-        case 53: dismiss()
-        case 36, 76: commit()
-        case 48: move(event.modifierFlags.contains(.shift) ? -1 : 1)
-        case 13 where event.modifierFlags.contains(.command): perform(.closeWindow)
-        case 46 where event.modifierFlags.contains(.command): perform(.minimize)
-        default: return event
-        }
-        return nil
     }
 }

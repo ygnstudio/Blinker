@@ -377,6 +377,54 @@
         }
       }
     },
+    "无法导出：规则文件超过 1 MiB 上限。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cannot export: the rules file exceeds the 1 MiB limit."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法导出：规则文件超过 1 MiB 上限。"
+          }
+        }
+      }
+    },
+    "无法导出：规则数量超过 1000 条上限。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cannot export: the number of rules exceeds the 1,000-rule limit."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法导出：规则数量超过 1000 条上限。"
+          }
+        }
+      }
+    },
+    "无法导出：规则无效或包含重复的应用。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cannot export: rules are invalid or contain duplicate applications."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法导出：规则无效或包含重复的应用。"
+          }
+        }
+      }
+    },
     "最大化": {
       "localizations": {
         "en": {

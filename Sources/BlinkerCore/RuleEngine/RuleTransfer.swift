@@ -17,10 +17,32 @@ public enum RuleTransfer {
         }
     }
 
+    public enum ExportError: LocalizedError, Equatable {
+        case invalidRules
+        case tooManyRules
+        case archiveTooLarge
+
+        public var errorDescription: String? {
+            switch self {
+            case .invalidRules:
+                String(localized: "无法导出：规则无效或包含重复的应用。", bundle: .module)
+            case .tooManyRules:
+                String(localized: "无法导出：规则数量超过 1000 条上限。", bundle: .module)
+            case .archiveTooLarge:
+                String(localized: "无法导出：规则文件超过 1 MiB 上限。", bundle: .module)
+            }
+        }
+    }
+
+    /// Return only archives accepted by the importer, before a caller replaces a backup.
     public static func encode(_ rules: [AppRule]) throws -> Data {
+        guard rules.count <= maximumRules else { throw ExportError.tooManyRules }
+        guard validRules(rules) else { throw ExportError.invalidRules }
         let encoder = JSONEncoder()
-        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-        return try encoder.encode(Archive(version: 1, rules: rules))
+        encoder.outputFormatting = [.sortedKeys]
+        let data = try encoder.encode(Archive(version: 1, rules: rules))
+        guard data.count <= maximumBytes else { throw ExportError.archiveTooLarge }
+        return data
     }
 
     /// Open once, reject special files, and bound the actual read as well as the

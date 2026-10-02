@@ -93,4 +93,48 @@ final class HoverControlRenderingTests: XCTestCase {
         )
         XCTAssertTrue(preview is HoverOverlayButtonView)
     }
+
+    func testSemanticColorsStayOpaqueInInactiveGlassInBothAppearances() throws {
+        guard #available(macOS 26.0, *) else { throw XCTSkip("Liquid Glass requires macOS 26") }
+        _ = NSApplication.shared
+        let colors = TrafficButton.allCases.map(OverlayChipDrawing.vividColor) + [.controlAccentColor]
+        for appearance in [NSAppearance.Name.aqua, .darkAqua] {
+            for color in colors {
+                let frame = CGRect(x: 100, y: 100, width: 40, height: 40)
+                let button = HoverControlAppearance.makePreviewButton(
+                    frame: frame, action: .closeWindow, color: color
+                )
+                let trayFrame = try XCTUnwrap(HoverOverlayTrayPanel.frame(forDisplayFrames: [frame]))
+                let panel = HoverOverlayTrayPanel(trayFrame: trayFrame)
+                panel.appearance = NSAppearance(named: appearance)
+                panel.update(trayFrame: trayFrame, controls: [button], frames: [frame])
+                panel.contentView?.layoutSubtreeIfNeeded()
+                let content = try XCTUnwrap(button.superview)
+                let face = try XCTUnwrap(content.subviews.first { $0 !== button })
+                var ancestor = content.superview
+                while let view = ancestor, !(view is NSGlassEffectView) {
+                    ancestor = view.superview
+                }
+                let glass = try XCTUnwrap(ancestor as? NSGlassEffectView)
+                XCTAssertFalse(panel.isKeyWindow)
+                XCTAssertLessThan(face.bounds.width, glass.bounds.width, "the native glass rim stays exposed")
+                XCTAssertEqual(glass.tintColor, color)
+                var actualColor: NSColor?
+                var expectedColor: NSColor?
+                panel.effectiveAppearance.performAsCurrentDrawingAppearance {
+                    face.updateLayer()
+                    actualColor = face.layer?.backgroundColor.flatMap { NSColor(cgColor: $0) }?
+                        .usingColorSpace(.sRGB)
+                    expectedColor = color.usingColorSpace(.sRGB)
+                }
+                let resolved = try XCTUnwrap(actualColor)
+                let expected = try XCTUnwrap(expectedColor)
+                XCTAssertEqual(resolved.alphaComponent, 1, accuracy: 0.001,
+                               "the dark backdrop must not dilute the semantic button color")
+                XCTAssertEqual(resolved.redComponent, expected.redComponent, accuracy: 0.001)
+                XCTAssertEqual(resolved.greenComponent, expected.greenComponent, accuracy: 0.001)
+                XCTAssertEqual(resolved.blueComponent, expected.blueComponent, accuracy: 0.001)
+            }
+        }
+    }
 }

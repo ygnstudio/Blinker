@@ -183,3 +183,95 @@ final class WindowBrowserTests: XCTestCase {
         XCTAssertEqual(WindowGeometry.transferredFrame(source, from: source, to: target), target)
     }
 }
+
+final class WindowCaptureMatchingTests: XCTestCase {
+    private let frame = CGRect(x: 100, y: 100, width: 800, height: 600)
+
+    private func surface(_ id: UInt32, title: String?, frame: CGRect? = nil) -> [String: Any] {
+        var result: [String: Any] = [kCGWindowOwnerPID as String: Int32(42),
+                                     kCGWindowLayer as String: 0, kCGWindowNumber as String: id,
+                                     kCGWindowBounds as String: (frame ?? self.frame)
+                                         .dictionaryRepresentation]
+        result[kCGWindowName as String] = title
+        return result
+    }
+
+    private func window(captureID: UInt32?, minimized: Bool = false, title: String = "Document A")
+        -> BrowserWindow {
+        BrowserWindow(id: UUID(), pid: 42, appName: "App", title: title, bundleID: "app", frame: frame,
+                      captureID: captureID, isMinimized: minimized, isHidden: false,
+                      isOnScreen: !minimized, focusOrder: 0)
+    }
+
+    func testMinimizedWindowDoesNotCaptureWindowOccupyingItsOldFrame() {
+        let surfaces = [surface(10, title: "Document A", frame: .zero), surface(11, title: "Document B")]
+        let match = WindowDiscovery.captureMatch(surfaces, pid: 42, frame: frame, title: "Document A",
+                                                 allowOffscreenTitleMatch: true)
+        XCTAssertEqual(match?[kCGWindowNumber as String] as? UInt32, 10)
+        XCTAssertNil(WindowDiscovery.captureMatch(surfaces, pid: 42, frame: frame, title: "Document A"))
+    }
+
+    func testFrameOnlyMatchRejectsContradictingKnownTitle() {
+        XCTAssertNil(WindowDiscovery.captureMatch([surface(11, title: "Document B")], pid: 42,
+                                                  frame: frame, title: "Document A"))
+        let match = WindowDiscovery.captureMatch([surface(10, title: "Document A")], pid: 42,
+                                                 frame: frame, title: "Document A")
+        XCTAssertEqual(match?[kCGWindowNumber as String] as? UInt32, 10)
+    }
+
+    func testOffscreenWindowsRequireUniqueNonemptyTitlesDespiteFrameMatch() {
+        let duplicate = [surface(10, title: "Document A"), surface(11, title: "Document A", frame: .zero)]
+        XCTAssertNil(WindowDiscovery.captureMatch(duplicate, pid: 42, frame: frame, title: "Document A",
+                                                  allowOffscreenTitleMatch: true))
+        for missingTitle in [nil, ""] as [String?] {
+            let unnamed = surface(10, title: missingTitle)
+            for targetTitle in ["", "Document A"] {
+                XCTAssertNil(WindowDiscovery.captureMatch([unnamed], pid: 42, frame: frame,
+                                                          title: targetTitle, allowOffscreenTitleMatch: true))
+            }
+        }
+    }
+
+    func testOnscreenMissingTitlesRequireUnambiguousFrame() {
+        for missingTitle in [nil, ""] as [String?] {
+            let unnamed = surface(10, title: missingTitle)
+            for targetTitle in ["", "Document A"] {
+                let match = WindowDiscovery.captureMatch([unnamed], pid: 42, frame: frame, title: targetTitle)
+                XCTAssertEqual(match?[kCGWindowNumber as String] as? UInt32, 10)
+            }
+            XCTAssertNil(WindowDiscovery.captureMatch([unnamed, surface(11, title: "Document B")],
+                                                      pid: 42, frame: frame, title: ""))
+        }
+    }
+
+    func testCaptureSourceRevalidatesStaleIDsAgainstCurrentSurfaces() {
+        let candidate = window(captureID: 11)
+        let current = [surface(10, title: "Document A"), surface(11, title: "Document B")]
+        XCTAssertEqual(ScreenCaptureThumbnailSource.captureID(for: candidate, in: current), 10)
+        XCTAssertNil(ScreenCaptureThumbnailSource.captureID(for: candidate, in: [current[1]]))
+        XCTAssertEqual(ScreenCaptureThumbnailSource.captureID(for: window(captureID: 99), in: current), 10)
+        XCTAssertEqual(ScreenCaptureThumbnailSource.captureID(for: window(captureID: 10), in: current), 10)
+        let duplicate = [surface(10, title: "Document A"), surface(11, title: "Document A")]
+        XCTAssertNil(ScreenCaptureThumbnailSource.captureID(for: candidate, in: duplicate))
+        let minimized = [surface(10, title: "Document A", frame: .zero), current[1]]
+        XCTAssertEqual(ScreenCaptureThumbnailSource.captureID(for: window(captureID: 11, minimized: true),
+                                                              in: minimized), 10)
+    }
+
+    func testCaptureUsesParentWindowTitleInsteadOfTabLabelOrDisplayFallback() {
+        var tab = window(captureID: 10, title: "Short tab label")
+        tab.isTab = true
+        tab.captureTitle = "Document A"
+        XCTAssertEqual(ScreenCaptureThumbnailSource.captureID(for: tab,
+                                                              in: [surface(10, title: "Document A")]), 10)
+        XCTAssertNil(ScreenCaptureThumbnailSource.captureID(for: tab,
+                                                            in: [surface(10, title: "Short tab label")]))
+        var unnamed = window(captureID: nil, title: "App")
+        unnamed.captureTitle = ""
+        XCTAssertEqual(ScreenCaptureThumbnailSource.captureID(for: unnamed,
+                                                              in: [surface(10, title: "Document A")]), 10)
+        XCTAssertNil(ScreenCaptureThumbnailSource.captureID(for: unnamed,
+                                                            in: [surface(10, title: "App"),
+                                                                 surface(11, title: "Document A")]))
+    }
+}

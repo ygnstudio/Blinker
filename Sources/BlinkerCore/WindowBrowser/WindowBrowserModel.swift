@@ -17,6 +17,8 @@ public struct BrowserWindow: Identifiable, Equatable, Sendable {
     public let focusOrder: UInt64
     public var isTab = false
     public var isSelectedTab = true
+    /// The parent AX window's raw title, independent of tab labels or the app-name display fallback.
+    var captureTitle: String?
 }
 
 public struct WindowBrowserSelection: Sendable {

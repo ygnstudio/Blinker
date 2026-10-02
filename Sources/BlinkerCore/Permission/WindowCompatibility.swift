@@ -28,12 +28,7 @@ public enum WindowCompatibility {
                                              buttons: [], canMove: false, canResize: false)
         }
         AXQuery.applyMessagingTimeout(window)
-        let buttons = TrafficButton.allCases.filter { button in
-            let attribute: String = switch button {
-            case .close: kAXCloseButtonAttribute
-            case .minimize: kAXMinimizeButtonAttribute
-            case .zoom: kAXFullScreenButtonAttribute
-            }
+        let buttons = availableButtons { attribute in
             var value: CFTypeRef?
             return AXUIElementCopyAttributeValue(window, attribute as CFString, &value) == .success &&
                 value !=
@@ -42,6 +37,17 @@ public enum WindowCompatibility {
         return WindowCompatibilityReport(permissionGranted: true, windowFound: true, buttons: buttons,
                                          canMove: isSettable(kAXPositionAttribute, window: window),
                                          canResize: isSettable(kAXSizeAttribute, window: window))
+    }
+
+    static func availableButtons(attributeExists: (String) -> Bool) -> [TrafficButton] {
+        TrafficButton.allCases.filter { button in
+            let attributes: [String] = switch button {
+            case .close: [kAXCloseButtonAttribute]
+            case .minimize: [kAXMinimizeButtonAttribute]
+            case .zoom: [kAXFullScreenButtonAttribute, kAXZoomButtonAttribute]
+            }
+            return attributes.contains(where: attributeExists)
+        }
     }
 
     private static func isSettable(_ attribute: String, window: AXUIElement) -> Bool {

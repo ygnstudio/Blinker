@@ -3,6 +3,12 @@ import ApplicationServices
 
 public protocol WindowActionPerforming: AnyObject {
     func perform(_ action: ButtonAction, window: AXUIElement, processIdentifier: pid_t)
+    func pressNativeButton(subrole: String, window: AXUIElement, processIdentifier: pid_t)
+}
+
+enum WindowActionRequest: Equatable {
+    case action(ButtonAction)
+    case nativeButton(String)
 }
 
 /// One shared performer lets hotkeys and hover controls restore each other's
@@ -11,21 +17,35 @@ public final class DefaultWindowActionPerformer: WindowActionPerforming {
     public static let shared = DefaultWindowActionPerformer()
     private let lock = NSLock()
     private var history = WindowLayoutHistory<WindowIdentity>()
-    private let operation: ((ButtonAction, AXUIElement, pid_t) -> WindowActionResult)?
+    private let operation: ((WindowActionRequest, AXUIElement, pid_t) -> WindowActionResult)?
 
     public init() {
         operation = nil
     }
 
-    init(operation: @escaping (ButtonAction, AXUIElement, pid_t) -> WindowActionResult) {
+    init(operation: @escaping (WindowActionRequest, AXUIElement, pid_t) -> WindowActionResult) {
         self.operation = operation
     }
 
     public func perform(_ action: ButtonAction, window: AXUIElement, processIdentifier: pid_t) {
-        if processIdentifier == ProcessInfo.processInfo.processIdentifier {
+        perform(.action(action), window: window, pid: processIdentifier)
+    }
+
+    /// Preserve the actual native control: AXZoomButton and AXFullScreenButton
+    /// share the green traffic light, but do not perform the same operation.
+    public func pressNativeButton(subrole: String, window: AXUIElement, processIdentifier: pid_t) {
+        guard TrafficButton(axSubrole: subrole) != nil else {
+            ActionFeedback.report(.unsupportedWindow)
+            return
+        }
+        perform(.nativeButton(subrole), window: window, pid: processIdentifier)
+    }
+
+    private func perform(_ request: WindowActionRequest, window: AXUIElement, pid: pid_t) {
+        if pid == ProcessInfo.processInfo.processIdentifier {
             // The test window belongs to Blinker. A process-wide action must
             // never remove the utility or its settings during a window test.
-            guard action != .quitApp, action != .hideApp else {
+            guard request != .action(.quitApp), request != .action(.hideApp) else {
                 ActionFeedback.report(.unsupportedWindow)
                 return
             }
@@ -33,24 +53,32 @@ public final class DefaultWindowActionPerformer: WindowActionPerforming {
             // unlike cross-process IPC, they do not hop onto the target's main thread.
             if !Thread.isMainThread {
                 DispatchQueue.main.async { [self] in
-                    perform(action, window: window, processIdentifier: processIdentifier)
+                    perform(request, window: window, pid: pid)
                 }
                 return
             }
         }
         let result = lock.withLock {
-            operation?(action, window, processIdentifier)
-                ?? execute(action, window: window, pid: processIdentifier)
+            operation?(request, window, pid)
+                ?? execute(request, window: window, pid: pid)
         }
         ActionFeedback.report(result)
     }
 
-    private func execute(_ action: ButtonAction, window: AXUIElement, pid: pid_t) -> WindowActionResult {
+    private func execute(_ request: WindowActionRequest, window: AXUIElement,
+                         pid: pid_t) -> WindowActionResult {
         guard AccessibilityPermission.isTrusted else { return .permissionRequired }
         AXQuery.applyMessagingTimeout(window)
         let app = NSRunningApplication(processIdentifier: pid)
         if let bundleID = app?.bundleIdentifier, SessionPause.shared.contains(bundleID) {
             return .completed
+        }
+        let action: ButtonAction
+        switch request {
+        case let .nativeButton(subrole):
+            return AXQuery.pressButton(subrole: subrole, in: window) ? .completed : .unsupportedWindow
+        case let .action(requestedAction):
+            action = requestedAction
         }
         switch action {
         case .closeWindow, .minimize, .fullscreen:

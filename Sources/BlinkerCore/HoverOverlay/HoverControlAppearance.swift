@@ -34,8 +34,8 @@ public enum HoverControlAppearance {
         }
         let content = NSView(frame: bounds)
         content.autoresizingMask = [.width, .height]
-        // Keep semantic color in an inactive panel without covering the
-        // entire native material with an opaque face.
+        // Keep the semantic face opaque so dark backdrops cannot muddy its color.
+        // The inset leaves the native glass rim exposed, including in inactive panels.
         let face = SemanticGlassFace(frame: bounds.insetBy(dx: 2, dy: 2), color: button.bezelColor ?? .clear)
         face.autoresizingMask = [.width, .height]
         face.setAccessibilityElement(false)
@@ -106,15 +106,11 @@ private final class GlassTrayGroupView: NSView {
 
 private final class SemanticGlassFace: NSView {
     private let color: NSColor
-    private var observer: NSObjectProtocol?
 
     init(frame: NSRect, color: NSColor) {
         self.color = color
         super.init(frame: frame)
         wantsLayer = true
-        observer = NSWorkspace.shared.notificationCenter.addObserver(
-            forName: NSWorkspace.accessibilityDisplayOptionsDidChangeNotification, object: nil, queue: .main
-        ) { [weak self] _ in self?.needsDisplay = true }
     }
 
     @available(*, unavailable)
@@ -127,19 +123,11 @@ private final class SemanticGlassFace: NSView {
     }
 
     override func updateLayer() {
-        let opaque = NSWorkspace.shared.accessibilityDisplayShouldReduceTransparency
-            || NSWorkspace.shared.accessibilityDisplayShouldIncreaseContrast
-        layer?.backgroundColor = color.withAlphaComponent(opaque ? 1 : 0.72).cgColor
+        layer?.backgroundColor = color.withAlphaComponent(1).cgColor
         layer?.cornerRadius = bounds.height / 2
     }
 
     override func viewDidChangeEffectiveAppearance() {
         needsDisplay = true
-    }
-
-    deinit {
-        if let observer {
-            NSWorkspace.shared.notificationCenter.removeObserver(observer)
-        }
     }
 }

@@ -48,15 +48,17 @@ final class WindowDiscovery: @unchecked Sendable {
                     target.focusOrder = sequence
                 }
                 retained[target.id] = target
-                let match = Self.captureMatch(surfaces, pid: pid, frame: frame, title: title)
+                let minimized = bool(window, kAXMinimizedAttribute)
+                let match = Self.captureMatch(surfaces, pid: pid, frame: frame, title: title,
+                                              allowOffscreenTitleMatch: minimized || app.isHidden)
                 let browserWindow = BrowserWindow(
                     id: target.id, pid: pid, appName: app.localizedName ?? app.bundleIdentifier ?? "",
                     title: title.isEmpty ? (app.localizedName ?? "") : title,
                     bundleID: app.bundleIdentifier ?? "", frame: frame,
                     captureID: match?[kCGWindowNumber as String] as? UInt32,
-                    isMinimized: bool(window, kAXMinimizedAttribute), isHidden: app.isHidden,
+                    isMinimized: minimized, isHidden: app.isHidden,
                     isOnScreen: match?[kCGWindowIsOnscreen as String] as? Bool ?? false,
-                    focusOrder: target.focusOrder
+                    focusOrder: target.focusOrder, captureTitle: title
                 )
                 result += expandedWindows(browserWindow, target: target,
                                           includeTabs: includeTabs, retained: &retained)
@@ -99,7 +101,7 @@ final class WindowDiscovery: @unchecked Sendable {
                                  captureID: tab.selected ? window.captureID : nil,
                                  isMinimized: window.isMinimized, isHidden: window.isHidden,
                                  isOnScreen: tab.selected && window.isOnScreen, focusOrder: order,
-                                 isTab: true, isSelectedTab: tab.selected)
+                                 isTab: true, isSelectedTab: tab.selected, captureTitle: window.captureTitle)
         }
     }
 
@@ -130,26 +132,29 @@ final class WindowDiscovery: @unchecked Sendable {
             info[kCGWindowOwnerPID as String] as? pid_t == pid
                 && info[kCGWindowLayer as String] as? Int == 0
         }
+        // A hidden/minimized window's old frame can now belong to another window.
+        // Only a unique known title can identify a cold offscreen capture.
+        if allowOffscreenTitleMatch {
+            guard !title.isEmpty else { return nil }
+            let titled = owned.filter { $0[kCGWindowName as String] as? String == title }
+            return titled.count == 1 ? titled.first : nil
+        }
         let matches = owned.filter { info in
-            guard info[kCGWindowOwnerPID as String] as? pid_t == pid,
-                  info[kCGWindowLayer as String] as? Int == 0,
-                  let bounds = info[kCGWindowBounds as String] as? [String: Any],
+            guard let bounds = info[kCGWindowBounds as String] as? [String: Any],
                   let candidate = CGRect(dictionaryRepresentation: bounds as CFDictionary)
             else { return false }
             return WindowLayoutHistory<UUID>.matches(candidate, frame)
         }
+        guard !title.isEmpty else { return matches.count == 1 ? matches.first : nil }
         let titled = matches.filter { $0[kCGWindowName as String] as? String == title }
         if titled.count == 1 {
             return titled.first
         }
-        if matches.count == 1 {
-            return matches.first
-        }
-        // A minimized window can lose its original frame. Accept only an exact,
-        // nonempty title unique within the same process; never pick an arbitrary window.
-        guard allowOffscreenTitleMatch, !title.isEmpty else { return nil }
-        let byTitle = owned.filter { $0[kCGWindowName as String] as? String == title }
-        return byTitle.count == 1 ? byTitle.first : nil
+        // Missing source titles can fall back to a unique current frame. A known
+        // contradicting title is evidence of another window, never a fallback.
+        guard matches.count == 1, let candidate = matches.first,
+              (candidate[kCGWindowName as String] as? String ?? "").isEmpty else { return nil }
+        return candidate
     }
 
     func focus(_ id: UUID) -> Bool {

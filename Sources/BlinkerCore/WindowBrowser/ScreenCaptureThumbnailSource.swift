@@ -42,19 +42,22 @@ final class ScreenCaptureThumbnailSource: WindowThumbnailCapturing {
 
     private func captureSource(for window: BrowserWindow, in sources: [SCWindow]) -> SCWindow? {
         let owned = sources.filter { $0.owningApplication?.processID == window.pid && $0.windowLayer == 0 }
-        if let id = window.captureID, let source = owned.first(where: { $0.windowID == id }) {
-            return source
-        }
         let surfaces: [[String: Any]] = owned.map {
             [kCGWindowOwnerPID as String: window.pid, kCGWindowLayer as String: 0,
              kCGWindowNumber as String: $0.windowID, kCGWindowName as String: $0.title ?? "",
              kCGWindowBounds as String: $0.frame.dictionaryRepresentation]
         }
+        guard let id = Self.captureID(for: window, in: surfaces) else { return nil }
+        return owned.first { $0.windowID == id }
+    }
+
+    nonisolated static func captureID(for window: BrowserWindow, in surfaces: [[String: Any]]) -> UInt32? {
+        // The earlier CG ID is a derived hint, not AX identity. Revalidate against
+        // the current capture snapshot rather than trusting a stale or ambiguous ID.
         let match = WindowDiscovery.captureMatch(surfaces, pid: window.pid, frame: window.frame,
-                                                 title: window.title,
+                                                 title: window.captureTitle ?? window.title,
                                                  allowOffscreenTitleMatch: window.isMinimized || window
                                                      .isHidden)
-        guard let id = match?[kCGWindowNumber as String] as? UInt32 else { return nil }
-        return owned.first { $0.windowID == id }
+        return match?[kCGWindowNumber as String] as? UInt32
     }
 }

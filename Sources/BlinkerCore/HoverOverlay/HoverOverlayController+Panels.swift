@@ -175,8 +175,8 @@ extension HoverOverlayController {
             }
         case (nil, .left):
             workQueue.async { [actionPerformer] in
-                actionPerformer.perform(
-                    info.button.nativeAction,
+                actionPerformer.pressNativeButton(
+                    subrole: info.axSubrole,
                     window: axWindow,
                     processIdentifier: processIdentifier
                 )

@@ -11,9 +11,54 @@ final class RuleTransferTests: XCTestCase {
         XCTAssertEqual(try RuleTransfer.decode(RuleTransfer.encode([rule])), [rule])
     }
 
+    func testCompactImportRemainsRestorableAfterExportNearSizeLimit() throws {
+        let source = (0 ..< 1000).map {
+            ["bundleIdentifier": "test.app.\($0)", "displayName": String(repeating: "x", count: 900)]
+        }
+        let data = try JSONSerialization.data(withJSONObject: ["version": 1, "rules": source])
+        let rules = try RuleTransfer.decode(data)
+        let exported = try RuleTransfer.encode(rules)
+        XCTAssertLessThanOrEqual(exported.count, RuleTransfer.maximumBytes)
+        XCTAssertEqual(try RuleTransfer.decode(exported), rules)
+    }
+
+    func testExportRejectsInvalidRules() {
+        let rule = AppRule(bundleIdentifier: "one", displayName: "One")
+        XCTAssertThrowsError(try RuleTransfer.encode([rule, rule]))
+        XCTAssertThrowsError(try RuleTransfer.encode([AppRule(bundleIdentifier: " ", displayName: "One")]))
+        let ambiguous = AppRule(bundleIdentifier: "one", displayName: "One",
+                                extraVariantActions: [.close: [.left: .quitApp]])
+        XCTAssertThrowsError(try RuleTransfer.encode([ambiguous]))
+    }
+
+    func testExportRejectsTooManyRulesAndOversizedUTF8Data() {
+        let rules = (0 ... RuleTransfer.maximumRules).map {
+            AppRule(bundleIdentifier: "test.app.\($0)", displayName: "App \($0)")
+        }
+        XCTAssertThrowsError(try RuleTransfer.encode(rules))
+        let oversized = AppRule(bundleIdentifier: "one",
+                                displayName: String(repeating: "🟢", count: RuleTransfer.maximumBytes / 4))
+        XCTAssertThrowsError(try RuleTransfer.encode([oversized]))
+    }
+
+    func testRejectedExportLeavesExistingBackupRestorable() throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let file = directory.appendingPathComponent("rules.json")
+        let original = [AppRule(bundleIdentifier: "one", displayName: "One")]
+        let backup = try RuleTransfer.encode(original)
+        try backup.write(to: file, options: .atomic)
+        let oversized = AppRule(bundleIdentifier: "two",
+                                displayName: String(repeating: "x", count: RuleTransfer.maximumBytes))
+        XCTAssertThrowsError(try RuleTransfer.encode([oversized]).write(to: file, options: .atomic))
+        XCTAssertEqual(try Data(contentsOf: file), backup)
+        XCTAssertEqual(try RuleTransfer.read(from: file), original)
+    }
+
     func testImportRejectsDuplicateAppsFutureVersionsAndOversizedFiles() throws {
         let rule = AppRule(bundleIdentifier: "one", displayName: "One")
-        XCTAssertThrowsError(try RuleTransfer.decode(RuleTransfer.encode([rule, rule])))
+        XCTAssertThrowsError(try RuleTransfer.decode(uncheckedArchive([rule, rule])))
         XCTAssertThrowsError(try RuleTransfer.decode(Data(#"{"version":2,"rules":[]}"#.utf8)))
         XCTAssertThrowsError(try RuleTransfer.decode(Data(repeating: 0, count: 1_048_577)))
         XCTAssertThrowsError(try RuleTransfer.decode(Data("broken".utf8)))
@@ -43,10 +88,10 @@ final class RuleTransferTests: XCTestCase {
         """.utf8)
         XCTAssertThrowsError(try RuleTransfer.decode(unknown))
         let empty = AppRule(bundleIdentifier: " ", displayName: "One")
-        XCTAssertThrowsError(try RuleTransfer.decode(RuleTransfer.encode([empty])))
+        XCTAssertThrowsError(try RuleTransfer.decode(uncheckedArchive([empty])))
         let ambiguous = AppRule(bundleIdentifier: "one", displayName: "One", closeAction: .closeWindow,
                                 extraVariantActions: [.close: [.left: .quitApp]])
-        XCTAssertThrowsError(try RuleTransfer.decode(RuleTransfer.encode([ambiguous])))
+        XCTAssertThrowsError(try RuleTransfer.decode(uncheckedArchive([ambiguous])))
     }
 
     func testStoredDuplicateIDsAreQuarantinedBeforeRuleMerging() throws {
@@ -98,5 +143,13 @@ final class RuleTransferTests: XCTestCase {
         XCTAssertEqual(store.rules, [modified, extra])
         store.remove(bundleIdentifier: "two")
         XCTAssertFalse(store.canRedo)
+    }
+
+    private func uncheckedArchive(_ rules: [AppRule]) throws -> Data {
+        struct Archive: Encodable {
+            let version = 1
+            let rules: [AppRule]
+        }
+        return try JSONEncoder().encode(Archive(rules: rules))
     }
 }
