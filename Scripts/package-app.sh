@@ -1,6 +1,7 @@
 #!/bin/zsh
 # Packages a built Blinker binary into a signed Blinker.app bundle.
 # Usage: package-app.sh <binary-path> <version> [build-number] [output-app]
+# Requires an explicit, non-empty BLINKER_BUNDLE_ID.
 #
 # Single source of truth for Info.plist generation; used by both the local
 # build-app.sh workflow and the GitHub Actions release workflow.
@@ -11,10 +12,9 @@ BINARY_PATH="${1:?usage: package-app.sh <binary-path> <version> [build-number] [
 APP_VERSION="${2:?missing version}"
 BUNDLE_VERSION="${3:-1}"
 APP_DIR="${4:-Blinker.app}"
-# Local dev builds override the bundle ID (see build-app.sh) so the dev app
-# and any installed release never share a LaunchServices identity — same-ID
-# apps across paths are exactly the pollution that broke the menu bar icon.
-BUNDLE_ID="${BLINKER_BUNDLE_ID:-com.ygnstudio.Blinker}"
+# Callers choose the installation identity explicitly. Separate development
+# and release IDs isolate app registration, preferences and permission grants.
+BUNDLE_ID="${BLINKER_BUNDLE_ID:?BLINKER_BUNDLE_ID must be explicitly set and non-empty}"
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 ICON_PATH="$REPO_ROOT/Assets/Blinker.icns"
 

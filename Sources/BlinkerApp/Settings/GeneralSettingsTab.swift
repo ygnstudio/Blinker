@@ -6,6 +6,7 @@ import SwiftUI
 struct GeneralTab: View {
     let onShowOnboarding: () -> Void
     @EnvironmentObject var coordinator: InterceptionCoordinator
+    @EnvironmentObject private var permissionAssistant: PermissionAssistantController
     @ObservedObject private var preferences = AppPreferences.shared
     @ObservedObject private var feedback = ActionFeedbackController.shared
     @State private var loginStatus = SMAppService.mainApp.status
@@ -24,7 +25,7 @@ struct GeneralTab: View {
                 ))
                 LabeledContent("状态", value: coordinator.status.localizedLabel)
                 if coordinator.status == .noPermission {
-                    Button("打开辅助功能设置…") { AccessibilityPermission.prompt() }
+                    Button("授权辅助功能…") { permissionAssistant.show(for: .accessibility) }
                 } else if coordinator.status == .tapFailed || coordinator.status == .partial {
                     Button("重试启动拦截") {
                         coordinator.stop()

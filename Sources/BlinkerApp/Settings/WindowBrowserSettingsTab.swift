@@ -14,6 +14,7 @@ struct WindowBrowserSettingsTab: View {
 }
 
 private struct WindowBrowserSettingsContent: View {
+    @EnvironmentObject private var permissionAssistant: PermissionAssistantController
     @ObservedObject var browser: WindowBrowserController
     @ObservedObject var preferences: WindowBrowserPreferences
     @ObservedObject var thumbnails: WindowThumbnailStore
@@ -55,7 +56,7 @@ private struct WindowBrowserSettingsContent: View {
                 if preferences.thumbnailsEnabled, !thumbnails.permissionGranted {
                     Text("窗口缩略图需要屏幕录制权限。未授权时仍可使用图标和标题切换窗口。")
                         .font(.caption).foregroundStyle(.secondary)
-                    Button("授权窗口缩略图…") { thumbnails.requestPermission() }
+                    Button("授权窗口缩略图…") { permissionAssistant.show(for: .screenRecording) }
                     Button("重新检查权限") { thumbnails.checkPermission() }
                 }
                 Text("仅在预览打开时采集，图片只缓存在内存中。")

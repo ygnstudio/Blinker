@@ -37,12 +37,12 @@ As an alternative, download a DMG from [GitHub Releases](https://github.com/ygns
 
 Release packages are **ad-hoc signed, without Developer ID signing or Apple notarization**. If macOS blocks the first launch because the developer cannot be verified or the app is not notarized, verify the download source and use **System Settings → Privacy & Security → Open Anyway**. This may also be needed after a Homebrew installation. See [Apple's opening instructions](https://support.apple.com/en-us/102445).
 
-1. Follow the first-launch guide and explicitly choose to grant **Accessibility** permission. Reopen the guide from **General** at any time.
+1. Follow the first-launch guide or open **Settings → Permissions**, then click **Grant Access…** and follow the assistant to grant **Accessibility** permission. Reopen the guide from **General** at any time.
 2. Click the menu bar icon to open **App Rules**, add an app, and open its editor.
 3. Open **Settings** from the toolbar to configure hover, previews, placement and shortcuts. **About** contains version, help and feedback links.
-4. To use real thumbnails, explicitly grant **Screen Recording** in **Window Previews & Switching**. Icons and titles remain usable without it.
+4. To use real thumbnails, explicitly grant **Screen Recording** in **Settings → Permissions**. You can also open the permission assistant from **Window Previews & Switching**. Icons and titles remain usable without it.
 
-If an update stops responding despite the permission toggle being on, verify which copy of Blinker is running, quit it, and remove/re-add that copy in System Settings → Privacy & Security → Accessibility. Signature changes can require a new grant; local development and release builds have separate identities. See the [user guide (中文)](docs/USER_GUIDE.md) for further troubleshooting.
+The assistant provides the running app's icon to try dragging into the system permission list. If dragging does not work, click **Show in Finder** and use the list's plus button to add the app. You still need to allow access in System Settings. Blinker checks permission status when you return; **Settings → Permissions** also offers a manual check and **Reauthorize…** instructions. See the [user guide (中文)](docs/USER_GUIDE.md) for details and troubleshooting.
 
 ## Permissions and limits
 

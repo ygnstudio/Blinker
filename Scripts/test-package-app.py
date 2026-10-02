@@ -44,6 +44,38 @@ class PackageSafetyTests(unittest.TestCase):
         return subprocess.run(["/bin/zsh", str(SCRIPT), str(self.binary), "1.0", "1", str(self.output)],
                               env=self.env, capture_output=True, text=True)
 
+    def assert_missing_identity_keeps_production_app(self):
+        self.existing_app("com.ygnstudio.Blinker")
+        info_path = self.output / "Contents/Info.plist"
+        original_info = info_path.read_bytes()
+        result = self.package()
+        self.assertNotEqual(result.returncode, 0, result.stdout)
+        self.assertIn("BLINKER_BUNDLE_ID", result.stderr)
+        self.assertEqual(info_path.read_bytes(), original_info)
+        self.assertEqual((self.output / "Contents/old-copy").read_text(), "preserve me")
+        self.assertFalse(list(self.root.glob(".Blinker-package.*")))
+        self.assertFalse(Path(str(self.output) + ".packaging-lock").exists())
+        self.assertNotIn("packaged:", result.stdout)
+
+    def test_unset_bundle_id_keeps_production_app(self):
+        self.env.pop("BLINKER_BUNDLE_ID")
+        self.assert_missing_identity_keeps_production_app()
+
+    def test_empty_bundle_id_keeps_production_app(self):
+        self.env["BLINKER_BUNDLE_ID"] = ""
+        self.assert_missing_identity_keeps_production_app()
+
+    def test_explicit_production_bundle_id_succeeds(self):
+        self.env["BLINKER_BUNDLE_ID"] = "com.ygnstudio.Blinker"
+        self.existing_app("com.ygnstudio.Blinker")
+        result = self.package()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        info = plistlib.loads((self.output / "Contents/Info.plist").read_bytes())
+        self.assertEqual(info["CFBundleIdentifier"], "com.ygnstudio.Blinker")
+        self.assertEqual((self.output / "Contents/MacOS/Blinker").read_bytes(), self.binary.read_bytes())
+        self.assertFalse((self.output / "Contents/old-copy").exists())
+        self.assertIn("packaged:", result.stdout)
+
     def test_sign_failure_keeps_installed_app(self):
         self.existing_app()
         self.env["SIGN_EXIT"] = "1"

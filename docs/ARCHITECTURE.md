@@ -14,6 +14,7 @@ Blinker has two Swift Package targets: `BlinkerCore` owns rules and native windo
 | `BlinkerCore/Permission` | Accessibility status, read-only compatibility checks and explicit test-window registration |
 | `BlinkerApp/ApplicationRules` | Application library, rule list, rule editor and rule file UI |
 | `BlinkerApp/Settings` | Global settings, experimental workspace UI, About and diagnostics UI |
+| `BlinkerApp/Permissions` | Shared authorization state, explicit requests, system-settings links and the current-app drag assistant |
 | `BlinkerApp/WindowBrowser` | Browser preferences, Option-Tab handling and SwiftUI preview content |
 | `BlinkerApp/WindowManagement` | Global placement shortcuts and recording |
 | `BlinkerApp/AppWindowController` | Shared lifecycle for native settings, rule-list and per-app editor windows |
@@ -79,7 +80,7 @@ Maximize and near-maximize toggle back when the current frame still matches the 
 
 ## Permission and failure policy
 
-Accessibility enables window/control discovery and actions. Screen Recording is requested only by an explicit settings action and is used for optional thumbnails. No app-managed thumbnail files, upload pipeline, analytics or automatic network requests are present. Project/help links intentionally open in the user's browser.
+Accessibility enables window/control discovery and actions. Screen Recording is requested only by an explicit authorization action and is used for optional thumbnails. Settings and onboarding share one permission controller and the browser's thumbnail store. Checking status or returning to the app never requests access; explicit requests are limited to once per permission per process, with later attempts opening System Settings. Reauthorization provides guidance without resetting TCC or writing system preferences. The assistant exports the running app bundle's file URL, never a guessed installation or temporary copy. No app-managed thumbnail files, upload pipeline, analytics or automatic network requests are present. Project/help links intentionally open in the user's browser.
 
 Missing permissions or unsupported controls must leave a usable fallback: icons and titles for missing capture access; ordinary windows for unsupported tab bars; feedback for an unavailable target. Pending work must not revive a dismissed panel or publish images into a later session. Keep user document/web content outside tab discovery.
 
@@ -87,7 +88,9 @@ Workspace restoration is the only explicit experiment using private Space APIs. 
 
 ## Packaging boundary
 
-`Scripts/package-app.sh` is shared by local and release builds. It rejects non-`.app` output paths, symlink outputs and an existing bundle with a different identity. Build in a temporary sibling directory, validate the property list and signature, then replace the installed bundle. Do not erase an existing installation before a candidate is verified or silently fall back after a requested signature fails.
+`Scripts/package-app.sh` is shared by local and release builds. Callers must explicitly provide a non-empty `BLINKER_BUNDLE_ID`; an unset or empty value fails before writing output. The local wrapper supplies `com.ygnstudio.Blinker.dev`, and release CI supplies `com.ygnstudio.Blinker`, keeping development and release app registration, preferences and permission grants separate.
+
+The packager rejects non-`.app` output paths, symlink outputs and an existing bundle with a different identity. Build in a temporary sibling directory, validate the property list and signature, then replace the installed bundle. Do not erase an existing installation before a candidate is verified or silently fall back after a requested signature fails.
 
 ## Verification
 

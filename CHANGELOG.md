@@ -5,6 +5,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-10-03
+
+### Added
+
+- A Permissions settings page and shared permission assistant for settings and onboarding, with a draggable app icon, Show in Finder, status checks and reauthorization instructions; granting access still requires confirmation in System Settings.
+
+### Fixed
+
+- Local builds now use SwiftPM's reported binary path, including newer build-engine layouts.
+- Packaging now requires an explicit, non-empty bundle identifier before modifying output, preventing accidental use of the release identity.
+
 ## [0.4.0] - 2026-10-03
 
 ### Added

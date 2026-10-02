@@ -5032,6 +5032,422 @@
           }
         }
       }
+    },
+    "Blinker 应用": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Blinker App"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Blinker 应用"
+          }
+        }
+      }
+    },
+    "可拖到系统授权列表；也可以在访达中显示，再用列表的加号添加。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Try dragging the app into the system permission list, or show it in Finder and add it with the list's plus button."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "可拖到系统授权列表；也可以在访达中显示，再用列表的加号添加。"
+          }
+        }
+      }
+    },
+    "在访达中显示": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show in Finder"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "在访达中显示"
+          }
+        }
+      }
+    },
+    "将应用拖到系统授权列表，或从访达中添加。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Drag the app into the system permission list, or add it from Finder."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "将应用拖到系统授权列表，或从访达中添加。"
+          }
+        }
+      }
+    },
+    "当前未运行应用包": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not Running from an App Bundle"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "当前未运行应用包"
+          }
+        }
+      }
+    },
+    "请运行已安装的 Blinker.app，再拖拽应用图标。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open the installed Blinker.app to drag its icon."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请运行已安装的 Blinker.app，再拖拽应用图标。"
+          }
+        }
+      }
+    },
+    "重新授权": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reauthorize"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "重新授权"
+          }
+        }
+      }
+    },
+    "完成授权": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Grant Access"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "完成授权"
+          }
+        }
+      }
+    },
+    "在系统列表中关闭再开启 Blinker。若仍无效，移除旧条目，再将下方应用拖入列表。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Turn Blinker off and back on in the system list. If it still does not work, remove the old entry and drag in the app below."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "在系统列表中关闭再开启 Blinker。若仍无效，移除旧条目，再将下方应用拖入列表。"
+          }
+        }
+      }
+    },
+    "在系统设置中开启 Blinker。列表里没有时，可将下方应用拖入列表。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Allow Blinker in System Settings. If it is missing from the list, try dragging in the app below."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "在系统设置中开启 Blinker。列表里没有时，可将下方应用拖入列表。"
+          }
+        }
+      }
+    },
+    "拖动此图标添加 Blinker": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Drag This Icon to Add Blinker"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "拖动此图标添加 Blinker"
+          }
+        }
+      }
+    },
+    "拖入后仍需在系统设置中确认允许。若无法拖入，可在访达中显示应用，再通过列表下方的加号添加。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You still need to allow access in System Settings after dragging. If dragging does not work, show the app in Finder and add it with the list's plus button."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "拖入后仍需在系统设置中确认允许。若无法拖入，可在访达中显示应用，再通过列表下方的加号添加。"
+          }
+        }
+      }
+    },
+    "无法打开系统设置，请前往「隐私与安全性」并选择对应权限。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Could not open System Settings. Go to Privacy & Security and select the relevant permission."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法打开系统设置，请前往「隐私与安全性」并选择对应权限。"
+          }
+        }
+      }
+    },
+    "若系统提示退出并重新打开，请按提示重启 Blinker，让录屏权限生效。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "If macOS asks you to quit and reopen Blinker, follow the prompt to enable Screen Recording."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "若系统提示退出并重新打开，请按提示重启 Blinker，让录屏权限生效。"
+          }
+        }
+      }
+    },
+    "管理权限…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Manage Permissions…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "管理权限…"
+          }
+        }
+      }
+    },
+    "授权…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Grant Access…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "授权…"
+          }
+        }
+      }
+    },
+    "重新授权…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reauthorize…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "重新授权…"
+          }
+        }
+      }
+    },
+    "可选，仅用于窗口缩略图。未授权时仍可使用图标和标题，图片只缓存在内存中。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Optional, for window thumbnails only. Icons and titles remain available without permission. Images are cached only in memory."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "可选，仅用于窗口缩略图。未授权时仍可使用图标和标题，图片只缓存在内存中。"
+          }
+        }
+      }
+    },
+    "屏幕录制": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Screen Recording"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "屏幕录制"
+          }
+        }
+      }
+    },
+    "系统权限": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "System Permissions"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "系统权限"
+          }
+        }
+      }
+    },
+    "返回 Blinker 时会自动检查授权状态。授权助手可直接拖出当前应用，无需查找安装位置。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Permissions are checked when you return to Blinker. Drag the current app from the assistant without finding its installation folder."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "返回 Blinker 时会自动检查授权状态。授权助手可直接拖出当前应用，无需查找安装位置。"
+          }
+        }
+      }
+    },
+    "授权后仍无法使用时，点击对应权限的「重新授权…」，按助手提示更新系统列表中的 Blinker。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "If features still do not work after granting access, click Reauthorize… for that permission and follow the assistant to update Blinker in the system list."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "授权后仍无法使用时，点击对应权限的「重新授权…」，按助手提示更新系统列表中的 Blinker。"
+          }
+        }
+      }
+    },
+    "授权遇到问题": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Permission Issues"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "授权遇到问题"
+          }
+        }
+      }
+    },
+    "点击授权会打开系统设置和可拖拽的应用图标。也可跳过，之后在「设置 → 权限」中开启。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Grant Access opens System Settings and a draggable app icon. You can skip this step and grant access later in Settings → Permissions."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "点击授权会打开系统设置和可拖拽的应用图标。也可跳过，之后在「设置 → 权限」中开启。"
+          }
+        }
+      }
+    },
+    "授权辅助功能…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Grant Accessibility Access…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "授权辅助功能…"
+          }
+        }
+      }
+    },
+    "权限": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Permissions"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "权限"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

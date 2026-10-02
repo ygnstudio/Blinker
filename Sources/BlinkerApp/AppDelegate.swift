@@ -12,6 +12,8 @@ import SwiftUI
 final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
     private let feedback = ActionFeedbackController.shared
     private let windowBrowser = WindowBrowserController()
+    private lazy var permissions = PermissionController(thumbnails: windowBrowser.thumbnails)
+    private lazy var permissionAssistant = PermissionAssistantController(permissions: permissions)
     let ruleStore = RuleStore()
     let hoverOverlaySettingsStore = HoverOverlaySettingsStore()
     /// Named window-layout workspaces for the window-management tab.
@@ -60,6 +62,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
             .environmentObject(workspaceStore)
             .environmentObject(interception)
             .environmentObject(windowBrowser)
+            .environmentObject(permissions)
+            .environmentObject(permissionAssistant)
         )
     }
 
@@ -86,16 +90,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
         if onboardingWindowController == nil {
             let controller = AppWindowController(
                 title: String(localized: "欢迎使用 Blinker"), autosaveName: "BlinkerOnboarding",
-                contentSize: NSSize(width: 600, height: 520), minimumSize: NSSize(width: 600, height: 520)
+                contentSize: NSSize(width: 600, height: 580), minimumSize: NSSize(width: 600, height: 520)
             ) { [weak self] in
                 guard let self else { return NSViewController() }
-                let guide = OnboardingView(thumbnails: windowBrowser.thumbnails) { [weak self] openRules in
+                let guide = OnboardingView { [weak self] openRules in
                     self?.onboardingWindowController?.close()
                     if openRules {
                         self?.openApplications()
                     }
                 }
-                return NSHostingController(rootView: guide)
+                return NSHostingController(rootView: guide
+                    .environmentObject(permissions)
+                    .environmentObject(permissionAssistant))
             }
             controller.onClose = { [weak self] in
                 AppPreferences.shared.hasSeenOnboarding = true

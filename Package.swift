@@ -27,6 +27,11 @@ let package = Package(
             dependencies: ["BlinkerCore"],
             path: "Tests/BlinkerCoreTests"
         ),
+        .testTarget(
+            name: "BlinkerAppTests",
+            dependencies: ["BlinkerApp", "BlinkerCore"],
+            path: "Tests/BlinkerAppTests"
+        ),
     ],
     swiftLanguageModes: [.v5]
 )

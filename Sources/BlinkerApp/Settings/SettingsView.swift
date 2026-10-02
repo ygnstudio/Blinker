@@ -2,7 +2,7 @@ import BlinkerCore
 import SwiftUI
 
 private enum SettingsDestination: String, CaseIterable, Identifiable {
-    case general, hover, browser, windows, experiments, about
+    case general, permissions, hover, browser, windows, experiments, about
 
     var id: Self {
         self
@@ -11,6 +11,7 @@ private enum SettingsDestination: String, CaseIterable, Identifiable {
     var title: String {
         switch self {
         case .general: String(localized: "通用")
+        case .permissions: String(localized: "权限")
         case .hover: String(localized: "悬停放大")
         case .browser: String(localized: "窗口预览与切换")
         case .windows: String(localized: "窗口管理")
@@ -22,6 +23,7 @@ private enum SettingsDestination: String, CaseIterable, Identifiable {
     var symbol: String {
         switch self {
         case .general: "gearshape"
+        case .permissions: "hand.raised"
         case .hover: "arrow.up.left.and.arrow.down.right"
         case .browser: "macwindow.on.rectangle"
         case .windows: "rectangle.split.2x2"
@@ -68,6 +70,7 @@ struct SettingsView: View {
     private var detail: some View {
         switch selection ?? .general {
         case .general: GeneralTab(onShowOnboarding: onShowOnboarding)
+        case .permissions: PermissionsSettingsTab()
         case .hover: HoverSettingsTab(onApply: onApplyHoverSettings)
         case .browser: WindowBrowserSettingsTab()
         case .windows: WindowManagementTab(onSnapEnabledChange: onSnapEnabledChange)

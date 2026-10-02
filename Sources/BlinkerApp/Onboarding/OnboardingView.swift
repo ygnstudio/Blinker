@@ -1,16 +1,13 @@
-import AppKit
-import BlinkerCore
 import SwiftUI
 
 /// Permission requests happen only through their buttons; every step can be skipped.
 struct OnboardingView: View {
-    @ObservedObject var thumbnails: WindowThumbnailStore
+    @EnvironmentObject private var permissionState: PermissionController
     let onFinish: (Bool) -> Void
     @State private var step = 0
-    @State private var accessibilityGranted = AccessibilityPermission.isTrusted
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 20) {
+        VStack(alignment: .leading, spacing: 16) {
             HStack {
                 Label("Blinker 使用引导", systemImage: "circle.circle")
                     .font(.title2.bold())
@@ -19,12 +16,15 @@ struct OnboardingView: View {
             }
             ProgressView(value: Double(step + 1), total: 3)
                 .accessibilityLabel("引导进度")
-            Group {
-                switch step {
-                case 0: welcome
-                case 1: permissions
-                default: gettingStarted
+            ScrollView {
+                Group {
+                    switch step {
+                    case 0: welcome
+                    case 1: permissions
+                    default: gettingStarted
+                    }
                 }
+                .frame(maxWidth: .infinity, alignment: .topLeading)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             Divider()
@@ -44,11 +44,8 @@ struct OnboardingView: View {
                 .keyboardShortcut(.defaultAction)
             }
         }
-        .padding(28)
-        .onAppear { refreshPermissions() }
-        .onReceive(NotificationCenter.default.publisher(
-            for: NSApplication.didBecomeActiveNotification
-        )) { _ in refreshPermissions() }
+        .padding(24)
+        .onAppear { permissionState.refresh() }
     }
 
     private var welcome: some View {
@@ -66,17 +63,14 @@ struct OnboardingView: View {
     }
 
     private var permissions: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            Text("按需开启权限").font(.title.bold())
-            permissionRow("辅助功能", granted: accessibilityGranted,
-                          detail: "用于识别红绿灯、切换与管理窗口。未授权时可以先浏览设置。",
-                          button: "打开辅助功能设置…") { AccessibilityPermission.prompt() }
-            permissionRow("窗口缩略图（可选）", granted: thumbnails.permissionGranted,
-                          detail: "需要屏幕录制权限。未授权时仍可使用图标和标题，图片只缓存在内存中。",
-                          button: "授权窗口缩略图…") { thumbnails.requestPermission() }
-            Button("重新检查权限", action: refreshPermissions)
-            Text("Blinker 不上传规则或窗口内容。你可以跳过授权，之后在设置中开启。")
-                .font(.callout).foregroundStyle(.secondary)
+        VStack(alignment: .leading, spacing: 12) {
+            Text("按需开启权限").font(.title2.bold())
+            ForEach(AppPermission.allCases) { permission in
+                GroupBox { PermissionRow(permission: permission).padding(.horizontal, 4) }
+            }
+            Button("重新检查权限") { permissionState.refresh() }
+            Text("点击授权会打开系统设置和可拖拽的应用图标。也可跳过，之后在「设置 → 权限」中开启。")
+                .font(.caption).foregroundStyle(.secondary)
         }
     }
 
@@ -88,7 +82,7 @@ struct OnboardingView: View {
             feature("随时调整或暂停", symbol: "menubar.rectangle",
                     detail: "点击菜单栏图标打开规则；右键可暂停增强功能或进入设置。")
             Button("打开真实测试窗口…") { CompatibilityWindowController.shared.showTestWindow() }
-                .disabled(!accessibilityGranted)
+                .disabled(!permissionState.accessibilityGranted)
             Text("可以在测试窗口试用悬停按钮。关闭它不会退出 Blinker。")
                 .font(.callout).foregroundStyle(.secondary)
             Text("需要再看一遍时，打开「设置 → 通用 → 重新查看引导」。")
@@ -105,30 +99,5 @@ struct OnboardingView: View {
                 Text(detail).foregroundStyle(.secondary)
             }
         }
-    }
-
-    private func permissionRow(_ title: LocalizedStringKey, granted: Bool,
-                               detail: LocalizedStringKey, button: LocalizedStringKey,
-                               action: @escaping () -> Void) -> some View {
-        GroupBox {
-            VStack(alignment: .leading, spacing: 8) {
-                HStack {
-                    Text(title).font(.headline)
-                    Spacer()
-                    Label(granted ? String(localized: "已授权") : String(localized: "未授权"),
-                          systemImage: granted ? "checkmark.circle.fill" : "circle")
-                        .foregroundStyle(granted ? Color.green : Color.secondary)
-                }
-                Text(detail).font(.callout).foregroundStyle(.secondary)
-                if !granted {
-                    Button(button, action: action)
-                }
-            }.frame(maxWidth: .infinity, alignment: .leading).padding(4)
-        }
-    }
-
-    private func refreshPermissions() {
-        accessibilityGranted = AccessibilityPermission.isTrusted
-        thumbnails.checkPermission()
     }
 }
