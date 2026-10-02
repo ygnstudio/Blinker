@@ -4952,6 +4952,86 @@
           }
         }
       }
+    },
+    "重试注册": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Retry Registration"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "重试注册"
+          }
+        }
+      }
+    },
+    "重新注册「%@」": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Retry registration for “%@”"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "重新注册「%@」"
+          }
+        }
+      }
+    },
+    "无法启用快捷键监听（错误 %lld）。请重试。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Could not enable keyboard shortcuts (error %lld). Please retry."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法启用快捷键监听（错误 %lld）。请重试。"
+          }
+        }
+      }
+    },
+    "快捷键被占用。关闭冲突应用或更换组合后重试。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This shortcut is in use. Quit the conflicting app or choose another shortcut, then retry."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "快捷键被占用。关闭冲突应用或更换组合后重试。"
+          }
+        }
+      }
+    },
+    "快捷键注册失败（错误 %lld）。请重试或更换组合。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Shortcut registration failed (error %lld). Retry or choose another shortcut."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "快捷键注册失败（错误 %lld）。请重试或更换组合。"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

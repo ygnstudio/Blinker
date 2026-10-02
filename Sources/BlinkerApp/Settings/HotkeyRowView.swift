@@ -14,8 +14,11 @@ struct HotkeyRowView: View {
     let recordingHint: String?
     /// Conflict with another Blinker binding, if any.
     let conflictWarning: String?
+    /// Actual OS registration failure, independent of the saved binding.
+    let registrationWarning: String?
     let onRecord: () -> Void
     let onClear: () -> Void
+    let onRetry: () -> Void
 
     var body: some View {
         HStack {
@@ -65,6 +68,15 @@ struct HotkeyRowView: View {
         }
         if let conflictWarning {
             WarningLine(text: conflictWarning)
+        }
+        if let registrationWarning, !isRecording {
+            HStack(alignment: .firstTextBaseline) {
+                WarningLine(text: registrationWarning)
+                Spacer(minLength: 8)
+                Button("重试注册", action: onRetry)
+                    .controlSize(.small)
+                    .accessibilityLabel(Text("重新注册「\(label)」"))
+            }
         }
         if let combo, let warning = HotkeyManager.systemConflictWarning(for: combo) {
             WarningLine(text: warning)

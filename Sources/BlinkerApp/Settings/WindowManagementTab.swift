@@ -105,8 +105,10 @@ struct WindowManagementTab: View {
             isRecording: hotkeyManager.recordingTarget == .windowAction(action),
             recordingHint: hotkeyManager.recordingHint,
             conflictWarning: windowActionConflictWarning(for: action),
+            registrationWarning: hotkeyManager.registrationWarning(for: .windowAction(action)),
             onRecord: { hotkeyManager.beginRecording(for: action) },
-            onClear: { hotkeyManager.clearBinding(for: action) }
+            onClear: { hotkeyManager.clearBinding(for: action) },
+            onRetry: { hotkeyManager.retryRegistration(for: .windowAction(action)) }
         )
         // The master switch stays enabled; disabling lands on the individual
         // binding rows only — a Form/Section-level `.disabled` locks the

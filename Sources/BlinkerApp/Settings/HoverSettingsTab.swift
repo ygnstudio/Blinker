@@ -132,8 +132,10 @@ struct HoverSettingsTab: View {
             isRecording: hotkeyManager.recordingTarget == .hoverToggle,
             recordingHint: hotkeyManager.recordingHint,
             conflictWarning: hoverToggleConflictWarning,
+            registrationWarning: hotkeyManager.registrationWarning(for: .hoverToggle),
             onRecord: { hotkeyManager.beginRecordingHoverToggle() },
-            onClear: { hotkeyManager.clearHoverToggleBinding() }
+            onClear: { hotkeyManager.clearHoverToggleBinding() },
+            onRetry: { hotkeyManager.retryRegistration(for: .hoverToggle) }
         )
         .disabled(!hotkeyManager.isEnabled)
     }

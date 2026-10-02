@@ -4,7 +4,7 @@ Start with [Architecture](docs/ARCHITECTURE.md) for ownership and threading, or 
 
 ## Build and run
 
-Use a Swift 6 toolchain and Xcode with the macOS 26 SDK. The package uses Swift 5 language mode and targets macOS 15+. Release CI builds a universal arm64/x86_64 binary.
+Use a Swift 6 toolchain and Xcode with the macOS 26 SDK. The package uses Swift 5 language mode and targets macOS 15+. Release CI builds a universal arm64/x86_64 binary; compilation alone does not verify behavior on either architecture or the minimum OS.
 
 ```bash
 git clone https://github.com/ygnstudio/Blinker.git
@@ -26,7 +26,7 @@ BLINKER_BUNDLE_ID=com.ygnstudio.Blinker.dev \
 
 `build-app.sh` uses `~/Applications/Blinker.app` by default; `BLINKER_APP_PATH` can override it. Packaging accepts a non-symlink `.app` output; an existing bundle must have the expected bundle identifier. It assembles and verifies a staged bundle before replacing the output. A failed build or signature check leaves the installed copy intact. Keep one stable development path so the application you authorize is the one you run. Local builds use `com.ygnstudio.Blinker.dev`; releases use `com.ygnstudio.Blinker`. Each identity has its own system permissions and login-item registration.
 
-The packager uses `BlinkerDev` when available and otherwise defaults to ad-hoc signing. An explicit `CODESIGN_IDENTITY` must be available (`-` explicitly selects ad-hoc); signing failures stop packaging rather than silently changing identities. Signature changes can invalidate permission grants. The packager verifies its result; you can also verify an installed bundle before testing:
+Local packaging uses `BlinkerDev` when available and otherwise defaults to ad-hoc signing. An explicit `CODESIGN_IDENTITY` must be available (`-` explicitly selects ad-hoc); signing failures stop packaging rather than silently changing identities. Release CI explicitly sets `CODESIGN_IDENTITY=-`, with no Developer ID signing or Apple notarization. Signature changes can invalidate permission grants. The packager verifies its result; you can also verify an installed bundle before testing:
 
 ```bash
 codesign --verify --deep --strict --verbose=2 ~/Applications/Blinker.app
@@ -40,6 +40,8 @@ CI pins SwiftLint **0.62.2** and SwiftFormat **0.63.0** in `.github/workflows/ci
 
 ```bash
 swift test
+python3 Scripts/test-package-app.py
+python3 Scripts/test-validate-release.py
 swiftlint lint --strict
 swiftformat --lint .
 git diff --check
@@ -74,6 +76,8 @@ Keep hover calculations in `HoverOverlayGeometry` and preview sizing in `WindowB
 Tab discovery belongs in the AX worker, with bounded traversal. Do not scan webpage content to infer document tabs. An application-specific exception must remain scoped to that application; unsupported tab bars fall back to windows. Cached images belong to their own tab, and selection must be checked before and after capture.
 
 ## License and distribution
+
+Homebrew is the primary distribution and update channel, with DMG downloads as an alternative. See the [release checklist](docs/RELEASING.md) for candidate validation, manual acceptance and the separate tap update. There is no built-in updater, and a source push alone does not update Homebrew.
 
 New contributions to this version must be available under **GPL-3.0-only**. Submit only work you are entitled to license on those terms, retain applicable copyright notices, and check third-party license compatibility before copying code. The project's notice is [NOTICE](NOTICE); [LICENSE](LICENSE) contains the unmodified GNU GPLv3 text. This is not a copyright assignment, and historical MIT releases keep their original grants.
 

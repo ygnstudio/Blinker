@@ -2,13 +2,13 @@
 
 [简体中文](README.md) | English
 
-Blinker is a native macOS menu bar utility for traffic-light controls, window previews and switching, and window placement. App rules and settings have separate windows. Apps without configured rules keep their native button behavior.
+Blinker is a native macOS menu bar utility for traffic-light controls, window previews and switching, and window placement. App rules and settings have separate windows. An unconfigured ordinary left click keeps the native button behavior.
 
 ## Features
 
 - **App rules**: configure each traffic-light button for left click, right click, Option-click, Fn-click and long press. Enable remapping and hover enlargement independently per app; copy rules, import/export JSON, and undo or redo edits.
 - **Hover enlargement**: colored controls cover the native traffic lights on a continuous glass tray. Adjust size, appearance delay and click protection, with four optional action buttons. macOS 26+ uses system Liquid Glass; earlier systems use native fallback materials.
-- **Window previews and switching**: use Option-Tab or hover over a Dock icon. Scale the entire preview panel from 50–150%; items share one grid, scrolling when needed. Optionally list standard macOS window tabs and Safari tabs separately.
+- **Window previews and switching**: use Option-Tab or hover over a Dock icon. Scale the entire preview panel from 50% to 150%; items share one grid, scrolling when needed. Optionally list standard macOS window tabs and Safari tabs separately.
 - **Window placement**: halves, quarters, thirds, centering, maximize, display transfer and previous-layout restore. Shared actions are available through the hover panel, shortcuts and optional drag to snap.
 - **Experimental workspaces**: explicitly enable saving and restoring window arrangements. Matching uses window characteristics; it does not restore documents or browser sessions.
 
@@ -16,13 +16,26 @@ This README describes the current source. For downloaded builds, consult the [re
 
 ## Get started
 
-Requires **macOS 15 or later**. Release packages support Apple Silicon and Intel.
+Targets **macOS 15 or later**, with Apple Silicon and Intel architectures in release builds. Compilation does not establish runtime compatibility: complete testing on the minimum OS and Intel, along with core interaction and performance acceptance, is still pending. Each release's notes define its verified scope.
 
-Download the DMG from [GitHub Releases](https://github.com/ygnstudio/Blinker/releases) and drag `Blinker.app` into Applications, or use the [Homebrew tap](https://github.com/ygnstudio/homebrew-ygn):
+Install through [Homebrew](https://brew.sh/) and the project's [tap](https://github.com/ygnstudio/homebrew-ygn):
 
 ```bash
 brew install --cask ygnstudio/ygn/blinker
 ```
+
+Quit Blinker before updating, then run:
+
+```bash
+brew update
+brew upgrade --cask ygnstudio/ygn/blinker
+```
+
+`brew update` refreshes package information; `brew upgrade` installs the newer version available in the tap. Blinker has no built-in updater, and pushing source changes does not update the tap. See the [Homebrew manual](https://docs.brew.sh/Manpage).
+
+As an alternative, download a DMG from [GitHub Releases](https://github.com/ygnstudio/Blinker/releases) and drag `Blinker.app` into Applications. Update a manual installation by replacing the app with a newer download.
+
+Release packages are **ad-hoc signed, without Developer ID signing or Apple notarization**. If macOS blocks the first launch because the developer cannot be verified or the app is not notarized, verify the download source and use **System Settings → Privacy & Security → Open Anyway**. This may also be needed after a Homebrew installation. See [Apple's opening instructions](https://support.apple.com/en-us/102445).
 
 1. Follow the first-launch guide and explicitly choose to grant **Accessibility** permission. Reopen the guide from **General** at any time.
 2. Click the menu bar icon to open **App Rules**, add an app, and open its editor.
@@ -58,7 +71,8 @@ Development builds install to `~/Applications/Blinker.app` using the distinct `c
 | [Architecture](docs/ARCHITECTURE.md) | Module boundaries, threading, performance and safety constraints |
 | [Window browser](docs/WINDOW_BROWSER.md) | Window/tab identity, thumbnails, compatibility and reference projects |
 | [Contributing](CONTRIBUTING.md) | Development setup, checks and change entry points |
-| [Changelog](CHANGELOG.md) | Published release history |
+| [Release checklist (中文)](docs/RELEASING.md) | Distribution policy, candidate acceptance and tap updates |
+| [Changelog](CHANGELOG.md) | Pending changes and published release history |
 
 ## License
 

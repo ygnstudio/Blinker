@@ -2,13 +2,13 @@
 
 简体中文 | [English](README.en.md)
 
-Blinker 是原生 macOS 菜单栏工具，把红绿灯增强、窗口预览与切换、窗口布局管理放在一起。应用规则和设置各有独立窗口；没有配置规则的应用仍保留原生按钮行为。
+Blinker 是原生 macOS 菜单栏工具，把红绿灯增强、窗口预览与切换、窗口布局管理放在一起。应用规则和设置各有独立窗口；未配置普通左键动作时保留原生按钮行为。
 
 ## 能做什么
 
 - **应用规则**：为红、黄、绿灯分别配置左键、右键、Option 点击、Fn 点击和长按动作。每个应用可独立启用重映射与悬停放大；支持复制规则、JSON 导入导出、撤销与重做。
 - **悬停放大**：彩色按钮覆盖原生红绿灯，提供连续玻璃底托、可调大小、出现延迟和点击保护，以及四个可选扩展按钮。macOS 26+ 使用系统 Liquid Glass，旧系统使用原生材质回退。
-- **窗口预览与切换**：⌥Tab 切换窗口，悬停 Dock 图标预览同应用窗口。整个预览面板可缩放至 50–150%；同页排列，多窗口时滚动。可选择将标准 macOS 窗口标签页及 Safari 标签页单独列出。
+- **窗口预览与切换**：⌥Tab 切换窗口，悬停 Dock 图标预览同应用窗口。整个预览面板可在 50% 至 150% 间缩放；同页排列，多窗口时滚动。可选择将标准 macOS 窗口标签页及 Safari 标签页单独列出。
 - **窗口管理**：半屏、四分屏、三分屏、居中、最大化、跨显示器移动和还原上次布局。共用悬浮面板、快捷键与可选拖拽贴靠入口。
 - **实验工作区**：显式开启后保存和恢复窗口排布。它按窗口特征匹配，不等同于恢复文稿或浏览器会话。
 
@@ -16,13 +16,26 @@ Blinker 是原生 macOS 菜单栏工具，把红绿灯增强、窗口预览与�
 
 ## 开始使用
 
-需要 **macOS 15 或更新版本**。发行包支持 Apple Silicon 与 Intel。
+目标系统为 **macOS 15 或更新版本**，发行构建包含 Apple Silicon 与 Intel 架构。编译通过不代表已完成实机兼容性验证；最低系统、Intel 及核心交互和性能的完整验收仍待完成，已验证范围以每版发行说明为准。
 
-从 [GitHub Releases](https://github.com/ygnstudio/Blinker/releases) 下载 DMG，将 `Blinker.app` 拖入“应用程序”；也可以使用 [Homebrew tap](https://github.com/ygnstudio/homebrew-ygn)：
+推荐通过 [Homebrew](https://brew.sh/) 和项目的 [tap](https://github.com/ygnstudio/homebrew-ygn) 安装：
 
 ```bash
 brew install --cask ygnstudio/ygn/blinker
 ```
+
+更新前先退出 Blinker，再执行：
+
+```bash
+brew update
+brew upgrade --cask ygnstudio/ygn/blinker
+```
+
+`brew update` 刷新软件信息，`brew upgrade` 安装 tap 中已提供的新版；应用内没有自动更新器，源码推送也不代表 tap 已更新。命令说明见 [Homebrew 手册](https://docs.brew.sh/Manpage)。
+
+不使用 Homebrew 时，从 [GitHub Releases](https://github.com/ygnstudio/Blinker/releases) 下载 DMG，将 `Blinker.app` 拖入“应用程序”；后续更新也需手动替换。
+
+发行包采用 **ad-hoc 签名，不使用 Developer ID，也不经过 Apple 公证**。首次打开若出现开发者身份或公证提示，确认下载来源后，前往“系统设置 → 隐私与安全性 → 仍要打开”。Homebrew 安装同样可能需要这一步，详见 [Apple 打开应用说明](https://support.apple.com/zh-cn/102445)。
 
 1. 首次启动查看引导，主动点击授权按钮并授予**辅助功能**权限；之后可在“通用”重新查看引导。
 2. 点击菜单栏图标打开“应用规则”，添加应用，再打开该应用的编辑窗口。
@@ -58,7 +71,8 @@ open ~/Applications/Blinker.app
 | [架构说明](docs/ARCHITECTURE.md) | 模块边界、线程、性能与安全约束 |
 | [窗口预览设计](docs/WINDOW_BROWSER.md) | 窗口与标签身份、缩略图、兼容性与参考项目 |
 | [贡献指南](CONTRIBUTING.md) | 开发环境、检查命令与修改入口 |
-| [更新日志](CHANGELOG.md) | 已发布版本变更 |
+| [发布与验收](docs/RELEASING.md) | 分发策略、候选版本检查与 tap 更新 |
+| [更新日志](CHANGELOG.md) | 待发布变更与已发布版本记录 |
 
 ## 许可证
 
