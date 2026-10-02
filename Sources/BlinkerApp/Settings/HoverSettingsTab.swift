@@ -3,7 +3,7 @@ import SwiftUI
 
 // MARK: - Hover tab
 
-/// Hover overlay configuration: master switch, mode and size, scope,
+/// Hover overlay configuration: master switch, size, scope,
 /// extra-button slots and the hover-toggle hotkey — long explanations live
 /// in info popovers instead of multi-line footers, keeping the form dense.
 /// Per-row `.disabled` only (never section-level), so the master toggle
@@ -25,20 +25,19 @@ struct HoverSettingsTab: View {
             // here first, so the feature explains itself.
             Section {
                 HoverPreviewCard(settings: settings)
+                Button("打开真实测试窗口…") { CompatibilityWindowController.shared.showTestWindow() }
             } header: {
                 SectionHeader(
                     title: String(localized: "实时预览"),
-                    info: String(localized: "按当前设置渲染悬停时的实际效果；真实效果出现在所有窗口的标题栏上。")
+                    info: String(localized: "放大按钮直接覆盖原生红绿灯；材质与按钮跟随系统外观。")
                 )
             }
 
             Section {
                 Toggle("开启悬停放大", isOn: isEnabledBinding)
-                modePicker
-                    .disabled(!settings.isEnabled)
                 sizeSlider
                     .disabled(!settings.isEnabled)
-                dwellSlider
+                HoverTimingSettings(settings: settings, onApply: onApply)
                     .disabled(!settings.isEnabled)
             } header: {
                 SectionHeader(title: String(localized: "放大"), info: enlargementInfo)
@@ -50,13 +49,12 @@ struct HoverSettingsTab: View {
             } header: {
                 SectionHeader(
                     title: String(localized: "作用范围"),
-                    info: String(localized: "悬停时以一块液态玻璃托盘衬托放大按钮与扩展按钮，随背景自动融合，无需任何额外权限。")
+                    info: String(localized: "悬停时显示系统液态玻璃按钮；红黄绿保留各自颜色，扩展按钮使用系统强调色。")
                 )
             }
 
             Section {
-                extraSlotsGrid
-                    .disabled(!settings.isEnabled)
+                extraSlotsGrid.disabled(!settings.isEnabled)
             } header: {
                 SectionHeader(
                     title: String(localized: "扩展按钮"),
@@ -82,14 +80,6 @@ struct HoverSettingsTab: View {
     static let extraOptions: [ButtonAction?] = [nil] + ButtonAction.allCases
         .filter { $0 != .none }
 
-    private var modePicker: some View {
-        Picker("模式", selection: modeBinding) {
-            Text("覆盖放大").tag(HoverOverlayMode.overlay)
-            Text("纯热区").tag(HoverOverlayMode.hotspot)
-        }
-        .pickerStyle(.segmented)
-    }
-
     private var sizeSlider: some View {
         SliderReadoutRow(
             label: String(localized: "放大尺寸"),
@@ -97,17 +87,6 @@ struct HoverSettingsTab: View {
             value: enlargedSizeBinding,
             range: 28 ... 48,
             step: 1
-        )
-    }
-
-    private var dwellSlider: some View {
-        SliderReadoutRow(
-            label: String(localized: "防误触延迟"),
-            readout: dwellLabel,
-            value: dwellBinding,
-            range: 0 ... 800,
-            step: 50,
-            sliderDisabled: settings.mode == .hotspot
         )
     }
 
@@ -129,18 +108,9 @@ struct HoverSettingsTab: View {
             ForEach(0 ..< HoverOverlaySettings.extraSlotCount, id: \.self) { index in
                 LabeledContent {
                     ActionPicker(
-                        dotColor: .controlAccentColor,
                         options: Self.extraOptions,
                         selection: extraBinding(index),
-                        emptyLabel: String(localized: "不显示"),
-                        // The same 104pt width as the rules matrix, so the
-                        // "下一显示器" option never truncates on either
-                        // surface (previously 88 here).
-                        pickerWidth: 104,
-                        // Every slot shares the same accent color, so the
-                        // dots carry no information — drop them (matching
-                        // the rules matrix).
-                        showsDot: false
+                        emptyLabel: String(localized: "不显示")
                     )
                 } label: {
                     Text("按钮 \(index + 1)")
@@ -162,8 +132,10 @@ struct HoverSettingsTab: View {
             isRecording: hotkeyManager.recordingTarget == .hoverToggle,
             recordingHint: hotkeyManager.recordingHint,
             conflictWarning: hoverToggleConflictWarning,
+            registrationWarning: hotkeyManager.registrationWarning(for: .hoverToggle),
             onRecord: { hotkeyManager.beginRecordingHoverToggle() },
-            onClear: { hotkeyManager.clearHoverToggleBinding() }
+            onClear: { hotkeyManager.clearHoverToggleBinding() },
+            onRetry: { hotkeyManager.retryRegistration(for: .hoverToggle) }
         )
         .disabled(!hotkeyManager.isEnabled)
     }
@@ -174,39 +146,14 @@ struct HoverSettingsTab: View {
         return hotkeyManager.internalConflictWarning(for: combo, action: nil)
     }
 
-    private var dwellLabel: String {
-        if settings.mode == .hotspot {
-            return String(localized: "不适用")
-        }
-        return settings.dwellMilliseconds == 0
-            ? String(localized: "立即响应")
-            : "\(settings.dwellMilliseconds) ms"
-    }
-
-    /// The merged "what hovering does + which mode means what" explanation,
-    /// shown from the section header's info popover.
     private var enlargementInfo: String {
-        let intro = String(localized: "开启后，鼠标悬停到窗口红绿灯按钮上会临时放大，点击即执行对应动作。")
-        let hint = switch settings.mode {
-        case .overlay:
-            String(localized: "覆盖放大：红绿灯上方绘制液态玻璃质感的放大按钮，带防误触进度环。")
-        case .hotspot:
-            String(localized: "纯热区：界面外观完全不变，仅在按钮周围扩大不可见点击区，点击立即响应。")
-        }
-        return intro + "\n" + hint
+        String(localized: "放大按钮覆盖原生红绿灯。出现延迟控制何时显示；点击保护单独控制需要驻留的操作。")
     }
 
     private var isEnabledBinding: Binding<Bool> {
         Binding(
             get: { settings.isEnabled },
             set: { newValue in update { $0.isEnabled = newValue } }
-        )
-    }
-
-    private var modeBinding: Binding<HoverOverlayMode> {
-        Binding(
-            get: { settings.mode },
-            set: { newValue in update { $0.mode = newValue } }
         )
     }
 
@@ -235,13 +182,6 @@ struct HoverSettingsTab: View {
         )
     }
 
-    private var dwellBinding: Binding<Double> {
-        Binding(
-            get: { Double(settings.dwellMilliseconds) },
-            set: { newValue in update { $0.dwellMilliseconds = Int(newValue) } }
-        )
-    }
-
     private var appliesToAllWindowsBinding: Binding<Bool> {
         Binding(
             get: { settings.appliesToAllWindows },
@@ -259,22 +199,17 @@ struct HoverSettingsTab: View {
 /// `LabeledContent` row with a fixed-width slider and a fixed-width,
 /// monospaced trailing readout — the shared shape of the hover tab's two
 /// numeric sliders, so the readouts align across rows.
-private struct SliderReadoutRow: View {
+struct SliderReadoutRow: View {
     let label: String
     let readout: String
     @Binding var value: Double
     let range: ClosedRange<Double>
     let step: Double
 
-    /// Disables the slider only, keeping the label and readout at full
-    /// opacity — the dwell row's "不适用" state.
-    var sliderDisabled = false
-
     var body: some View {
         LabeledContent(label) {
             Slider(value: $value, in: range, step: step)
                 .frame(width: 200)
-                .disabled(sliderDisabled)
             Text(readout)
                 .monospacedDigit()
                 .foregroundStyle(.secondary)

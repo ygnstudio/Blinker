@@ -6,6 +6,13 @@ struct BlinkerApp: App {
 
     var body: some Scene {
         SettingsPlaceholderScene()
+            .commands {
+                // Every window, including onboarding, must open the same native settings window.
+                CommandGroup(replacing: .appSettings) {
+                    Button("设置…", action: appDelegate.openSettings)
+                        .keyboardShortcut(",", modifiers: .command)
+                }
+            }
     }
 }
 

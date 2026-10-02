@@ -41,6 +41,7 @@ struct HoverOverlayHUDContent: View {
     let onAction: (ButtonAction) -> Void
     let onRestore: (UUID) -> Void
     let onClose: () -> Void
+    var onBrowseWindows: () -> Void = {}
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -73,18 +74,17 @@ struct HoverOverlayHUDContent: View {
                         .padding(.vertical, 5)
                         .contentShape(Rectangle())
                     }
-                    .buttonStyle(HUDHoverButtonStyle())
+                    .buttonStyle(.bordered)
                 }
             }
 
-            Divider()
+            Button(action: onBrowseWindows) {
+                Label(hudText("此应用的窗口…", "Windows of This App…"), systemImage: "macwindow.on.rectangle")
+            }
+            .buttonStyle(.borderless)
 
-            if workspaces.isEmpty {
-                Text(hudText("尚未保存工作区", "No workspaces saved"))
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-                    .frame(maxWidth: .infinity, alignment: .center)
-            } else {
+            if !workspaces.isEmpty {
+                Divider()
                 ForEach(workspaces) { workspace in
                     Button {
                         onRestore(workspace.id)
@@ -108,7 +108,7 @@ struct HoverOverlayHUDContent: View {
                         .padding(.vertical, 4)
                         .contentShape(Rectangle())
                     }
-                    .buttonStyle(HUDHoverButtonStyle())
+                    .buttonStyle(.bordered)
                 }
             }
         }
@@ -116,11 +116,7 @@ struct HoverOverlayHUDContent: View {
         .frame(width: 252)
         // No opaque backdrop here: the hosting panel layers this content on
         // the same glass material as the hover tray (see HoverOverlayHUDPanel).
-        .onHover { hovering in
-            if !hovering {
-                onClose()
-            }
-        }
+        .onExitCommand(perform: onClose)
     }
 
     /// Miniature preview of the target region, mirroring the settings
@@ -135,6 +131,7 @@ struct HoverOverlayHUDContent: View {
                 RoundedRectangle(cornerRadius: 2.5)
                     .fill(Color.accentColor.opacity(0.8))
                     .frame(width: max(6, frame.width * 52), height: max(4, frame.height * 30))
+                    .offset(x: (frame.midX - 0.5) * 52, y: (0.5 - frame.midY) * 30)
             }
             .frame(width: 56, height: 34)
         } else {
@@ -143,23 +140,6 @@ struct HoverOverlayHUDContent: View {
                 .strokeBorder(Color.secondary.opacity(0.5), lineWidth: 1)
                 .frame(width: 56, height: 34)
         }
-    }
-}
-
-/// Hover feedback for HUD buttons: `.plain` gives no pointer indication on
-/// the glass backdrop, so tiles and rows lift their fill from 5% to 12%
-/// primary on hover/press. Shared by the placement grid and workspace rows.
-private struct HUDHoverButtonStyle: ButtonStyle {
-    @State private var isHovered = false
-
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .background(
-                RoundedRectangle(cornerRadius: 7)
-                    .fill(Color.primary.opacity(isHovered || configuration.isPressed ? 0.12 : 0.05))
-            )
-            .onHover { isHovered = $0 }
-            .animation(.easeInOut(duration: 0.12), value: isHovered)
     }
 }
 
@@ -210,33 +190,14 @@ final class HoverOverlayHUDPanel: OverlayPanel {
             width: max(252, measured.width),
             height: max(minimumHeight, measured.height)
         )
-        let container = NSView(frame: NSRect(origin: .zero, size: size))
-        // True see-through backdrop: a faint dark fill with a hairline
-        // border, no material. NSGlassEffectView stayed a milky plate in
-        // this panel setup even with `.clear` and contentView attachment
-        // (a standalone probe with identical properties rendered clear, so
-        // the style itself works — just not here), so the HUD trades the
-        // blur for guaranteed transparency. The grid buttons carry their
-        // own fills for readability.
-        container.wantsLayer = true
-        // 0.55: enough dimming to keep the tile labels readable over any
-        // background (the WWDC "Clear needs a dimming layer" rule), while
-        // the backdrop still reads through.
-        container.layer?.backgroundColor = NSColor.black.withAlphaComponent(0.55).cgColor
-        container.layer?.cornerRadius = Self.cornerRadius
-        container.layer?.borderWidth = 1
-        container.layer?.borderColor = NSColor.white.withAlphaComponent(0.18).cgColor
-        container.layer?.masksToBounds = true
+        let backdrop = GlassBackdrop.makeView(
+            size: size, cornerRadius: Self.cornerRadius, autoresizingMask: [.width, .height]
+        )
         hostingView.frame = NSRect(origin: .zero, size: size)
         hostingView.autoresizingMask = [.width, .height]
-        // The dim backdrop is always dark, so the content always speaks
-        // dark-appearance colors — white primary, light secondary — no
-        // matter the system appearance (light-mode primary is near-black
-        // and would vanish against the dim layer). Same convention as the
-        // system's own HUDs.
-        hostingView.appearance = NSAppearance(named: .darkAqua)
-        container.addSubview(hostingView)
-        contentView = container
+        GlassBackdrop.host(hostingView, in: backdrop)
+        contentView = backdrop
+        hasShadow = true
 
         let appKitFrame = AXQuery.appKitFrame(
             fromAXRect: CGRect(origin: axOrigin, size: CGSize(width: size.width, height: size.height))
@@ -276,7 +237,13 @@ public extension ButtonAction {
         case .tileTopRight: String(localized: "右上屏", bundle: .module)
         case .tileBottomLeft: String(localized: "左下屏", bundle: .module)
         case .tileBottomRight: String(localized: "右下屏", bundle: .module)
+        case .tileFirstThird: String(localized: "前 1/3", bundle: .module)
+        case .tileCenterThird: String(localized: "中间 1/3", bundle: .module)
+        case .tileLastThird: String(localized: "后 1/3", bundle: .module)
+        case .tileFirstTwoThirds: String(localized: "前 2/3", bundle: .module)
+        case .tileLastTwoThirds: String(localized: "后 2/3", bundle: .module)
         case .centerWindow: String(localized: "窗口居中", bundle: .module)
+        case .restorePreviousFrame: String(localized: "还原上次布局", bundle: .module)
         case .moveToNextDisplay: String(localized: "下一显示器", bundle: .module)
         case .none: String(localized: "无操作", bundle: .module)
         case .windowManagerPanel: String(localized: "窗口面板", bundle: .module)

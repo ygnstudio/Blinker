@@ -1,0 +1,98 @@
+import AppKit
+import BlinkerCore
+import ServiceManagement
+import SwiftUI
+
+struct GeneralTab: View {
+    let onShowOnboarding: () -> Void
+    @EnvironmentObject var coordinator: InterceptionCoordinator
+    @ObservedObject private var preferences = AppPreferences.shared
+    @ObservedObject private var feedback = ActionFeedbackController.shared
+    @State private var loginStatus = SMAppService.mainApp.status
+    @State private var loginError = false
+
+    var body: some View {
+        Form {
+            Section {
+                Toggle("启用 Blinker", isOn: Binding(
+                    get: { coordinator.isIntercepting },
+                    set: {
+                        if coordinator.isIntercepting != $0 {
+                            coordinator.toggle()
+                        }
+                    }
+                ))
+                LabeledContent("状态", value: coordinator.status.localizedLabel)
+                if coordinator.status == .noPermission {
+                    Button("打开辅助功能设置…") { AccessibilityPermission.prompt() }
+                } else if coordinator.status == .tapFailed || coordinator.status == .partial {
+                    Button("重试启动拦截") {
+                        coordinator.stop()
+                        coordinator.start()
+                    }
+                }
+            } header: {
+                Text("运行状态")
+            } footer: {
+                Text("暂停全部增强功能，保留应用规则和偏好设置。")
+            }
+
+            Section("外观与启动") {
+                Picker("外观", selection: $preferences.appearance) {
+                    ForEach(AppAppearance.allCases, id: \.self) { appearance in
+                        Text(appearance.menuLabel).tag(appearance)
+                    }
+                }
+                Toggle("登录时启动 Blinker", isOn: Binding(
+                    get: { loginStatus == .enabled || loginStatus == .requiresApproval },
+                    set: updateLaunchAtLogin
+                ))
+                if loginStatus == .requiresApproval {
+                    Button("在系统设置中允许登录项…") { SMAppService.openSystemSettingsLoginItems() }
+                }
+                if loginError {
+                    Text("注册登录自启失败，请重试或检查系统设置 → 通用 → 登录项。")
+                        .foregroundStyle(.red)
+                }
+            }
+
+            Section("使用帮助") {
+                Button("重新查看引导", action: onShowOnboarding)
+            }
+
+            Section("诊断") {
+                Button("检查应用兼容性…") { CompatibilityWindowController.shared.show() }
+                ForEach(coordinator.moduleIssues, id: \.self) { Text($0).foregroundStyle(.orange) }
+                if let message = feedback.latestMessage {
+                    LabeledContent("最近操作反馈", value: message)
+                }
+            }
+        }
+        .formStyle(.grouped)
+        .onAppear { refreshLoginStatus() }
+        .onReceive(NotificationCenter.default.publisher(
+            for: NSApplication.didBecomeActiveNotification
+        )) { _ in
+            refreshLoginStatus()
+        }
+    }
+
+    private func refreshLoginStatus() {
+        loginStatus = SMAppService.mainApp.status
+    }
+
+    /// Only the binding setter registers a login item; observing system state never writes it back.
+    private func updateLaunchAtLogin(_ enabled: Bool) {
+        do {
+            if enabled {
+                try SMAppService.mainApp.register()
+            } else {
+                try SMAppService.mainApp.unregister()
+            }
+            loginError = false
+        } catch {
+            loginError = true
+        }
+        refreshLoginStatus()
+    }
+}

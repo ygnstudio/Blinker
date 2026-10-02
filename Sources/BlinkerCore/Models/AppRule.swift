@@ -26,6 +26,8 @@ public struct AppRule: Identifiable, Codable, Hashable, Sendable {
     public var extraVariantActions: [TrafficButton: [ClickVariant: ButtonAction?]]
     /// Disabled rules are ignored by the engine but kept in storage.
     public var isEnabled: Bool
+    /// Hover is independent of button remapping.
+    public var isHoverEnabled: Bool
 
     public init(
         bundleIdentifier: String,
@@ -34,7 +36,8 @@ public struct AppRule: Identifiable, Codable, Hashable, Sendable {
         minimizeAction: ButtonAction? = nil,
         zoomAction: ButtonAction? = nil,
         extraVariantActions: [TrafficButton: [ClickVariant: ButtonAction?]] = [:],
-        isEnabled: Bool = true
+        isEnabled: Bool = true,
+        isHoverEnabled: Bool = true
     ) {
         self.bundleIdentifier = bundleIdentifier
         self.displayName = displayName
@@ -43,6 +46,7 @@ public struct AppRule: Identifiable, Codable, Hashable, Sendable {
         self.zoomAction = zoomAction
         self.extraVariantActions = extraVariantActions
         self.isEnabled = isEnabled
+        self.isHoverEnabled = isHoverEnabled
     }
 
     // MARK: - Lookup
@@ -94,7 +98,7 @@ public struct AppRule: Identifiable, Codable, Hashable, Sendable {
     private enum CodingKeys: String, CodingKey {
         case bundleIdentifier, displayName
         case closeAction, minimizeAction, zoomAction
-        case extraVariantActions, isEnabled
+        case extraVariantActions, isEnabled, isHoverEnabled
     }
 
     /// Custom decoding so rules persisted by versions without
@@ -111,6 +115,7 @@ public struct AppRule: Identifiable, Codable, Hashable, Sendable {
                 [TrafficButton: [ClickVariant: ButtonAction?]].self,
                 forKey: .extraVariantActions
             ) ?? [:]
-        isEnabled = try container.decode(Bool.self, forKey: .isEnabled)
+        isEnabled = try container.decodeIfPresent(Bool.self, forKey: .isEnabled) ?? true
+        isHoverEnabled = try container.decodeIfPresent(Bool.self, forKey: .isHoverEnabled) ?? true
     }
 }

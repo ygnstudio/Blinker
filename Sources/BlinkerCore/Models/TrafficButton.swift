@@ -6,4 +6,12 @@ public enum TrafficButton: String, Codable, CaseIterable, Sendable {
     case minimize
     /// The green button. Native behavior toggles fullscreen.
     case zoom
+
+    var nativeAction: ButtonAction {
+        switch self {
+        case .close: .closeWindow
+        case .minimize: .minimize
+        case .zoom: .fullscreen
+        }
+    }
 }

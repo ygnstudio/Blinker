@@ -89,6 +89,22 @@
         }
       }
     },
+    "中间 1/3": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Center Third"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "中间 1/3"
+          }
+        }
+      }
+    },
     "全屏": {
       "localizations": {
         "en": {
@@ -137,6 +153,38 @@
         }
       }
     },
+    "前 1/3": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "First Third"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "前 1/3"
+          }
+        }
+      }
+    },
+    "前 2/3": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "First Two Thirds"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "前 2/3"
+          }
+        }
+      }
+    },
     "右上屏": {
       "localizations": {
         "en": {
@@ -181,6 +229,38 @@
           "stringUnit": {
             "state": "translated",
             "value": "右半屏"
+          }
+        }
+      }
+    },
+    "后 1/3": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Last Third"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "后 1/3"
+          }
+        }
+      }
+    },
+    "后 2/3": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Last Two Thirds"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "后 2/3"
           }
         }
       }
@@ -249,6 +329,38 @@
         }
       }
     },
+    "应用未接受操作，请检查窗口是否有待处理的对话框。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The app did not accept the action. Check for a pending dialog."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "应用未接受操作，请检查窗口是否有待处理的对话框。"
+          }
+        }
+      }
+    },
+    "应用限制了窗口最小尺寸，已尽量保持窗口可见。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The app limits its minimum window size. The window has been kept visible where possible."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "应用限制了窗口最小尺寸，已尽量保持窗口可见。"
+          }
+        }
+      }
+    },
     "无操作": {
       "localizations": {
         "en": {
@@ -261,6 +373,54 @@
           "stringUnit": {
             "state": "translated",
             "value": "无操作"
+          }
+        }
+      }
+    },
+    "无法导出：规则文件超过 1 MiB 上限。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cannot export: the rules file exceeds the 1 MiB limit."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法导出：规则文件超过 1 MiB 上限。"
+          }
+        }
+      }
+    },
+    "无法导出：规则数量超过 1000 条上限。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cannot export: the number of rules exceeds the 1,000-rule limit."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法导出：规则数量超过 1000 条上限。"
+          }
+        }
+      }
+    },
+    "无法导出：规则无效或包含重复的应用。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cannot export: rules are invalid or contain duplicate applications."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法导出：规则无效或包含重复的应用。"
           }
         }
       }
@@ -293,6 +453,70 @@
           "stringUnit": {
             "state": "translated",
             "value": "最小化"
+          }
+        }
+      }
+    },
+    "未连接其他显示器。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No other display is connected."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未连接其他显示器。"
+          }
+        }
+      }
+    },
+    "此点击方式未配置": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No Action for This Click"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "此点击方式未配置"
+          }
+        }
+      }
+    },
+    "此窗口不支持该操作，或窗口已关闭。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This window does not support the action, or it has closed."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "此窗口不支持该操作，或窗口已关闭。"
+          }
+        }
+      }
+    },
+    "此窗口没有可还原的布局。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "There is no previous layout for this window."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "此窗口没有可还原的布局。"
           }
         }
       }
@@ -345,6 +569,38 @@
         }
       }
     },
+    "规则文件无效、版本不支持或包含重复的应用。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The rules file is invalid, uses an unsupported version, or contains duplicate apps."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "规则文件无效、版本不支持或包含重复的应用。"
+          }
+        }
+      }
+    },
+    "还原上次布局": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Restore Previous Layout"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "还原上次布局"
+          }
+        }
+      }
+    },
     "退出应用": {
       "localizations": {
         "en": {
@@ -373,6 +629,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "隐藏应用"
+          }
+        }
+      }
+    },
+    "需要辅助功能权限，请在系统设置中重新授权。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Accessibility permission is required. Authorize Blinker in System Settings."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "需要辅助功能权限，请在系统设置中重新授权。"
           }
         }
       }

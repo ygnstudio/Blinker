@@ -30,12 +30,19 @@ public enum ButtonAction: String, Codable, CaseIterable, Sendable {
     case tileBottomLeft
     /// Tile the window to the bottom-right quarter of the screen.
     case tileBottomRight
+    case tileFirstThird
+    case tileCenterThird
+    case tileLastThird
+    case tileFirstTwoThirds
+    case tileLastTwoThirds
     /// Center the window on its screen, keeping its current size.
     case centerWindow
     /// Zoom the window to nearly fill the screen, leaving a breathing margin.
     case almostMaximize
     /// Move the window to the next display, keeping its size.
     case moveToNextDisplay
+    /// Undo the last successful geometry change on this window.
+    case restorePreviousFrame
     /// Swallow the click and do nothing.
     case none
     /// Overlay-only: opens the window-management HUD (placement grid +

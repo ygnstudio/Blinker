@@ -22,7 +22,7 @@ final class OverlayDwellController {
             return
         }
         let panel = dwellPanels[index]
-        guard panel !== hoveredPanel else { return }
+        guard panel !== hoveredPanel || activeMilliseconds != dwellMilliseconds else { return }
         hoveredPanel?.resetDwell()
         hoveredPanel = panel
         activeMilliseconds = dwellMilliseconds

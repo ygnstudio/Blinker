@@ -42,17 +42,19 @@ public final class HoverOverlayController {
     /// (close + reopen at the same spot) are caught by comparing it.
     var cachedWindowID: CGWindowID = 0
     var cachedWindowBounds: CGRect?
-    var isOverlayVisible = false
+    var wakeGate = OverlayWakeGate()
+    var wakeCheckScheduled = false
+    var wakeCheckRevision: UInt64 = 0
 
     /// UI state; only touched on the main thread.
-    var panels: [HoverOverlayPanel] = []
+    var panels: [HoverOverlayButtonView] = []
     /// Extra action chips appended after `panels`; the combined array order
     /// matches `OverlayLayout.allPanelFrames`.
-    var extraPanels: [HoverOverlayExtraPanel] = []
+    var extraPanels: [HoverOverlayButtonView] = []
+    var panelWindowID: CGWindowID = 0
     var panelSignature: [CGRect] = []
     var panelPID: pid_t = 0
-    /// The glass capsule tray behind the enlarged chips. Click-through; one
-    /// window level below the chip panels.
+    /// One glass panel hosts all visible controls in the same view hierarchy.
     var trayPanel: HoverOverlayTrayPanel?
     /// The extra actions the current chips were built with; a change also
     /// triggers a rebuild.
@@ -62,6 +64,7 @@ public final class HoverOverlayController {
     let hud: OverlayHUDManager
     /// Dwell tracking for the displayed chips (main-thread only).
     let dwell = OverlayDwellController()
+    let presentationState = OverlayPresentationState()
 
     public init(
         ruleEngine: RuleEngine,
@@ -109,6 +112,7 @@ public final class HoverOverlayController {
         }
         let mask = CGEventMask(
             (1 << CGEventType.mouseMoved.rawValue)
+                | (1 << CGEventType.flagsChanged.rawValue)
                 | (1 << CGEventType.leftMouseDown.rawValue)
                 | (1 << CGEventType.leftMouseDragged.rawValue)
                 | (1 << CGEventType.leftMouseUp.rawValue)
@@ -177,10 +181,8 @@ public final class HoverOverlayController {
     static let screenEdgeMargin: CGFloat = 4
 
     /// The screen (in AX top-left coordinates) containing the center of the
-    /// given button frames, intersected with the window's own bounds and inset
-    /// by the edge margin. Clamping to the window keeps the enlarged group
-    /// inside windowed windows; intersecting with the screen additionally
-    /// covers edge-anchored (fullscreen, tiled) windows.
+    /// given button frames, intersected with the target window and inset to
+    /// keep the tray away from both window and display edges.
     static func overlayContainerBounds(
         forButtonFrames buttonFrames: [CGRect],
         windowBounds: CGRect
@@ -189,7 +191,9 @@ public final class HoverOverlayController {
             return nil
         }
         let screens = NSScreen.screens
-        guard !screens.isEmpty else { return windowBounds }
+        guard !screens.isEmpty else {
+            return windowBounds.insetBy(dx: screenEdgeMargin, dy: screenEdgeMargin)
+        }
         let globalMaxY = AXQuery.coordinatePivotY
         let axFrame: (NSScreen) -> CGRect = { screen in
             CGRect(
@@ -202,9 +206,9 @@ public final class HoverOverlayController {
         let center = CGPoint(x: groupBounds.midX, y: groupBounds.midY)
         let screen = screens.first { axFrame($0).contains(center) } ?? screens[0]
         let container = axFrame(screen).intersection(windowBounds)
-        return container.isNull
-            ? axFrame(screen).insetBy(dx: screenEdgeMargin, dy: screenEdgeMargin)
-            : container.insetBy(dx: screenEdgeMargin, dy: screenEdgeMargin)
+        guard !container.isNull, container.width > 2 * screenEdgeMargin,
+              container.height > 2 * screenEdgeMargin else { return nil }
+        return container.insetBy(dx: screenEdgeMargin, dy: screenEdgeMargin)
     }
 
     // MARK: - Tap events
@@ -214,6 +218,12 @@ public final class HoverOverlayController {
     /// `workQueue`; both touch these fields through `moveStateLock`.
     private let moveStateLock = NSLock()
     private var isDragging = false
+    private var isMouseButtonDown = false
+
+    var canDetectCursor: Bool {
+        moveStateLock.withLock { !isDragging && !isMouseButtonDown }
+    }
+
     private var isDetecting = false
     private var pendingMoveLocation: CGPoint?
 
@@ -224,10 +234,12 @@ public final class HoverOverlayController {
             tapHost.enableTap()
         case .leftMouseDown:
             moveStateLock.lock()
+            isMouseButtonDown = true
             isDragging = false
             moveStateLock.unlock()
         case .leftMouseUp:
             moveStateLock.lock()
+            isMouseButtonDown = false
             isDragging = false
             moveStateLock.unlock()
         case .leftMouseDragged:
@@ -246,7 +258,7 @@ public final class HoverOverlayController {
                     self?.hidePanels()
                 }
             }
-        case .mouseMoved:
+        case .mouseMoved, .flagsChanged:
             scheduleCursorMove(event.location)
         default:
             break
@@ -270,37 +282,36 @@ public final class HoverOverlayController {
         }
         isDetecting = true
         moveStateLock.unlock()
-        workQueue.async { [weak self] in
+        workQueue.asyncAfter(deadline: .now() + 1.0 / 60.0) { [weak self] in
             self?.drainCursorMoves(from: location)
         }
     }
 
-    /// Processes one cursor move, then keeps draining the newest queued
-    /// location until none is left, finally releasing the detecting slot.
-    /// `workQueue` is serial, so the detection passes themselves never
-    /// overlap; the flags only decide whether a new drain gets scheduled.
+    /// One detection per frame at most. Keep the detecting flag set while
+    /// AX work runs so new input replaces the pending point, not the queue.
     private func drainCursorMoves(from location: CGPoint) {
-        var current = location
-        while true {
-            moveStateLock.lock()
-            if isDragging {
-                // A drag started mid-drain: abandon the stale positions.
-                pendingMoveLocation = nil
-                isDetecting = false
-                moveStateLock.unlock()
-                return
+        moveStateLock.lock()
+        if isDragging || !tapHost.isRunning {
+            pendingMoveLocation = nil
+            isDetecting = false
+            moveStateLock.unlock()
+            return
+        }
+        let current = pendingMoveLocation ?? location
+        pendingMoveLocation = nil
+        moveStateLock.unlock()
+        handleCursorMove(to: current)
+
+        moveStateLock.lock()
+        let pending = pendingMoveLocation
+        if pending == nil {
+            isDetecting = false
+        }
+        moveStateLock.unlock()
+        if let pending {
+            workQueue.asyncAfter(deadline: .now() + 1.0 / 60.0) { [weak self] in
+                self?.drainCursorMoves(from: pending)
             }
-            if let pending = pendingMoveLocation {
-                pendingMoveLocation = nil
-                moveStateLock.unlock()
-                current = pending
-            } else {
-                isDetecting = false
-                moveStateLock.unlock()
-                handleCursorMove(to: current)
-                return
-            }
-            handleCursorMove(to: current)
         }
     }
 }

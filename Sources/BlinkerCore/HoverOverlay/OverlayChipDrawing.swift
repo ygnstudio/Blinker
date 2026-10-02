@@ -9,14 +9,10 @@ protocol OverlayDwellPanel: AnyObject {
     func resetDwell()
 }
 
-/// Shared chip-drawing primitives used by both the traffic-light button view
-/// and the extra-action button view, so the two chip styles stay identical.
-/// `vividColor` and `symbolInk` are public so the settings UI's previews can
-/// render chips with the exact colors the overlay draws.
+/// Traffic-light colors and the dwell indicator shared by the overlay controls.
 public enum OverlayChipDrawing {
     /// The vivid fill color of an enlarged traffic dot — the native traffic
-    /// light colors at full saturation, opaque so the native button can
-    /// never tint the dot through the glass tray.
+    /// light colors at full saturation, used to tint the native glass button.
     public static func vividColor(for button: TrafficButton) -> NSColor {
         switch button {
         case .close:
@@ -29,7 +25,7 @@ public enum OverlayChipDrawing {
     }
 
     /// The dwell progress arc drawn just outside the circle. With Increase
-    /// Contrast enabled the arc thickens, mirroring the bolder rim below.
+    /// Contrast enabled the arc thickens, keeping it legible.
     static func drawProgressRing(around circleRect: NSRect, progress: Double) {
         guard progress > 0 else { return }
         let ringRect = circleRect.insetBy(dx: -2, dy: -2)
@@ -45,50 +41,5 @@ public enum OverlayChipDrawing {
         path.lineWidth = increaseContrast ? 2.5 : 1.5
         NSColor.controlAccentColor.setStroke()
         path.stroke()
-    }
-
-    /// The solid inner circle: opaque fill with a hairline dark rim, like
-    /// the native traffic lights — no translucency, so nothing bleeds
-    /// through from the glass tray below. With Increase Contrast enabled
-    /// the rim strengthens to match the system's bolder button outlines.
-    static func drawCircle(in circleRect: NSRect, color: NSColor) {
-        color.setFill()
-        NSBezierPath(ovalIn: circleRect).fill()
-        let increaseContrast = NSWorkspace.shared.accessibilityDisplayShouldIncreaseContrast
-        NSColor.black.withAlphaComponent(increaseContrast ? 0.5 : 0.16).setStroke()
-        let rim = NSBezierPath(ovalIn: circleRect)
-        rim.lineWidth = 1
-        rim.stroke()
-    }
-
-    /// Symbol ink for a chip filled with `color`: the native traffic dots
-    /// always take a dark glyph, but accent-filled chips (whose fill follows
-    /// the user's accent color) need a light glyph on dark fills to stay
-    /// readable — graphite, purple or brown accents bury a 55%-black glyph.
-    public static func symbolInk(onFill color: NSColor) -> NSColor {
-        guard let srgb = color.usingColorSpace(.sRGB) else {
-            return NSColor.black.withAlphaComponent(0.55)
-        }
-        let luminance = 0.2126 * srgb.redComponent
-            + 0.7152 * srgb.greenComponent
-            + 0.0722 * srgb.blueComponent
-        return luminance < 0.5
-            ? NSColor.white.withAlphaComponent(0.92)
-            : NSColor.black.withAlphaComponent(0.55)
-    }
-
-    /// The gap between a chip's outer bounds and its inner circle, shared by
-    /// the chip drawing and the tray glow layout.
-    static let chipInset: CGFloat = 4
-
-    /// The inner circle rect for a chip of the given bounds (4 pt inset).
-    static func circleRect(in bounds: NSRect) -> NSRect {
-        let diameter = min(bounds.width, bounds.height) - chipInset * 2
-        return CGRect(
-            x: (bounds.width - diameter) / 2,
-            y: (bounds.height - diameter) / 2,
-            width: diameter,
-            height: diameter
-        )
     }
 }

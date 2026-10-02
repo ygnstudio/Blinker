@@ -116,6 +116,41 @@ public enum HoverOverlayGeometry {
         return frames
     }
 
+    public static let controlGap: CGFloat = 8
+    public static let trayHorizontalPadding: CGFloat = 12
+    public static let trayVerticalPadding: CGFloat = 8
+
+    public static func paletteSize(buttonCount: Int, buttonSize: CGFloat) -> CGSize {
+        CGSize(width: CGFloat(buttonCount) * buttonSize + CGFloat(max(0, buttonCount - 1)) * controlGap
+            + 2 * trayHorizontalPadding,
+            height: buttonSize + 2 * trayVerticalPadding)
+    }
+
+    /// Start on the native traffic-light row, then shift only as far as needed
+    /// to fit the entire tray inside the visible portion of its owner window.
+    public static func coveringPanelFrames(
+        forButtonFrames buttonFrames: [CGRect],
+        enlargedSize: CGFloat,
+        containerBounds: CGRect,
+        extraCount: Int = 0
+    ) -> [CGRect] {
+        guard let first = buttonFrames.first, let anchor = unionedBounds(of: buttonFrames) else { return [] }
+        let count = buttonFrames.count + extraCount
+        guard count > 0, containerBounds.width > 2 * trayHorizontalPadding,
+              containerBounds.height > 2 * trayVerticalPadding else { return [] }
+        let available = containerBounds.insetBy(dx: trayHorizontalPadding, dy: trayVerticalPadding)
+        let gap = controlGap
+        let size = min(enlargedSize, available.height,
+                       (available.width - gap * CGFloat(count - 1)) / CGFloat(count))
+        guard size > 0 else { return [] }
+        let width = CGFloat(count) * size + CGFloat(count - 1) * gap
+        let originX = min(max(first.midX - size / 2, available.minX), available.maxX - width)
+        let originY = min(max(anchor.midY - size / 2, available.minY), available.maxY - size)
+        return (0 ..< count).map { index in
+            CGRect(x: originX + CGFloat(index) * (size + gap), y: originY, width: size, height: size)
+        }
+    }
+
     /// The bounding box union of the given frames, or `nil` when empty.
     public static func unionedBounds(of frames: [CGRect]) -> CGRect? {
         guard let first = frames.first else { return nil }

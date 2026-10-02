@@ -9,6 +9,7 @@ enum InterceptorStatus {
     case running
     case noPermission
     case tapFailed
+    case partial
     case paused
 
     var localizedLabel: String {
@@ -17,6 +18,7 @@ enum InterceptorStatus {
         case .running: String(localized: "已启用")
         case .noPermission: String(localized: "未授权辅助功能")
         case .tapFailed: String(localized: "事件监听启动失败")
+        case .partial: String(localized: "部分功能不可用")
         case .paused: String(localized: "已关闭")
         }
     }
@@ -31,14 +33,18 @@ final class InterceptionCoordinator: ObservableObject {
     /// True while the click-interception stack is running; derived from
     /// `status` so the two can never disagree.
     var isIntercepting: Bool {
-        status == .running
+        status == .running || status == .partial
     }
 
     private var interceptor: TrafficLightInterceptor?
     private var windowSnapper: WindowSnapper?
     private var hoverOverlay: HoverOverlayController?
+    var onPauseStateChanged: ((Bool) -> Void)?
+    let sessionPause = SessionPause.shared
+    @Published private(set) var moduleIssues: [String] = []
+    private var resumeTimer: Timer?
+    private var manuallyPaused = false
     private var retryTimer: Timer?
-    private var hasPromptedForPermission = false
     private let ruleStore: RuleStore
     private let hoverOverlaySettingsStore: HoverOverlaySettingsStore
     private let workspaceStore: WorkspaceStore
@@ -57,11 +63,15 @@ final class InterceptionCoordinator: ObservableObject {
 
     /// Starts (or restarts, e.g. after the permission was granted) interception.
     func start() {
+        onPauseStateChanged?(false)
+        manuallyPaused = false
+        resumeTimer?.invalidate()
+        resumeTimer = nil
         guard interceptor == nil else {
             // Already running; still refresh the visible status. Any pending
             // permission-retry poll has served its purpose by now and must
             // not keep firing every two seconds.
-            status = .running
+            status = moduleIssues.isEmpty ? .running : .partial
             cancelPermissionRetry()
             return
         }
@@ -81,7 +91,27 @@ final class InterceptionCoordinator: ObservableObject {
         }
     }
 
+    func pause(minutes: Int? = nil) {
+        stop()
+        guard let minutes else { return }
+        resumeTimer = Timer
+            .scheduledTimer(withTimeInterval: Double(minutes) * 60, repeats: false) { [weak self] _ in
+                self?.start()
+            }
+    }
+
+    func toggleAppPause(_ bundleID: String) {
+        sessionPause.toggle(bundleID)
+        hoverOverlay?.updateConfiguration(hoverOverlaySettingsStore.snapshot)
+        objectWillChange.send()
+    }
+
     func stop() {
+        onPauseStateChanged?(true)
+        manuallyPaused = true
+        cancelPermissionRetry()
+        resumeTimer?.invalidate()
+        resumeTimer = nil
         interceptor?.stop()
         interceptor = nil
         windowSnapper?.stop()
@@ -113,8 +143,12 @@ final class InterceptionCoordinator: ObservableObject {
     /// Brings up the full interception stack: click interceptor, hover
     /// overlay and drag-to-snap, all sharing one permission and performer.
     private func startInterceptionStack() {
-        let engine = RuleEngine { [weak ruleStore] in ruleStore?.snapshot ?? [] }
-        let performer = DefaultWindowActionPerformer()
+        moduleIssues = []
+        let engine = RuleEngine(
+            isAppPaused: { [sessionPause] in sessionPause.contains($0) },
+            rulesProvider: { [weak ruleStore] in ruleStore?.snapshot ?? [] }
+        )
+        let performer = DefaultWindowActionPerformer.shared
         let interceptor = TrafficLightInterceptor(ruleEngine: engine, actionPerformer: performer)
         guard interceptor.start() else {
             status = .tapFailed
@@ -129,7 +163,8 @@ final class InterceptionCoordinator: ObservableObject {
             actionPerformer: performer,
             settingsStore: hoverOverlaySettingsStore,
             workspacesProvider: { [weak workspaceStore] in
-                workspaceStore?.workspaces.map {
+                guard AppPreferences.shared.workspaceExperimentsEnabled else { return [] }
+                return workspaceStore?.workspaces.map {
                     HUDWorkspaceItem(id: $0.id, name: $0.name, windowCount: $0.entries.count)
                 } ?? []
             },
@@ -137,7 +172,9 @@ final class InterceptionCoordinator: ObservableObject {
                 workspaceStore?.restore(id: id)
             }
         )
-        overlay.start()
+        if !overlay.start() {
+            moduleIssues.append(String(localized: "悬停放大监听未启动"))
+        }
 
         self.interceptor = interceptor
         hoverOverlay = overlay
@@ -149,25 +186,21 @@ final class InterceptionCoordinator: ObservableObject {
             snapper.setEnabled(AppPreferences.shared.isSnapEnabled)
             windowSnapper = snapper
         } else {
-            logger.error("snapper tap failed to start; drag-to-snap unavailable")
+            moduleIssues.append(String(localized: "拖拽贴靠监听未启动"))
         }
 
-        status = .running
+        status = moduleIssues.isEmpty ? .running : .partial
         cancelPermissionRetry()
         logger.info("interceptor started; event tap active")
     }
 
     // MARK: - Permission handling
 
-    /// The no-permission branch of `start()`: surface the state, prompt
-    /// once, and poll until access is granted.
+    /// The guide and settings own permission prompts. Startup only reads status
+    /// and retries so a user returning from System Settings can continue.
     private func handleMissingAccessibilityPermission() {
         status = .noPermission
         logger.error("accessibility permission missing")
-        if !hasPromptedForPermission {
-            hasPromptedForPermission = true
-            AccessibilityPermission.prompt()
-        }
         schedulePermissionRetry()
     }
 
@@ -191,8 +224,11 @@ final class InterceptionCoordinator: ObservableObject {
 
     @objc private func accessibilityTrustDidChange() {
         logger.info("accessibility trust list changed; re-evaluating")
-        retryTimer?.invalidate()
-        retryTimer = nil
+        guard !manuallyPaused else { return }
+        if !AccessibilityPermission.isTrusted {
+            stop()
+            manuallyPaused = false
+        }
         start()
     }
 

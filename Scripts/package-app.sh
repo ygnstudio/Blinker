@@ -20,7 +20,40 @@ ICON_PATH="$REPO_ROOT/Assets/Blinker.icns"
 
 [[ -x "$BINARY_PATH" ]] || { echo "error: binary not found at $BINARY_PATH" >&2; exit 1; }
 
-rm -rf "$APP_DIR"
+# Never remove an arbitrary output path or replace a different application's bundle.
+OUTPUT_APP="${APP_DIR:a}"
+[[ "$OUTPUT_APP" == *.app && ! -L "$OUTPUT_APP" ]] || {
+  echo "error: output must be a non-symlink .app path" >&2; exit 1;
+}
+if [[ -e "$OUTPUT_APP" ]]; then
+  EXISTING_ID="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$OUTPUT_APP/Contents/Info.plist" 2>/dev/null || true)"
+  [[ "$EXISTING_ID" == "$BUNDLE_ID" ]] || {
+    echo "error: refusing to replace a bundle with a different or missing identifier" >&2; exit 1;
+  }
+fi
+mkdir -p "$(dirname "$OUTPUT_APP")"
+LOCK_DIR="$OUTPUT_APP.packaging-lock"
+if ! mkdir "$LOCK_DIR" 2>/dev/null; then
+  echo "error: another build owns $LOCK_DIR; remove it only if that build has stopped" >&2
+  exit 1
+fi
+STAGING=""
+trap 'rmdir "$LOCK_DIR"' EXIT
+STAGING="$(mktemp -d "$(dirname "$OUTPUT_APP")/.Blinker-package.XXXXXX")"
+INSTALL_SUCCEEDED=false
+cleanup() {
+  # If installation/rollback was interrupted, keep the old bundle recoverable.
+  if [[ -e "$STAGING/previous.app" && "$INSTALL_SUCCEEDED" != true ]]; then
+    echo "warning: previous app preserved at $STAGING/previous.app" >&2
+  else
+    rm -rf "$STAGING"
+  fi
+  rmdir "$LOCK_DIR"
+}
+trap cleanup EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
+APP_DIR="$STAGING/Blinker.app"
 mkdir -p "$APP_DIR/Contents/MacOS"
 
 cp "$BINARY_PATH" "$APP_DIR/Contents/MacOS/Blinker"
@@ -59,6 +92,8 @@ BUILD_DIR="$(cd "$(dirname "$BINARY_PATH")" && pwd)"
 APP_RESOURCE_BUNDLE="$BUILD_DIR/Blinker_BlinkerApp.bundle"
 CORE_RESOURCE_BUNDLE="$BUILD_DIR/Blinker_BlinkerCore.bundle"
 mkdir -p "$APP_DIR/Contents/Resources"
+# The distributed application carries its license and project attribution offline.
+cp "$REPO_ROOT/LICENSE" "$REPO_ROOT/NOTICE" "$APP_DIR/Contents/Resources/"
 if [[ -d "$APP_RESOURCE_BUNDLE/Contents/Resources" ]]; then
   for LPROJ in "$APP_RESOURCE_BUNDLE"/Contents/Resources/*.lproj; do
     [[ -d "$LPROJ" ]] && cp -R "$LPROJ" "$APP_DIR/Contents/Resources/"
@@ -107,11 +142,39 @@ PLIST
 # A stable certificate keeps TCC permission grants (Accessibility) valid
 # across rebuilds, unlike ad-hoc signing.
 SIGN_IDENTITY="${CODESIGN_IDENTITY:-BlinkerDev}"
-if ! security find-identity -v -p codesigning 2>/dev/null | grep -q "\"$SIGN_IDENTITY\""; then
+if [[ "$SIGN_IDENTITY" != "-" ]] && ! security find-identity -v -p codesigning 2>/dev/null | grep -Fq "\"$SIGN_IDENTITY\""; then
+  if [[ -n "${CODESIGN_IDENTITY:-}" ]]; then
+    echo "error: requested signing identity is unavailable" >&2
+    exit 1
+  fi
   SIGN_IDENTITY="-"
 fi
-codesign --force --sign "$SIGN_IDENTITY" "$APP_DIR" 2>/dev/null \
-  || codesign --force --sign - "$APP_DIR" 2>/dev/null \
-  || true
+# Once an identity is chosen, a signing failure is fatal: silently changing it
+# would invalidate the existing permission grants while reporting success.
+plutil -lint "$APP_DIR/Contents/Info.plist" >/dev/null
+codesign --force --sign "$SIGN_IDENTITY" "$APP_DIR"
+codesign --verify --deep --strict "$APP_DIR"
 
-echo "packaged: $APP_DIR ($APP_VERSION build $BUNDLE_VERSION, signed: $SIGN_IDENTITY)"
+# Replace only after verification; recheck the target after the potentially long build.
+EXPECTED_BINARY="$(shasum -a 256 < "$APP_DIR/Contents/MacOS/Blinker")"
+if [[ -e "$OUTPUT_APP" || -L "$OUTPUT_APP" ]]; then
+  EXISTING_ID="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$OUTPUT_APP/Contents/Info.plist" 2>/dev/null || true)"
+  [[ ! -L "$OUTPUT_APP" && "$EXISTING_ID" == "$BUNDLE_ID" ]] || {
+    echo "error: output changed while packaging; installed app was left untouched" >&2; exit 1;
+  }
+  mv "$OUTPUT_APP" "$STAGING/previous.app"
+fi
+if ! mv "$APP_DIR" "$OUTPUT_APP"; then
+  if [[ -e "$STAGING/previous.app" ]]; then mv "$STAGING/previous.app" "$OUTPUT_APP"; fi
+  echo "error: could not install $OUTPUT_APP" >&2
+  exit 1
+fi
+# mv can nest a directory if another writer recreates the destination in the gap.
+# Do not report success or delete the backup in that case.
+if [[ -e "$OUTPUT_APP/Blinker.app" || ! -f "$OUTPUT_APP/Contents/MacOS/Blinker" ]] \
+    || [[ "$(shasum -a 256 < "$OUTPUT_APP/Contents/MacOS/Blinker")" != "$EXPECTED_BINARY" ]]; then
+  echo "error: output changed during installation; previous app remains in $STAGING" >&2
+  exit 1
+fi
+INSTALL_SUCCEEDED=true
+echo "packaged: $OUTPUT_APP ($APP_VERSION build $BUNDLE_VERSION, signed: $SIGN_IDENTITY)"

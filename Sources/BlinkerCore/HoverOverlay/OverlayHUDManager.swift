@@ -67,7 +67,7 @@ final class OverlayHUDManager {
         .tileTopLeft, .tileTop, .tileTopRight,
         .tileLeft, .centerWindow, .tileRight,
         .tileBottomLeft, .tileBottom, .tileBottomRight,
-        .maximize, .almostMaximize, .moveToNextDisplay,
+        .maximize, .restorePreviousFrame, .moveToNextDisplay,
     ]
 
     /// Opens the management HUD below the enlarged group. All actions act on
@@ -78,9 +78,7 @@ final class OverlayHUDManager {
         close()
 
         let content = makeContent(context)
-        // The HUD panel is kept alive across open/close cycles: a reused
-        // window carries its established glass blend, so later opens come up
-        // instantly clean. Only the very first one still fades in.
+        // Reuse the native panel across appearances.
         let hudPanel: HoverOverlayHUDPanel
         if let existing = panel {
             existing.update(content: content, axOrigin: anchorOrigin(context))
@@ -96,14 +94,7 @@ final class OverlayHUDManager {
         let frame = clampedFrame(of: hudPanel, in: context)
         hudPanel.setAXFrame(frame)
 
-        if hudPanel.alphaValue < 1 {
-            // A first fade that was cut short by a quick close can leave the
-            // window at zero alpha; restart the fade rather than showing an
-            // invisible (or half-blended) HUD.
-            hudPanel.orderFrontFadingIn()
-        } else {
-            hudPanel.orderFrontRegardless()
-        }
+        hudPanel.orderFrontRegardless()
         stateLock.withLock {
             keepAliveFrameAX = frame
             anchorFrameAX = context.anchorFrame
@@ -140,6 +131,11 @@ final class OverlayHUDManager {
             },
             onClose: { [weak self] in
                 self?.close()
+            },
+            onBrowseWindows: { [weak self] in
+                self?.close()
+                NotificationCenter.default.post(name: WindowBrowserRequest.showApplication, object: nil,
+                                                userInfo: ["pid": context.processIdentifier])
             }
         )
     }

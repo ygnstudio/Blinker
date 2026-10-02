@@ -12,6 +12,8 @@ final class HotkeyManager: ObservableObject {
         .tileLeft, .tileRight, .tileTop, .tileBottom,
         .tileTopLeft, .tileTopRight, .tileBottomLeft, .tileBottomRight,
         .maximize, .almostMaximize, .centerWindow, .moveToNextDisplay,
+        .restorePreviousFrame, .tileFirstThird, .tileCenterThird, .tileLastThird,
+        .tileFirstTwoThirds, .tileLastTwoThirds,
     ]
 
     /// The scheme shipped on first launch: ⌃⌥ plus arrows and corner keys.
@@ -124,8 +126,9 @@ final class HotkeyManager: ObservableObject {
     /// bare key without modifiers); cleared on the next valid press.
     @Published private(set) var recordingHint: String?
 
-    private var registeredRefs: [String: EventHotKeyRef?] = [:]
-    private var eventHandler: EventHandlerRef?
+    private var sessionPaused = false
+    @Published private(set) var registrationFailures: [String: GlobalHotkeyRegistry.Failure] = [:]
+    private let registry = GlobalHotkeyRegistry(signature: hotkeySignature)
     private var localMonitor: Any?
     private let frontWindowPerformer: FrontWindowActionPerformer
     private let defaults: UserDefaults
@@ -170,7 +173,7 @@ final class HotkeyManager: ObservableObject {
             }
         }
 
-        installEventHandler()
+        registry.onPress = { [weak self] in self?.handleHotKeyID($0) }
         reregisterAll()
     }
 
@@ -178,21 +181,17 @@ final class HotkeyManager: ObservableObject {
 
     func setEnabled(_ enabled: Bool) {
         isEnabled = enabled
-        if enabled {
-            reregisterAll()
-        } else {
-            unregisterAll()
-        }
+        reregisterAll()
     }
 
     func bind(_ combo: HotkeyCombo, for action: ButtonAction) {
         bindings[action.rawValue] = combo
-        register(combo, for: .windowAction(action))
+        reregisterAll()
     }
 
     func clearBinding(for action: ButtonAction) {
         bindings[action.rawValue] = nil
-        unregister(.windowAction(action))
+        reregisterAll()
     }
 
     // MARK: - Recording
@@ -271,111 +270,58 @@ final class HotkeyManager: ObservableObject {
         return true
     }
 
-    // MARK: - Registration (Carbon)
+    // MARK: - Registration
 
-    private func installEventHandler() {
-        var eventType = EventTypeSpec(
-            eventClass: OSType(kEventClassKeyboard),
-            eventKind: UInt32(kEventHotKeyPressed)
-        )
-        let userData = Unmanaged.passUnretained(self).toOpaque()
-        let status = InstallEventHandler(
-            GetApplicationEventTarget(),
-            { _, event, userData in
-                guard let userData, let event else { return noErr }
-                let manager = Unmanaged<HotkeyManager>.fromOpaque(userData).takeUnretainedValue()
-                manager.handleHotKeyEvent(event)
-                return noErr
-            },
-            1,
-            &eventType,
-            userData,
-            &eventHandler
-        )
-        if status != noErr {
-            logger.error("InstallEventHandler failed: \(status)")
-        }
-    }
-
-    private func handleHotKeyEvent(_ event: EventRef) {
-        var hotKeyID = EventHotKeyID()
-        let status = GetEventParameter(
-            event,
-            EventParamName(kEventParamDirectObject),
-            EventParamType(typeEventHotKeyID),
-            nil,
-            MemoryLayout<EventHotKeyID>.size,
-            nil,
-            &hotKeyID
-        )
-        guard status == noErr else { return }
-        // The reserved command id dispatches to the app command; otherwise
-        // the hot key id encodes the binding table index (see BindingTarget).
-        if hotKeyID.id == BindingTarget.hoverToggleHotKeyID {
+    private func handleHotKeyID(_ identity: UInt32) {
+        if identity == BindingTarget.hoverToggleHotKeyID {
             logger.info("hotkey fired: toggle hover overlay")
             onToggleHoverOverlay?()
             return
         }
-        guard
-            let action = Self.bindableActions.first(
-                where: { BindingTarget.windowAction($0).hotKeyID == hotKeyID.id }
-            )
-        else { return }
+        guard let action = Self.bindableActions.first(where: {
+            BindingTarget.windowAction($0).hotKeyID == identity
+        }) else { return }
         logger.info("hotkey fired: \(action.rawValue, privacy: .public)")
         frontWindowPerformer.perform(action)
     }
 
-    /// The single Carbon registration path for both binding kinds:
-    /// unregister any previous ref for the target, register the combo, then
-    /// store or clear the ref.
-    private func register(_ combo: HotkeyCombo, for target: BindingTarget) {
-        if let existing = registeredRefs[target.registrationKey], let existing {
-            UnregisterEventHotKey(existing)
-        }
-        var hotKeyRef: EventHotKeyRef?
-        let hotKeyID = EventHotKeyID(signature: Self.hotkeySignature, id: target.hotKeyID)
-        let status = RegisterEventHotKey(
-            combo.keyCode,
-            combo.modifiers,
-            hotKeyID,
-            GetApplicationEventTarget(),
-            0,
-            &hotKeyRef
-        )
-        if status == noErr {
-            registeredRefs[target.registrationKey] = hotKeyRef
-        } else {
-            logger.error(
-                "RegisterEventHotKey failed for \(target.registrationKey, privacy: .public): \(status)"
-            )
-            registeredRefs[target.registrationKey] = nil
-        }
+    func setSessionPaused(_ paused: Bool) {
+        sessionPaused = paused
+        reregisterAll()
     }
 
-    private func unregister(_ target: BindingTarget) {
-        if let ref = registeredRefs.removeValue(forKey: target.registrationKey), let ref {
-            UnregisterEventHotKey(ref)
+    func retryRegistration(for target: BindingTarget) {
+        registry.retry(target.registrationKey)
+        registrationFailures = registry.failures
+    }
+
+    func registrationWarning(for target: BindingTarget) -> String? {
+        guard let failure = registrationFailures[target.registrationKey] else { return nil }
+        switch failure {
+        case let .handler(status):
+            return String(localized: "无法启用快捷键监听（错误 \(Int(status))）。请重试。")
+        case .registration(Int32(eventHotKeyExistsErr)):
+            return String(localized: "快捷键被占用。关闭冲突应用或更换组合后重试。")
+        case let .registration(status):
+            return String(localized: "快捷键注册失败（错误 \(Int(status))）。请重试或更换组合。")
         }
     }
 
     private func reregisterAll() {
-        guard isEnabled else { return }
-        for action in Self.bindableActions {
-            guard let combo = bindings[action.rawValue] else { continue }
-            register(combo, for: .windowAction(action))
+        var requested = Self.bindableActions.compactMap { action -> GlobalHotkeyBinding? in
+            guard let combo = bindings[action.rawValue] else { return nil }
+            return registration(combo, target: .windowAction(action))
         }
         if let combo = hoverToggleCombo {
-            register(combo, for: .hoverToggle)
+            requested.append(registration(combo, target: .hoverToggle))
         }
+        registry.update(requested, enabled: isEnabled, paused: sessionPaused)
+        registrationFailures = registry.failures
     }
 
-    private func unregisterAll() {
-        for (_, ref) in registeredRefs {
-            if let ref {
-                UnregisterEventHotKey(ref)
-            }
-        }
-        registeredRefs.removeAll()
+    private func registration(_ combo: HotkeyCombo, target: BindingTarget) -> GlobalHotkeyBinding {
+        GlobalHotkeyBinding(key: target.registrationKey, id: target.hotKeyID,
+                            keyCode: combo.keyCode, modifiers: combo.modifiers)
     }
 
     // MARK: - Persistence
@@ -463,12 +409,12 @@ extension HotkeyManager {
 extension HotkeyManager {
     func bindHoverToggle(_ combo: HotkeyCombo) {
         hoverToggleCombo = combo
-        register(combo, for: .hoverToggle)
+        reregisterAll()
     }
 
     func clearHoverToggleBinding() {
         hoverToggleCombo = nil
-        unregister(.hoverToggle)
+        reregisterAll()
     }
 
     private func persistHoverToggleCombo() {

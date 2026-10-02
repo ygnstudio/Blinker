@@ -1,93 +1,49 @@
 import AppKit
 
-/// Metadata describing one overlayed traffic-light button.
 struct OverlayButtonInfo {
-    /// The semantic button (close / minimize / zoom).
     let button: TrafficButton
-    /// The AX subrole of the underlying button, used for native AXPress.
     let axSubrole: String
-    /// Button frame in AX (top-left origin) global coordinates.
     let frame: CGRect
 }
 
-/// Borderless, non-activating panel showing one enlarged traffic-light button.
-///
-/// The panel frame comes from the group layout (`HoverOverlayGeometry
-/// .panelFrames`) so enlarged neighbors never overlap. The dot is an opaque
-/// vivid circle with a hairline rim; the glass capsule tray behind it
-/// (`HoverOverlayTrayPanel`) provides the chip's backdrop on every OS.
-final class HoverOverlayPanel: OverlayPanel {
-    let buttonView: HoverOverlayButtonView
-
-    /// - Parameters:
-    ///   - panelFrame: The panel's frame in AX coordinates (from the group
-    ///     layout).
-    ///   - info: The overlayed button's metadata.
-    ///   - isHotspot: When `true` the panel draws nothing and activates
-    ///     immediately (invisible click zone).
-    ///   - hasLongPressAction: Whether the hovered app maps a long-press
-    ///     slot for this button. Only `true` enters the pending-press state;
-    ///     otherwise a slow click would fire the long-press timer into an
-    ///     unconfigured slot and be swallowed with no action at all.
-    ///   - onActivate: Called with the click's variant when the user clicks
-    ///     after dwell completion (long presses report through `onLongPress`).
-    ///   - onLongPress: Called when a plain left click is held past the
-    ///     long-press threshold.
-    init(
-        panelFrame: CGRect,
-        info: OverlayButtonInfo,
-        isHotspot: Bool = false,
-        hasLongPressAction: @escaping () -> Bool,
-        onActivate: @escaping (ClickVariant) -> Void,
-        onLongPress: @escaping () -> Void
-    ) {
-        // Convert the AX (top-left origin) panel frame to AppKit coordinates.
-        let appKitFrame = AXQuery.appKitFrame(fromAXRect: panelFrame)
-        buttonView = HoverOverlayButtonView(
-            frame: NSRect(origin: .zero, size: appKitFrame.size),
-            info: info,
-            isHotspot: isHotspot,
-            hasLongPressAction: hasLongPressAction,
-            onActivate: onActivate,
-            onLongPress: onLongPress
-        )
-        super.init(appKitFrame: appKitFrame)
-        contentView = buttonView
-    }
-}
-
-/// Draws one enlarged traffic-light button: opaque vivid circle, symbol and
-/// dwell progress ring. In hotspot mode the view is fully invisible and
-/// always activated.
-final class HoverOverlayButtonView: NSView {
-    private let info: OverlayButtonInfo
-    private let isHotspot: Bool
+/// AppKit owns button drawing, accessibility and press/release tracking.
+/// The subclass adds only dwell gating and configurable click variants.
+final class HoverOverlayButtonView: NSButton, OverlayDwellPanel {
     private let hasLongPressAction: () -> Bool
     private let onActivate: (ClickVariant) -> Void
     private let onLongPress: () -> Void
+    var requiresDwell: (ClickVariant) -> Bool = { _ in true }
     private var dwellProgress: Double = 0
-    private var isActivated = false
-    /// Pending plain left click waiting to resolve as a quick click (mouse
-    /// up) or a long press (timer). Only entered when a long-press slot is
-    /// configured; mirrors the interceptor's behavior, which executes
-    /// immediately when it is not.
-    private var pressStartedAt: Date?
+    private let dwellIndicator = HoverDwellIndicatorView()
+    private var clickVariant: ClickVariant = .left
+    private var didFireLongPress = false
     private var longPressTimer: Timer?
 
     init(
         frame: NSRect,
-        info: OverlayButtonInfo,
-        isHotspot: Bool = false,
+        symbol: String,
+        label: String,
+        color: NSColor,
         hasLongPressAction: @escaping () -> Bool = { false },
         onActivate: @escaping (ClickVariant) -> Void,
-        onLongPress: @escaping () -> Void
+        onLongPress: @escaping () -> Void = {}
     ) {
-        self.info = info
-        self.isHotspot = isHotspot
         self.hasLongPressAction = hasLongPressAction
         self.onActivate = onActivate
         self.onLongPress = onLongPress
         super.init(frame: frame)
+        title = ""
+        image = NSImage(systemSymbolName: symbol, accessibilityDescription: label)
+        imagePosition = .imageOnly
+        HoverControlAppearance.configure(self, color: color)
+        dwellIndicator.frame = bounds
+        dwellIndicator.autoresizingMask = [.width, .height]
+        dwellIndicator.setAccessibilityElement(false)
+        addSubview(dwellIndicator)
+        toolTip = label
+        setAccessibilityLabel(label)
+        target = self
+        action = #selector(activateButton)
     }
 
     @available(*, unavailable)
@@ -95,192 +51,78 @@ final class HoverOverlayButtonView: NSView {
         fatalError("init(coder:) is not supported")
     }
 
-    /// The button's semantic color, also used for the tray glow behind it.
-    var accentColor: NSColor {
-        OverlayChipDrawing.vividColor(for: info.button)
+    func updatePresentation(_ presentation: OverlayActionPresentation) {
+        toolTip = presentation.label
+        setAccessibilityLabel(presentation.label)
+        image = NSImage(systemSymbolName: presentation.symbol, accessibilityDescription: presentation.label)
     }
 
-    /// Updates the dwell progress (0...1); the button becomes clickable at 1.
     func setDwellProgress(_ progress: Double) {
-        dwellProgress = min(max(progress, 0), 1)
-        isActivated = dwellProgress >= 1
-        needsDisplay = true
+        let value = min(max(progress, 0), 1)
+        guard dwellProgress != value else { return }
+        dwellProgress = value
+        dwellIndicator.progress = requiresDwell(OverlayActionPresentation.variant(for: NSEvent.modifierFlags))
+            ? value : 0
     }
 
-    /// Resets dwell state after the cursor leaves the panel.
     func resetDwell() {
-        dwellProgress = 0
-        isActivated = false
-        needsDisplay = true
+        setDwellProgress(0)
     }
 
     override func mouseDown(with event: NSEvent) {
-        // This click is consumed here, but the interceptor's tap sees the raw
-        // event first; arm the gate (scoped to this click's position) so it
-        // passes the click through instead of performing the mapped action a
-        // second time.
-        OverlayClickGate.suppressAtMouseLocation(forMilliseconds: OverlayClickGate.suppressionMilliseconds)
-        guard isActivated || isHotspot else { return }
-
-        let variant = Self.variant(of: event)
-        guard variant == .left else {
-            onActivate(variant)
-            return
+        clickVariant = OverlayActionPresentation.variant(for: event.modifierFlags)
+        guard !requiresDwell(clickVariant) || dwellProgress >= 1 else { return }
+        didFireLongPress = false
+        if clickVariant == .left, hasLongPressAction() {
+            let timer = Timer(
+                timeInterval: TrafficLightInterceptor.longPressThreshold, repeats: false
+            ) { [weak self] _ in
+                guard let self, let window, window.isVisible else { return }
+                let location = convert(window.convertPoint(fromScreen: NSEvent.mouseLocation), from: nil)
+                guard bounds.contains(location) else { return }
+                didFireLongPress = true
+                guard !requiresDwell(.longPressLeft) || dwellProgress >= 1 else { return }
+                onLongPress()
+            }
+            longPressTimer = timer
+            RunLoop.main.add(timer, forMode: .common)
         }
-        // Plain left click. Only a button with a configured long-press slot
-        // waits for release/timeout; without one, a slow click would fire
-        // the timer into an unconfigured slot and be swallowed silently —
-        // instead it activates immediately, matching the interceptor path.
-        guard hasLongPressAction() else {
-            onActivate(.left)
-            return
-        }
-        pressStartedAt = Date()
-        let threshold = TrafficLightInterceptor.longPressThreshold
-        let timer = Timer(timeInterval: threshold, repeats: false) { [weak self] _ in
-            self?.fireLongPress()
-        }
-        longPressTimer = timer
-        RunLoop.main.add(timer, forMode: .common)
-    }
-
-    /// Fires when a left click stays held past the long-press threshold.
-    private func fireLongPress() {
-        guard pressStartedAt != nil else { return }
-        pressStartedAt = nil
-        longPressTimer = nil
-        onLongPress()
-    }
-
-    override func mouseUp(with event: NSEvent) {
-        // A click that outlived the threshold already fired as a long press
-        // (fireLongPress clears the pending state before this runs).
-        guard pressStartedAt != nil else { return }
-        pressStartedAt = nil
+        // Native tracking cancels a short click released outside the control.
+        super.mouseDown(with: event)
         longPressTimer?.invalidate()
         longPressTimer = nil
-        // Native buttons cancel when the cursor leaves them before release;
-        // the enlarged chips do the same.
-        guard isCursorInsideChip(event) else { return }
-        onActivate(.left)
-    }
-
-    override func mouseDragged(with event: NSEvent) {
-        // Leaving the chip mid-press cancels the pending long press (and,
-        // via the release check above, the plain click too).
-        guard pressStartedAt != nil else { return }
-        if !isCursorInsideChip(event) {
-            cancelPendingPress()
-        }
-    }
-
-    /// The release position, in the view's own coordinates, still inside the
-    /// drawn circle.
-    private func isCursorInsideChip(_ event: NSEvent) -> Bool {
-        let point = convert(event.locationInWindow, from: nil)
-        return OverlayChipDrawing.circleRect(in: bounds).contains(point)
-    }
-
-    /// Drops a pending press: no click, no long-press timer.
-    private func cancelPendingPress() {
-        pressStartedAt = nil
-        longPressTimer?.invalidate()
-        longPressTimer = nil
+        clickVariant = .left
+        didFireLongPress = false
     }
 
     override func rightMouseDown(with _: NSEvent) {
-        OverlayClickGate.suppressAtMouseLocation(forMilliseconds: OverlayClickGate.suppressionMilliseconds)
-        guard isActivated || isHotspot else { return }
+        guard !requiresDwell(.right) || dwellProgress >= 1 else { return }
         onActivate(.right)
     }
 
-    /// Maps an NSEvent's modifiers to a click variant (⌥ first, then 🌐),
-    /// matching the interceptor's `CGEventFlags` logic.
-    private static func variant(of event: NSEvent) -> ClickVariant {
-        let flags = event.modifierFlags
-        if flags.contains(.option) {
-            return .optionLeft
-        }
-        if flags.contains(.function) {
-            return .globeLeft
-        }
-        return .left
-    }
-
-    override func draw(_: NSRect) {
-        guard !isHotspot else { return }
-        let circleRect = OverlayChipDrawing.circleRect(in: bounds)
-        OverlayChipDrawing.drawProgressRing(around: circleRect, progress: dwellProgress)
-        OverlayChipDrawing.drawCircle(in: circleRect, color: accentColor)
-        drawSymbol(in: circleRect)
-    }
-
-    // MARK: - Drawing
-
-    private func drawSymbol(in circleRect: NSRect) {
-        let symbolColor = NSColor.black.withAlphaComponent(0.55)
-        symbolColor.setStroke()
-        symbolColor.setFill()
-        let path = NSBezierPath()
-        // Symbols scale with the circle; the constants below were designed
-        // for a 28 pt diameter.
-        let scale = circleRect.width / 28
-        path.lineWidth = max(1.4, 1.6 * scale)
-        path.lineCapStyle = .round
-
-        switch info.button {
-        case .close:
-            drawCloseCross(into: path, circleRect: circleRect, scale: scale)
-            path.stroke()
-        case .minimize:
-            drawMinusLine(into: path, circleRect: circleRect, scale: scale)
-            path.stroke()
-        case .zoom:
-            drawFullscreenTriangles(into: path, circleRect: circleRect, scale: scale)
-            path.fill()
-        }
-    }
-
-    private func drawCloseCross(into path: NSBezierPath, circleRect: NSRect, scale: CGFloat) {
-        let halfExtent = 3 * scale
-        path.move(to: NSPoint(x: circleRect.midX - halfExtent, y: circleRect.midY - halfExtent))
-        path.line(to: NSPoint(x: circleRect.midX + halfExtent, y: circleRect.midY + halfExtent))
-        path.move(to: NSPoint(x: circleRect.midX - halfExtent, y: circleRect.midY + halfExtent))
-        path.line(to: NSPoint(x: circleRect.midX + halfExtent, y: circleRect.midY - halfExtent))
-    }
-
-    private func drawMinusLine(into path: NSBezierPath, circleRect: NSRect, scale: CGFloat) {
-        let halfExtent = 3.5 * scale
-        path.move(to: NSPoint(x: circleRect.midX - halfExtent, y: circleRect.midY))
-        path.line(to: NSPoint(x: circleRect.midX + halfExtent, y: circleRect.midY))
-    }
-
-    /// Adds the two outward-pointing triangles used as the fullscreen symbol.
-    private func drawFullscreenTriangles(into path: NSBezierPath, circleRect: NSRect, scale: CGFloat) {
-        let midY = circleRect.midY
-        let leftX = circleRect.midX - 5.5 * scale
-        let rightX = circleRect.midX + 5.5 * scale
-        let halfHeight = 3 * scale
-        let depth = 4.5 * scale
-        path.move(to: NSPoint(x: leftX, y: midY))
-        path.line(to: NSPoint(x: leftX + depth, y: midY - halfHeight))
-        path.line(to: NSPoint(x: leftX + depth, y: midY + halfHeight))
-        path.close()
-        path.move(to: NSPoint(x: rightX, y: midY))
-        path.line(to: NSPoint(x: rightX - depth, y: midY - halfHeight))
-        path.line(to: NSPoint(x: rightX - depth, y: midY + halfHeight))
-        path.close()
+    @objc private func activateButton() {
+        // Mouse dwell is checked before native tracking begins; keyboard
+        // and accessibility activation do not require pointer dwelling.
+        guard !didFireLongPress else { return }
+        onActivate(clickVariant)
     }
 }
 
-// MARK: - Dwell panel conformance
-
-extension HoverOverlayPanel: OverlayDwellPanel {
-    func setDwellProgress(_ progress: Double) {
-        buttonView.setDwellProgress(progress)
+/// Never override NSButton.draw: that opts its subclass out of AppKit's
+/// native layer updates, so the Liquid Glass bezel disappears.
+private final class HoverDwellIndicatorView: NSView {
+    var progress: Double = 0 {
+        didSet { needsDisplay = true }
     }
 
-    func resetDwell() {
-        buttonView.resetDwell()
+    override func hitTest(_: NSPoint) -> NSView? {
+        nil
+    }
+
+    override func draw(_: NSRect) {
+        guard progress > 0, progress < 1 else { return }
+        OverlayChipDrawing.drawProgressRing(
+            around: bounds.insetBy(dx: 3, dy: 3), progress: progress
+        )
     }
 }

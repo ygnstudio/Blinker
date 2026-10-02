@@ -1,6 +1,182 @@
 {
   "sourceLanguage": "zh-Hans",
   "strings": {
+    "项目与联系": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Project & Contact"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "项目与联系"
+          }
+        }
+      }
+    },
+    "规则与窗口内容在本机处理，不上传数据，不收集使用统计。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rules and window content are processed on this Mac. No data is uploaded and no usage analytics are collected."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "规则与窗口内容在本机处理，不上传数据，不收集使用统计。"
+          }
+        }
+      }
+    },
+    "辅助功能用于识别和操作窗口。屏幕录制仅用于可选缩略图，图像只缓存在内存中。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Accessibility is used to identify and control windows. Screen Recording is only needed for optional thumbnails, which are cached in memory."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "辅助功能用于识别和操作窗口。屏幕录制仅用于可选缩略图，图像只缓存在内存中。"
+          }
+        }
+      }
+    },
+    "外部链接由默认浏览器打开。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "External links open in your default browser."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "外部链接由默认浏览器打开。"
+          }
+        }
+      }
+    },
+    "查看许可证": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "View License"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "查看许可证"
+          }
+        }
+      }
+    },
+    "允许商业使用和收费分发，分发时须遵守 GPLv3 的源码与许可要求。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Commercial use and paid distribution are permitted. Distribution must meet the source code and licensing requirements of GPLv3."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "允许商业使用和收费分发，分发时须遵守 GPLv3 的源码与许可要求。"
+          }
+        }
+      }
+    },
+    "开源许可": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open Source License"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "开源许可"
+          }
+        }
+      }
+    },
+    "macOS 窗口工具": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Window controls for macOS"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "macOS 窗口工具"
+          }
+        }
+      }
+    },
+    "自定义红绿灯动作，放大悬停按钮，预览、切换和整理窗口。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Customize traffic-light actions, enlarge buttons on hover, and preview, switch or arrange windows."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "自定义红绿灯动作，放大悬停按钮，预览、切换和整理窗口。"
+          }
+        }
+      }
+    },
+    "源代码": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Source Code"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "源代码"
+          }
+        }
+      }
+    },
+    "版本 %@（构建 %@）": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Version %@ (Build %@)"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "版本 %@（构建 %@）"
+          }
+        }
+      }
+    },
     "%lld 个窗口": {
       "localizations": {
         "en": {
@@ -41,18 +217,114 @@
         }
       }
     },
-    "macOS 26+ 原生液态玻璃质感": {
+    "Blinker 不上传规则或窗口内容。你可以跳过授权，之后在设置中开启。": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Native Liquid Glass on macOS 26+"
+            "value": "Blinker does not upload rules or window content. You can skip permissions and enable them in settings later."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "macOS 26+ 原生液态玻璃质感"
+            "value": "Blinker 不上传规则或窗口内容。你可以跳过授权，之后在设置中开启。"
+          }
+        }
+      }
+    },
+    "Blinker 使用引导": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Getting Started with Blinker"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Blinker 使用引导"
+          }
+        }
+      }
+    },
+    "Blinker 常驻菜单栏，应用规则和设置使用独立窗口。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Blinker lives in the menu bar. App rules and settings open in their own windows."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Blinker 常驻菜单栏，应用规则和设置使用独立窗口。"
+          }
+        }
+      }
+    },
+    "Blinker 悬浮测试": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Blinker Hover Test"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Blinker 悬浮测试"
+          }
+        }
+      }
+    },
+    "Dock 预览": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dock Previews"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dock 预览"
+          }
+        }
+      }
+    },
+    "GNU 官方许可证": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Official GNU License"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "GNU 官方许可证"
+          }
+        }
+      }
+    },
+    "↵ 打开 · Esc 取消": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "↵ Open · Esc Cancel"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "↵ 打开 · Esc 取消"
           }
         }
       }
@@ -69,6 +341,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "⌥+左键"
+          }
+        }
+      }
+    },
+    "⌥Tab 已被其他应用占用。请停用冲突的快捷键后重新开启。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "⌥Tab is unavailable. Disable the conflicting shortcut in the other app, then enable this again."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "⌥Tab 已被其他应用占用。请停用冲突的快捷键后重新开启。"
           }
         }
       }
@@ -105,18 +393,34 @@
         }
       }
     },
-    "上一个桌面": {
+    "三分屏": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Previous Desktop"
+            "value": "Thirds"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "上一个桌面"
+            "value": "三分屏"
+          }
+        }
+      }
+    },
+    "上一步": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Back"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "上一步"
           }
         }
       }
@@ -133,22 +437,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "上半屏"
-          }
-        }
-      }
-    },
-    "下一个桌面": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Next Desktop"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "下一个桌面"
           }
         }
       }
@@ -181,6 +469,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "下半屏"
+          }
+        }
+      }
+    },
+    "不可用": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unavailable"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "不可用"
           }
         }
       }
@@ -233,6 +537,22 @@
         }
       }
     },
+    "为应用自定义红绿灯": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Customize Window Buttons"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "为应用自定义红绿灯"
+          }
+        }
+      }
+    },
     "事件监听启动失败": {
       "localizations": {
         "en": {
@@ -249,6 +569,54 @@
         }
       }
     },
+    "仅保护退出应用操作": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Protect Quit Actions Only"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "仅保护退出应用操作"
+          }
+        }
+      }
+    },
+    "仅在预览打开时采集，图片只缓存在内存中。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Images are captured only while previews are open and cached only in memory."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "仅在预览打开时采集，图片只缓存在内存中。"
+          }
+        }
+      }
+    },
+    "仅显示当前显示器的窗口": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Only Show Windows on the Current Display"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "仅显示当前显示器的窗口"
+          }
+        }
+      }
+    },
     "仅规则应用": {
       "localizations": {
         "en": {
@@ -261,6 +629,38 @@
           "stringUnit": {
             "state": "translated",
             "value": "仅规则应用"
+          }
+        }
+      }
+    },
+    "从一个应用开始": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start with one app"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "从一个应用开始"
+          }
+        }
+      }
+    },
+    "从其他应用复制规则": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copy Rules from Another App"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "从其他应用复制规则"
           }
         }
       }
@@ -297,18 +697,50 @@
         }
       }
     },
-    "使用需在系统设置中授予辅助功能权限；红绿灯行为由你为每个应用单独定义。": {
+    "使用 ⌥Tab 切换窗口": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Grant Accessibility permission to get started; each app's buttons are remapped individually."
+            "value": "Switch Windows with ⌥Tab"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "使用需在系统设置中授予辅助功能权限；红绿灯行为由你为每个应用单独定义。"
+            "value": "使用 ⌥Tab 切换窗口"
+          }
+        }
+      }
+    },
+    "使用帮助": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Getting Started"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "使用帮助"
+          }
+        }
+      }
+    },
+    "使用说明": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "User Guide"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "使用说明"
           }
         }
       }
@@ -357,6 +789,54 @@
           "stringUnit": {
             "state": "translated",
             "value": "保存当前布局…"
+          }
+        }
+      }
+    },
+    "保护期间点击不会执行，进度环结束后再点。仅保护退出时，关闭、最小化和布局操作立即响应。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clicks are ignored during protection; click again when the progress ring completes. With Quit-only protection, close, minimize, and layout actions respond immediately."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "保护期间点击不会执行，进度环结束后再点。仅保护退出时，关闭、最小化和布局操作立即响应。"
+          }
+        }
+      }
+    },
+    "停用规则": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Disable Rule"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "停用规则"
+          }
+        }
+      }
+    },
+    "允许悬停放大": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hover allowed"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "允许悬停放大"
           }
         }
       }
@@ -425,6 +905,54 @@
         }
       }
     },
+    "关闭、最小化和全屏会实际作用于这个测试窗口。可随时从设置重新打开。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Close, minimize, and full screen operate on this real test window. Reopen it from Settings at any time."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "关闭、最小化和全屏会实际作用于这个测试窗口。可随时从设置重新打开。"
+          }
+        }
+      }
+    },
+    "关闭后暂停红绿灯增强、拖拽贴靠和 Blinker 快捷键；已有配置保留。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Turning this off pauses traffic-light enhancements, snapping, and Blinker shortcuts without changing your saved configuration."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "关闭后暂停红绿灯增强、拖拽贴靠和 Blinker 快捷键；已有配置保留。"
+          }
+        }
+      }
+    },
+    "关闭按钮": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Close Button"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "关闭按钮"
+          }
+        }
+      }
+    },
     "关闭窗口": {
       "localizations": {
         "en": {
@@ -437,6 +965,38 @@
           "stringUnit": {
             "state": "translated",
             "value": "关闭窗口"
+          }
+        }
+      }
+    },
+    "关闭预览": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Close Preview"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "关闭预览"
+          }
+        }
+      }
+    },
+    "兼容性检查": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Compatibility Check"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "兼容性检查"
           }
         }
       }
@@ -457,6 +1017,38 @@
         }
       }
     },
+    "出现延迟": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Appearance Delay"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "出现延迟"
+          }
+        }
+      }
+    },
+    "切换窗口": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Switch Windows"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "切换窗口"
+          }
+        }
+      }
+    },
     "删除": {
       "localizations": {
         "en": {
@@ -469,6 +1061,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "删除"
+          }
+        }
+      }
+    },
+    "删除后，此应用的按钮恢复系统默认行为，悬停放大跟随全局作用范围。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deleting this rule restores the app’s default button behavior. Hover enlargement will follow the global scope."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "删除后，此应用的按钮恢复系统默认行为，悬停放大跟随全局作用范围。"
           }
         }
       }
@@ -489,6 +1097,38 @@
         }
       }
     },
+    "删除规则…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete Rule…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "删除规则…"
+          }
+        }
+      }
+    },
+    "删除规则？": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete Rule?"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "删除规则？"
+          }
+        }
+      }
+    },
     "动作矩阵": {
       "localizations": {
         "en": {
@@ -501,6 +1141,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "动作矩阵"
+          }
+        }
+      }
+    },
+    "包括最小化和隐藏的窗口": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Include Minimized and Hidden Windows"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "包括最小化和隐藏的窗口"
           }
         }
       }
@@ -521,6 +1177,22 @@
         }
       }
     },
+    "反馈问题": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Report an Issue"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "反馈问题"
+          }
+        }
+      }
+    },
     "取消": {
       "localizations": {
         "en": {
@@ -533,6 +1205,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "取消"
+          }
+        }
+      }
+    },
+    "可以在测试窗口试用悬停按钮。关闭它不会退出 Blinker。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Try the hover controls in the test window. Closing it will not quit Blinker."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "可以在测试窗口试用悬停按钮。关闭它不会退出 Blinker。"
           }
         }
       }
@@ -601,6 +1289,38 @@
         }
       }
     },
+    "同一应用的规则会被替换，其他规则保留。导入后可撤销。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rules for matching apps will be replaced; other rules stay unchanged. You can undo the import."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "同一应用的规则会被替换，其他规则保留。导入后可撤销。"
+          }
+        }
+      }
+    },
+    "同时调整 Dock 预览和窗口切换器；也可在预览底部的大小菜单中调整。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Applies to Dock previews and the window switcher. You can also adjust it using the size menu at the bottom of a preview."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "同时调整 Dock 预览和窗口切换器；也可在预览底部的大小菜单中调整。"
+          }
+        }
+      }
+    },
     "名称": {
       "localizations": {
         "en": {
@@ -629,6 +1349,86 @@
           "stringUnit": {
             "state": "translated",
             "value": "启动"
+          }
+        }
+      }
+    },
+    "启用 Blinker": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enable Blinker"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "启用 Blinker"
+          }
+        }
+      }
+    },
+    "启用工作区实验功能": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enable Experimental Workspaces"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "启用工作区实验功能"
+          }
+        }
+      }
+    },
+    "启用按钮规则": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enable button rules"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "启用按钮规则"
+          }
+        }
+      }
+    },
+    "启用此应用的悬停放大": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enable Hover Enlargement for This App"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "启用此应用的悬停放大"
+          }
+        }
+      }
+    },
+    "启用规则": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enable Rule"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "启用规则"
           }
         }
       }
@@ -697,6 +1497,22 @@
         }
       }
     },
+    "在系统设置中允许登录项…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Allow the Login Item in System Settings…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "在系统设置中允许登录项…"
+          }
+        }
+      }
+    },
     "外观": {
       "localizations": {
         "en": {
@@ -713,6 +1529,166 @@
         }
       }
     },
+    "外观与启动": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Appearance and Startup"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "外观与启动"
+          }
+        }
+      }
+    },
+    "大小": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Size"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "大小"
+          }
+        }
+      }
+    },
+    "完成": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Done"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "完成"
+          }
+        }
+      }
+    },
+    "完成并打开应用规则": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Finish and Open App Rules"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "完成并打开应用规则"
+          }
+        }
+      }
+    },
+    "实时预览": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Live Preview"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "实时预览"
+          }
+        }
+      }
+    },
+    "实验功能": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Experimental Features"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "实验功能"
+          }
+        }
+      }
+    },
+    "导入规则…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Import Rules…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "导入规则…"
+          }
+        }
+      }
+    },
+    "导出全部规则…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Export All Rules…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "导出全部规则…"
+          }
+        }
+      }
+    },
+    "将标准 macOS 窗口标签页和 Safari 标签页分别列出；无缓存画面的后台标签页显示图标和标题。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "List standard macOS window tabs and Safari tabs separately. Background tabs without a cached image show their icon and title."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "将标准 macOS 窗口标签页和 Safari 标签页分别列出；无缓存画面的后台标签页显示图标和标题。"
+          }
+        }
+      }
+    },
+    "将窗口移到屏幕边缘，或切换到其他应用，再检查悬浮按钮。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Move the window to a display edge, or switch to another app, then check the hover controls."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "将窗口移到屏幕边缘，或切换到其他应用，再检查悬浮按钮。"
+          }
+        }
+      }
+    },
     "小红书主页": {
       "localizations": {
         "en": {
@@ -725,6 +1701,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "小红书主页"
+          }
+        }
+      }
+    },
+    "尚未添加应用": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No Apps Added"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "尚未添加应用"
           }
         }
       }
@@ -841,6 +1833,22 @@
         }
       }
     },
+    "已关闭悬停放大": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hover disabled"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已关闭悬停放大"
+          }
+        }
+      }
+    },
     "已启用": {
       "localizations": {
         "en": {
@@ -853,6 +1861,54 @@
           "stringUnit": {
             "state": "translated",
             "value": "已启用"
+          }
+        }
+      }
+    },
+    "已找到": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Found"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已找到"
+          }
+        }
+      }
+    },
+    "已授权": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Granted"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已授权"
+          }
+        }
+      }
+    },
+    "已最小化": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Minimized"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已最小化"
           }
         }
       }
@@ -889,6 +1945,38 @@
         }
       }
     },
+    "已隐藏": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hidden"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已隐藏"
+          }
+        }
+      }
+    },
+    "布局按窗口特征匹配，同应用的相似窗口可能配错。原桌面恢复使用非公开系统接口。已有布局会保留。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Layouts match window characteristics; similar windows in the same app may be mismatched. Desktop restoration uses private system APIs. Saved layouts are preserved."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "布局按窗口特征匹配，同应用的相似窗口可能配错。原桌面恢复使用非公开系统接口。已有布局会保留。"
+          }
+        }
+      }
+    },
     "应用": {
       "localizations": {
         "en": {
@@ -917,6 +2005,38 @@
           "stringUnit": {
             "state": "translated",
             "value": "应用库"
+          }
+        }
+      }
+    },
+    "应用规则": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "App Rules"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "应用规则"
+          }
+        }
+      }
+    },
+    "应用规则…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "App Rules…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "应用规则…"
           }
         }
       }
@@ -1049,6 +2169,22 @@
         }
       }
     },
+    "引导进度": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Setup progress"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "引导进度"
+          }
+        }
+      }
+    },
     "强制退出": {
       "localizations": {
         "en": {
@@ -1113,6 +2249,38 @@
         }
       }
     },
+    "恢复 Blinker": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Resume Blinker"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "恢复 Blinker"
+          }
+        }
+      }
+    },
+    "恢复当前应用：": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Resume Current App: "
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "恢复当前应用："
+          }
+        }
+      }
+    },
     "恢复时移回原桌面": {
       "localizations": {
         "en": {
@@ -1125,6 +2293,54 @@
           "stringUnit": {
             "state": "translated",
             "value": "恢复时移回原桌面"
+          }
+        }
+      }
+    },
+    "恢复此应用的默认设置": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Restore Defaults for This App"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "恢复此应用的默认设置"
+          }
+        }
+      }
+    },
+    "悬停 Dock 图标时显示窗口": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show Windows When Hovering Dock Icons"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "悬停 Dock 图标时显示窗口"
+          }
+        }
+      }
+    },
+    "悬停 Dock 图标预览窗口，或使用 Option–Tab 切换。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hover over Dock icons to preview windows, or switch with Option–Tab."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "悬停 Dock 图标预览窗口，或使用 Option–Tab 切换。"
           }
         }
       }
@@ -1145,22 +2361,6 @@
         }
       }
     },
-    "悬停放大与纯热区，防误触进度环": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Hover overlay & hotspot with a dwell ring"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "悬停放大与纯热区，防误触进度环"
-          }
-        }
-      }
-    },
     "悬停放大开关": {
       "localizations": {
         "en": {
@@ -1177,18 +2377,66 @@
         }
       }
     },
-    "悬停时以一块液态玻璃托盘衬托放大按钮与扩展按钮，随背景自动融合，无需任何额外权限。": {
+    "悬停放大监听未启动": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "On hover, a Liquid Glass tray sits behind the enlarged buttons and extra chips, blending with any background. No extra permission required."
+            "value": "Hover tracking failed to start"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "悬停时以一块液态玻璃托盘衬托放大按钮与扩展按钮，随背景自动融合，无需任何额外权限。"
+            "value": "悬停放大监听未启动"
+          }
+        }
+      }
+    },
+    "悬停效果预览": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hover Preview"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "悬停效果预览"
+          }
+        }
+      }
+    },
+    "悬停时显示系统液态玻璃按钮；红黄绿保留各自颜色，扩展按钮使用系统强调色。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hover shows native Liquid Glass buttons. Traffic lights retain their colors; extra buttons use the system accent color."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "悬停时显示系统液态玻璃按钮；红黄绿保留各自颜色，扩展按钮使用系统强调色。"
+          }
+        }
+      }
+    },
+    "悬浮面板": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Floating Palette"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "悬浮面板"
           }
         }
       }
@@ -1205,6 +2453,86 @@
           "stringUnit": {
             "state": "translated",
             "value": "截屏"
+          }
+        }
+      }
+    },
+    "打开应用规则，点击加号选择应用，再为红绿灯选择动作。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open App Rules, click the plus button to choose an app, then select actions for its traffic lights."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "打开应用规则，点击加号选择应用，再为红绿灯选择动作。"
+          }
+        }
+      }
+    },
+    "打开真实测试窗口…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open Real Test Window…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "打开真实测试窗口…"
+          }
+        }
+      }
+    },
+    "打开窗口切换器…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open Window Switcher…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "打开窗口切换器…"
+          }
+        }
+      }
+    },
+    "打开系统设置…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open System Settings…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "打开系统设置…"
+          }
+        }
+      }
+    },
+    "打开辅助功能设置…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open Accessibility Settings…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "打开辅助功能设置…"
           }
         }
       }
@@ -1237,6 +2565,38 @@
           "stringUnit": {
             "state": "translated",
             "value": "把当前窗口排布存成命名预设，点「恢复」一键还原；最小化和其他桌面的窗口也会一并记录。开启「恢复时移回原桌面」后，窗口会一并回到保存时所在的桌面。同名保存会覆盖旧布局，已退出的应用会被跳过。"
+          }
+        }
+      }
+    },
+    "拖拽贴靠监听未启动": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Drag-to-snap tracking failed to start"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "拖拽贴靠监听未启动"
+          }
+        }
+      }
+    },
+    "拖拽贴靠（可选）": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Drag to Snap (Optional)"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "拖拽贴靠（可选）"
           }
         }
       }
@@ -1305,6 +2665,38 @@
         }
       }
     },
+    "按住 Option 连按 Tab 选择窗口，松开 Option 打开；Shift 反向，Esc 取消。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hold Option and press Tab to select a window. Release Option to open it; Shift reverses and Esc cancels."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "按住 Option 连按 Tab 选择窗口，松开 Option 打开；Shift 反向，Esc 取消。"
+          }
+        }
+      }
+    },
+    "按应用设置红、黄、绿按钮的动作；没有规则时保留系统行为。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose red, yellow and green button actions for each app. Buttons without rules keep their system behavior."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "按应用设置红、黄、绿按钮的动作；没有规则时保留系统行为。"
+          }
+        }
+      }
+    },
     "按钮 %lld": {
       "localizations": {
         "en": {
@@ -1321,6 +2713,86 @@
         }
       }
     },
+    "按钮规则已停用": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Button rules off"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "按钮规则已停用"
+          }
+        }
+      }
+    },
+    "按钮规则已启用": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Button rules on"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "按钮规则已启用"
+          }
+        }
+      }
+    },
+    "按需开启权限": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enable the permissions you need"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "按需开启权限"
+          }
+        }
+      }
+    },
+    "授权窗口缩略图…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Allow Window Thumbnails…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "授权窗口缩略图…"
+          }
+        }
+      }
+    },
+    "搜索应用": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Search Apps"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "搜索应用"
+          }
+        }
+      }
+    },
     "搜索应用名称或 Bundle ID": {
       "localizations": {
         "en": {
@@ -1333,6 +2805,38 @@
           "stringUnit": {
             "state": "translated",
             "value": "搜索应用名称或 Bundle ID"
+          }
+        }
+      }
+    },
+    "撤销规则修改": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Undo Rule Change"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "撤销规则修改"
+          }
+        }
+      }
+    },
+    "支持": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Supported"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "支持"
           }
         }
       }
@@ -1369,6 +2873,38 @@
         }
       }
     },
+    "放大按钮直接覆盖原生红绿灯；材质与按钮跟随系统外观。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enlarged controls cover the original traffic lights. Material and buttons follow the system appearance."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "放大按钮直接覆盖原生红绿灯；材质与按钮跟随系统外观。"
+          }
+        }
+      }
+    },
+    "放大按钮覆盖原生红绿灯。出现延迟控制何时显示；点击保护单独控制需要驻留的操作。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enlarged buttons cover the native traffic lights. Appearance delay controls when they appear; click protection separately controls which actions require dwelling."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "放大按钮覆盖原生红绿灯。出现延迟控制何时显示；点击保护单独控制需要驻留的操作。"
+          }
+        }
+      }
+    },
     "整窗": {
       "localizations": {
         "en": {
@@ -1401,6 +2937,150 @@
         }
       }
     },
+    "无法添加此应用": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unable to Add App"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法添加此应用"
+          }
+        }
+      }
+    },
+    "显示标签页": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show Tabs"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "显示标签页"
+          }
+        }
+      }
+    },
+    "显示窗口缩略图": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show Window Thumbnails"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "显示窗口缩略图"
+          }
+        }
+      }
+    },
+    "显示范围": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Window Scope"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "显示范围"
+          }
+        }
+      }
+    },
+    "暂停 10 分钟": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pause for 10 Minutes"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "暂停 10 分钟"
+          }
+        }
+      }
+    },
+    "暂停全部": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pause All"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "暂停全部"
+          }
+        }
+      }
+    },
+    "暂停全部增强功能，保留应用规则和偏好设置。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pause all enhancements while keeping app rules and preferences."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "暂停全部增强功能，保留应用规则和偏好设置。"
+          }
+        }
+      }
+    },
+    "暂停当前应用：": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pause Current App: "
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "暂停当前应用："
+          }
+        }
+      }
+    },
+    "更多": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "More"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "更多"
+          }
+        }
+      }
+    },
     "更多操作": {
       "localizations": {
         "en": {
@@ -1413,6 +3093,38 @@
           "stringUnit": {
             "state": "translated",
             "value": "更多操作"
+          }
+        }
+      }
+    },
+    "更多点击方式": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "More Click Actions"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "更多点击方式"
+          }
+        }
+      }
+    },
+    "更改立即生效。未配置的按钮保持系统默认行为。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Changes take effect immediately. Unconfigured buttons keep their system behavior."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "更改立即生效。未配置的按钮保持系统默认行为。"
           }
         }
       }
@@ -1449,6 +3161,70 @@
         }
       }
     },
+    "最小化按钮": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Minimize Button"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "最小化按钮"
+          }
+        }
+      }
+    },
+    "最近操作反馈": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Latest Action Feedback"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "最近操作反馈"
+          }
+        }
+      }
+    },
+    "未找到，请先打开应用窗口": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not found — open a window in the app first"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未找到，请先打开应用窗口"
+          }
+        }
+      }
+    },
+    "未授权": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not Granted"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未授权"
+          }
+        }
+      }
+    },
     "未授权辅助功能": {
       "localizations": {
         "en": {
@@ -1481,34 +3257,98 @@
         }
       }
     },
-    "桌面与贴靠": {
+    "标准红绿灯": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Desktop & Snapping"
+            "value": "Standard Traffic Lights"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "桌面与贴靠"
+            "value": "标准红绿灯"
           }
         }
       }
     },
-    "桌面切换通过模拟系统快捷键 ⌃← / ⌃→ 完成；若你在系统设置中改过「调度中心」快捷键，将以系统设置为准。": {
+    "标签页": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Desktop switching simulates the system shortcut ⌃← / ⌃→; honors whatever Mission Control shortcuts you have set."
+            "value": "Tab"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "桌面切换通过模拟系统快捷键 ⌃← / ⌃→ 完成；若你在系统设置中改过「调度中心」快捷键，将以系统设置为准。"
+            "value": "标签页"
+          }
+        }
+      }
+    },
+    "检查不执行任何窗口操作。结果仅针对该应用当前窗口，实际执行仍可能被应用拒绝。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This check performs no window actions. Results apply to the current window only; the app may still reject an action."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "检查不执行任何窗口操作。结果仅针对该应用当前窗口，实际执行仍可能被应用拒绝。"
+          }
+        }
+      }
+    },
+    "检查兼容性": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Check Compatibility"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "检查兼容性"
+          }
+        }
+      }
+    },
+    "检查应用兼容性…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Check App Compatibility…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "检查应用兼容性…"
+          }
+        }
+      }
+    },
+    "检查当前窗口": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Check Current Window"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "检查当前窗口"
           }
         }
       }
@@ -1541,6 +3381,86 @@
           "stringUnit": {
             "state": "translated",
             "value": "模式"
+          }
+        }
+      }
+    },
+    "欢迎使用 Blinker": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Welcome to Blinker"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "欢迎使用 Blinker"
+          }
+        }
+      }
+    },
+    "正在扫描应用库…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Scanning Applications…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在扫描应用库…"
+          }
+        }
+      }
+    },
+    "正在查找窗口…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Finding Windows…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在查找窗口…"
+          }
+        }
+      }
+    },
+    "没有匹配的应用": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No Matching Apps"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "没有匹配的应用"
+          }
+        }
+      }
+    },
+    "没有可显示的窗口": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No Windows to Show"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "没有可显示的窗口"
           }
         }
       }
@@ -1593,6 +3513,38 @@
         }
       }
     },
+    "添加": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "添加"
+          }
+        }
+      }
+    },
+    "添加一个应用，为它选择关闭、最小化和缩放按钮的动作。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add an app to customize its close, minimize, and zoom buttons."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "添加一个应用，为它选择关闭、最小化和缩放按钮的动作。"
+          }
+        }
+      }
+    },
     "添加应用": {
       "localizations": {
         "en": {
@@ -1641,6 +3593,38 @@
         }
       }
     },
+    "点击保护时间": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Click Protection Time"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "点击保护时间"
+          }
+        }
+      }
+    },
+    "点击菜单栏图标打开规则；右键可暂停增强功能或进入设置。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Click the menu bar icon to open rules. Right-click to pause enhancements or open settings."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "点击菜单栏图标打开规则；右键可暂停增强功能或进入设置。"
+          }
+        }
+      }
+    },
     "版本": {
       "localizations": {
         "en": {
@@ -1653,6 +3637,54 @@
           "stringUnit": {
             "state": "translated",
             "value": "版本"
+          }
+        }
+      }
+    },
+    "状态": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Status"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "状态"
+          }
+        }
+      }
+    },
+    "独立于按钮规则；还需在设置中开启悬停放大。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Independent of button rules. Hover enlargement must also be enabled in Settings."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "独立于按钮规则；还需在设置中开启悬停放大。"
+          }
+        }
+      }
+    },
+    "用于识别红绿灯、切换与管理窗口。未授权时可以先浏览设置。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Used to detect traffic lights, switch windows and manage their layout. You can explore settings before granting access."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "用于识别红绿灯、切换与管理窗口。未授权时可以先浏览设置。"
           }
         }
       }
@@ -1689,6 +3721,86 @@
         }
       }
     },
+    "移入预览可切换或管理窗口；移出后稍作停留再关闭，方便从 Dock 移入预览。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Move into the preview to switch or manage windows. A short closing delay lets you cross the gap from the Dock."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "移入预览可切换或管理窗口；移出后稍作停留再关闭，方便从 Dock 移入预览。"
+          }
+        }
+      }
+    },
+    "移出后关闭延迟": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delay before closing after pointer leaves"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "移出后关闭延迟"
+          }
+        }
+      }
+    },
+    "移到红绿灯上显示更大的按钮，可调整出现延迟和点击保护。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hover over the traffic lights for larger buttons. Adjust the appearance delay and click protection in settings."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "移到红绿灯上显示更大的按钮，可调整出现延迟和点击保护。"
+          }
+        }
+      }
+    },
+    "移动窗口": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Move Window"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "移动窗口"
+          }
+        }
+      }
+    },
+    "稍后设置": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Set Up Later"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "稍后设置"
+          }
+        }
+      }
+    },
     "空格": {
       "localizations": {
         "en": {
@@ -1717,6 +3829,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "窗口"
+          }
+        }
+      }
+    },
+    "窗口切换": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Window Switching"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "窗口切换"
           }
         }
       }
@@ -1753,6 +3881,54 @@
         }
       }
     },
+    "窗口缩略图": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Window Thumbnails"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "窗口缩略图"
+          }
+        }
+      }
+    },
+    "窗口缩略图需要屏幕录制权限。未授权时仍可使用图标和标题切换窗口。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Window thumbnails need Screen Recording permission. Without it, icons and titles remain available for switching."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "窗口缩略图需要屏幕录制权限。未授权时仍可使用图标和标题切换窗口。"
+          }
+        }
+      }
+    },
+    "窗口缩略图（可选）": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Window Thumbnails (Optional)"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "窗口缩略图（可选）"
+          }
+        }
+      }
+    },
     "窗口面板": {
       "localizations": {
         "en": {
@@ -1765,6 +3941,38 @@
           "stringUnit": {
             "state": "translated",
             "value": "窗口面板"
+          }
+        }
+      }
+    },
+    "窗口预览": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Window Previews"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "窗口预览"
+          }
+        }
+      }
+    },
+    "窗口预览与切换": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Window Previews & Switching"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "窗口预览与切换"
           }
         }
       }
@@ -1785,6 +3993,22 @@
         }
       }
     },
+    "系统默认": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "System Default"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "系统默认"
+          }
+        }
+      }
+    },
     "红灯": {
       "localizations": {
         "en": {
@@ -1801,50 +4025,18 @@
         }
       }
     },
-    "红灯重定义：退出应用或关闭窗口": {
+    "继续": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Red: quit the app or close the window"
+            "value": "Continue"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "红灯重定义：退出应用或关闭窗口"
-          }
-        }
-      }
-    },
-    "纯热区": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Hotspot"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "纯热区"
-          }
-        }
-      }
-    },
-    "纯热区：界面外观完全不变，仅在按钮周围扩大不可见点击区，点击立即响应。": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Hotspot keeps the title bar unchanged and only enlarges the invisible click zones."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "纯热区：界面外观完全不变，仅在按钮周围扩大不可见点击区，点击立即响应。"
+            "value": "继续"
           }
         }
       }
@@ -1865,18 +4057,50 @@
         }
       }
     },
-    "绿灯重定义：最大化、全屏或贴靠": {
+    "编辑…": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Green: maximize, fullscreen, or tiling"
+            "value": "Edit…"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "绿灯重定义：最大化、全屏或贴靠"
+            "value": "编辑…"
+          }
+        }
+      }
+    },
+    "编辑规则": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Edit Rule"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "编辑规则"
+          }
+        }
+      }
+    },
+    "缩放按钮": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zoom Button"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "缩放按钮"
           }
         }
       }
@@ -1929,6 +4153,70 @@
         }
       }
     },
+    "规则已停用。配置会保留，启用后生效。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rules are disabled. Your configuration is saved and will apply when enabled."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "规则已停用。配置会保留，启用后生效。"
+          }
+        }
+      }
+    },
+    "规则已删除": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rule Deleted"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "规则已删除"
+          }
+        }
+      }
+    },
+    "规则操作": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rule Actions"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "规则操作"
+          }
+        }
+      }
+    },
+    "让窗口操作更顺手": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Make window controls work for you"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "让窗口操作更顺手"
+          }
+        }
+      }
+    },
     "记录当前所有可见窗口的位置和大小；同名保存会覆盖旧布局。": {
       "localizations": {
         "en": {
@@ -1941,6 +4229,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "记录当前所有可见窗口的位置和大小；同名保存会覆盖旧布局。"
+          }
+        }
+      }
+    },
+    "设置": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Settings"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "设置"
           }
         }
       }
@@ -1961,6 +4265,38 @@
         }
       }
     },
+    "诊断": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Diagnostics"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "诊断"
+          }
+        }
+      }
+    },
+    "试试左上角的红绿灯": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Try the Traffic Lights in the Top-Left Corner"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "试试左上角的红绿灯"
+          }
+        }
+      }
+    },
     "详情": {
       "localizations": {
         "en": {
@@ -1977,6 +4313,22 @@
         }
       }
     },
+    "请选择带有有效应用标识的其他 macOS 应用。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose another macOS app with a valid bundle identifier."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请选择带有有效应用标识的其他 macOS 应用。"
+          }
+        }
+      }
+    },
     "调度中心": {
       "localizations": {
         "en": {
@@ -1989,6 +4341,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "调度中心"
+          }
+        }
+      }
+    },
+    "调整尺寸": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Resize Window"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "调整尺寸"
           }
         }
       }
@@ -2025,6 +4393,38 @@
         }
       }
     },
+    "辅助功能": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Accessibility"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "辅助功能"
+          }
+        }
+      }
+    },
+    "辅助功能权限": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Accessibility Permission"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "辅助功能权限"
+          }
+        }
+      }
+    },
     "输入法切换": {
       "localizations": {
         "en": {
@@ -2041,6 +4441,22 @@
         }
       }
     },
+    "运行状态": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Status"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "运行状态"
+          }
+        }
+      }
+    },
     "还没有配置任何应用": {
       "localizations": {
         "en": {
@@ -2053,6 +4469,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "还没有配置任何应用"
+          }
+        }
+      }
+    },
+    "这里是真实窗口。把鼠标移到红绿灯上，检查覆盖位置、颜色、出现延迟和点击反馈。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This is a real window. Hover over its traffic lights to check placement, color, appearance delay, and click feedback."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "这里是真实窗口。把鼠标移到红绿灯上，检查覆盖位置、颜色、出现延迟和点击反馈。"
           }
         }
       }
@@ -2121,6 +4553,38 @@
         }
       }
     },
+    "选择其他应用…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose Another App…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "选择其他应用…"
+          }
+        }
+      }
+    },
+    "选择正在运行的应用": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose a Running App"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "选择正在运行的应用"
+          }
+        }
+      }
+    },
     "通用": {
       "localizations": {
         "en": {
@@ -2133,6 +4597,70 @@
           "stringUnit": {
             "state": "translated",
             "value": "通用"
+          }
+        }
+      }
+    },
+    "部分功能不可用": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Some Features Unavailable"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "部分功能不可用"
+          }
+        }
+      }
+    },
+    "重做规则修改": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Redo Rule Change"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "重做规则修改"
+          }
+        }
+      }
+    },
+    "重新查看引导": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show Guide Again"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "重新查看引导"
+          }
+        }
+      }
+    },
+    "重新检查权限": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Check Permissions Again"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "重新检查权限"
           }
         }
       }
@@ -2185,6 +4713,38 @@
         }
       }
     },
+    "随时调整或暂停": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Adjust or pause at any time"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "随时调整或暂停"
+          }
+        }
+      }
+    },
+    "隐私与权限": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Privacy and Permissions"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "隐私与权限"
+          }
+        }
+      }
+    },
     "隐藏应用": {
       "localizations": {
         "en": {
@@ -2213,6 +4773,70 @@
           "stringUnit": {
             "state": "translated",
             "value": "需按住至少一个修饰键（⌘ ⌥ ⌃ ⇧）"
+          }
+        }
+      }
+    },
+    "需要再看一遍时，打开「设置 → 通用 → 重新查看引导」。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "To see this guide again, go to Settings → General → Show Guide Again."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "需要再看一遍时，打开「设置 → 通用 → 重新查看引导」。"
+          }
+        }
+      }
+    },
+    "需要屏幕录制权限。未授权时仍可使用图标和标题，图片只缓存在内存中。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Requires Screen Recording access. Without it, previews still show icons and titles. Images are cached only in memory."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "需要屏幕录制权限。未授权时仍可使用图标和标题，图片只缓存在内存中。"
+          }
+        }
+      }
+    },
+    "项目主页": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Project Home"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "项目主页"
+          }
+        }
+      }
+    },
+    "预览大小": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preview Size"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "预览大小"
           }
         }
       }
@@ -2265,6 +4889,38 @@
         }
       }
     },
+    "默认关闭。启用前请确认不会与系统或其他窗口管理工具的拖拽贴靠重复。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Off by default. Before enabling, check that it will not duplicate snapping from macOS or another window manager."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "默认关闭。启用前请确认不会与系统或其他窗口管理工具的拖拽贴靠重复。"
+          }
+        }
+      }
+    },
+    "鼠标悬停时，放大按钮直接覆盖原生红绿灯，驻留后可点击；移开鼠标即收起。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hover to enlarge the controls over the original traffic lights. Click after the dwell delay; move away to dismiss."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "鼠标悬停时，放大按钮直接覆盖原生红绿灯，驻留后可点击；移开鼠标即收起。"
+          }
+        }
+      }
+    },
     "，": {
       "localizations": {
         "en": {
@@ -2293,6 +4949,86 @@
           "stringUnit": {
             "state": "translated",
             "value": "🌐+左键"
+          }
+        }
+      }
+    },
+    "重试注册": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Retry Registration"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "重试注册"
+          }
+        }
+      }
+    },
+    "重新注册「%@」": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Retry registration for “%@”"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "重新注册「%@」"
+          }
+        }
+      }
+    },
+    "无法启用快捷键监听（错误 %lld）。请重试。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Could not enable keyboard shortcuts (error %lld). Please retry."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法启用快捷键监听（错误 %lld）。请重试。"
+          }
+        }
+      }
+    },
+    "快捷键被占用。关闭冲突应用或更换组合后重试。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This shortcut is in use. Quit the conflicting app or choose another shortcut, then retry."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "快捷键被占用。关闭冲突应用或更换组合后重试。"
+          }
+        }
+      }
+    },
+    "快捷键注册失败（错误 %lld）。请重试或更换组合。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Shortcut registration failed (error %lld). Retry or choose another shortcut."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "快捷键注册失败（错误 %lld）。请重试或更换组合。"
           }
         }
       }

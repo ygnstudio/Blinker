@@ -5,6 +5,46 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-10-03
+
+### Added
+
+- Window previews through Option-Tab and Dock hover, with configurable delays, optional thumbnails, minimized-window caches and per-app window lists. Standard macOS window tabs and Safari tabs can appear as separate items.
+- Preview panel scaling from 50% to 150%, with the frame, controls and content scaling together. Items share one grid and scroll when they exceed the available screen space.
+- Independent app-rule windows and editors, searchable application selection, per-app hover controls, rule copying, JSON import/export, undo/redo and temporary pause controls.
+- Thirds and previous-layout restore for window placement, shared action feedback, compatibility diagnostics and a first-launch guide that requests permissions only after an explicit button press.
+- Offline license and project notices in About and in the app bundle.
+
+### Changed
+
+- Reorganized native settings into General, Hover Enlargement, Window Previews & Switching, Window Management, Experimental Features and About. Workspace controls now live under the explicit experimental switch.
+- Hover controls cover the native traffic lights, retain their colors and share a continuous glass tray. macOS 26+ uses system Liquid Glass; earlier systems use native fallback materials.
+- Rule import and export share the same validation and limits of 1000 rules and 1 MiB. Exports use compact JSON; invalid or oversized exports fail before replacing an existing backup.
+- The current source is licensed under GPL-3.0-only. Commercial use and paid distribution are permitted subject to GPLv3 obligations. Previously released MIT versions retain their original grants.
+- Homebrew is the primary installation and update path; DMG remains available. Releases explicitly use ad-hoc signing without Developer ID or Apple notarization. Users may need to allow the app in Privacy & Security.
+
+### Removed
+
+- Invisible hit-area mode and sampled title-bar backdrops. Hover enlargement uses visible covering controls and native materials without screen capture.
+- Desktop-switch shortcut actions. Experimental workspace restoration remains available, including its separately enabled original-Space option.
+
+### Fixed
+
+- Hover trays extending beyond their owner window, cramped button spacing, inconsistent preview appearance and missing tray backgrounds.
+- Native green-button fallback on windows that expose a zoom button without a fullscreen button.
+- Thumbnail matching that could accept a reused window ID or a conflicting title. Tab capture checks the containing window while keeping each tab's own image identity.
+- Keyboard events leaking to another app while the switcher opens, and rapid Option release leaving the switcher open. Switcher shortcuts now follow the panel's selection and dismissal state.
+- Window-management and hover-toggle hotkeys now request exclusive registration instead of silently sharing a combination with another app. Registration errors appear inline with a retry control, preserving the configured binding; this does not detect every shortcut intercepted by macOS.
+- Rule exports that could not be imported again after JSON expansion or accumulated imports.
+- Packaging failures replacing an installed app. Packaging verifies a staged bundle first and rejects unsafe output paths or a different bundle identifier.
+
+### Known limits
+
+- macOS 15+ is the deployment target and release builds include arm64 and x86_64. Compilation does not replace runtime testing; minimum-OS, Intel, core compatibility and performance acceptance remain incomplete.
+- Custom tab bars and windows on other Spaces may not be discoverable. Inactive tabs and minimized windows use their own cached image when available, otherwise an icon and title. Tab preview actions such as Close Window apply to the containing window.
+- Unconfigured enhanced clicks on the hover controls perform no action; an unconfigured ordinary left click presses the native button.
+- Experimental workspaces match existing windows and do not reopen documents or sessions. Restoring an original Space relies on private system APIs.
+
 ## [0.3.0] - 2026-09-17
 
 ### Added

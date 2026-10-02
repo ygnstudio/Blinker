@@ -184,58 +184,69 @@ enum AXQuery {
         ) == .success
     }
 
-    /// Cheaply finds the topmost standard (layer 0) on-screen window containing
-    /// the point. `excludingProcessIdentifier` skips windows of a given app,
-    /// e.g. Blinker's own settings window.
-    ///
-    /// `usingCache` serves a validated cached hit instead of walking the
-    /// whole `CGWindowList` — intended for hot paths (per-mouse-move hover
-    /// detection), not for click decisions. The cached hit is re-validated
-    /// with a single-window query (still on screen, layer 0, current bounds
-    /// containing the point); residual staleness is limited to z-order
-    /// changes directly under a stationary cursor, and the cache is
-    /// invalidated on drags and app activations by the hover controller.
+    typealias WindowListProvider = (CGWindowListOption, CGWindowID) -> [[String: Any]]
+
+    static func copyWindowList(_ options: CGWindowListOption, _ windowID: CGWindowID) -> [[String: Any]] {
+        CGWindowListCopyWindowInfo(options, windowID) as? [[String: Any]] ?? []
+    }
+
+    /// Checks front-to-back order even on a cache hit: a cached window's
+    /// exposed corner does not make it the target in an overlapping region.
     static func windowUnderPoint(
         _ point: CGPoint,
         excludingProcessIdentifier excludedPID: pid_t? = nil,
-        usingCache: Bool = false
+        includingTestWindow: Bool = false,
+        usingCache: Bool = false,
+        windowList: WindowListProvider = copyWindowList
     ) -> WindowHit? {
-        if usingCache, let cached = cachedWindowHit {
-            if cached.processIdentifier != excludedPID,
-               let validated = validatedCachedHit(cached, at: point) {
-                return validated
+        var candidates: [[String: Any]]?
+        if usingCache, let cached = cacheLock.withLock({ cachedWindowHit }), cached.windowID != 0 {
+            let above = windowList(
+                [.optionOnScreenOnly, .optionOnScreenAboveWindow, .optionIncludingWindow], cached.windowID
+            )
+            // If the cached window vanished or moved away, search below it too.
+            if above.contains(where: { info in
+                guard let hit = windowHit(from: info) else { return false }
+                return hit.windowID == cached.windowID && hit.bounds.contains(point)
+            }) {
+                candidates = above
             }
         }
-
-        let windowList = CGWindowListCopyWindowInfo([.optionOnScreenOnly], kCGNullWindowID)
-            as? [[String: Any]] ?? []
-        for info in windowList {
-            guard info[kCGWindowLayer as String] as? Int == 0 else { continue }
-            guard
-                let boundsDictionary = info[kCGWindowBounds as String],
-                // CGWindowList values are toll-free-bridged CF objects.
-                // swiftlint:disable:next force_cast
-                let bounds = CGRect(dictionaryRepresentation: boundsDictionary as! CFDictionary),
-                bounds.contains(point)
-            else { continue }
-            guard let pid = info[kCGWindowOwnerPID as String] as? pid_t else { continue }
-            if let excludedPID, pid == excludedPID {
-                // The topmost window at this point belongs to us (settings
-                // window, overlay host); never fall through to windows hidden
-                // behind it.
-                cacheWindowHit(nil)
-                return nil
-            }
-            let windowID = info[kCGWindowNumber as String] as? CGWindowID ?? 0
-            let hit = WindowHit(processIdentifier: pid, bounds: bounds, windowID: windowID)
-            cacheWindowHit(hit)
-            return hit
+        let list = candidates ?? windowList([.optionOnScreenOnly], kCGNullWindowID)
+        let hit = list.lazy.compactMap { windowHit(from: $0) }.first { $0.bounds.contains(point) }
+        // An excluded foreground window blocks hits behind it.
+        let result = hit.flatMap { candidate in
+            let testException = includingTestWindow && HoverTestWindow.contains(candidate)
+            return candidate.processIdentifier == excludedPID && !testException ? nil : candidate
         }
-        cacheWindowHit(nil)
-        return nil
+        cacheWindowHit(result)
+        return result
     }
 
-    // MARK: - Hot-path hit cache
+    /// A visible palette owns its window even where the palette extends past
+    /// that window's bounds. Discard it when its owner moves, closes or minimizes.
+    static func isWindowCurrent(
+        _ expected: WindowHit, windowList: WindowListProvider = copyWindowList
+    ) -> Bool {
+        guard expected.windowID != 0 else { return false }
+        return windowList([.optionOnScreenOnly, .optionIncludingWindow], expected.windowID).contains { info in
+            guard let hit = windowHit(from: info) else { return false }
+            return hit.windowID == expected.windowID
+                && hit.processIdentifier == expected.processIdentifier
+                && hit.bounds == expected.bounds
+        }
+    }
+
+    private static func windowHit(from info: [String: Any]) -> WindowHit? {
+        guard info[kCGWindowLayer as String] as? Int == 0,
+              info[kCGWindowIsOnscreen as String] as? Bool != false,
+              let dictionary = info[kCGWindowBounds as String] as? NSDictionary,
+              let bounds = CGRect(dictionaryRepresentation: dictionary),
+              let pid = info[kCGWindowOwnerPID as String] as? pid_t,
+              let windowID = info[kCGWindowNumber as String] as? CGWindowID
+        else { return nil }
+        return WindowHit(processIdentifier: pid, bounds: bounds, windowID: windowID)
+    }
 
     private static let cacheLock = NSLock()
     private static var cachedWindowHit: WindowHit?
@@ -244,31 +255,8 @@ enum AXQuery {
         cacheLock.withLock { cachedWindowHit = hit }
     }
 
-    /// Drops the hot-path cache; called when the window order may have
-    /// changed without the cursor moving (drag stand-down, app activation).
     static func invalidateWindowUnderPointCache() {
         cacheWindowHit(nil)
-    }
-
-    /// Re-validates a cached hit with a single-window `CGWindowList` query —
-    /// far cheaper than the full copy — returning the hit with its *current*
-    /// bounds, or `nil` when the window disappeared, left the screen or no
-    /// longer contains the point.
-    private static func validatedCachedHit(_ cached: WindowHit, at point: CGPoint) -> WindowHit? {
-        guard cached.windowID != 0 else { return nil }
-        let list = CGWindowListCopyWindowInfo([.optionOnScreenOnly], cached.windowID)
-            as? [[String: Any]] ?? []
-        guard let info = list.first else { return nil }
-        guard
-            info[kCGWindowLayer as String] as? Int == 0,
-            let pid = info[kCGWindowOwnerPID as String] as? pid_t,
-            pid == cached.processIdentifier,
-            let boundsDictionary = info[kCGWindowBounds as String],
-            // swiftlint:disable:next force_cast
-            let bounds = CGRect(dictionaryRepresentation: boundsDictionary as! CFDictionary),
-            bounds.contains(point)
-        else { return nil }
-        return WindowHit(processIdentifier: pid, bounds: bounds, windowID: cached.windowID)
     }
 }
 

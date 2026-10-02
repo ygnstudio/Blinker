@@ -2,173 +2,151 @@ import AppKit
 import ApplicationServices
 import CoreGraphics
 
-// MARK: - Panels and activation (main thread only)
+struct OverlayPresentation {
+    let layout: OverlayLayout
+    let hoveredIndex: Int?
+    let settings: HoverOverlaySettings
+}
 
 extension HoverOverlayController {
-    func syncPanels(layout: OverlayLayout, hoveredIndex: Int?, settings: HoverOverlaySettings) {
-        let signature = layout.buttons.map(\.frame)
-        let pid = layout.target.hit.processIdentifier
-        isOverlayVisible = true
-
+    func syncPanels(
+        layout: OverlayLayout, hoveredIndex: Int?, settings: HoverOverlaySettings, revision: UInt64
+    ) {
+        let presentation = OverlayPresentation(
+            layout: layout, hoveredIndex: hoveredIndex, settings: settings
+        )
+        guard presentationState.submit(presentation, revision: revision) else { return }
         DispatchQueue.main.async { [weak self] in
-            guard let self else { return }
-            let needsRebuild = signature != panelSignature || pid != panelPID
-                || panels.count != layout.buttons.count
-                || extraPanels.count != layout.extraActions.count
+            guard let self, let pending = presentationState.takePending(), tapHost.isRunning,
+                  presentationState.isCurrent(pending.revision) else { return }
+            let presentation = pending.presentation
+            let layout = presentation.layout
+            let settings = presentation.settings
+            let needsRebuild = layout.allPanelFrames != panelSignature
+                || layout.target.hit.windowID != panelWindowID
+                || layout.target.hit.processIdentifier != panelPID
                 || layout.extraActions != panelExtraActions
+                || panels.isEmpty
             if needsRebuild {
-                rebuildPanels(
-                    layout: layout,
-                    isHotspot: settings.mode == .hotspot
-                )
-            } else {
-                // The tray is fronted before the panels so the enlarged
-                // chips always stack above it (belt and braces: the tray
-                // also sits one window level below the chips).
-                trayPanel?.orderFrontRegardless()
-                panels.forEach { $0.orderFrontRegardless() }
-                extraPanels.forEach { $0.orderFrontRegardless() }
+                rebuildPanels(layout: layout)
             }
+            guard presentationState.publish(layout, revision: pending.revision) else {
+                removePanelViews()
+                return
+            }
+            updateButtonPresentations(layout: layout, settings: settings)
+            // An already-visible window needs no ordering call on mouse moves.
             dwell.applyHoverTransition(
                 dwellPanels: allDwellPanels,
-                hoveredIndex: hoveredIndex,
-                dwellMilliseconds: settings.effectiveDwellMilliseconds
+                hoveredIndex: presentation.hoveredIndex,
+                dwellMilliseconds: settings.dwellMilliseconds
             )
         }
     }
 
-    private func rebuildPanels(layout: OverlayLayout, isHotspot: Bool) {
-        hidePanels()
-        installTrayPanel(layout: layout, isHotspot: isHotspot)
-        panels = makeTrafficPanels(layout: layout, isHotspot: isHotspot)
-        panelSignature = layout.buttons.map(\.frame)
+    private func rebuildPanels(layout: OverlayLayout) {
+        removePanelViews()
+        panels = makeTrafficButtons(layout: layout)
+        extraPanels = makeExtraButtons(layout: layout)
+        let controls = panels + extraPanels
+        if let frame = HoverOverlayTrayPanel.frame(forDisplayFrames: layout.allPanelFrames) {
+            OverlayClickGate.setOverlayFrames([frame])
+            let tray = trayPanel ?? HoverOverlayTrayPanel(trayFrame: frame)
+            tray.update(trayFrame: frame, controls: controls, frames: layout.allPanelFrames)
+            trayPanel = tray
+            tray.orderFrontRegardless()
+        }
+        panelSignature = layout.allPanelFrames
+        panelWindowID = layout.target.hit.windowID
         panelPID = layout.target.hit.processIdentifier
         panelExtraActions = layout.extraActions
-        extraPanels = makeExtraPanels(layout: layout)
-        panels.forEach { $0.orderFrontRegardless() }
-        extraPanels.forEach { $0.orderFrontRegardless() }
     }
 
-    /// One enlarged-button panel per traffic light, with a long-press probe
-    /// wired to the rule engine. Value-captured engine so the probe closure
-    /// stays Sendable and never retains the controller.
-    private func makeTrafficPanels(layout: OverlayLayout, isHotspot: Bool) -> [HoverOverlayPanel] {
-        let ruleEngine = self.ruleEngine
-        let bundleIdentifier = layout.target.bundleIdentifier
-        return zip(layout.buttons, layout.panelFrames).map { info, panelFrame in
-            HoverOverlayPanel(
-                panelFrame: panelFrame,
-                info: info,
-                isHotspot: isHotspot,
-                hasLongPressAction: {
+    private func updateButtonPresentations(layout: OverlayLayout, settings: HoverOverlaySettings) {
+        let variant = OverlayActionPresentation.variant(for: NSEvent.modifierFlags)
+        for (control, info) in zip(panels, layout.buttons) {
+            let resolve: (ClickVariant) -> OverlayActionPresentation = { [ruleEngine] variant in
+                OverlayActionPresentation.resolve(engine: ruleEngine,
+                                                  bundleID: layout.target.bundleIdentifier,
+                                                  button: info.button, variant: variant)
+            }
+            control.updatePresentation(resolve(variant))
+            control.requiresDwell = { !settings.protectQuitOnly || resolve($0).action == .quitApp }
+        }
+        for (control, action) in zip(extraPanels, layout.extraActions) {
+            control.requiresDwell = { _ in !settings.protectQuitOnly || action == .quitApp }
+        }
+    }
+
+    private func makeTrafficButtons(layout: OverlayLayout) -> [HoverOverlayButtonView] {
+        zip(layout.buttons, layout.panelFrames).map { info, frame in
+            let presentation = OverlayActionPresentation.resolve(
+                engine: ruleEngine, bundleID: layout.target.bundleIdentifier, button: info.button,
+                variant: .left
+            )
+            return HoverOverlayButtonView(
+                frame: NSRect(origin: .zero, size: frame.size),
+                symbol: presentation.symbol,
+                label: presentation.label,
+                color: OverlayChipDrawing.vividColor(for: info.button),
+                hasLongPressAction: { [ruleEngine] in
                     ruleEngine.action(
-                        forBundleIdentifier: bundleIdentifier,
-                        button: info.button,
-                        variant: .longPressLeft
+                        forBundleIdentifier: layout.target.bundleIdentifier,
+                        button: info.button, variant: .longPressLeft
                     ) != nil
                 },
                 onActivate: { [weak self] variant in
                     self?.activate(
-                        info: info,
-                        axWindow: layout.axWindow,
+                        info: info, axWindow: layout.axWindow,
                         processIdentifier: layout.target.hit.processIdentifier,
-                        bundleIdentifier: layout.target.bundleIdentifier,
-                        variant: variant
+                        bundleIdentifier: layout.target.bundleIdentifier, variant: variant
                     )
                 },
                 onLongPress: { [weak self] in
                     self?.activateLongPress(
                         axWindow: layout.axWindow,
                         processIdentifier: layout.target.hit.processIdentifier,
-                        bundleIdentifier: layout.target.bundleIdentifier,
-                        button: info.button
+                        bundleIdentifier: layout.target.bundleIdentifier, button: info.button
                     )
                 }
             )
         }
     }
 
-    /// One non-activating chip panel per configured extra action.
-    private func makeExtraPanels(layout: OverlayLayout) -> [HoverOverlayExtraPanel] {
+    private func makeExtraButtons(layout: OverlayLayout) -> [HoverOverlayButtonView] {
         layout.extraActions.enumerated().map { index, action in
-            HoverOverlayExtraPanel(
-                panelFrame: layout.extraPanelFrames[index],
-                action: action
-            ) { [weak self] in
-                self?.activateExtra(ExtraChipContext(
-                    action: action,
-                    axWindow: layout.axWindow,
-                    processIdentifier: layout.target.hit.processIdentifier,
-                    anchorFrame: layout.extraPanelFrames[index],
-                    buttonFrames: layout.buttons.map(\.frame),
-                    windowBounds: layout.target.hit.bounds,
-                    appName: layout.target.appName
-                ))
-            }
-        }
-    }
-
-    /// Installs the glass capsule tray behind the whole displayed group
-    /// (enlarged traffic dots and extra chips). It goes in first so the
-    /// chips stack above it; each traffic dot additionally gets a bounded
-    /// radial glow on the glass that absorbs the native button's blurred
-    /// ghost. Hotspot mode keeps the title bar untouched.
-    private func installTrayPanel(layout: OverlayLayout, isHotspot: Bool) {
-        guard !isHotspot else { return }
-        guard
-            let trayFrame = HoverOverlayTrayPanel.frame(
-                forDisplayFrames: layout.allPanelFrames
+            HoverOverlayButtonView(
+                frame: NSRect(origin: .zero, size: layout.extraPanelFrames[index].size),
+                symbol: action.extraSymbolName ?? "circle",
+                label: action.localizedLabel, color: .controlAccentColor,
+                onActivate: { [weak self] _ in
+                    self?.activateExtra(ExtraChipContext(
+                        action: action, axWindow: layout.axWindow,
+                        processIdentifier: layout.target.hit.processIdentifier,
+                        anchorFrame: layout.extraPanelFrames[index],
+                        buttonFrames: layout.buttons.map(\.frame),
+                        windowBounds: layout.target.hit.bounds, appName: layout.target.appName
+                    ))
+                }
             )
-        else { return }
-        let glows = zip(layout.buttons, layout.panelFrames).map { info, panelFrame in
-            // The dot's circle rect (same inset rule as the chip drawing)
-            // expressed in tray-local coordinates.
-            let circleFrame = panelFrame.insetBy(
-                dx: OverlayChipDrawing.chipInset,
-                dy: OverlayChipDrawing.chipInset
-            )
-            return HoverOverlayTrayPanel.Glow(
-                rect: HoverOverlayTrayPanel.localRect(
-                    forAXRect: circleFrame,
-                    inTray: trayFrame
-                ),
-                color: OverlayChipDrawing.vividColor(for: info.button)
-            )
-        }
-        // The tray is kept alive across hide/show cycles: a reused window
-        // carries its established glass blend, so later appearances come up
-        // clean instead of replaying the unblended-base flash. Only the
-        // very first tray still needs the two-phase fade.
-        if let tray = trayPanel {
-            tray.update(trayFrame: trayFrame, glows: glows)
-            if tray.needsGlassFade {
-                // A first glass fade that was cut short by a quick
-                // hover-out can leave the backdrop at zero alpha; restart
-                // it rather than showing a glow-only (or half-blended)
-                // tray.
-                tray.orderFrontFadingIn()
-            } else {
-                tray.orderFrontRegardless()
-            }
-        } else {
-            let tray = HoverOverlayTrayPanel(trayFrame: trayFrame, glows: glows)
-            tray.orderFrontFadingIn()
-            trayPanel = tray
         }
     }
 
     func hidePanels() {
+        presentationState.invalidate()
+        removePanelViews()
+    }
+
+    func removePanelViews() {
         hud.close()
         dwell.stop()
-        panels.forEach { $0.orderOut(nil) }
+        OverlayClickGate.setOverlayFrames([])
+        trayPanel?.orderOut(nil)
         panels = []
-        extraPanels.forEach { $0.orderOut(nil) }
         extraPanels = []
         panelExtraActions = []
-        // The tray window is only hidden, never released: keeping it alive
-        // preserves the glass blend so the next appearance is flash-free.
-        trayPanel?.orderOut(nil)
         panelSignature = []
+        panelWindowID = 0
         panelPID = 0
     }
 
@@ -196,14 +174,12 @@ extension HoverOverlayController {
                 )
             }
         case (nil, .left):
-            workQueue.async { [weak self] in
-                // The click was swallowed by the panel; log a failed press so
-                // the user's dead click is at least diagnosable.
-                if !AXQuery.pressButton(subrole: info.axSubrole, in: axWindow) {
-                    self?.logger.error(
-                        "native AXPress failed for \(info.axSubrole, privacy: .public); click was consumed"
-                    )
-                }
+            workQueue.async { [actionPerformer] in
+                actionPerformer.pressNativeButton(
+                    subrole: info.axSubrole,
+                    window: axWindow,
+                    processIdentifier: processIdentifier
+                )
             }
         case (nil, _):
             // Unconfigured enhanced variant: nothing to do (the click is

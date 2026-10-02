@@ -31,30 +31,10 @@ public class OverlayPanel: NSPanel {
         self.ignoresMouseEvents = ignoresMouseEvents
     }
 
-    /// Orders the panel front with a two-phase fade-in. The system glass
-    /// renders its unblended base color — a solid light-or-dark rectangle,
-    /// depending on appearance — for an indeterminate stretch after the
-    /// window first appears, until the behind-window blend engages (no
-    /// public signal announces readiness). A fast or ease-out fade reveals
-    /// that base mid-ramp: the pill reads as "white, then translucent".
-    ///
-    /// Phase one holds the window at zero alpha for `hold` seconds, so the
-    /// blend settles while the panel is fully invisible. Phase two fades
-    /// in with an ease-in curve, whose near-zero early frames act as extra
-    /// insurance against a slower-than-expected blend. Only for glass-backed
-    /// surfaces (tray, management HUD): plain drawn panels (chips, snap
-    /// preview) have no unblended frame to hide.
-    public func orderFrontFadingIn(hold: TimeInterval = 0.2, duration: TimeInterval = 0.3) {
-        alphaValue = 0
+    /// Present the material and its content together, without delayed alpha changes.
+    public func orderFrontFadingIn(hold _: TimeInterval = 0, duration _: TimeInterval = 0) {
+        alphaValue = 1
         orderFrontRegardless()
-        DispatchQueue.main.asyncAfter(deadline: .now() + hold) { [weak self] in
-            guard let self, self.isVisible else { return }
-            NSAnimationContext.runAnimationGroup { context in
-                context.duration = duration
-                context.timingFunction = CAMediaTimingFunction(name: .easeIn)
-                self.animator().alphaValue = 1
-            }
-        }
     }
 }
 
@@ -89,6 +69,11 @@ public enum GlassBackdrop {
             let glass = NSGlassEffectView(frame: frame)
             glass.cornerRadius = cornerRadius
             glass.style = style == .clear ? .clear : .regular
+            #if compiler(>=6.4)
+                if #available(macOS 27.0, *) {
+                    glass.effectIsInteractive = true
+                }
+            #endif
             glass.autoresizingMask = autoresizingMask
             return glass
         }
@@ -101,11 +86,8 @@ public enum GlassBackdrop {
         return backdrop
     }
 
-    /// Hosts `content` inside the backdrop. `NSGlassEffectView` only
-    /// renders its live material when the content is assigned through its
-    /// `contentView` — a plain `addSubview` sibling silently degrades to a
-    /// static frost where the style makes no difference. The pre-26
-    /// `NSVisualEffectView` fallback takes a normal subview.
+    /// The system guarantees material ordering for contentView. Keep all
+    /// controls in that hierarchy instead of overlaying sibling windows.
     public static func host(_ content: NSView, in backdrop: NSView) {
         if #available(macOS 26.0, *), let glass = backdrop as? NSGlassEffectView {
             glass.contentView = content
