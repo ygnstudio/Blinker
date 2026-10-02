@@ -41,18 +41,22 @@
 
 ## Homebrew 更新
 
-源码推送、Git 标签、GitHub Release 和 tap 是不同步骤。先完成验收并发布稳定版，再更新 tap 中 `Casks/blinker.rb` 的版本、下载地址和 SHA-256；预发布标签不更新稳定 cask。
+发布流程分为两段：向 Blinker 源码仓推送 `vX.Y.Z` 标签后，远端 Release 工作流执行测试、构建和校验，再发布 DMG 与校验和；tap 随后定时检查 GitHub 的最新稳定版，校验通过才更新 `Casks/blinker.rb` 并自动提交、推送。预发布标签不进入稳定 cask。
 
-tap 的维护入口采用手动触发流程：核对已发布的稳定版，从 Blinker 官方仓库下载 DMG 并与该发行页的 `SHA256SUMS.txt` 比对，拒绝预发布版和降级。该流程不代表 Blinker 发布后会自动同步 tap；没有真实新版时保留现有 cask。
+tap 的 **Update Blinker cask** 工作流在默认分支每 15 分钟检查一次，计划时间为每小时第 7、22、37、52 分钟。发现新版后，它从 Blinker 官方仓库下载实际 DMG，将 SHA-256 与该发行页的 `SHA256SUMS.txt` 比对；草稿、预发布版或校验失败不修改 cask。自动检查遇到相同或更旧版本会跳过，不下载 DMG。流程仅使用 tap 自己的工作流权限，不需要额外的跨仓令牌。
 
-在 tap 仓库的 Actions 中选择 **Update Blinker cask**，从默认分支运行并将 `tag` 填为已发布的稳定版标签。也可在 tap 仓库的工作副本中执行以下命令，将 `vX.Y.Z` 替换为真实标签：
+需要立即检查时，在 tap 仓库的 Actions 中手动运行 **Update Blinker cask**，`tag` 留空检查最新稳定版，或填写指定的已发布稳定版标签；指定标签仍须校验实际 DMG，并拒绝降级或同版本校验值变化。也可在 tap 仓库的工作副本中预览或应用变更：
 
 ```bash
-# 默认只校验并展示差异
+# 校验最新稳定版并展示差异
+python3 Scripts/update-blinker.py --latest
+# 核对差异后写入；本地执行仍需自行提交和推送
+python3 Scripts/update-blinker.py --latest --write
+# 指定标签时，将占位值替换为已发布稳定版；默认只展示差异
 python3 Scripts/update-blinker.py vX.Y.Z
-# 核对差异后写入 cask，再提交和推送 tap 的变更
-python3 Scripts/update-blinker.py vX.Y.Z --write
 ```
+
+GitHub 的定时任务可能延迟，不能承诺发布后 15 分钟内必定完成同步。公开仓库连续 60 天无活动时，定时工作流会被停用；维护者应检查 Actions 状态并在需要时重新启用，参见 [GitHub 定时任务说明](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#schedule)。
 
 tap 更新并发布后，从已安装版本测试：
 

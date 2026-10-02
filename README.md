@@ -31,7 +31,7 @@ brew update
 brew upgrade --cask ygnstudio/ygn/blinker
 ```
 
-`brew update` 刷新软件信息，`brew upgrade` 安装 tap 中已提供的新版；应用内没有自动更新器，源码推送也不代表 tap 已更新。命令说明见 [Homebrew 手册](https://docs.brew.sh/Manpage)。
+`brew update` 刷新软件信息，`brew upgrade` 安装 tap 中已提供的新版。tap 会定期校验并同步已发布稳定版，发布后可能有调度延迟；应用内没有自动更新器。命令说明见 [Homebrew 手册](https://docs.brew.sh/Manpage)。
 
 不使用 Homebrew 时，从 [GitHub Releases](https://github.com/ygnstudio/Blinker/releases) 下载 DMG，将 `Blinker.app` 拖入“应用程序”；后续更新也需手动替换。
 

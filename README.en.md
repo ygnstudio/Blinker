@@ -31,7 +31,7 @@ brew update
 brew upgrade --cask ygnstudio/ygn/blinker
 ```
 
-`brew update` refreshes package information; `brew upgrade` installs the newer version available in the tap. Blinker has no built-in updater, and pushing source changes does not update the tap. See the [Homebrew manual](https://docs.brew.sh/Manpage).
+`brew update` refreshes package information; `brew upgrade` installs the newer version available in the tap. The tap periodically verifies and adopts published stable releases, so scheduling delays may occur after publication. Blinker has no built-in updater. See the [Homebrew manual](https://docs.brew.sh/Manpage).
 
 As an alternative, download a DMG from [GitHub Releases](https://github.com/ygnstudio/Blinker/releases) and drag `Blinker.app` into Applications. Update a manual installation by replacing the app with a newer download.
 
