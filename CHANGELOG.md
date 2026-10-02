@@ -5,7 +5,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
-These changes describe the current source and have not been published as a new release. The Homebrew tap changes only after a stable release is published and its cask is updated.
+## [0.4.0] - 2026-10-03
 
 ### Added
 
