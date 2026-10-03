@@ -50,7 +50,8 @@ final class HoverButtonTrackingTests: XCTestCase {
             MainActor.assumeIsolated {
                 NSApp.postEvent(
                     Self.event(.leftMouseUp, location: panel.pointer, in: panel),
-                    atStart: true
+                    // Keep release behind drags already posted, even when both timers are overdue.
+                    atStart: false
                 )
             }
         })
@@ -59,7 +60,7 @@ final class HoverButtonTrackingTests: XCTestCase {
             RunLoop.main.add(timer, forMode: .eventTracking)
         }
         defer { timers.forEach { $0.invalidate() } }
-        button.mouseDown(with: Self.event(.leftMouseDown, location: panel.pointer, in: panel))
+        NSApp.sendEvent(Self.event(.leftMouseDown, location: panel.pointer, in: panel))
         XCTAssertEqual(observedMutations, mutations.count, "every cancellation/recovery step must execute")
         return (shortPresses, longPresses)
     }
@@ -113,7 +114,19 @@ final class HoverButtonTrackingTests: XCTestCase {
     private func drag(_ button: NSButton, to point: NSPoint) {
         guard let panel = button.window as? FixturePanel else { return }
         panel.pointer = point
-        NSApp.postEvent(Self.event(.leftMouseDragged, location: point, in: panel), atStart: true)
+        NSApp.postEvent(Self.event(.leftMouseDragged, location: point, in: panel), atStart: false)
+    }
+
+    private func batchDragOutAndBack(_ button: NSButton, stall: TimeInterval = 0) {
+        guard let panel = button.window as? FixturePanel else { return }
+        for point in [NSPoint(x: 90, y: 90), NSPoint(x: 40, y: 40)] {
+            NSApp.postEvent(Self.event(.leftMouseDragged, location: point, in: panel), atStart: false)
+        }
+        if stall > 0 {
+            // Deliberately delay the tracking loop past release's deadline:
+            // queued pointer movement still has to precede the release event.
+            Thread.sleep(forTimeInterval: stall)
+        }
     }
 
     func testShortPressStillFiresNormally() throws {
@@ -156,17 +169,15 @@ final class HoverButtonTrackingTests: XCTestCase {
 
     func testBatchedDragOutAndBackCancelsOldHold() throws {
         let result = try track(mutations: [
-            (0.1, { button, _ in
-                guard let panel = button.window as? FixturePanel else { return }
-                NSApp.postEvent(
-                    Self.event(.leftMouseDragged, location: NSPoint(x: 90, y: 90), in: panel),
-                    atStart: false
-                )
-                NSApp.postEvent(
-                    Self.event(.leftMouseDragged, location: NSPoint(x: 40, y: 40), in: panel),
-                    atStart: false
-                )
-            }),
+            (0.1, { button, _ in self.batchDragOutAndBack(button) }),
+        ])
+        XCTAssertEqual(result.0, 1)
+        XCTAssertEqual(result.1, 0)
+    }
+
+    func testDelayedTrackingLoopPreservesBatchedDragOrderBeforeRelease() throws {
+        let result = try track(mutations: [
+            (0.1, { button, _ in self.batchDragOutAndBack(button, stall: 0.8) }),
         ])
         XCTAssertEqual(result.0, 1)
         XCTAssertEqual(result.1, 0)
