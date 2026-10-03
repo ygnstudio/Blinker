@@ -10,15 +10,15 @@ struct RuleInspectorView: View {
         Form {
             Section {
                 Toggle("启用按钮规则", isOn: binding(\.isEnabled))
+                Toggle("允许此应用显示悬停按钮", isOn: binding(\.isHoverEnabled))
+            } header: {
+                Text("启用选项")
             } footer: {
-                Text(rule.isEnabled
-                    ? String(localized: "更改立即生效。未配置的按钮保持系统默认行为。")
-                    : String(localized: "规则已停用。配置会保留，启用后生效。"))
-            }
-            Section {
-                Toggle("启用此应用的悬停放大", isOn: binding(\.isHoverEnabled))
-            } footer: {
-                Text("独立于按钮规则；还需在设置中开启悬停放大。")
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("两个开关独立，关闭后保留配置。悬停按钮还受全局开关和作用范围控制。")
+                    Text("应用标识：\(rule.bundleIdentifier)")
+                        .textSelection(.enabled)
+                }
             }
             ForEach(TrafficButton.allCases, id: \.self) { button in
                 TrafficButtonEditor(
@@ -99,19 +99,32 @@ private struct TrafficButtonEditor: View {
             ForEach(RuleActionOptions.groups.indices, id: \.self) { index in
                 let group = RuleActionOptions.groups[index]
                 if let label = group.label {
-                    Section(label) { options(group.options) }
+                    Section(label) { options(group.options, for: variant) }
                 } else {
-                    options(group.options)
+                    options(group.options, for: variant)
                 }
             }
         }
         .accessibilityLabel("\(name)，\(variant.localizedLabel)")
+        .help(help(for: variant))
     }
 
-    private func options(_ actions: [ButtonAction?]) -> some View {
+    private func options(_ actions: [ButtonAction?], for variant: ClickVariant) -> some View {
         ForEach(actions, id: \.self) { action in
-            Text(action?.localizedLabel ?? String(localized: "系统默认"))
+            Text(action?.localizedLabel ?? (variant == .left
+                    ? String(localized: "系统默认") : String(localized: "未配置")))
                 .tag(action)
+        }
+    }
+
+    private func help(for variant: ClickVariant) -> String {
+        switch variant {
+        case .left:
+            String(localized: "系统默认会执行原生按钮动作；选择「无操作」会拦截左键点击。")
+        case .longPressLeft:
+            String(localized: "未配置时按普通左键处理。要在原生按钮上使用长按，也需配置左键动作。")
+        case .right, .optionLeft, .globeLeft:
+            String(localized: "未配置时，原生按钮交由系统处理，悬浮按钮不执行操作；「无操作」会拦截该点击。")
         }
     }
 

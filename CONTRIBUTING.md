@@ -49,12 +49,16 @@ git diff --check
 
 Add focused tests for changed logic: imports, migrations, target identity, asynchronous result lifetime, geometry or rule behavior. A reversible copy/layout edit does not need a test that merely repeats the implementation. Native behavior still needs manual checks where relevant: permission fallback, focus, mouse travel, multiple displays, light/dark appearance and target-app compatibility. Record the actual checks in the PR; do not append dated machine-specific test logs to permanent design docs.
 
+`HoverButtonTrackingTests` drives only an offscreen test window's AppKit event queue. It needs WindowServer access; a headless or sandboxed run may explicitly skip these tests. Report those skips separately from successful native tracking checks. Keep drag-out/re-entry, long-press cancellation and control visibility changes in the regression coverage.
+
 ## Change entry points
 
 | Change | Main owners |
 |---|---|
 | App-rule lists and editing | `Sources/BlinkerApp/ApplicationRules` |
-| Global settings and About | `Sources/BlinkerApp/Settings` |
+| Global settings, shortcut editing and the separate About window | `Sources/BlinkerApp/Settings` |
+| Shared authorization state and assistant | `Sources/BlinkerApp/Permissions` |
+| Native window lifecycle and Help commands | `AppWindowController`, `AppDelegate`, `BlinkerApp` |
 | Rule values, migration and transfer | `Sources/BlinkerCore/Models`, `RuleEngine` |
 | Button interception and window actions | `Sources/BlinkerCore/AXInterceptor` |
 | Hover geometry, controls and presentation | `Sources/BlinkerCore/HoverOverlay` |
@@ -91,6 +95,7 @@ Private modifications alone do not require public publication. The complete lice
 - Never put screenshot capture, disk I/O or unbounded discovery on the event-tap callback. Its synchronous hit test is required to decide whether to consume a click; maintain timeouts and pass-through behavior.
 - Use retained AX identities for actions. Do not select a target by title, position or thumbnail alone.
 - Preserve user settings, existing uncommitted work, stored layouts and migration readers during refactors. Separate pure calculations and validation from UI and system effects.
+- Give each setting one editor. Route contextual links to it instead of duplicating controls; keep About, Help and per-app rules separate from global preferences. Navigation changes must not rename persistence keys or discard experimental workspace data.
 - Request permissions through explicit UI. Keep thumbnails in memory and invalidate stale asynchronous work. Do not add analytics, uploads or automatic network requests.
 - Read rule files with a size bound before decoding, reject invalid archives without partial edits, and keep a successful import one undoable change.
 - Do not use private system APIs outside the explicit workspace experiment. Document fallback behavior and failures rather than claiming universal compatibility or unmeasured performance gains.

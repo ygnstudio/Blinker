@@ -13,28 +13,38 @@ struct WindowBrowserView: View {
             .frame(width: size.width / scale, height: size.height / scale)
             .scaleEffect(scale, anchor: .topLeading)
             .frame(width: size.width, height: size.height, alignment: .topLeading)
+            .onChange(of: thumbnails.captureUnavailable) { _, _ in controller.updatePresentationSize() }
     }
 
     private var content: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: 8) {
             HStack {
                 Label(controller.dockMode ? (controller.windows.first?.appName ?? String(localized: "窗口预览"))
                     : String(localized: "切换窗口"), systemImage: "macwindow.on.rectangle")
                     .font(.headline)
+                    .lineLimit(1)
                 Spacer()
-                if controller.isLoading {
-                    ProgressView().controlSize(.small)
+                if controller.isLoading, !controller.windows.isEmpty,
+                   !controller.isPerformingAction, !thumbnails.isRetrying {
+                    OperationProgress(message: String(localized: "正在更新…"))
+                } else if !controller.windows.isEmpty {
+                    Text("\(controller.windows.count)").foregroundStyle(.secondary)
                 }
-                Text("\(controller.windows.count)").foregroundStyle(.secondary)
-                Button { controller.dismiss() } label: { Image(systemName: "xmark") }
-                    .buttonStyle(.plain).help("关闭预览")
+                Button { controller.dismiss() } label: {
+                    Image(systemName: "xmark").frame(width: 24, height: 24)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.borderless).help("关闭预览")
+                .accessibilityLabel("关闭预览")
             }
             if controller.windows.isEmpty {
-                ContentUnavailableView(
-                    controller.isLoading ? String(localized: "正在查找窗口…") : String(localized: "没有可显示的窗口"),
-                    systemImage: "macwindow"
-                )
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                if controller.isLoading {
+                    OperationProgress(message: String(localized: "正在查找窗口…"))
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else {
+                    ContentUnavailableView("没有可显示的窗口", systemImage: "macwindow")
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                }
             } else {
                 ScrollViewReader { proxy in
                     ScrollView {
@@ -54,7 +64,21 @@ struct WindowBrowserView: View {
                     }
                 }
                 .id(controller.presentationID)
+                if controller.usesThumbnails, thumbnails.captureUnavailable {
+                    ThumbnailCaptureNotice(isRetrying: thumbnails.isRetrying,
+                                           isPerformingAction: controller.isPerformingAction,
+                                           onRetry: controller.retryThumbnails)
+                }
                 controls
+                    .opacity(controller.isPerformingAction ? 0 : 1)
+                    .disabled(controller.isPerformingAction)
+                    .accessibilityHidden(controller.isPerformingAction)
+                    .overlay(alignment: .leading) {
+                        if controller.isPerformingAction {
+                            OperationProgress(message: String(localized: "正在处理窗口…"))
+                                .allowsHitTesting(false)
+                        }
+                    }
             }
         }
         .padding(16)
@@ -115,6 +139,32 @@ struct WindowBrowserView: View {
     }
 }
 
+struct ThumbnailCaptureNotice: View {
+    let isRetrying: Bool
+    var isPerformingAction = false
+    let onRetry: () -> Void
+
+    var body: some View {
+        HStack(spacing: 6) {
+            if isRetrying {
+                if isPerformingAction {
+                    Text("正在重试缩略图…").font(.caption).foregroundStyle(.secondary)
+                } else {
+                    OperationProgress(message: String(localized: "正在重试缩略图…"))
+                }
+            } else {
+                Text("缩略图暂不可用").font(.caption).foregroundStyle(.secondary)
+                    .lineLimit(1)
+                Spacer(minLength: 0)
+                Button("重试", action: onRetry)
+                    .controlSize(.small)
+                    .disabled(isPerformingAction)
+            }
+        }
+        .frame(height: 24)
+    }
+}
+
 private struct WindowPreviewTile: View {
     let window: BrowserWindow
     let image: NSImage?
@@ -139,7 +189,7 @@ private struct WindowPreviewTile: View {
                 .strokeBorder(selected ? Color.accentColor : Color.clear, lineWidth: 2))
             .contentShape(RoundedRectangle(cornerRadius: 14))
         }
-        .buttonStyle(.plain)
+        .buttonStyle(WindowPreviewButtonStyle())
         .onHover {
             if $0 {
                 onSelect()
@@ -189,5 +239,21 @@ private struct WindowPreviewTile: View {
     private var icon: NSImage {
         NSRunningApplication(processIdentifier: window.pid)?.icon
             ?? NSImage(systemSymbolName: "macwindow", accessibilityDescription: nil)!
+    }
+}
+
+/// Press feedback acknowledges the pointer immediately; it never delays activation or animates selection.
+private struct WindowPreviewButtonStyle: ButtonStyle {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    private static let pressFeedback = Animation.easeOut(duration: 0.12)
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .transaction { $0.animation = nil }
+            .opacity(configuration.isPressed ? 0.8 : 1)
+            .scaleEffect(configuration.isPressed && !reduceMotion ? 0.985 : 1)
+            .animation(reduceMotion || configuration.isPressed ? nil : Self.pressFeedback,
+                       value: configuration.isPressed)
     }
 }

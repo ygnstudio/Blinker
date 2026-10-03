@@ -1,5 +1,26 @@
 import SwiftUI
 
+/// A synchronous check gets a completion cue, never an artificial loading delay.
+struct PermissionCheckButton: View {
+    @EnvironmentObject private var permissions: PermissionController
+    @State private var didCheck = false
+
+    var body: some View {
+        HStack(spacing: 6) {
+            Button("重新检查权限") {
+                permissions.refresh()
+                didCheck = true
+            }
+            Image(systemName: "checkmark.circle.fill")
+                .foregroundStyle(.green)
+                .opacity(didCheck ? 1 : 0)
+                .accessibilityHidden(!didCheck)
+                .accessibilityLabel("已完成检查")
+                .help("已完成检查")
+        }
+    }
+}
+
 struct PermissionStatus: View {
     let granted: Bool
 
@@ -15,6 +36,7 @@ struct PermissionStatus: View {
 /// Settings and onboarding use the same status and user-initiated actions.
 struct PermissionRow: View {
     let permission: AppPermission
+    var allowsManagement = true
     @EnvironmentObject private var permissions: PermissionController
     @EnvironmentObject private var assistant: PermissionAssistantController
 
@@ -26,11 +48,10 @@ struct PermissionRow: View {
                 PermissionStatus(granted: permissions.isGranted(permission))
             }
             Text(detail).font(.callout).foregroundStyle(.secondary)
-            HStack {
+            if allowsManagement || !permissions.isGranted(permission) {
                 Button(permissions.isGranted(permission) ? "管理权限…" : "授权…") {
                     assistant.show(for: permission)
                 }
-                Button("重新授权…") { assistant.show(for: permission, reauthorizing: true) }
             }
         }
         .padding(.vertical, 4)

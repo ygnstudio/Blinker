@@ -4,7 +4,7 @@ import SwiftUI
 struct RuleToolsMenu: View {
     @ObservedObject var store: RuleStore
     var ruleID: String?
-    @StateObject private var files = RuleFileActions()
+    var files: RuleFileActions?
 
     var body: some View {
         Menu {
@@ -24,12 +24,23 @@ struct RuleToolsMenu: View {
                 .disabled(store.rules.count < 2)
                 Button("恢复此应用的默认设置") { store.reset(bundleIdentifier: ruleID) }
             }
-            Divider()
-            Button("导入规则…") { files.importRules(into: store) }.disabled(files.isBusy)
-            Button("导出全部规则…") { files.exportRules(from: store) }
-                .disabled(store.rules.isEmpty || files.isBusy)
+            if ruleID == nil, let files {
+                Divider()
+                RuleFileMenuActions(store: store, files: files)
+            }
         } label: {
             Label("规则操作", systemImage: "ellipsis.circle")
         }
+    }
+}
+
+private struct RuleFileMenuActions: View {
+    @ObservedObject var store: RuleStore
+    @ObservedObject var files: RuleFileActions
+
+    var body: some View {
+        Button("导入规则…") { files.importRules(into: store) }.disabled(files.isBusy)
+        Button("导出全部规则…") { files.exportRules(from: store) }
+            .disabled(store.rules.isEmpty || files.isBusy)
     }
 }

@@ -1,19 +1,11 @@
 import BlinkerCore
 import SwiftUI
 
-// MARK: - Hover tab
-
-/// Hover overlay configuration: master switch, size, scope,
-/// extra-button slots and the hover-toggle hotkey — long explanations live
-/// in info popovers instead of multi-line footers, keeping the form dense.
-/// Per-row `.disabled` only (never section-level), so the master toggle
-/// never locks itself.
+/// Keeps appearance, timing and extra actions together; shortcuts have one editor.
 struct HoverSettingsTab: View {
     @EnvironmentObject var store: HoverOverlaySettingsStore
-    /// Owns the hover-toggle hotkey binding; observed here so the row moved
-    /// from the window-management tab keeps its live recording state.
-    @EnvironmentObject var hotkeyManager: HotkeyManager
     let onApply: (HoverOverlaySettings) -> Void
+    let onOpenShortcuts: () -> Void
 
     private var settings: HoverOverlaySettings {
         store.settings
@@ -21,36 +13,28 @@ struct HoverSettingsTab: View {
 
     var body: some View {
         Form {
-            // The live preview leads the page: every control below answers
-            // here first, so the feature explains itself.
             Section {
+                Toggle("开启悬停放大", isOn: isEnabledBinding)
                 HoverPreviewCard(settings: settings)
+                sizeSlider
+                    .disabled(!settings.isEnabled)
+                scopePicker
+                    .disabled(!settings.isEnabled)
                 Button("打开真实测试窗口…") { CompatibilityWindowController.shared.showTestWindow() }
             } header: {
                 SectionHeader(
-                    title: String(localized: "实时预览"),
-                    info: String(localized: "放大按钮直接覆盖原生红绿灯；材质与按钮跟随系统外观。")
+                    title: String(localized: "悬停显示"),
+                    info: String(localized: "放大按钮直接覆盖原生红绿灯；材质与按钮跟随所选外观。")
                 )
             }
 
             Section {
-                Toggle("开启悬停放大", isOn: isEnabledBinding)
-                sizeSlider
-                    .disabled(!settings.isEnabled)
                 HoverTimingSettings(settings: settings, onApply: onApply)
                     .disabled(!settings.isEnabled)
             } header: {
-                SectionHeader(title: String(localized: "放大"), info: enlargementInfo)
-            }
-
-            Section {
-                scopePicker
-                    .disabled(!settings.isEnabled)
-            } header: {
-                SectionHeader(
-                    title: String(localized: "作用范围"),
-                    info: String(localized: "悬停时显示系统液态玻璃按钮；红黄绿保留各自颜色，扩展按钮使用系统强调色。")
-                )
+                Text("响应与保护")
+            } footer: {
+                Text("保护期间点击不会执行，进度环结束后再点。仅保护退出时，关闭、最小化和布局操作立即响应。")
             }
 
             Section {
@@ -63,14 +47,7 @@ struct HoverSettingsTab: View {
             }
 
             Section {
-                hoverToggleHotkeyRow
-            } header: {
-                SectionHeader(
-                    title: String(localized: "快捷键"),
-                    info: String(
-                        localized: "在任意应用下按下即可直接开关悬停放大；点击右侧录制新的快捷键，Esc 取消，减号清除。默认 ⌃⌥H；受「窗口管理 → 全局快捷键」总开关控制。"
-                    )
-                )
+                Button("配置悬停快捷键…", action: onOpenShortcuts)
             }
         }
         .formStyle(.grouped)
@@ -97,11 +74,9 @@ struct HoverSettingsTab: View {
         }
     }
 
-    /// The four extra-button slots as a 2×2 grid — half the height of the
-    /// old four stacked rows.
     private var extraSlotsGrid: some View {
         LazyVGrid(
-            columns: [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)],
+            columns: [GridItem(.adaptive(minimum: 240, maximum: 360), spacing: 20)],
             alignment: .leading,
             spacing: 12
         ) {
@@ -119,35 +94,6 @@ struct HoverSettingsTab: View {
             }
         }
         .padding(.vertical, 2)
-    }
-
-    /// The hover-toggle hotkey row, moved from the window-management tab so
-    /// the binding lives next to the feature it controls. The binding
-    /// itself is still owned by the hotkey manager, so the row follows the
-    /// global-hotkeys master switch.
-    private var hoverToggleHotkeyRow: some View {
-        HotkeyRowView(
-            label: String(localized: "悬停放大开关"),
-            combo: hotkeyManager.hoverToggleCombo,
-            isRecording: hotkeyManager.recordingTarget == .hoverToggle,
-            recordingHint: hotkeyManager.recordingHint,
-            conflictWarning: hoverToggleConflictWarning,
-            registrationWarning: hotkeyManager.registrationWarning(for: .hoverToggle),
-            onRecord: { hotkeyManager.beginRecordingHoverToggle() },
-            onClear: { hotkeyManager.clearHoverToggleBinding() },
-            onRetry: { hotkeyManager.retryRegistration(for: .hoverToggle) }
-        )
-        .disabled(!hotkeyManager.isEnabled)
-    }
-
-    /// The hover-toggle combo's conflict with any window-action binding.
-    private var hoverToggleConflictWarning: String? {
-        guard let combo = hotkeyManager.hoverToggleCombo else { return nil }
-        return hotkeyManager.internalConflictWarning(for: combo, action: nil)
-    }
-
-    private var enlargementInfo: String {
-        String(localized: "放大按钮覆盖原生红绿灯。出现延迟控制何时显示；点击保护单独控制需要驻留的操作。")
     }
 
     private var isEnabledBinding: Binding<Bool> {
@@ -193,27 +139,5 @@ struct HoverSettingsTab: View {
         var updated = settings
         mutate(&updated)
         onApply(updated)
-    }
-}
-
-/// `LabeledContent` row with a fixed-width slider and a fixed-width,
-/// monospaced trailing readout — the shared shape of the hover tab's two
-/// numeric sliders, so the readouts align across rows.
-struct SliderReadoutRow: View {
-    let label: String
-    let readout: String
-    @Binding var value: Double
-    let range: ClosedRange<Double>
-    let step: Double
-
-    var body: some View {
-        LabeledContent(label) {
-            Slider(value: $value, in: range, step: step)
-                .frame(width: 200)
-            Text(readout)
-                .monospacedDigit()
-                .foregroundStyle(.secondary)
-                .frame(width: 56, alignment: .trailing)
-        }
     }
 }

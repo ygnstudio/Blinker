@@ -1,58 +1,99 @@
 import BlinkerCore
 import SwiftUI
 
-struct ExperimentalSettingsTab: View {
+/// Embeds in the window-management Form without creating another scroll container.
+struct WorkspaceSettingsSection: View {
     @EnvironmentObject var workspaceStore: WorkspaceStore
+    @EnvironmentObject private var permissions: PermissionController
     @ObservedObject private var preferences = AppPreferences.shared
     @State private var showingSaveWorkspaceSheet = false
+    @State private var resultMessage: String?
 
     var body: some View {
-        Form {
-            Section {
-                Toggle("启用工作区实验功能", isOn: $preferences.workspaceExperimentsEnabled)
-            } footer: {
-                Text("布局按窗口特征匹配，同应用的相似窗口可能配错。原桌面恢复使用非公开系统接口。已有布局会保留。")
-            }
-            workspaceSection.disabled(!preferences.workspaceExperimentsEnabled)
-        }
-        .formStyle(.grouped)
-        .sheet(isPresented: $showingSaveWorkspaceSheet) {
-            SaveWorkspaceSheet(store: workspaceStore)
-        }
-    }
-
-    private var workspaceSection: some View {
         Section {
+            Toggle("启用工作区实验功能", isOn: $preferences.workspaceExperimentsEnabled)
+                .disabled(workspaceStore.isBusy)
             ForEach(workspaceStore.workspaces) { workspace in
                 WorkspaceRowView(
                     workspace: workspace,
-                    onRestore: { workspaceStore.restore(id: workspace.id) },
-                    onUpdate: { workspaceStore.update(id: workspace.id) },
+                    onRestore: { restore(workspace) },
+                    onUpdate: { update(workspace) },
                     onRemove: { workspaceStore.remove(id: workspace.id) }
                 )
+                .disabled(!preferences.workspaceExperimentsEnabled || workspaceStore.isBusy)
             }
             Toggle(
                 "恢复时移回原桌面",
                 isOn: spaceRestoreBinding
             )
+            .disabled(!preferences.workspaceExperimentsEnabled || workspaceStore.isBusy)
             Button {
+                resultMessage = nil
                 showingSaveWorkspaceSheet = true
             } label: {
                 Label("保存当前布局…", systemImage: "plus")
             }
             .buttonStyle(.bordered)
+            .disabled(!preferences.workspaceExperimentsEnabled || workspaceStore.isBusy)
             // The save action is a footer-style affordance of the section,
             // not a sibling setting of the toggle above — drop the divider
             // that separated them.
             .listRowSeparator(.hidden, edges: .top)
+            Group {
+                if let operation = workspaceStore.operation {
+                    OperationProgress(message: operation == .saving || isUpdating(operation)
+                        ? String(localized: "正在读取窗口布局…") : String(localized: "正在恢复窗口布局…"))
+                } else {
+                    Text(resultMessage ?? " ").font(.caption).foregroundStyle(.secondary)
+                        .accessibilityHidden(resultMessage == nil)
+                }
+            }
+            .frame(minHeight: 18, alignment: .leading)
+            .listRowSeparator(.hidden)
         } header: {
             SectionHeader(
-                title: String(localized: "工作区"),
+                title: String(localized: "工作区（实验）"),
                 info: String(
                     // swiftlint:disable:next line_length
                     localized: "把当前窗口排布存成命名预设，点「恢复」一键还原；最小化和其他桌面的窗口也会一并记录。开启「恢复时移回原桌面」后，窗口会一并回到保存时所在的桌面。同名保存会覆盖旧布局，已退出的应用会被跳过。"
                 )
             )
+        } footer: {
+            Text("布局按窗口特征匹配，同应用的相似窗口可能配错。原桌面恢复使用非公开系统接口。已有布局会保留。")
+        }
+        .sheet(isPresented: $showingSaveWorkspaceSheet) {
+            SaveWorkspaceSheet(store: workspaceStore)
+        }
+    }
+
+    private func isUpdating(_ operation: WorkspaceStore.Operation) -> Bool {
+        if case .updating = operation {
+            return true
+        }
+        return false
+    }
+
+    private func restore(_ workspace: SavedWorkspace) {
+        guard !workspaceStore.isBusy else { return }
+        permissions.refresh()
+        guard permissions.accessibilityGranted else {
+            resultMessage = WorkspaceRestoreFeedback.message(count: 0, permissionGranted: false)
+            return
+        }
+        resultMessage = nil
+        workspaceStore.restore(id: workspace.id) { count in
+            permissions.refresh()
+            resultMessage = WorkspaceRestoreFeedback.message(
+                count: count, permissionGranted: permissions.accessibilityGranted
+            )
+        }
+    }
+
+    private func update(_ workspace: SavedWorkspace) {
+        guard !workspaceStore.isBusy else { return }
+        resultMessage = nil
+        workspaceStore.update(id: workspace.id) {
+            resultMessage = String(localized: "布局已更新")
         }
     }
 
@@ -64,6 +105,19 @@ struct ExperimentalSettingsTab: View {
     }
 }
 
+/// Classifies completion feedback without performing another window operation.
+enum WorkspaceRestoreFeedback {
+    static func message(count: Int, permissionGranted: Bool) -> String {
+        if count > 0 {
+            return String(localized: "已恢复 \(count) 个窗口")
+        }
+        if !permissionGranted {
+            return String(localized: "需要辅助功能权限才能恢复窗口，请在「隐私与权限」中授权。")
+        }
+        return String(localized: "未能恢复任何窗口，请确认应用仍在运行，且窗口支持移动或调整大小。")
+    }
+}
+
 // MARK: - Save-workspace sheet
 
 /// A proper naming form for saving the current layout — a real sheet with
@@ -72,6 +126,7 @@ private struct SaveWorkspaceSheet: View {
     @ObservedObject var store: WorkspaceStore
     @Environment(\.dismiss) private var dismiss
     @State private var name = ""
+    @FocusState private var nameIsFocused: Bool
 
     private var trimmedName: String {
         name.trimmingCharacters(in: .whitespaces)
@@ -83,27 +138,39 @@ private struct SaveWorkspaceSheet: View {
                 .font(.headline)
             TextField("名称", text: $name)
                 .textFieldStyle(.roundedBorder)
-            Text("记录当前所有可见窗口的位置和大小；同名保存会覆盖旧布局。")
+                .focused($nameIsFocused)
+                .disabled(store.isBusy)
+            Text("记录当前可识别窗口的位置和大小，包括最小化和其他桌面的窗口；同名保存会覆盖旧布局。")
                 .font(.callout)
                 .foregroundStyle(.secondary)
+            Group {
+                if store.isBusy {
+                    OperationProgress(message: String(localized: "正在读取窗口布局…"))
+                } else {
+                    Text(" ").font(.caption).accessibilityHidden(true)
+                }
+            }
+            .frame(minHeight: 18, alignment: .leading)
             HStack {
                 Spacer()
                 Button("取消", role: .cancel) {
                     dismiss()
                 }
+                .disabled(store.isBusy)
                 Button("保存", action: save)
                     .keyboardShortcut(.defaultAction)
-                    .disabled(trimmedName.isEmpty)
+                    .disabled(trimmedName.isEmpty || store.isBusy)
             }
         }
         .padding(20)
         .frame(width: 320)
+        .interactiveDismissDisabled(store.isBusy)
+        .defaultFocus($nameIsFocused, true)
     }
 
     private func save() {
-        guard !trimmedName.isEmpty else { return }
-        store.saveCurrentLayout(named: trimmedName)
-        dismiss()
+        guard !trimmedName.isEmpty, !store.isBusy else { return }
+        store.saveCurrentLayout(named: trimmedName) { dismiss() }
     }
 }
 

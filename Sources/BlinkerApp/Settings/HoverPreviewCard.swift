@@ -10,7 +10,7 @@ struct HoverPreviewCard: View {
         let size = HoverOverlayGeometry.paletteSize(
             buttonCount: 3 + settings.enabledExtraActions.count, buttonSize: settings.enlargedSize
         )
-        HStack(spacing: 16) {
+        HStack(spacing: 0) {
             ZStack(alignment: .leading) {
                 if !settings.isEnabled {
                     HStack(spacing: 8) {
@@ -24,14 +24,14 @@ struct HoverPreviewCard: View {
                 }
                 if settings.isEnabled {
                     PalettePreview(settings: settings)
-                        .allowsHitTesting(false)
                 }
             }
             .frame(width: size.width, height: size.height)
             Spacer(minLength: 0)
-            Text("悬停效果预览").font(.caption).foregroundStyle(.secondary)
         }
-        .padding(16)
+        .padding(.vertical, 6)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("悬停效果预览")
     }
 }
 

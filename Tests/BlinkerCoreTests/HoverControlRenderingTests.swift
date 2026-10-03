@@ -62,6 +62,121 @@ final class HoverControlRenderingTests: XCTestCase {
         XCTAssertEqual(activations, 2)
     }
 
+    func testDisabledButtonCannotBypassNativeTrackingThroughRightClick() throws {
+        var activations = 0
+        let button = HoverOverlayButtonView(
+            frame: CGRect(x: 0, y: 0, width: 40, height: 40), symbol: "xmark",
+            label: "Close", color: .systemRed, onActivate: { _ in activations += 1 }
+        )
+        button.requiresDwell = { _ in false }
+        button.setDwellProgress(1)
+        button.isEnabled = false
+        let event = try XCTUnwrap(NSEvent.mouseEvent(
+            with: .rightMouseDown, location: .zero, modifierFlags: [], timestamp: 0,
+            windowNumber: 0, context: nil, eventNumber: 0, clickCount: 1, pressure: 1
+        ))
+
+        button.rightMouseDown(with: event)
+
+        XCTAssertEqual(activations, 0)
+    }
+
+    func testProtectedPressDoesNotGiveReadyFeedbackOrActivate() throws {
+        var activations = 0
+        var pressChanges = 0
+        let button = HoverOverlayButtonView(
+            frame: CGRect(x: 0, y: 0, width: 40, height: 40), symbol: "xmark",
+            label: "Close", color: .systemRed, onActivate: { _ in activations += 1 }
+        )
+        button.onPressChanged = { _, _ in pressChanges += 1 }
+        button.setDwellProgress(0.5)
+        for type in [NSEvent.EventType.leftMouseDown, .rightMouseDown] {
+            let event = try XCTUnwrap(NSEvent.mouseEvent(
+                with: type, location: .zero, modifierFlags: [], timestamp: 0,
+                windowNumber: 0, context: nil, eventNumber: 0, clickCount: 1, pressure: 1
+            ))
+            if type == .leftMouseDown {
+                button.mouseDown(with: event)
+            } else {
+                button.rightMouseDown(with: event)
+            }
+        }
+        XCTAssertEqual(activations, 0)
+        XCTAssertEqual(pressChanges, 0)
+    }
+
+    func testNativeHighlightDrivesFeedbackWithoutChangingHitAreaOrColor() throws {
+        var activations = 0
+        let frame = CGRect(x: 0, y: 0, width: 40, height: 40)
+        let button = HoverOverlayButtonView(
+            frame: frame, symbol: "xmark", label: "Close", color: .systemRed,
+            onActivate: { _ in activations += 1 }
+        )
+        let surface = HoverControlAppearance.makeSurface(for: button)
+        let content = try XCTUnwrap(button.superview as? HoverButtonPressFeedback)
+        let face = try XCTUnwrap(content.subviews.first)
+        face.updateLayer()
+        let color = face.layer?.backgroundColor
+
+        button.isHighlighted = true
+        button.updateLayer()
+
+        XCTAssertEqual(face.layer?.borderWidth, 1.5)
+        XCTAssertEqual(button.frame, frame)
+        XCTAssertEqual(surface.frame, frame)
+        XCTAssertIdentical(button.hitTest(CGPoint(x: 1, y: 20)), button)
+        XCTAssertTrue(button.wantsUpdateLayer)
+        XCTAssertEqual(face.layer?.backgroundColor, color)
+        XCTAssertEqual(activations, 0)
+
+        button.isHighlighted = false
+        button.updateLayer()
+        XCTAssertEqual(face.layer?.borderWidth, 0)
+        XCTAssertEqual(content.layer?.sublayerTransform.m11, 1)
+        XCTAssertEqual(activations, 0)
+    }
+
+    func testReleaseIsInterruptibleAndReduceMotionKeepsAStaticPressedSignal() throws {
+        let button = HoverControlAppearance.makePreviewButton(
+            frame: CGRect(x: 0, y: 0, width: 40, height: 40), action: .closeWindow, color: .systemRed
+        )
+        let surface = HoverControlAppearance.makeSurface(for: button)
+        let content = try XCTUnwrap(button.superview as? HoverButtonPressFeedback)
+        let layer = try XCTUnwrap(content.layer)
+        let face = try XCTUnwrap(content.subviews.first)
+        let frame = button.frame
+        withExtendedLifetime(surface) {
+            content.setPressed(true, reduceMotion: false, animated: false)
+            XCTAssertLessThan(layer.sublayerTransform.m11, 1)
+            XCTAssertEqual(
+                content.bounds.midX * layer.sublayerTransform.m11 + layer.sublayerTransform.m41,
+                content.bounds.midX, accuracy: 0.001
+            )
+            XCTAssertEqual(
+                content.bounds.midY * layer.sublayerTransform.m22 + layer.sublayerTransform.m42,
+                content.bounds.midY, accuracy: 0.001
+            )
+            XCTAssertTrue((layer.animationKeys() ?? []).isEmpty)
+            content.setPressed(false, reduceMotion: false, animated: true)
+            XCTAssertEqual(layer.sublayerTransform.m11, 1)
+            XCTAssertEqual(layer.animationKeys()?.count, 1)
+
+            // A second press cancels the outgoing animation instead of queuing it.
+            content.setPressed(true, reduceMotion: false, animated: false)
+            XCTAssertLessThan(layer.sublayerTransform.m11, 1)
+            XCTAssertTrue((layer.animationKeys() ?? []).isEmpty)
+            content.setPressed(true, reduceMotion: true, animated: true)
+            XCTAssertEqual(layer.sublayerTransform.m11, 1)
+            XCTAssertGreaterThan(face.layer?.borderWidth ?? 0, 0)
+            XCTAssertTrue((layer.animationKeys() ?? []).isEmpty)
+            content.setPressed(false, reduceMotion: true, animated: true)
+            XCTAssertEqual(layer.sublayerTransform.m11, 1)
+            XCTAssertEqual(face.layer?.borderWidth, 0)
+            XCTAssertTrue((layer.animationKeys() ?? []).isEmpty)
+            XCTAssertEqual(button.frame, frame)
+        }
+    }
+
     func testContinuousGlassTrayCoversGapsAndResizesWithPalette() throws {
         guard #available(macOS 26.0, *) else { throw XCTSkip("Liquid Glass requires macOS 26") }
         _ = NSApplication.shared

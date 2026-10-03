@@ -1,6 +1,22 @@
 {
   "sourceLanguage": "zh-Hans",
   "strings": {
+    "好": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OK"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "好"
+          }
+        }
+      }
+    },
     "项目与联系": {
       "localizations": {
         "en": {
@@ -373,22 +389,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "。"
-          }
-        }
-      }
-    },
-    "「跟随系统」读取系统深浅色设置；更改立即生效。外观仅作用于设置窗口；悬停放大的液态玻璃始终跟随系统深浅色。": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Follow System reads the system appearance; changes apply immediately. The appearance setting styles the settings window only — the hover overlay's glass always follows the system appearance."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "「跟随系统」读取系统深浅色设置；更改立即生效。外观仅作用于设置窗口；悬停放大的液态玻璃始终跟随系统深浅色。"
           }
         }
       }
@@ -2222,7 +2222,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Hotkey"
+            "value": "Shortcuts"
           }
         },
         "zh-Hans": {
@@ -2873,18 +2873,18 @@
         }
       }
     },
-    "放大按钮直接覆盖原生红绿灯；材质与按钮跟随系统外观。": {
+    "放大按钮直接覆盖原生红绿灯；材质与按钮跟随所选外观。": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Enlarged controls cover the original traffic lights. Material and buttons follow the system appearance."
+            "value": "Enlarged controls cover the original traffic lights. Material and buttons follow the selected appearance."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "放大按钮直接覆盖原生红绿灯；材质与按钮跟随系统外观。"
+            "value": "放大按钮直接覆盖原生红绿灯；材质与按钮跟随所选外观。"
           }
         }
       }
@@ -5445,6 +5445,1094 @@
           "stringUnit": {
             "state": "translated",
             "value": "权限"
+          }
+        }
+      }
+    },
+    "关于 Blinker": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "About Blinker"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "关于 Blinker"
+          }
+        }
+      }
+    },
+    "Blinker 使用指南": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Blinker User Guide"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Blinker 使用指南"
+          }
+        }
+      }
+    },
+    "隐私与权限…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Privacy & Permissions…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "隐私与权限…"
+          }
+        }
+      }
+    },
+    "使用指南": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "User Guide"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "使用指南"
+          }
+        }
+      }
+    },
+    "悬停按钮": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hover Buttons"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "悬停按钮"
+          }
+        }
+      }
+    },
+    "预览与切换": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Previews & Switching"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "预览与切换"
+          }
+        }
+      }
+    },
+    "窗口布局": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Window Layouts"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "窗口布局"
+          }
+        }
+      }
+    },
+    "悬停显示": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hover Appearance"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "悬停显示"
+          }
+        }
+      }
+    },
+    "响应与保护": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Timing & Click Protection"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "响应与保护"
+          }
+        }
+      }
+    },
+    "配置悬停快捷键…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Configure Hover Shortcut…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "配置悬停快捷键…"
+          }
+        }
+      }
+    },
+    "授权后仍无法使用": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not Working After Authorization"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "授权后仍无法使用"
+          }
+        }
+      }
+    },
+    "重新授权辅助功能…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reauthorize Accessibility…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "重新授权辅助功能…"
+          }
+        }
+      }
+    },
+    "重新授权屏幕录制…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reauthorize Screen Recording…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "重新授权屏幕录制…"
+          }
+        }
+      }
+    },
+    "授权助手会引导你更新系统列表中的 Blinker，不会自动重置权限。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The assistant guides you through updating Blinker in System Settings. It does not reset permissions automatically."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "授权助手会引导你更新系统列表中的 Blinker，不会自动重置权限。"
+          }
+        }
+      }
+    },
+    "本机数据": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Local Data"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "本机数据"
+          }
+        }
+      }
+    },
+    "未授权屏幕录制，当前显示图标和标题。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Screen Recording is not allowed. Icons and titles are shown instead."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未授权屏幕录制，当前显示图标和标题。"
+          }
+        }
+      }
+    },
+    "预览内容与外观": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preview Content & Appearance"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "预览内容与外观"
+          }
+        }
+      }
+    },
+    "这些设置同时用于 Dock 预览和窗口切换器。缩略图仅在预览打开时采集，图片只缓存在内存中。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "These settings apply to Dock previews and the window switcher. Thumbnails are captured only while a preview is open and cached only in memory."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "这些设置同时用于 Dock 预览和窗口切换器。缩略图仅在预览打开时采集，图片只缓存在内存中。"
+          }
+        }
+      }
+    },
+    "工作区（实验）": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Workspaces (Experimental)"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "工作区（实验）"
+          }
+        }
+      }
+    },
+    "记录当前可识别窗口的位置和大小，包括最小化和其他桌面的窗口；同名保存会覆盖旧布局。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Save the positions and sizes of recognized windows, including minimized windows and those on other Spaces. An existing layout with the same name will be replaced."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "记录当前可识别窗口的位置和大小，包括最小化和其他桌面的窗口；同名保存会覆盖旧布局。"
+          }
+        }
+      }
+    },
+    "启用布局与悬停快捷键": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enable Layout and Hover Shortcuts"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "启用布局与悬停快捷键"
+          }
+        }
+      }
+    },
+    "点击组合录制快捷键，Esc 取消，减号清除。此开关同时控制窗口布局和悬停放大快捷键。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Click a shortcut to record, press Esc to cancel, or use minus to clear. This switch controls both window layout and hover enlargement shortcuts."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "点击组合录制快捷键，Esc 取消，减号清除。此开关同时控制窗口布局和悬停放大快捷键。"
+          }
+        }
+      }
+    },
+    "⌥Tab 窗口切换": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "⌥Tab Window Switching"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "⌥Tab 窗口切换"
+          }
+        }
+      }
+    },
+    "前往预览与切换…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open Previews & Switching…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "前往预览与切换…"
+          }
+        }
+      }
+    },
+    "⌥Tab 独立启用，不受上方开关影响。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "⌥Tab is enabled separately and is not affected by the switch above."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "⌥Tab 独立启用，不受上方开关影响。"
+          }
+        }
+      }
+    },
+    "按钮规则开启，允许悬停": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Button rules on · Hover allowed"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "按钮规则开启，允许悬停"
+          }
+        }
+      }
+    },
+    "仅开启按钮规则": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Button rules only"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "仅开启按钮规则"
+          }
+        }
+      }
+    },
+    "仅允许悬停": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hover allowed only"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "仅允许悬停"
+          }
+        }
+      }
+    },
+    "按钮规则与悬停均关闭": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Button rules and hover off"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "按钮规则与悬停均关闭"
+          }
+        }
+      }
+    },
+    "允许此应用显示悬停按钮": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Allow Hover Buttons for This App"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "允许此应用显示悬停按钮"
+          }
+        }
+      }
+    },
+    "启用选项": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enable Features"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "启用选项"
+          }
+        }
+      }
+    },
+    "两个开关独立，关闭后保留配置。悬停按钮还受全局开关和作用范围控制。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "These switches are independent. Turning them off keeps your configuration. Hover buttons also follow the global switch and scope."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "两个开关独立，关闭后保留配置。悬停按钮还受全局开关和作用范围控制。"
+          }
+        }
+      }
+    },
+    "未配置": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not Configured"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未配置"
+          }
+        }
+      }
+    },
+    "系统默认会执行原生按钮动作；选择「无操作」会拦截左键点击。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "System Default performs the native button action. Do Nothing intercepts the left click."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "系统默认会执行原生按钮动作；选择「无操作」会拦截左键点击。"
+          }
+        }
+      }
+    },
+    "未配置时按普通左键处理。要在原生按钮上使用长按，也需配置左键动作。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "When not configured, a long press acts as a regular left click. A native button also needs a left-click action configured to use long press."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未配置时按普通左键处理。要在原生按钮上使用长按，也需配置左键动作。"
+          }
+        }
+      }
+    },
+    "未配置时，原生按钮交由系统处理，悬浮按钮不执行操作；「无操作」会拦截该点击。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "When not configured, native clicks pass to macOS and overlay clicks do nothing. Do Nothing intercepts the click."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未配置时，原生按钮交由系统处理，悬浮按钮不执行操作；「无操作」会拦截该点击。"
+          }
+        }
+      }
+    },
+    "点击授权会打开系统设置和可拖拽的应用图标。也可跳过，之后在「设置 → 隐私与权限」中开启。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Authorize opens System Settings and a draggable app icon. You can skip this step and enable permissions later in Settings → Privacy & Permissions."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "点击授权会打开系统设置和可拖拽的应用图标。也可跳过，之后在「设置 → 隐私与权限」中开启。"
+          }
+        }
+      }
+    },
+    "应用标识：%@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "App Identifier: %@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "应用标识：%@"
+          }
+        }
+      }
+    },
+    "权限已就绪，可以继续。之后可在「设置 → 隐私与权限」中管理。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Permissions are ready. Continue, or manage them later in Settings → Privacy & Permissions."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "权限已就绪，可以继续。之后可在「设置 → 隐私与权限」中管理。"
+          }
+        }
+      }
+    },
+    "外观与语言": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Appearance & Language"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "外观与语言"
+          }
+        }
+      }
+    },
+    "语言": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Language"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "语言"
+          }
+        }
+      }
+    },
+    "语言设置已保存，退出并重新打开 Blinker 后生效。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Language saved. Quit and reopen Blinker to apply it."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "语言设置已保存，退出并重新打开 Blinker 后生效。"
+          }
+        }
+      }
+    },
+    "正在读取窗口布局…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reading window layout…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在读取窗口布局…"
+          }
+        }
+      }
+    },
+    "正在恢复窗口布局…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Restoring window layout…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在恢复窗口布局…"
+          }
+        }
+      }
+    },
+    "已恢复 %lld 个窗口": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Restored %lld windows"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已恢复 %lld 个窗口"
+          }
+        }
+      }
+    },
+    "布局已更新": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Layout updated"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "布局已更新"
+          }
+        }
+      }
+    },
+    "正在检查窗口…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Checking window…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在检查窗口…"
+          }
+        }
+      }
+    },
+    "已完成检查": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Check complete"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已完成检查"
+          }
+        }
+      }
+    },
+    "点击或按 Esc 取消录制": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Click or press Esc to cancel recording"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "点击或按 Esc 取消录制"
+          }
+        }
+      }
+    },
+    "录制快捷键": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Record Shortcut"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "录制快捷键"
+          }
+        }
+      }
+    },
+    "正在更新…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Updating…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在更新…"
+          }
+        }
+      }
+    },
+    "正在处理窗口…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Performing window action…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在处理窗口…"
+          }
+        }
+      }
+    },
+    "请选择要导入的规则文件…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose a rules file to import…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请选择要导入的规则文件…"
+          }
+        }
+      }
+    },
+    "请选择规则文件的保存位置…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose where to save the rules file…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请选择规则文件的保存位置…"
+          }
+        }
+      }
+    },
+    "正在读取并验证规则…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reading and validating rules…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在读取并验证规则…"
+          }
+        }
+      }
+    },
+    "正在导出规则…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Exporting rules…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在导出规则…"
+          }
+        }
+      }
+    },
+    "已导入 %lld 条规则，可撤销。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Imported %lld rules. You can undo this."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已导入 %lld 条规则，可撤销。"
+          }
+        }
+      }
+    },
+    "已导出 %lld 条规则。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Exported %lld rules."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已导出 %lld 条规则。"
+          }
+        }
+      }
+    },
+    "正在读取应用信息…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reading app information…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在读取应用信息…"
+          }
+        }
+      }
+    },
+    "请选择要添加的应用…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose an app to add…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请选择要添加的应用…"
+          }
+        }
+      }
+    },
+    "%lld 个应用": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld apps"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld 个应用"
+          }
+        }
+      }
+    },
+    "规则文件操作失败": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rule file operation failed"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "规则文件操作失败"
+          }
+        }
+      }
+    },
+    "规则没有变化。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No rules changed."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "规则没有变化。"
+          }
+        }
+      }
+    },
+    "需要辅助功能权限才能恢复窗口，请在「隐私与权限」中授权。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Accessibility permission is required to restore windows. Grant access in Privacy & Permissions."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "需要辅助功能权限才能恢复窗口，请在「隐私与权限」中授权。"
+          }
+        }
+      }
+    },
+    "未能恢复任何窗口，请确认应用仍在运行，且窗口支持移动或调整大小。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No windows were restored. Make sure the apps are running and their windows can be moved or resized."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未能恢复任何窗口，请确认应用仍在运行，且窗口支持移动或调整大小。"
+          }
+        }
+      }
+    },
+    "缩略图暂不可用": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Thumbnails unavailable"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "缩略图暂不可用"
+          }
+        }
+      }
+    },
+    "正在重试缩略图…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Retrying thumbnails…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在重试缩略图…"
+          }
+        }
+      }
+    },
+    "重试": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Retry"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "重试"
           }
         }
       }

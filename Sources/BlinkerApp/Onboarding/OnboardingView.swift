@@ -55,9 +55,9 @@ struct OnboardingView: View {
                 .foregroundStyle(.secondary)
             feature("应用规则", symbol: "macwindow.on.rectangle",
                     detail: "按应用设置红、黄、绿按钮的动作；没有规则时保留系统行为。")
-            feature("悬停放大", symbol: "arrow.up.left.and.arrow.down.right",
+            feature("悬停按钮", symbol: "arrow.up.left.and.arrow.down.right",
                     detail: "移到红绿灯上显示更大的按钮，可调整出现延迟和点击保护。")
-            feature("窗口预览与切换", symbol: "rectangle.on.rectangle",
+            feature("预览与切换", symbol: "rectangle.on.rectangle",
                     detail: "悬停 Dock 图标预览窗口，或使用 Option–Tab 切换。")
         }
     }
@@ -66,10 +66,14 @@ struct OnboardingView: View {
         VStack(alignment: .leading, spacing: 12) {
             Text("按需开启权限").font(.title2.bold())
             ForEach(AppPermission.allCases) { permission in
-                GroupBox { PermissionRow(permission: permission).padding(.horizontal, 4) }
+                GroupBox {
+                    PermissionRow(permission: permission, allowsManagement: false).padding(.horizontal, 4)
+                }
             }
-            Button("重新检查权限") { permissionState.refresh() }
-            Text("点击授权会打开系统设置和可拖拽的应用图标。也可跳过，之后在「设置 → 权限」中开启。")
+            PermissionCheckButton()
+            Text(permissionState.accessibilityGranted && permissionState.screenRecordingGranted
+                ? String(localized: "权限已就绪，可以继续。之后可在「设置 → 隐私与权限」中管理。")
+                : String(localized: "点击授权会打开系统设置和可拖拽的应用图标。也可跳过，之后在「设置 → 隐私与权限」中开启。"))
                 .font(.caption).foregroundStyle(.secondary)
         }
     }
