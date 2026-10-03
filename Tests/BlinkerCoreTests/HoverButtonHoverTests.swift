@@ -118,6 +118,25 @@ final class HoverButtonHoverTests: XCTestCase {
         return (panel, button)
     }
 
+    private func hoverDiagnostics(_ button: NSButton) -> String {
+        let feedback = button.superview as? HoverButtonPressFeedback
+        let face = feedback?.subviews.first
+        let state: [String] = [
+            "reduceMotion=\(NSWorkspace.shared.accessibilityDisplayShouldReduceMotion)",
+            "hasWindow=\(button.window != nil)",
+            "visible=\(button.window?.isVisible == true)",
+            "key=\(button.window?.isKeyWindow == true)",
+            "enabled=\(button.isEnabled)",
+            "hidden=\(button.isHiddenOrHasHiddenAncestor)",
+            "buttonBounds=\(button.bounds)",
+            "visibleRect=\(button.visibleRect)",
+            "feedbackBounds=\(String(describing: feedback?.bounds))",
+            "faceBounds=\(String(describing: face?.bounds))",
+            "faceBorder=\(String(describing: face?.layer?.borderWidth))",
+        ]
+        return state.joined(separator: "; ")
+    }
+
     func testTrackingAreaWorksInInactivePanelAndDetectsInitialPointer() throws {
         let (panel, button) = makeFixture()
         defer { panel.close() }
@@ -128,7 +147,7 @@ final class HoverButtonHoverTests: XCTestCase {
         XCTAssertLessThanOrEqual(area.rect.width, button.bounds.width)
         panel.pointer = CGPoint(x: 15, y: 15)
         button.updateTrackingAreas()
-        XCTAssertGreaterThan(feedback.layer?.sublayerTransform.m11 ?? 0, 1)
+        XCTAssertGreaterThan(feedback.layer?.sublayerTransform.m11 ?? 0, 1, hoverDiagnostics(button))
         button.updateTrackingAreas()
         XCTAssertEqual(button.trackingAreas.filter { $0.owner === button }.count, 1)
         panel.pointer = CGPoint(x: 80, y: 80)
@@ -145,12 +164,12 @@ final class HoverButtonHoverTests: XCTestCase {
         button.isEnabled = false
         XCTAssertEqual(feedback.layer?.sublayerTransform.m11, 1)
         button.isEnabled = true
-        XCTAssertGreaterThan(feedback.layer?.sublayerTransform.m11 ?? 0, 1)
+        XCTAssertGreaterThan(feedback.layer?.sublayerTransform.m11 ?? 0, 1, hoverDiagnostics(button))
         button.isHidden = true
         XCTAssertEqual(feedback.layer?.sublayerTransform.m11, 1)
         button.isHidden = false
         button.updateTrackingAreas()
-        XCTAssertGreaterThan(feedback.layer?.sublayerTransform.m11 ?? 0, 1)
+        XCTAssertGreaterThan(feedback.layer?.sublayerTransform.m11 ?? 0, 1, hoverDiagnostics(button))
         button.removeFromSuperview()
         XCTAssertEqual(feedback.layer?.sublayerTransform.m11, 1)
     }
@@ -170,11 +189,11 @@ final class HoverButtonHoverTests: XCTestCase {
             windowNumber: 0, context: nil, eventNumber: 0, trackingNumber: 0, userData: nil
         ))
         first.mouseEntered(with: entered)
-        XCTAssertGreaterThan(firstFeedback.layer?.sublayerTransform.m11 ?? 0, 1)
+        XCTAssertGreaterThan(firstFeedback.layer?.sublayerTransform.m11 ?? 0, 1, hoverDiagnostics(first))
         XCTAssertEqual(secondFeedback.layer?.sublayerTransform.m11, 1)
         first.mouseExited(with: exited)
         second.mouseEntered(with: entered)
         XCTAssertEqual(firstFeedback.layer?.sublayerTransform.m11, 1)
-        XCTAssertGreaterThan(secondFeedback.layer?.sublayerTransform.m11 ?? 0, 1)
+        XCTAssertGreaterThan(secondFeedback.layer?.sublayerTransform.m11 ?? 0, 1, hoverDiagnostics(second))
     }
 }
