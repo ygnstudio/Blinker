@@ -10,6 +10,7 @@ User controls are described in the [user guide](USER_GUIDE.md); this document de
 |---|---|
 | `WindowBrowserController` | Sessions, filtering, stable selection/order and action routing |
 | `WindowBrowserPresentation` | Native panel/hosting-view lifetime, placement and corner clipping |
+| `WindowBrowserFade` | Interruptible appearance/departure opacity and stale-completion rejection |
 | `WindowBrowserPreferences` | Persistent feature toggles, delays and scale |
 | `WindowCatalog` | Main-actor published list; serialized worker access and coalesced refreshes |
 | `WindowDiscovery` | AX window identities, ordering, capture matching and activation |
@@ -36,16 +37,19 @@ Inactive tabs share their window's active drawing surface, so they cannot be cap
 - Dock selection notifications schedule a preview without activating Blinker. Defaults are 150 ms before appearance and 200 ms before departure dismissal; settings allow 0–1000 ms and 100–1000 ms respectively. A grace period bridges travel from icon to panel. Dock restarts are checked periodically; hover discovery does not use permanent screen-wide pointer polling.
 - The traffic-light management panel provides a “Windows of This App” entry.
 - Scale ranges from 50–150% and applies to images, text, controls, spacing, corners and frame. The same preference controls Dock and keyboard previews. The grid has no pagination; it fits items to available space and scrolls when needed. Capture requests follow visible items in the lazy grid.
+- Appearance fades in over 120 ms; departure fades out over 100 ms. Dismissal immediately releases the interactive panel and invalidates its session. A reusable, non-key, click-through panel briefly hosts the same content view for departure, without screen sampling or bitmap copies. Reopening interrupts that transition, and refreshes do not replay it. Reduce Motion makes both transitions immediate.
 
 ## Capture and resource policy
 
 Screen Recording is requested only from the explicit settings button. Without it, titles/icons and window actions still work. Traffic-light glass uses native materials and requires no capture.
 
-ScreenCaptureKit work is scheduled only while a preview session is open, one batch at a time. A new request replaces pending work rather than launching parallel non-cancellable captures. Closing the panel invalidates the session so late results cannot populate it. Images are not written to disk. Explicitly disabling thumbnails or detecting permission loss clears both published images and cached images; ordinary dismissal retains the cache for later minimized-window previews.
+ScreenCaptureKit work is scheduled only while a preview session is open, one batch at a time. An equivalent request reuses in-flight work; changes to capture-relevant identity replace pending work rather than launching parallel non-cancellable captures. Focus-order changes alone do not discard a result. Closing the panel invalidates the session so late results cannot populate it. Images are not written to disk. Explicitly disabling thumbnails or detecting permission loss clears both published images and cached images; ordinary dismissal retains the cache for later minimized-window previews.
+
+A capture-service preparation failure shows one retry notice and pauses automatic retries for that preview session. Explicit retry reuses the bounded visible request; it never requests permission. Inactive tabs and individual windows without an available image remain ordinary icon/title fallbacks.
 
 Thumbnails are downscaled to fit 640×400 pixels. `NSCache` is configured with a 32 MiB cost limit and 64-entry limit; active image references are also bounded. These are cache policies, not a hard cap on total process memory or capture-framework allocations.
 
-Hidden/minimized windows reuse their own cached images. A cold offscreen capture can be attempted if a source can be matched conservatively; failed attempts are rate-limited. Fresh minimized-window imagery is not guaranteed by the target app or system. Background tabs are not activated merely to create a thumbnail.
+Hidden/minimized windows reuse their own cached images. A cold offscreen capture can be attempted if a source can be matched conservatively; actual failed captures are rate-limited, while cancelled or superseded work does not start the retry cooldown. Fresh minimized-window imagery is not guaranteed by the target app or system. Background tabs are not activated merely to create a thumbnail.
 
 ## Compatibility and verification
 

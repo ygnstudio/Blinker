@@ -73,7 +73,7 @@ private struct PermissionAssistantView: View {
             }
             Divider()
             HStack {
-                Button("重新检查权限") { permissions.refresh() }
+                PermissionCheckButton().environmentObject(permissions)
                 Spacer()
                 Button("完成", action: onClose).keyboardShortcut(.defaultAction)
             }

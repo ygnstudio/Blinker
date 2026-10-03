@@ -41,6 +41,9 @@ extension HoverOverlayController {
                 hoveredIndex: presentation.hoveredIndex,
                 dwellMilliseconds: settings.dwellMilliseconds
             )
+            for (index, control) in (panels + extraPanels).enumerated() {
+                control.updatePointerHover(index == presentation.hoveredIndex)
+            }
         }
     }
 

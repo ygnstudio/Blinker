@@ -12,6 +12,8 @@ struct ApplicationRulesView: View {
     @State private var showingAppLibrary = false
     @State private var ruleToDelete: AppRule?
     @State private var visibleRules: [AppRule] = []
+    @State private var pendingEditor: AppRule?
+    @StateObject private var files = RuleFileActions()
 
     private var selectedRule: AppRule? {
         visibleRules.first { $0.id == selection }
@@ -27,6 +29,7 @@ struct ApplicationRulesView: View {
                         Text("添加一个应用，为它选择关闭、最小化和缩放按钮的动作。")
                     } actions: {
                         Button("添加应用", systemImage: "plus") { showingAppLibrary = true }
+                            .disabled(files.isBusy)
                     }
                 } else if visibleRules.isEmpty {
                     ContentUnavailableView.search(text: searchText)
@@ -40,13 +43,14 @@ struct ApplicationRulesView: View {
                 ToolbarItem {
                     Button("添加应用", systemImage: "plus") { showingAppLibrary = true }
                         .keyboardShortcut("n", modifiers: .command)
+                        .disabled(files.isBusy)
                 }
                 ToolbarItem {
                     Button("编辑规则", systemImage: "slider.horizontal.3") { editSelection() }
                         .disabled(selectedRule == nil)
                 }
                 ToolbarItem {
-                    RuleToolsMenu(store: ruleStore)
+                    RuleToolsMenu(store: ruleStore, files: files)
                 }
                 ToolbarItem {
                     Button("设置…", systemImage: "gearshape", action: onOpenSettings)
@@ -54,18 +58,22 @@ struct ApplicationRulesView: View {
                 }
             }
         }
+        .safeAreaInset(edge: .bottom, spacing: 0) { RuleFileStatus(files: files) }
         .preferredColorScheme(appearance.resolvedScheme)
         .onChange(of: ruleStore.rules, initial: true) { rebuildList() }
         .onChange(of: searchText) { rebuildList() }
-        .sheet(isPresented: $showingAppLibrary) {
+        .onDisappear {
+            files.cancel()
+            pendingEditor = nil
+        }
+        .sheet(isPresented: $showingAppLibrary, onDismiss: openPendingEditor) {
             AppLibraryPicker { app in
                 let rule = ruleStore.rules.first { $0.id == app.bundleIdentifier }
                     ?? AppRule(bundleIdentifier: app.bundleIdentifier, displayName: app.name)
                 ruleStore.upsert(rule)
                 searchText = ""
                 selection = rule.id
-                // Let the picker dismiss before activating another window.
-                DispatchQueue.main.async { onEdit(rule) }
+                pendingEditor = rule
             }
         }
         .alert("删除规则？", isPresented: Binding(
@@ -126,6 +134,12 @@ struct ApplicationRulesView: View {
             onEdit(rule)
         }
     }
+
+    private func openPendingEditor() {
+        guard let rule = pendingEditor else { return }
+        pendingEditor = nil
+        onEdit(rule)
+    }
 }
 
 private struct ApplicationRuleRow: View {
@@ -137,17 +151,20 @@ private struct ApplicationRuleRow: View {
                 .resizable().frame(width: 32, height: 32)
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 3) {
-                Text(rule.displayName).lineLimit(1)
-                Text(rule.bundleIdentifier).font(.caption).foregroundStyle(.secondary).lineLimit(1)
+                Text(rule.displayName).lineLimit(1).help(rule.bundleIdentifier)
+                Text(stateSummary).font(.caption).foregroundStyle(.secondary)
             }
             Spacer()
-            VStack(alignment: .trailing, spacing: 3) {
-                Text(rule.isEnabled ? String(localized: "按钮规则已启用") : String(localized: "按钮规则已停用"))
-                Text(rule.isHoverEnabled ? String(localized: "允许悬停放大") : String(localized: "已关闭悬停放大"))
-                    .font(.caption)
-            }
-            .foregroundStyle(.secondary)
         }
         .padding(.vertical, 6)
+    }
+
+    private var stateSummary: String {
+        switch (rule.isEnabled, rule.isHoverEnabled) {
+        case (true, true): String(localized: "按钮规则开启，允许悬停")
+        case (true, false): String(localized: "仅开启按钮规则")
+        case (false, true): String(localized: "仅允许悬停")
+        case (false, false): String(localized: "按钮规则与悬停均关闭")
+        }
     }
 }

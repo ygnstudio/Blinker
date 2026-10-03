@@ -98,6 +98,64 @@ final class WorkspaceStoreTests: XCTestCase {
         XCTAssertGreaterThan(WorkspaceManager.minimumCaptureSize.height, 0)
     }
 
+    func testPendingCaptureBlocksDuplicateMutationsUntilCompletion() throws {
+        let (defaults, suite) = try makeDefaults()
+        defer { defaults.removePersistentDomain(forName: suite) }
+        var finishCapture: (([WorkspaceEntry]) -> Void)?
+        var captureCount = 0
+        let store = WorkspaceStore(defaults: defaults, capture: { completion in
+            captureCount += 1
+            finishCapture = completion
+        })
+        var completed = false
+        XCTAssertTrue(store.saveCurrentLayout(named: "First") { completed = true })
+        XCTAssertEqual(store.operation, .saving)
+        XCTAssertFalse(store.saveCurrentLayout(named: "Duplicate"))
+        XCTAssertFalse(store.update(id: UUID()))
+        XCTAssertFalse(store.restore(id: UUID()))
+        XCTAssertEqual(captureCount, 1)
+        XCTAssertFalse(completed)
+
+        try XCTUnwrap(finishCapture)([])
+        XCTAssertTrue(completed)
+        XCTAssertFalse(store.isBusy)
+        XCTAssertEqual(store.workspaces.map(\.name), ["First"])
+        let id = try XCTUnwrap(store.workspaces.first?.id)
+        XCTAssertTrue(store.update(id: id))
+        XCTAssertEqual(store.operation, .updating(id))
+        store.remove(id: id)
+        XCTAssertEqual(store.workspaces.count, 1, "The item must survive its pending update")
+        try XCTUnwrap(finishCapture)([])
+        XCTAssertFalse(store.isBusy)
+    }
+
+    func testRestoreBusyStateEndsBeforeCompletionAndReportsActualCount() throws {
+        let (defaults, suite) = try makeDefaults()
+        defer { defaults.removePersistentDomain(forName: suite) }
+        var finishRestore: ((Int) -> Void)?
+        var restoreCount = 0
+        let store = WorkspaceStore(defaults: defaults, capture: { $0([]) }, restore: { _, completion in
+            restoreCount += 1
+            finishRestore = completion
+        })
+        store.saveCurrentLayout(named: "Layout")
+        let id = try XCTUnwrap(store.workspaces.first?.id)
+        var result: Int?
+        XCTAssertTrue(store.restore(id: id) { count in
+            XCTAssertFalse(store.isBusy)
+            result = count
+        })
+        XCTAssertEqual(store.operation, .restoring(id))
+        XCTAssertFalse(store.restore(id: id))
+        store.remove(id: id)
+        XCTAssertEqual(store.workspaces.count, 1)
+        XCTAssertEqual(restoreCount, 1)
+        try XCTUnwrap(finishRestore)(2)
+        XCTAssertEqual(result, 2)
+        store.remove(id: id)
+        XCTAssertTrue(store.workspaces.isEmpty)
+    }
+
     /// A corrupt workspaces blob must not be silently erased: it is
     /// quarantined under a backup key before the store starts empty.
     func testCorruptWorkspacesBlobIsQuarantinedNotErased() throws {

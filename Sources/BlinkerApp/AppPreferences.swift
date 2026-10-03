@@ -1,8 +1,6 @@
 import SwiftUI
 
-/// User-facing interface appearance, persisted across launches. The
-/// interface language follows the system (String Catalog), so no language
-/// preference lives here.
+/// User-facing interface appearance, persisted across launches.
 enum AppAppearance: String, CaseIterable, Codable {
     case system
     case light
@@ -50,6 +48,14 @@ final class AppPreferences: ObservableObject {
         didSet { defaults.set(appearance.rawValue, forKey: "appAppearance") }
     }
 
+    @Published var language: AppLanguage {
+        didSet { language.persist(in: defaults) }
+    }
+
+    var languageNeedsRestart: Bool {
+        language != languageAtLaunch
+    }
+
     /// Whether dragging windows to screen edges/corners snaps them.
     @Published var isSnapEnabled: Bool {
         didSet { defaults.set(isSnapEnabled, forKey: "isSnapEnabled") }
@@ -68,9 +74,17 @@ final class AppPreferences: ObservableObject {
         didSet { defaults.set(workspaceExperimentsEnabled, forKey: "workspaceExperimentsEnabled") }
     }
 
-    private let defaults = UserDefaults.standard
+    private let defaults: UserDefaults
+    private let languageAtLaunch: AppLanguage
 
-    private init() {
+    init(
+        defaults: UserDefaults = .standard,
+        domainName: String = Bundle.main.bundleIdentifier ?? ProcessInfo.processInfo.processName
+    ) {
+        self.defaults = defaults
+        let language = AppLanguage.read(from: defaults, domainName: domainName)
+        self.language = language
+        languageAtLaunch = language
         hasSeenOnboarding = defaults.bool(forKey: "hasSeenOnboarding")
         appearance = AppAppearance(
             rawValue: defaults.string(forKey: "appAppearance") ?? ""

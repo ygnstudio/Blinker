@@ -14,6 +14,9 @@ final class WindowBrowserController: ObservableObject {
     @Published private(set) var shortcutAvailable = true
     @Published private(set) var isOpen = false
     @Published private(set) var dockMode = false
+    @Published private var operation = WindowBrowserOperationState()
+    private var departingAction = false
+    private(set) var presentationID = UUID()
     private var selection = WindowBrowserSelection()
     private let presentation = WindowBrowserPresentation()
     private var panel: WindowBrowserPanel? {
@@ -61,15 +64,17 @@ final class WindowBrowserController: ObservableObject {
 
     var layout: WindowBrowserLayout {
         WindowBrowserGeometry.previewLayout(windowCount: windows.count, scale: preferences.previewScale,
-                                            screenSize: display.size)
+                                            screenSize: CGSize(width: display.width,
+                                                               height: display
+                                                                   .height - thumbnailNoticeHeight))
     }
 
     var selectedWindow: BrowserWindow? {
         windows.first { $0.id == selectedID }
     }
 
-    var presentationID: UUID {
-        sessionID
+    var isPerformingAction: Bool {
+        operation.current != nil || departingAction
     }
 
     func setVisible(_ id: UUID, visible: Bool, session: UUID) {
@@ -176,9 +181,11 @@ final class WindowBrowserController: ObservableObject {
 
     private func begin(pid: pid_t?, anchor: CGRect?, keyboard: Bool, direction: Int) {
         dismiss()
+        clearPresentationContents()
         guard AccessibilityPermission.isTrusted else { ActionFeedback.report(.permissionRequired); return }
         keyboardSession.begin(holdingOption: keyboard)
         let token = sessionID
+        presentationID = token
         pidFilter = pid
         self.anchor = anchor
         dockMode = anchor != nil
@@ -264,6 +271,7 @@ final class WindowBrowserController: ObservableObject {
     }
 
     func commit(_ id: UUID? = nil) {
+        guard isOpen else { return }
         guard let target = id ?? selectedID else {
             if isLoading {
                 keyboardSession.deferCommitUntilLoaded()
@@ -277,11 +285,11 @@ final class WindowBrowserController: ObservableObject {
     }
 
     func perform(_ action: ButtonAction) {
-        guard let id = selectedID else { return }
-        let token = sessionID
+        guard isOpen, let id = selectedID,
+              let request = operation.begin(action, windowID: id, sessionID: sessionID) else { return }
         Task {
-            await catalog.perform(action, on: id)
-            guard isOpen, sessionID == token else { return }
+            await catalog.perform(request.action, on: request.windowID)
+            guard isOpen, sessionID == request.sessionID, operation.finish(request) else { return }
             updateWindows()
             if windows.isEmpty {
                 dismiss()
@@ -290,19 +298,24 @@ final class WindowBrowserController: ObservableObject {
     }
 
     func dismiss() {
-        keyboardSession.dismiss()
-        isOpen = false
         dockDelay?.cancel()
+        guard isOpen else { return }
+        departingAction = operation.current != nil
+        keyboardSession.dismiss()
+        let token = sessionID
+        isOpen = false
+        operation.reset()
         refreshTimer?.invalidate()
         leaveTimer?.invalidate()
         outsideSince = nil
-        panel?.orderOut(nil)
-        thumbnails.stop()
+        thumbnails.stop(preservingPresentation: true)
         thumbnailRefreshTask?.cancel()
         visibleIDs = []
-        windows = []
         selection = WindowBrowserSelection()
-        selectedID = nil
+        presentation.hide { [weak self] in
+            guard let self, !isOpen, sessionID == token else { return }
+            clearPresentationContents()
+        }
     }
 
     private func releaseOption() {
@@ -324,10 +337,33 @@ final class WindowBrowserController: ObservableObject {
 }
 
 extension WindowBrowserController {
+    private func clearPresentationContents() {
+        departingAction = false
+        isLoading = false
+        windows = []
+        selectedID = nil
+        thumbnails.stop()
+    }
+
+    private var thumbnailNoticeHeight: CGFloat {
+        usesThumbnails && thumbnails.captureUnavailable && !windows.isEmpty ? 32 * previewScale : 0
+    }
+
+    func updatePresentationSize() {
+        guard isOpen else { return }
+        panel?.setFrame(presentationFrame(), display: true)
+        updateCornerRadius()
+        panel?.invalidateShadow()
+    }
+
+    func retryThumbnails() {
+        guard isOpen, usesThumbnails, !isPerformingAction else { return }
+        thumbnails.retry()
+    }
+
     private func presentationFrame() -> CGRect {
         let size = usesThumbnails
-            ? WindowBrowserGeometry.previewLayout(windowCount: windows.count, scale: preferences.previewScale,
-                                                  screenSize: display.size).size
+            ? CGSize(width: layout.size.width, height: layout.size.height + thumbnailNoticeHeight)
             : CGSize(width: 460 * previewScale,
                      height: (CGFloat(max(1, windows.count)) * 58 + 80) * previewScale)
         return WindowBrowserGeometry.panelFrame(size: size, anchor: anchor, screen: display)
@@ -351,7 +387,8 @@ extension WindowBrowserController {
         let delay = preferences.dockAppearanceMilliseconds
         dockDelay = Task { [weak self] in
             try? await Task.sleep(for: .milliseconds(delay))
-            guard !Task.isCancelled, let self, target.frame.contains(NSEvent.mouseLocation),
+            guard !Task.isCancelled, let self, !paused, preferences.dockEnabled, !holdingOption,
+                  target.frame.contains(NSEvent.mouseLocation),
                   NSEvent.pressedMouseButtons == 0 else { return }
             begin(pid: target.pid, anchor: target.frame, keyboard: false, direction: 0)
         }

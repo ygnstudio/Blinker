@@ -1,6 +1,6 @@
 # Architecture
 
-Blinker has two Swift Package targets: `BlinkerCore` owns rules and native window behavior; `BlinkerApp` owns application lifecycle, preferences and presentation. Core does not depend on the app target. It includes AppKit panels where native tracking, focus and glass composition are part of the behavior.
+Blinker has two production Swift Package targets: `BlinkerCore` owns rules and native window behavior; `BlinkerApp` owns application lifecycle, preferences and presentation. Core does not depend on the app target. It includes AppKit panels where native tracking, focus and glass composition are part of the behavior.
 
 ## Ownership
 
@@ -13,14 +13,16 @@ Blinker has two Swift Package targets: `BlinkerCore` owns rules and native windo
 | `BlinkerCore/WindowBrowser` | Window/tab identity, discovery, focus/Dock observation, thumbnails and preview geometry |
 | `BlinkerCore/Permission` | Accessibility status, read-only compatibility checks and explicit test-window registration |
 | `BlinkerApp/ApplicationRules` | Application library, rule list, rule editor and rule file UI |
-| `BlinkerApp/Settings` | Global settings, experimental workspace UI, About and diagnostics UI |
+| `BlinkerApp/Settings` | Global settings, centralized shortcut editing, experimental workspace UI and the separate About view |
 | `BlinkerApp/Permissions` | Shared authorization state, explicit requests, system-settings links and the current-app drag assistant |
 | `BlinkerApp/WindowBrowser` | Browser preferences, Option-Tab handling and SwiftUI preview content |
 | `BlinkerApp/WindowManagement` | Global placement shortcuts and recording |
-| `BlinkerApp/AppWindowController` | Shared lifecycle for native settings, rule-list and per-app editor windows |
+| `BlinkerApp/AppWindowController` | Shared lifecycle for native settings, About, rule-list and per-app editor windows |
 | Other `BlinkerApp` controllers | Menu bar, interception coordination and failure feedback |
 
-Rules answer “what should happen for this app?” Settings answer “how should Blinker behave globally?” About identifies the product and links to help, feedback and licensing. Do not repeat feature catalogs or configuration controls across these surfaces.
+Rules answer “what should happen for this app?” Settings answer “how should Blinker behave globally?” The rule list owns global import/export; each app editor owns actions, independent enable flags, copy and reset. About is a separate window for product identity, version, project links and licensing. Help commands open the guide, onboarding and diagnostic tools.
+
+Settings has six destinations: General, Hover Buttons, Previews & Switching, Window Layouts, Shortcuts, and Privacy & Permissions. Each preference has one editor. Contextual links may reveal its owner or the shared permission assistant. Workspace controls stay inside Window Layouts behind their experimental enable flag; About and diagnostics are not settings categories. `SettingsNavigation` routes every settings entry point to the same window. Keep persisted preference keys, rule identities and migration readers independent of navigation labels.
 
 ## Execution boundaries
 
@@ -49,9 +51,9 @@ flowchart LR
     Shortcut[Placement shortcut or snap] --> Action
 ```
 
-Unconfigured enhanced clicks do not silently become ordinary-left-click actions. Per-app `isEnabled` controls remapping and `isHoverEnabled` controls enlargement independently. Session pauses override both without rewriting saved preferences. Pausing globally suspends hotkeys while preserving their saved enabled state.
+An unconfigured ordinary left click keeps the native action. Unconfigured right, Option and Fn clicks pass through on native controls and do nothing on hover controls. A press without a configured long-press action follows the ordinary-left-click path; native interception currently also requires a configured left-click action to recognize an independent long press. Explicit `ButtonAction.none` consumes a configured click. Keep these distinctions in editor labels and help text. Per-app `isEnabled` controls remapping and `isHoverEnabled` controls enlargement independently. Session pauses override both without rewriting saved preferences. Pausing globally suspends hotkeys while preserving their saved enabled state.
 
-All action entry points use `DefaultWindowActionPerformer.shared`. Action targets retain a PID and AX element; neither window title nor current rectangle is an identity. Screenshot matching is separate and cannot redirect an action. Failures are reported through `ActionFeedback` to a transient nonactivating panel and the General diagnostics section. An accepted Quit request still allows the target app to ask about unsaved changes.
+All action entry points use `DefaultWindowActionPerformer.shared`. Action targets retain a PID and AX element; neither window title nor current rectangle is an identity. Screenshot matching is separate and cannot redirect an action. Failures are reported through `ActionFeedback` to a transient nonactivating panel; General shows diagnostics when module issues or recent feedback exist. Persistent diagnostic entry points live in Help. An accepted Quit request still allows the target app to ask about unsaved changes.
 
 ## Presentation and layout
 

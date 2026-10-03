@@ -12,6 +12,8 @@ import SwiftUI
 final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
     private let feedback = ActionFeedbackController.shared
     private let windowBrowser = WindowBrowserController()
+    private let settingsNavigation = SettingsNavigation()
+    private var appearanceSubscription: AnyCancellable?
     private lazy var permissions = PermissionController(thumbnails: windowBrowser.thumbnails)
     private lazy var permissionAssistant = PermissionAssistantController(permissions: permissions)
     let ruleStore = RuleStore()
@@ -43,28 +45,41 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
         return controller
     }()
 
-    private lazy var settingsWindowController = AppWindowController { [weak self] in
-        guard let self else {
-            fatalError("AppDelegate deallocated before the settings window was created")
-        }
-        // The single injection point for the settings tree: the stores flow
-        // down to the tabs through the environment, while the two behavior
-        // callbacks stay explicit.
-        return NSHostingController(
-            rootView: SettingsView(
-                onApplyHoverSettings: applyHoverOverlaySettings,
-                onSnapEnabledChange: applySnapEnabled,
-                onOpenApplications: openApplications,
-                onShowOnboarding: replayOnboarding
+    private lazy var settingsWindowController =
+        AppWindowController(title: String(localized: "通用")) { [weak self] in
+            guard let self else {
+                fatalError("AppDelegate deallocated before the settings window was created")
+            }
+            // The single injection point for the settings tree: the stores flow
+            // down to the tabs through the environment, while the two behavior
+            // callbacks stay explicit.
+            return NSHostingController(
+                rootView: SettingsView(
+                    onApplyHoverSettings: applyHoverOverlaySettings,
+                    onSnapEnabledChange: applySnapEnabled,
+                    onOpenApplications: openApplications,
+                    onShowOnboarding: replayOnboarding,
+                    onShowAbout: openAbout,
+                    navigation: settingsNavigation
+                )
+                .environmentObject(hoverOverlaySettingsStore)
+                .environmentObject(hotkeyManager)
+                .environmentObject(workspaceStore)
+                .environmentObject(interception)
+                .environmentObject(windowBrowser)
+                .environmentObject(permissions)
+                .environmentObject(permissionAssistant)
             )
-            .environmentObject(hoverOverlaySettingsStore)
-            .environmentObject(hotkeyManager)
-            .environmentObject(workspaceStore)
-            .environmentObject(interception)
-            .environmentObject(windowBrowser)
-            .environmentObject(permissions)
-            .environmentObject(permissionAssistant)
-        )
+        }
+
+    private lazy var aboutWindowController = AppWindowController(
+        title: String(localized: "关于 Blinker"), autosaveName: "BlinkerAbout",
+        contentSize: NSSize(width: 560, height: 480), minimumSize: NSSize(width: 480, height: 420)
+    ) { [weak self] in
+        NSHostingController(rootView: AboutView(onOpenPermissions: { [weak self] in
+            self?.settingsNavigation.selection = .permissions
+            self?.openSettings()
+        }))
     }
 
     private lazy var applicationsWindowController = AppWindowController(
@@ -81,7 +96,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
 
     private var onboardingWindowController: AppWindowController?
 
-    private func replayOnboarding() {
+    func replayOnboarding() {
         onboardingWindowController?.close()
         showOnboarding()
     }
@@ -135,6 +150,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
     }
 
     func applicationDidFinishLaunching(_: Notification) {
+        observeAppearance()
         // Menu bar app: no Dock icon, no main window.
         NSApp.setActivationPolicy(.accessory)
         statusItemController.install()
@@ -148,6 +164,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
         if !AppPreferences.shared.hasSeenOnboarding {
             showOnboarding()
         }
+    }
+
+    /// Also covers panels created outside AppWindowController; nil restores system inheritance.
+    private func observeAppearance() {
+        let preferences = AppPreferences.shared
+        NSApp.appearance = preferences.appearance.nsAppearance
+        appearanceSubscription = preferences.$appearance
+            .removeDuplicates()
+            .dropFirst()
+            .receive(on: DispatchQueue.main)
+            .sink { appearance in NSApp.appearance = appearance.nsAppearance }
     }
 
     func applicationShouldHandleReopen(_: NSApplication, hasVisibleWindows _: Bool) -> Bool {
@@ -170,6 +197,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
 
     func openSettings() {
         settingsWindowController.show()
+    }
+
+    func openAbout() {
+        aboutWindowController.show()
     }
 
     /// Persists the drag-to-snap toggle and applies it to the live snapper.

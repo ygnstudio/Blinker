@@ -223,7 +223,9 @@ final class HotkeyManager: ObservableObject {
     /// The single recorder both binding kinds share: one local key monitor,
     /// one set of rules, one dispatch on completion.
     private func recordNextKey(target: BindingTarget) {
+        let wasRecordingTarget = recordingTarget == target
         endRecording()
+        guard !wasRecordingTarget else { return }
         recordingTarget = target
         localMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
             guard let self else { return event }

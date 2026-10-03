@@ -16,8 +16,11 @@ struct SectionInfoButton: View {
             Image(systemName: "info.circle")
                 .font(.caption)
                 .foregroundStyle(.secondary)
+                .frame(width: 24, height: 24)
+                .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.borderless)
+        .help("详情")
         .accessibilityLabel("详情")
         .popover(isPresented: $isShowingPopover, arrowEdge: .bottom) {
             Text(text)

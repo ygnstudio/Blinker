@@ -14,6 +14,7 @@ final class CompatibilityWindowController: NSObject, NSWindowDelegate {
         window.title = String(localized: "兼容性检查")
         window.setContentSize(NSSize(width: 480, height: 370))
         window.isReleasedWhenClosed = false
+        window.delegate = self
         self.window = window
         window.center()
         NSApp.activate(ignoringOtherApps: true)
@@ -21,6 +22,10 @@ final class CompatibilityWindowController: NSObject, NSWindowDelegate {
     }
 
     func windowWillClose(_ notification: Notification) {
+        if let closing = notification.object as? NSWindow, closing === window {
+            // Retained AppKit windows do not invoke SwiftUI onDisappear when merely closed.
+            closing.contentViewController = nil
+        }
         if let window = notification.object as? NSWindow, window === testWindow {
             HoverTestWindow.register(windowID: nil)
         }
@@ -62,6 +67,7 @@ private struct CompatibilityView: View {
     @State private var apps: [NSRunningApplication] = []
     @State private var report: WindowCompatibilityReport?
     @State private var checking = false
+    @State private var inspectionID: UUID?
 
     var body: some View {
         Form {
@@ -71,9 +77,13 @@ private struct CompatibilityView: View {
                     Text(app.localizedName ?? app.bundleIdentifier ?? "").tag(app.bundleIdentifier ?? "")
                 }
             }
-            Button("检查当前窗口", action: inspect).disabled(checking || bundleID.isEmpty)
-            if checking {
-                ProgressView().controlSize(.small)
+            .disabled(checking)
+            HStack {
+                Button("检查当前窗口", action: inspect).disabled(checking || bundleID.isEmpty)
+                Spacer()
+                if checking {
+                    OperationProgress(message: String(localized: "正在检查窗口…"))
+                }
             }
             if let report {
                 LabeledContent("辅助功能权限", value: report.permissionGranted ? String(localized: "已授权")
@@ -98,6 +108,10 @@ private struct CompatibilityView: View {
             }
         }
         .onChange(of: bundleID) { _, _ in report = nil }
+        .onDisappear {
+            inspectionID = nil
+            checking = false
+        }
     }
 
     private func support(_ supported: Bool) -> String {
@@ -105,9 +119,15 @@ private struct CompatibilityView: View {
     }
 
     private func inspect() {
+        guard !checking, !bundleID.isEmpty else { return }
+        let token = UUID()
+        inspectionID = token
         checking = true
+        report = nil
         let requestedID = bundleID
         WindowCompatibility.inspect(bundleID: requestedID) { result in
+            guard inspectionID == token else { return }
+            inspectionID = nil
             checking = false
             if bundleID == requestedID {
                 report = result

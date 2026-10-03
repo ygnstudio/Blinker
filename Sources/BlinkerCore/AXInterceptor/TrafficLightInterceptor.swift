@@ -20,7 +20,9 @@ import os
 /// the mouse down is swallowed but *not* acted on immediately. If the button
 /// is released before `longPressThreshold`, the plain left-click action runs;
 /// otherwise the long-press action fires while the button is still held. The
-/// matching mouse up is always swallowed so the target app never sees a
+/// original AX button bounds govern the hold: leaving cancels both actions,
+/// even if the pointer returns before release. Drag tracking performs no AX calls.
+/// The matching mouse up is always swallowed so the target app never sees a
 /// half-forwarded click.
 public final class TrafficLightInterceptor {
     private let ruleEngine: RuleEngine
@@ -36,28 +38,16 @@ public final class TrafficLightInterceptor {
     /// How long a left click must be held to count as a long press.
     static let longPressThreshold: TimeInterval = 0.45
 
-    /// Guards `pendingPress`, `longPressWorkItem` and the swallow flags
+    /// Guards `leftPress`, `longPressWorkItem` and the swallow flag
     /// below, which are written from the event tap and the timer (work
     /// queue).
     private let pendingLock = NSLock()
-    private var pendingPress: PendingPress?
+    private var leftPress = TrafficLightPressState()
     private var longPressWorkItem: DispatchWorkItem?
-    /// Whether the previous left/right mouse *down* was swallowed, so the
+    /// Whether the previous right mouse *down* was swallowed, so the
     /// matching up is swallowed too — the target app must never see an
     /// orphaned mouse-up for a click that never landed.
-    private var didSwallowLeftDown = false
     private var didSwallowRightDown = false
-
-    /// A left mouse down waiting to become either a plain click or a long
-    /// press. `shortAction` is the plain left-click mapping (`nil` keeps the
-    /// button dead for quick clicks); `longAction` fires on timeout.
-    private struct PendingPress {
-        let windowHit: AXQuery.WindowHit
-        let button: TrafficButton
-        let shortAction: ButtonAction?
-        let longAction: ButtonAction
-        var didFireLong = false
-    }
 
     public init(ruleEngine: RuleEngine, actionPerformer: WindowActionPerforming) {
         self.ruleEngine = ruleEngine
@@ -89,6 +79,7 @@ public final class TrafficLightInterceptor {
         let mask = CGEventMask(
             (1 << CGEventType.leftMouseDown.rawValue)
                 | (1 << CGEventType.leftMouseUp.rawValue)
+                | (1 << CGEventType.leftMouseDragged.rawValue)
                 | (1 << CGEventType.rightMouseDown.rawValue)
                 | (1 << CGEventType.rightMouseUp.rawValue)
         )
@@ -112,10 +103,9 @@ public final class TrafficLightInterceptor {
         // Drop any in-flight long press so a late timer can never fire its
         // action after the interceptor stood down.
         pendingLock.lock()
-        pendingPress = nil
+        leftPress.reset()
         longPressWorkItem?.cancel()
         longPressWorkItem = nil
-        didSwallowLeftDown = false
         didSwallowRightDown = false
         pendingLock.unlock()
     }
@@ -137,6 +127,8 @@ public final class TrafficLightInterceptor {
         switch eventType {
         case .leftMouseUp:
             return handleLeftMouseUp(event: event)
+        case .leftMouseDragged:
+            return handleLeftMouseDragged(event: event)
         case .rightMouseUp:
             return handleRightMouseUp(event: event)
         case .leftMouseDown, .rightMouseDown:
@@ -152,21 +144,30 @@ public final class TrafficLightInterceptor {
     /// up would be misleading.
     private func handleLeftMouseUp(event: CGEvent) -> Unmanaged<CGEvent>? {
         pendingLock.lock()
-        let pending = pendingPress
-        pendingPress = nil
+        let release = leftPress.release(at: event.location)
         longPressWorkItem?.cancel()
         longPressWorkItem = nil
-        let swallowUp = didSwallowLeftDown
-        didSwallowLeftDown = false
         pendingLock.unlock()
 
-        guard pending != nil || swallowUp else { return Unmanaged.passUnretained(event) }
-        if let pending, !pending.didFireLong, let shortAction = pending.shortAction {
+        if let invocation = release.invocation {
             workQueue.async { [weak self] in
-                self?.perform(shortAction, window: pending.windowHit)
+                self?.perform(invocation.action, window: invocation.windowHit)
             }
         }
-        return nil
+        return release.swallowed ? nil : Unmanaged.passUnretained(event)
+    }
+
+    private func handleLeftMouseDragged(event: CGEvent) -> Unmanaged<CGEvent>? {
+        // The button frame was read once on mouse-down. Never put AX IPC on
+        // the high-frequency drag path.
+        pendingLock.lock()
+        let swallowed = leftPress.drag(to: event.location)
+        if leftPress.pending == nil {
+            longPressWorkItem?.cancel()
+            longPressWorkItem = nil
+        }
+        pendingLock.unlock()
+        return swallowed ? nil : Unmanaged.passUnretained(event)
     }
 
     /// The right-click counterpart of `handleLeftMouseUp`: a right mouse up
@@ -205,16 +206,14 @@ public final class TrafficLightInterceptor {
 
         // Swallow the original click — and remember which button, so the
         // matching mouse up is swallowed as well (no orphaned ups).
-        pendingLock.lock()
         if isRightClick {
+            pendingLock.lock()
             didSwallowRightDown = true
+            pendingLock.unlock()
         } else {
-            didSwallowLeftDown = true
+            scheduleLeftPress(makePendingPress(decision: decision, windowHit: window))
         }
-        pendingLock.unlock()
-        if let pending = makePendingPress(decision: decision, windowHit: window) {
-            scheduleLongPress(pending)
-        } else {
+        if decision.longPressAction == nil {
             workQueue.async { [weak self] in
                 self?.perform(decision.action, window: window)
             }
@@ -227,42 +226,44 @@ public final class TrafficLightInterceptor {
     private func makePendingPress(
         decision: Decision,
         windowHit: AXQuery.WindowHit
-    ) -> PendingPress? {
-        guard let longAction = decision.longPressAction else { return nil }
-        return PendingPress(
+    ) -> TrafficLightPressState.Pending? {
+        guard let longAction = decision.longPressAction,
+              let bounds = decision.buttonBounds else { return nil }
+        return TrafficLightPressState.Pending(
+            bounds: bounds,
             windowHit: windowHit,
-            button: decision.button,
             shortAction: decision.action,
             longAction: longAction
         )
     }
 
-    private func scheduleLongPress(_ pending: PendingPress) {
+    private func scheduleLeftPress(_ pending: TrafficLightPressState.Pending?) {
         pendingLock.lock()
-        pendingPress = pending
-        let workItem = DispatchWorkItem { [weak self] in
-            self?.fireLongPressIfNeeded()
+        longPressWorkItem?.cancel()
+        leftPress.begin(pending)
+        let workItem = pending.map { press in
+            DispatchWorkItem { [weak self] in
+                self?.fireLongPressIfNeeded(id: press.id)
+            }
         }
         longPressWorkItem = workItem
         pendingLock.unlock()
 
-        workQueue.asyncAfter(deadline: .now() + Self.longPressThreshold, execute: workItem)
+        if let workItem {
+            workQueue.asyncAfter(deadline: .now() + Self.longPressThreshold, execute: workItem)
+        }
     }
 
     /// Runs on the work queue when the long-press deadline elapses.
-    private func fireLongPressIfNeeded() {
+    private func fireLongPressIfNeeded(id: UUID) {
+        let location = CGEvent(source: nil)?.location
         pendingLock.lock()
-        guard let pending = pendingPress, !pending.didFireLong else {
-            pendingLock.unlock()
-            return
-        }
-        pendingPress?.didFireLong = true
-        let longAction = pending.longAction
-        let windowHit = pending.windowHit
+        let invocation = leftPress.deadline(for: id, at: location)
         pendingLock.unlock()
 
+        guard let invocation else { return }
         logger.info("long press threshold reached; firing long-press action")
-        perform(longAction, window: windowHit)
+        perform(invocation.action, window: invocation.windowHit)
     }
 
     // MARK: - Action execution
@@ -294,7 +295,7 @@ public final class TrafficLightInterceptor {
     private static func trafficButton(
         at point: CGPoint,
         expectedProcessIdentifier processIdentifier: pid_t
-    ) -> TrafficButton? {
+    ) -> (button: TrafficButton, bounds: CGRect?)? {
         let systemWide = AXUIElementCreateSystemWide()
         AXQuery.applyMessagingTimeout(systemWide)
         var element: AXUIElement?
@@ -304,8 +305,10 @@ public final class TrafficLightInterceptor {
         var pid: pid_t = 0
         guard AXUIElementGetPid(element, &pid) == .success, pid == processIdentifier else { return nil }
 
-        guard let subrole = AXQuery.stringAttribute(element, kAXSubroleAttribute) else { return nil }
-        return TrafficButton(axSubrole: subrole)
+        AXQuery.applyMessagingTimeout(element)
+        guard let subrole = AXQuery.stringAttribute(element, kAXSubroleAttribute),
+              let button = TrafficButton(axSubrole: subrole) else { return nil }
+        return (button, AXQuery.elementFrame(element))
     }
 }
 
@@ -315,8 +318,7 @@ private extension TrafficLightInterceptor {
     /// What to do with a click on a traffic button.
     struct Decision {
         let action: ButtonAction
-        /// The traffic button that was clicked; forwarded to the performer.
-        let button: TrafficButton
+        let buttonBounds: CGRect?
         /// When set, the click enters long-press mode instead of executing
         /// `action` right away (plain left click with a long-press mapping).
         let longPressAction: ButtonAction?
@@ -352,7 +354,7 @@ private extension TrafficLightInterceptor {
         }
 
         guard
-            let button = Self.trafficButton(
+            let hit = Self.trafficButton(
                 at: location,
                 expectedProcessIdentifier: window.processIdentifier
             )
@@ -361,6 +363,7 @@ private extension TrafficLightInterceptor {
             return nil
         }
 
+        let button = hit.button
         let variant = Self.clickVariant(isRightClick: isRightClick, flags: flags)
         guard let action = configuredAction(
             bundleIdentifier: bundleIdentifier,
@@ -372,22 +375,25 @@ private extension TrafficLightInterceptor {
 
         // A plain left click on a button that also has a long-press mapping
         // waits for release/timeout instead of executing immediately.
-        var longPressAction: ButtonAction?
-        if variant == .left {
-            if let configured = ruleEngine.action(
+        let longPressAction = variant == .left
+            ? ruleEngine.action(
                 forBundleIdentifier: bundleIdentifier,
                 button: button,
                 variant: .longPressLeft
-            ) {
-                longPressAction = configured
-            }
-        }
+            ) : nil
 
         let buttonName = String(describing: button)
         let actionName = String(describing: action)
         let summary = "\(buttonName)/\(String(describing: variant)) -> \(actionName)"
         logger.info("\(bundleIdentifier, privacy: .public): \(summary, privacy: .public)")
-        return Decision(action: action, button: button, longPressAction: longPressAction)
+        if longPressAction != nil {
+            // If AX cannot supply a usable tracking region, keep the native
+            // click rather than swallowing a gesture that cannot be validated.
+            guard let bounds = hit.bounds, bounds.width > 0, bounds.height > 0,
+                  bounds.minX.isFinite, bounds.minY.isFinite,
+                  bounds.width.isFinite, bounds.height.isFinite, bounds.contains(location) else { return nil }
+        }
+        return Decision(action: action, buttonBounds: hit.bounds, longPressAction: longPressAction)
     }
 
     /// Maps a physical click to its configured variant. Modifier checks come

@@ -5,6 +5,29 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-10-03
+
+### Added
+
+- General settings offer an app language choice: Follow System, Simplified Chinese or English. Changes apply after reopening Blinker without changing the system language.
+
+### Changed
+
+- Settings now group hover controls, previews, window layouts, shortcuts and permissions by purpose. About has its own window, workspace controls live in Window Layouts, and diagnostic tools remain available from Help.
+- App-rule editors group the independent enable switches and distinguish System Default, Unconfigured and Do Nothing. Global rule import/export lives in the app list; each editor retains undo, redo, copy and reset.
+- Light, Dark and Follow System appearance choices also apply to auxiliary windows and preview panels.
+- Hover buttons and preview cards acknowledge presses without delaying actions. Waiting states identify scanning, rule transfers, workspace operations and window checks, with static feedback when Reduce Motion is enabled.
+- Individual hover buttons gently enlarge under the pointer and return on exit without changing their hit regions. Window previews fade in and out without delaying selection or activation; Reduce Motion disables these transitions.
+
+### Fixed
+
+- Repeated clicks cannot submit overlapping window or workspace operations, and callbacks from dismissed rule-file or preview sessions cannot overwrite a newer session.
+- Workspace save sheets stay open until capture completes. Shortcut recording can also be cancelled by clicking the active recorder again.
+- In-flight hover presses are cancelled when controls become unavailable; leaving the button cancels its long-press timer while preserving native short-click tracking. Native traffic-light long presses also cancel outside their original bounds, and old timers cannot act on a new press.
+- Equivalent thumbnail refreshes keep successful in-flight captures. Capture-service failures offer an explicit retry instead of silently looping.
+- Empty or identical rule imports report no changes; cancelled exports remain serialized until their file writes finish. Workspace restore feedback distinguishes missing permission from unsuccessful restoration.
+- Settings sliders expose individual labels, units and adjustment actions to accessibility. Closing the compatibility window now releases its content and invalidates pending results.
+
 ## [0.5.0] - 2026-10-03
 
 ### Added

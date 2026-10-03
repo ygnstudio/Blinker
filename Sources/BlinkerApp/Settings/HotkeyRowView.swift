@@ -4,8 +4,7 @@ import SwiftUI
 
 /// One hotkey binding row: label, current combo (or record prompt), a clear
 /// button, plus inline recorder feedback and conflict warnings. Shared by
-/// the window-management tab's binding groups and the hover tab's
-/// hover-toggle row, so both surfaces keep the same row language.
+/// layout and hover bindings in the shortcuts pane.
 struct HotkeyRowView: View {
     let label: String
     let combo: HotkeyCombo?
@@ -46,6 +45,7 @@ struct HotkeyRowView: View {
                 }
                 .buttonStyle(.bordered)
                 .tint(isRecording ? .accentColor : nil)
+                .help(isRecording ? "点击或按 Esc 取消录制" : "录制快捷键")
                 Button(role: .destructive, action: onClear) {
                     Image(systemName: "minus.circle")
                 }
@@ -62,7 +62,7 @@ struct HotkeyRowView: View {
         if isRecording {
             // Recorder feedback: the reject reason when the last press was
             // unusable, otherwise the visible cancel affordance.
-            Text(recordingHint ?? String(localized: "按 Esc 取消录制"))
+            Text(recordingHint ?? String(localized: "点击或按 Esc 取消录制"))
                 .font(.caption2)
                 .foregroundStyle(.secondary)
         }

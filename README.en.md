@@ -7,10 +7,10 @@ Blinker is a native macOS menu bar utility for traffic-light controls, window pr
 ## Features
 
 - **App rules**: configure each traffic-light button for left click, right click, Option-click, Fn-click and long press. Enable remapping and hover enlargement independently per app; copy rules, import/export JSON, and undo or redo edits.
-- **Hover enlargement**: colored controls cover the native traffic lights on a continuous glass tray. Adjust size, appearance delay and click protection, with four optional action buttons. macOS 26+ uses system Liquid Glass; earlier systems use native fallback materials.
-- **Window previews and switching**: use Option-Tab or hover over a Dock icon. Scale the entire preview panel from 50% to 150%; items share one grid, scrolling when needed. Optionally list standard macOS window tabs and Safari tabs separately.
-- **Window placement**: halves, quarters, thirds, centering, maximize, display transfer and previous-layout restore. Shared actions are available through the hover panel, shortcuts and optional drag to snap.
-- **Experimental workspaces**: explicitly enable saving and restoring window arrangements. Matching uses window characteristics; it does not restore documents or browser sessions.
+- **Hover Buttons**: enlarged colored controls cover the native traffic lights on a continuous glass tray. Adjust size, appearance delay and click protection, with four optional action buttons. macOS 26+ uses system Liquid Glass; earlier systems use native fallback materials.
+- **Previews & Switching**: use Option-Tab or hover over a Dock icon. Scale the entire preview panel from 50% to 150%; items share one grid, scrolling when needed. Optionally list standard macOS window tabs and Safari tabs separately.
+- **Window Layouts**: halves, quarters, thirds, centering, maximize, display transfer and previous-layout restore. Shared actions are available through the hover panel, shortcuts and optional drag to snap.
+- **Experimental workspaces**: explicitly enable saving and restoring window arrangements in Window Layouts. Matching uses window characteristics; it does not restore documents or browser sessions.
 
 This README describes the current source. For downloaded builds, consult the [release notes](https://github.com/ygnstudio/Blinker/releases).
 
@@ -37,12 +37,14 @@ As an alternative, download a DMG from [GitHub Releases](https://github.com/ygns
 
 Release packages are **ad-hoc signed, without Developer ID signing or Apple notarization**. If macOS blocks the first launch because the developer cannot be verified or the app is not notarized, verify the download source and use **System Settings → Privacy & Security → Open Anyway**. This may also be needed after a Homebrew installation. See [Apple's opening instructions](https://support.apple.com/en-us/102445).
 
-1. Follow the first-launch guide or open **Settings → Permissions**, then click **Grant Access…** and follow the assistant to grant **Accessibility** permission. Reopen the guide from **General** at any time.
+1. Follow the first-launch guide or open **Settings → Privacy and Permissions**, then click **Grant Access…** and follow the assistant to grant **Accessibility** permission. Reopen the guide from **General** at any time.
 2. Click the menu bar icon to open **App Rules**, add an app, and open its editor.
-3. Open **Settings** from the toolbar to configure hover, previews, placement and shortcuts. **About** contains version, help and feedback links.
-4. To use real thumbnails, explicitly grant **Screen Recording** in **Settings → Permissions**. You can also open the permission assistant from **Window Previews & Switching**. Icons and titles remain usable without it.
+3. Open **Settings** from the toolbar to configure hover, previews, layout and shortcuts. **General** links to the guide, onboarding and a separate **About** window. Diagnostic tools are in the **Help** menu.
+4. To use real thumbnails, explicitly grant **Screen Recording** in **Settings → Privacy and Permissions**. You can also open the permission assistant from the missing-permission notice in **Previews & Switching**. Icons and titles remain usable without it.
 
-The assistant provides the running app's icon to try dragging into the system permission list. If dragging does not work, click **Show in Finder** and use the list's plus button to add the app. You still need to allow access in System Settings. Blinker checks permission status when you return; **Settings → Permissions** also offers a manual check and **Reauthorize…** instructions. See the [user guide (中文)](docs/USER_GUIDE.md) for details and troubleshooting.
+The assistant provides the running app's icon to try dragging into the system permission list. If dragging does not work, click **Show in Finder** and use the list's plus button to add the app. You still need to allow access in System Settings. Blinker checks permission status when you return; **Settings → Privacy and Permissions** also offers a manual check and reauthorization instructions. See the [user guide (中文)](docs/USER_GUIDE.md) for details and troubleshooting.
+
+Adjust appearance and language in **General**. Appearance changes apply immediately to Blinker's windows and previews. Language follows the system by default; choose Simplified Chinese or English, then quit and reopen Blinker to apply it. This does not change the system language.
 
 ## Permissions and limits
 

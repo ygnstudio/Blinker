@@ -25,6 +25,12 @@ public enum HoverControlAppearance {
     /// glass effect owns the semantic color independently of window activation;
     /// its contentView remains a native button for tracking and accessibility.
     public static func makeSurface(for button: NSButton) -> NSView {
+        makeSurface(for: button, reduceMotion: { NSWorkspace.shared.accessibilityDisplayShouldReduceMotion })
+    }
+
+    /// Read at each interaction so existing controls follow accessibility changes.
+    /// The internal provider also keeps interaction tests independent of runner preferences.
+    static func makeSurface(for button: NSButton, reduceMotion: @escaping () -> Bool) -> NSView {
         let bounds = NSRect(origin: .zero, size: button.frame.size)
         let surface = GlassBackdrop.makeView(
             size: button.frame.size, cornerRadius: button.frame.height / 2
@@ -32,14 +38,26 @@ public enum HoverControlAppearance {
         if #available(macOS 26.0, *), let glass = surface as? NSGlassEffectView {
             glass.tintColor = button.bezelColor
         }
-        let content = NSView(frame: bounds)
-        content.autoresizingMask = [.width, .height]
         // Keep the semantic face opaque so dark backdrops cannot muddy its color.
         // The inset leaves the native glass rim exposed, including in inactive panels.
         let face = SemanticGlassFace(frame: bounds.insetBy(dx: 2, dy: 2), color: button.bezelColor ?? .clear)
         face.autoresizingMask = [.width, .height]
         face.setAccessibilityElement(false)
-        content.addSubview(face)
+        let content = HoverButtonPressFeedback(frame: bounds, face: face)
+        if let hoverButton = button as? HoverOverlayButtonView {
+            hoverButton.onHoverChanged = { [weak content] hovered, animated in
+                content?.setHovered(
+                    hovered, reduceMotion: reduceMotion(),
+                    animated: animated
+                )
+            }
+            hoverButton.onPressChanged = { [weak content] pressed, animated in
+                content?.setPressed(
+                    pressed, reduceMotion: reduceMotion(),
+                    animated: animated
+                )
+            }
+        }
         button.frame.origin = .zero
         button.autoresizingMask = [.width, .height]
         content.addSubview(button)
