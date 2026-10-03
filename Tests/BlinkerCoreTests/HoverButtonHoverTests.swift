@@ -98,7 +98,9 @@ final class HoverButtonHoverTests: XCTestCase {
         }
     }
 
-    private func makeFixture() -> (FixturePanel, HoverOverlayButtonView) {
+    private func makeFixture(
+        reduceMotion: @escaping () -> Bool = { false }
+    ) -> (FixturePanel, HoverOverlayButtonView) {
         _ = NSApplication.shared
         let panel = FixturePanel(
             contentRect: NSRect(x: -10000, y: -10000, width: 100, height: 100),
@@ -111,7 +113,7 @@ final class HoverButtonHoverTests: XCTestCase {
             onActivate: { _ in XCTFail("Hover must never activate a button") },
             pointerLocationInWindow: { [weak panel] _ in panel?.pointer ?? .zero }
         )
-        let surface = HoverControlAppearance.makeSurface(for: button)
+        let surface = HoverControlAppearance.makeSurface(for: button, reduceMotion: reduceMotion)
         panel.contentView = NSView(frame: CGRect(x: 0, y: 0, width: 100, height: 100))
         panel.contentView?.addSubview(surface)
         button.updateTrackingAreas()
@@ -122,7 +124,7 @@ final class HoverButtonHoverTests: XCTestCase {
         let feedback = button.superview as? HoverButtonPressFeedback
         let face = feedback?.subviews.first
         let state: [String] = [
-            "reduceMotion=\(NSWorkspace.shared.accessibilityDisplayShouldReduceMotion)",
+            "systemReduceMotion=\(NSWorkspace.shared.accessibilityDisplayShouldReduceMotion)",
             "hasWindow=\(button.window != nil)",
             "visible=\(button.window?.isVisible == true)",
             "key=\(button.window?.isKeyWindow == true)",
@@ -140,6 +142,7 @@ final class HoverButtonHoverTests: XCTestCase {
     func testTrackingAreaWorksInInactivePanelAndDetectsInitialPointer() throws {
         let (panel, button) = makeFixture()
         defer { panel.close() }
+        XCTAssertFalse(panel.isKeyWindow)
         let feedback = try XCTUnwrap(button.superview as? HoverButtonPressFeedback)
         let area = try XCTUnwrap(button.trackingAreas.first { $0.owner === button })
         XCTAssertTrue(area.options.contains([.activeAlways, .enabledDuringMouseDrag]))
@@ -153,6 +156,55 @@ final class HoverButtonHoverTests: XCTestCase {
         panel.pointer = CGPoint(x: 80, y: 80)
         button.updateTrackingAreas()
         XCTAssertEqual(feedback.layer?.sublayerTransform.m11, 1)
+    }
+
+    func testSurfaceCallbacksReadReducedMotionForEachInteraction() throws {
+        var reduced = false
+        let (panel, button) = makeFixture(reduceMotion: { reduced })
+        defer { panel.close() }
+        let feedback = try XCTUnwrap(button.superview as? HoverButtonPressFeedback)
+        let face = try XCTUnwrap(feedback.subviews.first)
+        panel.pointer = CGPoint(x: 15, y: 15)
+        button.updateTrackingAreas()
+        XCTAssertGreaterThan(feedback.layer?.sublayerTransform.m11 ?? 0, 1)
+
+        reduced = true
+        button.highlight(true)
+        button.updateLayer()
+        XCTAssertEqual(feedback.layer?.sublayerTransform.m11, 1)
+        XCTAssertEqual(face.layer?.borderWidth, 1.5)
+        XCTAssertTrue((feedback.layer?.animationKeys() ?? []).isEmpty)
+        button.highlight(false)
+        button.updateLayer()
+        XCTAssertEqual(face.layer?.borderWidth, 1)
+        panel.pointer = CGPoint(x: 80, y: 80)
+        button.updateTrackingAreas()
+        XCTAssertEqual(face.layer?.borderWidth, 0)
+
+        reduced = false
+        panel.pointer = CGPoint(x: 15, y: 15)
+        button.updateTrackingAreas()
+        XCTAssertGreaterThan(feedback.layer?.sublayerTransform.m11 ?? 0, 1)
+        XCTAssertEqual(face.layer?.borderWidth, 0)
+    }
+
+    func testUnattachedButtonIgnoresPointerHover() throws {
+        let button = try XCTUnwrap(button() as? HoverOverlayButtonView)
+        let surface = HoverControlAppearance.makeSurface(for: button, reduceMotion: { false })
+        let feedback = try XCTUnwrap(button.superview as? HoverButtonPressFeedback)
+        let face = try XCTUnwrap(feedback.subviews.first)
+        let entered = try XCTUnwrap(NSEvent.enterExitEvent(
+            with: .mouseEntered, location: CGPoint(x: 15, y: 15), modifierFlags: [], timestamp: 0,
+            windowNumber: 0, context: nil, eventNumber: 0, trackingNumber: 0, userData: nil
+        ))
+        withExtendedLifetime(surface) {
+            XCTAssertNil(button.window)
+            button.updateTrackingAreas()
+            button.mouseEntered(with: entered)
+            XCTAssertEqual(feedback.layer?.sublayerTransform.m11, 1)
+            XCTAssertEqual(face.layer?.borderWidth, 0)
+            XCTAssertTrue((feedback.layer?.animationKeys() ?? []).isEmpty)
+        }
     }
 
     func testHideDisableAndRemovalResetHover() throws {

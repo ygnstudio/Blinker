@@ -25,6 +25,12 @@ public enum HoverControlAppearance {
     /// glass effect owns the semantic color independently of window activation;
     /// its contentView remains a native button for tracking and accessibility.
     public static func makeSurface(for button: NSButton) -> NSView {
+        makeSurface(for: button, reduceMotion: { NSWorkspace.shared.accessibilityDisplayShouldReduceMotion })
+    }
+
+    /// Read at each interaction so existing controls follow accessibility changes.
+    /// The internal provider also keeps interaction tests independent of runner preferences.
+    static func makeSurface(for button: NSButton, reduceMotion: @escaping () -> Bool) -> NSView {
         let bounds = NSRect(origin: .zero, size: button.frame.size)
         let surface = GlassBackdrop.makeView(
             size: button.frame.size, cornerRadius: button.frame.height / 2
@@ -41,13 +47,13 @@ public enum HoverControlAppearance {
         if let hoverButton = button as? HoverOverlayButtonView {
             hoverButton.onHoverChanged = { [weak content] hovered, animated in
                 content?.setHovered(
-                    hovered, reduceMotion: NSWorkspace.shared.accessibilityDisplayShouldReduceMotion,
+                    hovered, reduceMotion: reduceMotion(),
                     animated: animated
                 )
             }
             hoverButton.onPressChanged = { [weak content] pressed, animated in
                 content?.setPressed(
-                    pressed, reduceMotion: NSWorkspace.shared.accessibilityDisplayShouldReduceMotion,
+                    pressed, reduceMotion: reduceMotion(),
                     animated: animated
                 )
             }
