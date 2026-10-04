@@ -16,6 +16,9 @@ SCRIPT = Path(__file__).with_name("validate-release.py").resolve()
 SPEC = importlib.util.spec_from_file_location("release_check", SCRIPT)
 release = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(release)
+LICENSE_RESOURCES = ("LICENSE", "NOTICE", "ThirdParty/StatusTrio/LICENSE",
+                     "ThirdParty/StatusTrio/NOTICE", "ThirdParty/StatusTrio/README.md",
+                     "ThirdParty/MacbookDuoEffect/LICENSE", "ThirdParty/MacbookDuoEffect/README.md")
 
 
 class VersionTests(unittest.TestCase):
@@ -59,8 +62,8 @@ class ArtifactTests(unittest.TestCase):
         self.contents = self.app / "Contents"
         self.resources = self.contents / "Resources"
         self.core = self.resources / "Blinker_BlinkerCore.bundle/Contents"
-        for name in ("LICENSE", "NOTICE"):
-            (self.source / name).write_text(name + " contents")
+        for name in LICENSE_RESOURCES:
+            self.file(self.source / name, (name + " contents").encode())
             self.file(self.resources / name, (self.source / name).read_bytes())
         self.info = {"CFBundleIdentifier": "com.ygnstudio.Blinker", "CFBundleExecutable": "Blinker",
                      "CFBundleShortVersionString": "0.4.0-beta.1", "CFBundleVersion": "7",
@@ -130,10 +133,10 @@ class ArtifactTests(unittest.TestCase):
             release.verify_app(self.app, "v0.4.0-beta.1", "0", self.source, self.run_tool)
 
     def test_required_resources_cannot_be_missing_empty_or_symlinks(self):
-        paths = [self.resources / "LICENSE", self.resources / "NOTICE",
-                 self.resources / "Blinker.icns", self.core / "Info.plist",
-                 self.resources / "en.lproj/Localizable.strings",
-                 self.core / "Resources/zh-Hans.lproj/Localizable.stringsdict"]
+        paths = [self.resources / name for name in LICENSE_RESOURCES]
+        paths += [self.resources / "Blinker.icns", self.core / "Info.plist",
+                  self.resources / "en.lproj/Localizable.strings",
+                  self.core / "Resources/zh-Hans.lproj/Localizable.stringsdict"]
         for path in paths:
             with self.subTest(path=path):
                 original = path.read_bytes()
@@ -163,6 +166,15 @@ class ArtifactTests(unittest.TestCase):
         self.signature = "Authority=Developer ID Application: Example\n"
         with self.assertRaises(release.ValidationError):
             self.verify()
+
+    def test_changed_third_party_notices_fail(self):
+        for name in LICENSE_RESOURCES[2:]:
+            with self.subTest(name=name):
+                path = self.resources / name
+                path.write_text("changed third-party notice")
+                with self.assertRaises(release.ValidationError):
+                    self.verify()
+                path.write_bytes((self.source / name).read_bytes())
 
     def test_dmg_is_read_only_and_detached_when_app_validation_fails(self):
         dmg = self.root / "Blinker-v0.4.0-beta.1.dmg"

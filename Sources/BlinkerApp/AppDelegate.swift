@@ -16,6 +16,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
     private var appearanceSubscription: AnyCancellable?
     private lazy var permissions = PermissionController(thumbnails: windowBrowser.thumbnails)
     private lazy var permissionAssistant = PermissionAssistantController(permissions: permissions)
+    let menuBarStatus = SystemStatusMonitor()
+    let systemAudio = SystemAudioController()
+    private lazy var screenEffects = ScreenEffectController()
+    private lazy var desktopActions = DesktopActionsCoordinator(
+        preferences: .shared,
+        permissions: permissions
+    )
     let ruleStore = RuleStore()
     let hoverOverlaySettingsStore = HoverOverlaySettingsStore()
     /// Named window-layout workspaces for the window-management tab.
@@ -37,11 +44,37 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
     )
 
     private lazy var statusItemController: StatusItemController = {
-        let controller = StatusItemController(coordinator: interception)
+        let controller = StatusItemController(
+            coordinator: interception,
+            systemStatus: menuBarStatus,
+            audio: systemAudio
+        )
         controller.onOpenSettings = { [weak self] in self?.openSettings() }
         controller.onPauseAll = { [weak self] minutes in self?.interception.pause(minutes: minutes) }
         controller.onResumeAll = { [weak self] in self?.interception.start() }
         controller.onOpenApplications = { [weak self] in self?.openApplications() }
+        controller.onOpenMenuBarSettings = { [weak self] in
+            self?.settingsNavigation.selection = .menuBar
+            self?.openSettings()
+        }
+        controller.screenEffectsState = { [weak self] in
+            (self?.screenEffects.preferences.configuration.isEnabled == true,
+             self?.screenEffects.isPaused == true)
+        }
+        controller.onToggleScreenEffects = { [weak self] in
+            guard let self else { return }
+            if screenEffects.isPaused {
+                screenEffects.resume()
+            } else {
+                screenEffects.pause()
+            }
+        }
+        controller.desktopState = { [weak self] in
+            guard let self else { return (false, false) }
+            return (desktopActions.desktop.isDesktopShown,
+                    !desktopActions.isPaused && !desktopActions.desktop.isBusy)
+        }
+        controller.onToggleDesktop = { [weak self] in self?.desktopActions.toggleDesktop() }
         return controller
     }()
 
@@ -69,6 +102,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
                 .environmentObject(windowBrowser)
                 .environmentObject(permissions)
                 .environmentObject(permissionAssistant)
+                .environmentObject(menuBarStatus)
+                .environmentObject(systemAudio)
+                .environmentObject(screenEffects)
+                .environmentObject(desktopActions)
             )
         }
 
@@ -154,9 +191,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
         // Menu bar app: no Dock icon, no main window.
         NSApp.setActivationPolicy(.accessory)
         statusItemController.install()
+        screenEffects.start()
+        desktopActions.onWillToggle = { [weak self] in self?.windowBrowser.dismiss() }
+        desktopActions.start()
+        hotkeyManager.onToggleDesktop = { [weak self] in self?.desktopActions.toggleDesktop() }
         interception.onPauseStateChanged = { [weak self] paused in
             self?.hotkeyManager.setSessionPaused(paused)
             self?.windowBrowser.setPaused(paused)
+            self?.desktopActions.setPaused(paused)
         }
         interception.start()
         wireHoverToggleHotkey()
@@ -178,8 +220,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
     }
 
     func applicationShouldHandleReopen(_: NSApplication, hasVisibleWindows _: Bool) -> Bool {
-        openSettings()
+        if MenuBarPreferences.shared.configuration.showsDock {
+            statusItemController.showSystemPanel()
+        } else {
+            openSettings()
+        }
         return false
+    }
+
+    func applicationDockMenu(_: NSApplication) -> NSMenu? {
+        statusItemController.makeMenu()
+    }
+
+    func applicationWillTerminate(_: Notification) {
+        statusItemController.stop()
+        screenEffects.stop()
+        desktopActions.stop()
     }
 
     /// The ⌃⌥H global hotkey (configurable) flips hover enlargement without

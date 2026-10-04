@@ -94,6 +94,14 @@ CORE_RESOURCE_BUNDLE="$BUILD_DIR/Blinker_BlinkerCore.bundle"
 mkdir -p "$APP_DIR/Contents/Resources"
 # The distributed application carries its license and project attribution offline.
 cp "$REPO_ROOT/LICENSE" "$REPO_ROOT/NOTICE" "$APP_DIR/Contents/Resources/"
+mkdir -p "$APP_DIR/Contents/Resources/ThirdParty/StatusTrio"
+for NOTICE_FILE in LICENSE NOTICE README.md; do
+  cp "$REPO_ROOT/ThirdParty/StatusTrio/$NOTICE_FILE" "$APP_DIR/Contents/Resources/ThirdParty/StatusTrio/"
+done
+mkdir -p "$APP_DIR/Contents/Resources/ThirdParty/MacbookDuoEffect"
+for NOTICE_FILE in LICENSE README.md; do
+  cp "$REPO_ROOT/ThirdParty/MacbookDuoEffect/$NOTICE_FILE" "$APP_DIR/Contents/Resources/ThirdParty/MacbookDuoEffect/"
+done
 if [[ -d "$APP_RESOURCE_BUNDLE/Contents/Resources" ]]; then
   for LPROJ in "$APP_RESOURCE_BUNDLE"/Contents/Resources/*.lproj; do
     [[ -d "$LPROJ" ]] && cp -R "$LPROJ" "$APP_DIR/Contents/Resources/"

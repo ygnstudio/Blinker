@@ -6,9 +6,6 @@ struct HoverTimingSettings: View {
     let onApply: (HoverOverlaySettings) -> Void
 
     var body: some View {
-        SliderReadoutRow(label: String(localized: "出现延迟"),
-                         readout: "\(settings.appearanceDelayMilliseconds) ms",
-                         value: delayBinding, range: 0 ... 800, step: 50)
         SliderReadoutRow(label: String(localized: "点击保护时间"),
                          readout: settings.dwellMilliseconds == 0 ? String(localized: "立即响应")
                              : "\(settings.dwellMilliseconds) ms",
@@ -17,11 +14,7 @@ struct HoverTimingSettings: View {
             get: { settings.protectQuitOnly },
             set: { var copy = settings; copy.protectQuitOnly = $0; onApply(copy) }
         ))
-    }
-
-    private var delayBinding: Binding<Double> {
-        Binding(get: { Double(settings.appearanceDelayMilliseconds) },
-                set: { var copy = settings; copy.appearanceDelayMilliseconds = Int($0); onApply(copy) })
+        .disabled(settings.dwellMilliseconds == 0)
     }
 
     private var dwellBinding: Binding<Double> {

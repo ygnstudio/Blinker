@@ -5,6 +5,42 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-10-04
+
+### Added
+
+- Optional repeated Dock clicks minimize the frontmost app's ordinary windows on the current Space and restore only that feature's own batch; the setting is off by default.
+- Show Desktop / Restore Windows is available in Window Management and through a configurable Control-Option-D shortcut. Desktop, layout and hover shortcuts share the master switch, registration feedback and retry controls.
+- Battery, network and volume icons adapted from Status Trio can appear in the menu bar, Dock or both, with a status panel on left click and App Rules as a configurable alternative.
+- Status Icons settings group icon appearance, battery options, network and audio symbols, and panel behavior, with live or clearly labeled simulated previews, section ordering and reset confirmation.
+- The status panel supports volume, mute and output-device switching, configurable scroll-to-adjust behavior, and output-device ordering and display limits.
+- Optional menu bar charging effects stop during Low Power Mode, Reduce Motion or sleep; background status updates recover after wake without requesting new permissions.
+- Include Status Trio's Apache 2.0 license, original notice and source attribution in the application and its offline license view.
+- Optional Duo lid effect for the built-in display on MacBooks with a compatible angle sensor, disabled by default. Screen Effects settings provide a generated preview, angle calibration, trigger timing and Duo image controls.
+- Duo animation speed is adjustable from 25% to 200%, with 100% as the default, without changing sensor sampling, trigger thresholds or clear timing. Existing settings retain their saved values when the speed option is added.
+- Duo offers recommended defaults and a preset that preserves the current enabled state and calibrated reference angle. Existing settings are not overwritten automatically.
+- Duo shares Screen Recording permission with thumbnails, processes frames in memory without audio or saved recordings, and clears on lock, sleep or loss of sensor/capture data. Pause from settings or the menu; Esc in another app requires Accessibility permission.
+- Include Duo Effect's MIT license and pinned source attribution in the application and its offline license view.
+
+### Changed
+
+- Settings now separate keyboard switching, Dock hover timing, shared window content and preview appearance. Status-icon styles and panel audio controls have distinct homes; Duo calibration, triggering and transitions are grouped by purpose. The window-enhancement switch and pause menu now describe their window-only scope.
+
+### Fixed
+
+- Clearing a command shortcut now survives relaunch. Recording temporarily releases layout, hover and desktop shortcuts so entering a registered combination cannot perform its action.
+- Finder windows are no longer skipped when LaunchServices omits the process launch date; a kernel start-time fallback preserves protection against reused process IDs.
+- Minimize and restore requests use bounded confirmation of asynchronous window transitions instead of relying on an immediate readback, without repeating the write.
+- Dock click validation uses one local monotonic clock throughout, preventing valid clicks from being discarded because event timestamps and process uptime have different origins.
+- Duo tracks continuous opening and closing independently of visual strength, without requiring a stationary pause between gestures. Fresh movement confirmation filters small rebounds, and a quick opening retains its observed starting strength for fade-out. The opening/closing threshold ranges from 3 to 15°; previous 1° or 2° settings normalize to 3°.
+- Normal Duo endings finish their fade before releasing capture. A new gesture can continue on the same stream, while pause, lock, sleep and detected sensor or capture failures still clear immediately.
+
+### Known limits
+
+- Bluetooth symbols reflect the current audio output; nearby-device scanning, pairing, Wi-Fi names and VPN management are not included, and some output devices do not expose system volume or mute controls.
+- Duo depends on a compatible, readable lid-angle sensor and built-in display. It preserves normal lid-close sleep and is not a privacy screen; physical compatibility and performance require verification on each supported configuration.
+- Dock click minimization and Show Desktop require Accessibility and skip fullscreen and previously minimized windows. Changing Spaces discards the previous batch's restore eligibility without reopening its windows.
+
 ## [0.6.1] - 2026-10-03
 
 ### Added

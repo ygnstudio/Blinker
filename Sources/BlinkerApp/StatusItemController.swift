@@ -2,66 +2,97 @@ import AppKit
 import BlinkerCore
 import SwiftUI
 
-/// Left click opens app rules; the context menu also exposes preferences.
-final class StatusItemController: NSObject, NSMenuDelegate {
+/// Left click follows the configured action; the context menu retains app controls.
+@MainActor
+final class StatusItemController: NSObject, NSMenuDelegate, NSMenuItemValidation {
     private var statusItem: NSStatusItem?
     private let coordinator: InterceptionCoordinator
-    /// Invoked for the settings entries (left click and menu item).
+    private let systemStatus: SystemStatusMonitor
+    private let audio: SystemAudioController
+    private let preferences: MenuBarPreferences
+    private var presentation: MenuBarPresentation?
+    /// Invoked for the settings menu entry.
     var onOpenSettings: (() -> Void)?
     var onPauseAll: ((Int?) -> Void)?
     var onResumeAll: (() -> Void)?
     private var targetApp: NSRunningApplication?
     var onOpenApplications: (() -> Void)?
+    var onOpenMenuBarSettings: (() -> Void)?
+    var screenEffectsState: (() -> (enabled: Bool, paused: Bool))?
+    var onToggleScreenEffects: (() -> Void)?
+    var desktopState: (() -> (shown: Bool, available: Bool))?
+    var onToggleDesktop: (() -> Void)?
 
-    init(coordinator: InterceptionCoordinator) {
+    init(coordinator: InterceptionCoordinator, systemStatus: SystemStatusMonitor,
+         audio: SystemAudioController, preferences: MenuBarPreferences? = nil) {
         self.coordinator = coordinator
+        self.systemStatus = systemStatus
+        self.audio = audio
+        self.preferences = preferences ?? .shared
     }
 
     func install() {
-        let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
-        item.button?.image = NSImage(
-            systemSymbolName: "circle.circle",
-            accessibilityDescription: "Blinker"
-        )
-        item.button?.image?.isTemplate = true
+        guard statusItem == nil else { return }
+        let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
+        item.button?.imagePosition = .imageOnly
         item.button?.target = self
         item.button?.action = #selector(statusItemClicked)
         // The action must fire for secondary clicks too, otherwise the
         // context menu can never be shown.
         item.button?.sendAction(on: [.leftMouseUp, .rightMouseUp, .otherMouseUp])
         statusItem = item
+        presentation = MenuBarPresentation(
+            item: item, monitor: systemStatus, audio: audio, preferences: preferences,
+            onOpenApplications: { [weak self] in self?.onOpenApplications?() },
+            onOpenSettings: { [weak self] in self?.onOpenMenuBarSettings?() }
+        )
+        presentation?.start()
+    }
+
+    func stop() {
+        presentation?.stop()
+    }
+
+    func showSystemPanel() {
+        presentation?.showPanel()
     }
 
     @objc private func statusItemClicked() {
         let event = NSApp.currentEvent
         let isSecondaryClick = event?.type == .rightMouseUp
-            || (event?.type == .otherMouseUp && event?.modifierFlags.contains(.control) == true)
+            || event?.modifierFlags.contains(.control) == true
         if isSecondaryClick {
             showContextMenu()
         } else {
-            onOpenApplications?()
+            if preferences.configuration.leftClick == .panel {
+                showSystemPanel()
+            } else {
+                onOpenApplications?()
+            }
         }
     }
 
     private func showContextMenu() {
         guard let statusItem else { return }
+        presentation?.closePanel()
+        let menu = makeMenu()
+        menu.delegate = self
+        statusItem.menu = menu
+        statusItem.button?.performClick(nil)
+    }
+
+    func makeMenu() -> NSMenu {
         targetApp = NSWorkspace.shared.frontmostApplication
         let menu = NSMenu()
-        menu.delegate = self
 
-        let statusRow = NSMenuItem()
-        let hostingView = NSHostingView(rootView: InterceptorStatusRow(coordinator: coordinator))
-        // Size to the localized status text (with a floor), so longer
-        // labels never clip inside the menu row.
-        let fittingSize = hostingView.fittingSize
-        hostingView.frame = NSRect(
-            origin: .zero,
-            size: NSSize(width: max(220, ceil(fittingSize.width)), height: max(24, ceil(fittingSize.height)))
-        )
-        statusRow.view = hostingView
-        menu.addItem(statusRow)
-        menu.addItem(.separator())
+        addStatusRows(to: menu)
 
+        let panelItem = NSMenuItem(title: String(localized: "系统状态…"),
+                                   action: #selector(openSystemPanelClicked), keyEquivalent: "")
+        panelItem.target = self
+        menu.addItem(panelItem)
+        addScreenEffectsItem(to: menu)
+        addDesktopItem(to: menu)
         addPauseItems(to: menu)
         if coordinator.status == .tapFailed || coordinator.status == .partial {
             let retryItem = NSMenuItem(
@@ -96,11 +127,61 @@ final class StatusItemController: NSObject, NSMenuDelegate {
             )
         )
 
-        // The menu only opens on right click via the action handler, so it
-        // is attached just for this invocation and detached on close —
-        // otherwise it would also swallow the plain left click.
-        statusItem.menu = menu
-        statusItem.button?.performClick(nil)
+        return menu
+    }
+
+    func validateMenuItem(_ item: NSMenuItem) -> Bool {
+        if item.action == #selector(toggleDesktop) {
+            return desktopState?().available == true
+        }
+        return true
+    }
+
+    private func addDesktopItem(to menu: NSMenu) {
+        guard let state = desktopState?() else { return }
+        let item = NSMenuItem(title: state.shown ? String(localized: "恢复窗口")
+            : String(localized: "显示桌面"),
+            action: #selector(toggleDesktop), keyEquivalent: "")
+        item.target = self
+        item.isEnabled = state.available
+        menu.addItem(item)
+    }
+
+    @objc private func toggleDesktop() {
+        onToggleDesktop?()
+    }
+
+    private func addScreenEffectsItem(to menu: NSMenu) {
+        guard let state = screenEffectsState?(), state.enabled else { return }
+        let title = state.paused ? String(localized: "继续屏幕特效") : String(localized: "暂停屏幕特效")
+        let item = NSMenuItem(title: title, action: #selector(toggleScreenEffects), keyEquivalent: "")
+        item.target = self
+        menu.addItem(item)
+    }
+
+    @objc private func toggleScreenEffects() {
+        onToggleScreenEffects?()
+    }
+
+    private func addStatusRows(to menu: NSMenu) {
+        addMenuView(NSHostingView(rootView: InterceptorStatusRow(coordinator: coordinator)), to: menu)
+        addMenuView(NSHostingView(rootView: SystemStatusMenuView(monitor: systemStatus)), to: menu)
+    }
+
+    private func addMenuView(_ view: NSView, to menu: NSMenu) {
+        // Measure localized text, including the longest current power-state label.
+        let size = view.fittingSize
+        view.frame = NSRect(origin: .zero, size: NSSize(
+            width: max(240, ceil(size.width)), height: max(24, ceil(size.height))
+        ))
+        let item = NSMenuItem()
+        item.view = view
+        menu.addItem(item)
+        menu.addItem(.separator())
+    }
+
+    @objc private func openSystemPanelClicked() {
+        showSystemPanel()
     }
 
     @objc private func retryInterceptorClicked() {
@@ -109,7 +190,7 @@ final class StatusItemController: NSObject, NSMenuDelegate {
     }
 
     private func addPauseItems(to menu: NSMenu) {
-        let title = coordinator.isIntercepting ? String(localized: "暂停全部") : String(localized: "恢复 Blinker")
+        let title = coordinator.isIntercepting ? String(localized: "暂停窗口增强") : String(localized: "恢复窗口增强")
         let toggle = NSMenuItem(title: title, action: #selector(togglePause), keyEquivalent: "")
         toggle.target = self
         menu.addItem(toggle)

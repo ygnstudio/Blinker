@@ -51,15 +51,9 @@ struct WorkspaceSettingsSection: View {
             .frame(minHeight: 18, alignment: .leading)
             .listRowSeparator(.hidden)
         } header: {
-            SectionHeader(
-                title: String(localized: "工作区（实验）"),
-                info: String(
-                    // swiftlint:disable:next line_length
-                    localized: "把当前窗口排布存成命名预设，点「恢复」一键还原；最小化和其他桌面的窗口也会一并记录。开启「恢复时移回原桌面」后，窗口会一并回到保存时所在的桌面。同名保存会覆盖旧布局，已退出的应用会被跳过。"
-                )
-            )
+            Text("工作区（实验）")
         } footer: {
-            Text("布局按窗口特征匹配，同应用的相似窗口可能配错。原桌面恢复使用非公开系统接口。已有布局会保留。")
+            Text("保存并恢复一组窗口的位置和大小。关闭此功能会保留已有布局；同应用的相似窗口可能匹配错误，移回原桌面使用非公开系统接口。")
         }
         .sheet(isPresented: $showingSaveWorkspaceSheet) {
             SaveWorkspaceSheet(store: workspaceStore)

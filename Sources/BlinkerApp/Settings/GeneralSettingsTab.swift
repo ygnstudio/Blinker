@@ -16,7 +16,7 @@ struct GeneralTab: View {
     var body: some View {
         Form {
             Section {
-                Toggle("启用 Blinker", isOn: Binding(
+                Toggle("启用窗口增强", isOn: Binding(
                     get: { coordinator.isIntercepting },
                     set: {
                         if coordinator.isIntercepting != $0 {
@@ -36,7 +36,7 @@ struct GeneralTab: View {
             } header: {
                 Text("运行状态")
             } footer: {
-                Text("暂停全部增强功能，保留应用规则和偏好设置。")
+                Text("控制窗口按钮、预览切换、贴靠、Dock 收起和快捷键。开合盖特效与状态图标独立运行，关闭本开关会保留所有设置。")
             }
 
             Section {

@@ -2,61 +2,66 @@
 
 [简体中文](README.md) | English
 
-Blinker is a native macOS menu bar utility for traffic-light controls, window previews and switching, and window placement. App rules and settings have separate windows. An unconfigured ordinary left click keeps the native button behavior.
+A native macOS menu bar utility: enlarge traffic-light buttons, choose their actions per app, find windows through Option-Tab and Dock previews, and arrange them on your displays.
 
-## Features
+[Download a release](https://github.com/ygnstudio/Blinker/releases/latest) · [User guide (中文)](docs/USER_GUIDE.md) · [Changelog](CHANGELOG.md) · [Report an issue](https://github.com/ygnstudio/Blinker/issues)
 
-- **App rules**: configure each traffic-light button for left click, right click, Option-click, Fn-click and long press. Enable remapping and hover enlargement independently per app; copy rules, import/export JSON, and undo or redo edits.
-- **Hover Buttons**: enlarged colored controls cover the native traffic lights on a continuous glass tray. Adjust size, appearance delay and click protection, with four optional action buttons. macOS 26+ uses system Liquid Glass; earlier systems use native fallback materials.
-- **Previews & Switching**: use Option-Tab or hover over a Dock icon. Scale the entire preview panel from 50% to 150%; items share one grid, scrolling when needed. Optionally list standard macOS window tabs and Safari tabs separately.
-- **Window Layouts**: halves, quarters, thirds, centering, maximize, display transfer and previous-layout restore. Shared actions are available through the hover panel, shortcuts and optional drag to snap.
-- **Experimental workspaces**: explicitly enable saving and restoring window arrangements in Window Layouts. Matching uses window characteristics; it does not restore documents or browser sessions.
+## Install and update
 
-This README describes the current source. For downloaded builds, consult the [release notes](https://github.com/ygnstudio/Blinker/releases).
-
-## Get started
-
-Targets **macOS 15 or later**, with Apple Silicon and Intel architectures in release builds. Compilation does not establish runtime compatibility: complete testing on the minimum OS and Intel, along with core interaction and performance acceptance, is still pending. Each release's notes define its verified scope.
-
-Install through [Homebrew](https://brew.sh/) and the project's [tap](https://github.com/ygnstudio/homebrew-ygn):
+Install with [Homebrew](https://brew.sh/):
 
 ```bash
 brew install --cask ygnstudio/ygn/blinker
 ```
 
-Quit Blinker before updating, then run:
+Quit Blinker before updating:
 
 ```bash
 brew update
 brew upgrade --cask ygnstudio/ygn/blinker
 ```
 
-`brew update` refreshes package information; `brew upgrade` installs the newer version available in the tap. The tap periodically verifies and adopts published stable releases, so scheduling delays may occur after publication. Blinker has no built-in updater. See the [Homebrew manual](https://docs.brew.sh/Manpage).
+The [project tap](https://github.com/ygnstudio/homebrew-ygn) periodically verifies and adopts stable releases, so an update may take time to appear. Blinker has no built-in updater. Alternatively, download a DMG from [Releases](https://github.com/ygnstudio/Blinker/releases), drag `Blinker.app` into Applications, and replace it manually for future updates.
 
-As an alternative, download a DMG from [GitHub Releases](https://github.com/ygnstudio/Blinker/releases) and drag `Blinker.app` into Applications. Update a manual installation by replacing the app with a newer download.
+Targets **macOS 15 or later**, with Apple Silicon and Intel architectures in release builds. Minimum-OS and Intel runtime compatibility, along with complete performance acceptance, remain unverified. Each release's notes describe its tested scope.
 
-Release packages are **ad-hoc signed, without Developer ID signing or Apple notarization**. If macOS blocks the first launch because the developer cannot be verified or the app is not notarized, verify the download source and use **System Settings → Privacy & Security → Open Anyway**. This may also be needed after a Homebrew installation. See [Apple's opening instructions](https://support.apple.com/en-us/102445).
+Releases use **ad-hoc signing, without Developer ID signing or Apple notarization**. If macOS blocks the first launch, verify the download source and choose **System Settings → Privacy & Security → Open Anyway**. Homebrew installations may need this too; see [Apple's instructions](https://support.apple.com/en-us/102445).
 
-1. Follow the first-launch guide or open **Settings → Privacy and Permissions**, then click **Grant Access…** and follow the assistant to grant **Accessibility** permission. Reopen the guide from **General** at any time.
-2. Click the menu bar icon to open **App Rules**, add an app, and open its editor.
-3. Open **Settings** from the toolbar to configure hover, previews, layout and shortcuts. **General** links to the guide, onboarding and a separate **About** window. Diagnostic tools are in the **Help** menu.
-4. To use real thumbnails, explicitly grant **Screen Recording** in **Settings → Privacy and Permissions**. You can also open the permission assistant from the missing-permission notice in **Previews & Switching**. Icons and titles remain usable without it.
+## Features
 
-The assistant provides the running app's icon to try dragging into the system permission list. If dragging does not work, click **Show in Finder** and use the list's plus button to add the app. You still need to allow access in System Settings. Blinker checks permission status when you return; **Settings → Privacy and Permissions** also offers a manual check and reauthorization instructions. See the [user guide (中文)](docs/USER_GUIDE.md) for details and troubleshooting.
+| Feature | What it does |
+|---|---|
+| App rules | Assign clicks, modified clicks and long presses to each traffic-light button per app; copy rules, import/export them and undo edits |
+| Hover Buttons | Colored controls cover the native traffic lights, with adjustable size, delay, click protection and extra buttons; macOS 26+ uses system Liquid Glass |
+| Previews & Switching | Use Option-Tab or hover over a Dock icon; scale the whole panel from 50% to 150% and optionally list Safari and standard macOS tabs separately |
+| Window management | Halves, quarters, thirds, centering, maximize, display transfer and layout restore, with shortcuts, drag to snap and experimental workspaces |
 
-Adjust appearance and language in **General**. Appearance changes apply immediately to Blinker's windows and previews. Language follows the system by default; choose Simplified Chinese or English, then quit and reopen Blinker to apply it. This does not change the system language.
+App rules and settings have separate windows. An unconfigured ordinary left click keeps the native button behavior. General settings provide appearance and Chinese/English language choices. See the [user guide (中文)](docs/USER_GUIDE.md) for controls and compatibility details.
 
-## Permissions and limits
+### New in v0.7.0
 
-- **Accessibility** identifies buttons, windows and supported tabs, and performs the window actions you choose.
-- **Screen Recording is optional**, used only for thumbnails while a preview is open. Images remain in memory. Traffic-light glass rendering requires no screen capture.
-- Blinker does not upload rules, window titles or thumbnails, and includes no analytics or automatic network requests. Opening project, help or feedback links uses your browser.
-- Custom title bars and tab bars may omit the necessary accessibility information. Inactive tabs without their own cached image show an icon and title. Close Window and Minimize on a tab preview apply to its containing window.
-- Discovery on other Spaces, fresh images of minimized windows and minimum window sizes depend on macOS and the target app. Experimental restoration to an original Space uses private system APIs.
+- **Status icons** show battery, network and volume in the menu bar, Dock or both. The panel controls volume, mute and output devices. Configure content, appearance and ordering in **Settings → Status Icons**. Left click opens the panel by default, with App Rules as an alternative; right click retains the menu.
+- **Minimize and restore** optionally makes another click on the frontmost app's Dock icon minimize its windows, then restore them on the next click. Show Desktop defaults to Control-Option-D; repeating it restores only that operation's windows. Both skip fullscreen and previously minimized windows.
+- **Duo lid effect** tilts, blurs, dims or restores the built-in display as a compatible MacBook opens or closes. It is off by default, with a simulated preview, calibration and recommended settings. It requires a readable lid-angle sensor, preserves normal lid-close sleep and is not a privacy screen.
 
-## Development
+## Get started
 
-Building requires a Swift 6 toolchain and Xcode with the macOS 26 SDK. The runtime deployment target remains macOS 15.
+1. Follow the first-launch guide to grant Accessibility, or click **Grant Access…** in **Settings → Privacy and Permissions**. You still need to approve access in System Settings.
+2. Right-click the menu bar icon, open **App Rules**, and add an app to configure its buttons. Button rules and hover enlargement can be enabled separately per app.
+3. Enable the previews, window-management features and shortcuts you need in Settings. Grant Screen Recording explicitly for real thumbnails; switching by icon and title works without it.
+
+| Permission | Purpose |
+|---|---|
+| Accessibility | Identify windows, buttons and supported tabs, and perform window actions; also used to pause Duo with Esc while another app is active |
+| Screen Recording (optional) | Generate window thumbnails and run Duo. Hover-button glass needs no screen capture |
+
+Screen images stay in memory, with no audio capture or saved recordings. Blinker does not upload rules, window titles or screen content, and has no analytics or automatic network requests. Opening project and help links uses your browser.
+
+Custom tab bars, windows on other Spaces and minimized-window previews depend on macOS and the target app. Inactive tabs without their own cached image show an icon and title; closing or minimizing a tab item affects its whole window. Experimental workspaces match existing windows, do not restore documents or sessions, and use private APIs for original-Space restoration. See the [user guide (中文)](docs/USER_GUIDE.md) and [window browser documentation](docs/WINDOW_BROWSER.md) for permission troubleshooting and other limits.
+
+## Build from source
+
+Use a Swift 6 toolchain and Xcode with the macOS 26 SDK. These commands target Apple Silicon:
 
 ```bash
 git clone https://github.com/ygnstudio/Blinker.git
@@ -65,21 +70,14 @@ cd Blinker
 open ~/Applications/Blinker.app
 ```
 
-Development builds install to `~/Applications/Blinker.app` using the distinct `com.ygnstudio.Blinker.dev` identity. See [Contributing](CONTRIBUTING.md) for build, test, signing and Intel instructions.
+Development builds use the distinct `com.ygnstudio.Blinker.dev` identity and separate permission grants from releases. See [Contributing](CONTRIBUTING.md) for Intel builds, tests and signing.
 
-| Document | Purpose |
-|---|---|
-| [User guide (中文)](docs/USER_GUIDE.md) | Page responsibilities, controls, permissions and troubleshooting |
-| [Architecture](docs/ARCHITECTURE.md) | Module boundaries, threading, performance and safety constraints |
-| [Window browser](docs/WINDOW_BROWSER.md) | Window/tab identity, thumbnails, compatibility and reference projects |
-| [Contributing](CONTRIBUTING.md) | Development setup, checks and change entry points |
-| [Release checklist (中文)](docs/RELEASING.md) | Distribution policy, candidate acceptance and tap updates |
-| [Changelog](CHANGELOG.md) | Pending changes and published release history |
+- [Architecture](docs/ARCHITECTURE.md): module ownership, threading and data boundaries.
+- [Release checklist (中文)](docs/RELEASING.md): build checks, manual acceptance and Homebrew updates.
+- [Code of Conduct](CODE_OF_CONDUCT.md): participation guidelines.
 
-## License
+## License and sources
 
-Copyright © 2026 ygnstudio. The current source and releases based on this license change use **[GNU GPL v3.0 only (GPL-3.0-only)](LICENSE)**, without an “or later” option. See [NOTICE](NOTICE) for the project notice.
+Copyright © 2026 ygnstudio. The current source uses **[GPL-3.0-only](LICENSE)**, which permits commercial use and paid distribution. Distribution requires compliance with Corresponding Source, notice and same-license obligations, without additional restrictions such as a commercial-use ban. See [NOTICE](NOTICE) and the [distribution guide](CONTRIBUTING.md#license-and-distribution). Historical MIT releases retain their original grants.
 
-GPLv3 **permits commercial use, charging for copies and paid services**. Free and paid distribution must preserve copyright/license notices and warranty disclaimers, and identify changes. Binary distribution must provide the version's Corresponding Source, including required build and installation scripts, in accordance with GPLv3. Distributed modified covered works must remain under GPLv3, without further restrictions such as a ban on commercial use. Private use or modification alone does not require public source publication. [LICENSE](LICENSE) contains the controlling terms; see the [GNU FAQ on selling copies](https://www.gnu.org/licenses/gpl-faq.en.html#DoesTheGPLAllowMoney).
-
-Versions previously released under MIT retain their original MIT grants; this change does not revoke them. Third-party projects retain their own licenses. Please follow the [Code of Conduct](CODE_OF_CONDUCT.md).
+Status icons and parts of the system-status and audio-control implementation are adapted from [Status Trio](https://github.com/lingyired/status-trio), retaining its Apache 2.0 license; see the [source and modification notes](ThirdParty/StatusTrio/README.md). Parts of Duo's sensor, image-processing and capture implementation are adapted from [Duo Effect](https://github.com/RuixiangHuang/Macbook_Duo_Effect), retaining its MIT license; see its [source and modification notes](ThirdParty/MacbookDuoEffect/README.md). Full licenses and notices ship with the app and are available offline in About.

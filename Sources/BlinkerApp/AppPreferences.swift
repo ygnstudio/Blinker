@@ -56,6 +56,11 @@ final class AppPreferences: ObservableObject {
         language != languageAtLaunch
     }
 
+    /// Optional Windows-like Dock behavior; existing installations keep native clicks until enabled.
+    @Published var isDockClickMinimizeEnabled: Bool {
+        didSet { defaults.set(isDockClickMinimizeEnabled, forKey: "dockClickMinimizeEnabled") }
+    }
+
     /// Whether dragging windows to screen edges/corners snaps them.
     @Published var isSnapEnabled: Bool {
         didSet { defaults.set(isSnapEnabled, forKey: "isSnapEnabled") }
@@ -89,6 +94,7 @@ final class AppPreferences: ObservableObject {
         appearance = AppAppearance(
             rawValue: defaults.string(forKey: "appAppearance") ?? ""
         ) ?? .system
+        isDockClickMinimizeEnabled = defaults.bool(forKey: "dockClickMinimizeEnabled")
         isSnapEnabled = defaults.object(forKey: "isSnapEnabled") as? Bool ?? false
         workspaceExperimentsEnabled = defaults.bool(forKey: "workspaceExperimentsEnabled")
         isWorkspaceSpaceRestoreEnabled = defaults.bool(forKey: "workspaceSpaceRestoreEnabled")

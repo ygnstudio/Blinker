@@ -1,7 +1,7 @@
 import BlinkerCore
 import SwiftUI
 
-/// One editor for placement and hover shortcuts, with a link to the independent switcher.
+/// One editor for layout, hover and desktop shortcuts, with an independent switcher link.
 struct ShortcutsSettingsTab: View {
     @EnvironmentObject var hotkeyManager: HotkeyManager
     @EnvironmentObject var browser: WindowBrowserController
@@ -9,16 +9,21 @@ struct ShortcutsSettingsTab: View {
 
     var body: some View {
         Form {
+            WindowSwitcherShortcutSection(browser: browser, preferences: browser.preferences,
+                                          onOpenBrowser: onOpenBrowser)
             Section {
-                Toggle("启用布局与悬停快捷键", isOn: hotkeysEnabledBinding)
+                Toggle("启用布局、悬停与桌面快捷键", isOn: hotkeysEnabledBinding)
+            } header: {
+                Text("可自定义的快捷键")
             } footer: {
-                Text("点击组合录制快捷键，Esc 取消，减号清除。此开关同时控制窗口布局和悬停放大快捷键。")
+                Text("点击组合录制快捷键，Esc 取消，减号清除。此开关同时控制窗口布局、悬停放大和显示桌面快捷键。")
+            }
+            Section("桌面") {
+                desktopToggleHotkeyRow
             }
             Section("悬停放大") {
                 hoverToggleHotkeyRow
             }
-            WindowSwitcherShortcutSection(browser: browser, preferences: browser.preferences,
-                                          onOpenBrowser: onOpenBrowser)
             hotkeyGroupSection(
                 title: String(localized: "半屏"),
                 actions: [.tileLeft, .tileRight, .tileTop, .tileBottom]
@@ -79,14 +84,31 @@ struct ShortcutsSettingsTab: View {
         .disabled(!hotkeyManager.isEnabled)
     }
 
+    private var desktopToggleHotkeyRow: some View {
+        HotkeyRowView(
+            label: String(localized: "显示桌面 / 恢复窗口"),
+            combo: hotkeyManager.desktopToggleCombo,
+            isRecording: hotkeyManager.recordingTarget == .desktopToggle,
+            recordingHint: hotkeyManager.recordingHint,
+            conflictWarning: hotkeyManager.desktopToggleCombo.flatMap {
+                hotkeyManager.internalConflictWarning(for: $0, target: .desktopToggle)
+            },
+            registrationWarning: hotkeyManager.registrationWarning(for: .desktopToggle),
+            onRecord: { hotkeyManager.beginRecordingDesktopToggle() },
+            onClear: { hotkeyManager.clearDesktopToggleBinding() },
+            onRetry: { hotkeyManager.retryRegistration(for: .desktopToggle) }
+        )
+        .disabled(!hotkeyManager.isEnabled)
+    }
+
     private func windowActionConflictWarning(for action: ButtonAction) -> String? {
         guard let combo = hotkeyManager.bindings[action.rawValue] else { return nil }
-        return hotkeyManager.internalConflictWarning(for: combo, action: action)
+        return hotkeyManager.internalConflictWarning(for: combo, target: .windowAction(action))
     }
 
     private var hoverToggleConflictWarning: String? {
         guard let combo = hotkeyManager.hoverToggleCombo else { return nil }
-        return hotkeyManager.internalConflictWarning(for: combo, action: nil)
+        return hotkeyManager.internalConflictWarning(for: combo, target: .hoverToggle)
     }
 
     private var hotkeysEnabledBinding: Binding<Bool> {
@@ -119,7 +141,7 @@ private struct WindowSwitcherShortcutSection: View {
         } header: {
             Text("窗口切换")
         } footer: {
-            Text("⌥Tab 独立启用，不受上方开关影响。")
+            Text("⌥Tab 独立启用，在「预览与切换」中设置，不受下方自定义快捷键开关影响。")
         }
     }
 }

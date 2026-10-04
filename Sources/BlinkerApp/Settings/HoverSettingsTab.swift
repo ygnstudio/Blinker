@@ -18,32 +18,32 @@ struct HoverSettingsTab: View {
                 HoverPreviewCard(settings: settings)
                 sizeSlider
                     .disabled(!settings.isEnabled)
+                appearanceDelaySlider
+                    .disabled(!settings.isEnabled)
                 scopePicker
                     .disabled(!settings.isEnabled)
                 Button("打开真实测试窗口…") { CompatibilityWindowController.shared.showTestWindow() }
             } header: {
-                SectionHeader(
-                    title: String(localized: "悬停显示"),
-                    info: String(localized: "放大按钮直接覆盖原生红绿灯；材质与按钮跟随所选外观。")
-                )
+                Text("悬停显示")
+            } footer: {
+                Text("放大按钮直接覆盖原生红绿灯；材质与按钮跟随所选外观。")
             }
 
             Section {
                 HoverTimingSettings(settings: settings, onApply: onApply)
                     .disabled(!settings.isEnabled)
             } header: {
-                Text("响应与保护")
+                Text("点击保护")
             } footer: {
-                Text("保护期间点击不会执行，进度环结束后再点。仅保护退出时，关闭、最小化和布局操作立即响应。")
+                Text("保护期间点击不会执行，进度环结束后再点。仅保护退出时，其他操作立即响应；保护时间为零时，所有操作立即响应。")
             }
 
             Section {
                 extraSlotsGrid.disabled(!settings.isEnabled)
             } header: {
-                SectionHeader(
-                    title: String(localized: "扩展按钮"),
-                    info: String(localized: "选好动作的按钮会在悬停红绿灯时出现在绿灯右侧，点击即执行该动作；留空则不显示。")
-                )
+                Text("扩展按钮")
+            } footer: {
+                Text("选好动作的按钮会在悬停红绿灯时出现在绿灯右侧，点击即执行该动作；留空则不显示。")
             }
 
             Section {
@@ -64,6 +64,19 @@ struct HoverSettingsTab: View {
             value: enlargedSizeBinding,
             range: 28 ... 48,
             step: 1
+        )
+    }
+
+    private var appearanceDelaySlider: some View {
+        SliderReadoutRow(
+            label: String(localized: "出现延迟"),
+            readout: "\(settings.appearanceDelayMilliseconds) ms",
+            value: Binding(
+                get: { Double(settings.appearanceDelayMilliseconds) },
+                set: { value in update { $0.appearanceDelayMilliseconds = Int(value) } }
+            ),
+            range: 0 ... 800,
+            step: 50
         )
     }
 

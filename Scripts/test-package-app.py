@@ -136,7 +136,9 @@ class PackageSafetyTests(unittest.TestCase):
         result = self.package()
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertTrue((self.output / "Contents/MacOS/Blinker").exists())
-        for name in ("LICENSE", "NOTICE"):
+        for name in ("LICENSE", "NOTICE", "ThirdParty/StatusTrio/LICENSE",
+                     "ThirdParty/StatusTrio/NOTICE", "ThirdParty/StatusTrio/README.md",
+                     "ThirdParty/MacbookDuoEffect/LICENSE", "ThirdParty/MacbookDuoEffect/README.md"):
             self.assertEqual((self.output / "Contents/Resources" / name).read_bytes(),
                              (SCRIPT.parent.parent / name).read_bytes())
         self.assertFalse((self.output / "Contents/old-copy").exists())

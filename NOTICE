@@ -30,6 +30,24 @@ Third-party material retains its own applicable copyright and license
 notices. References to other projects in the documentation do not change
 those projects' licenses.
 
+Status Trio
+-----------
+Blinker's status icons and parts of its status-reading and audio-control
+implementation include material adapted from Status Trio.
+Copyright 2026 lingyired. Licensed under the Apache License, Version 2.0.
+The original license, NOTICE, pinned source revision and Blinker modification
+details are preserved in ThirdParty/StatusTrio/. These files also ship in
+the application's Resources directory and are available from its license view.
+
+Macbook Duo Effect
+------------------
+Blinker's lid-angle reader, Duo image effect and GPU frame pipeline include
+material adapted from Duo Effect (RuixiangHuang/Macbook_Duo_Effect).
+Copyright (c) 2026 Ruixiang Huang. Licensed under the MIT License.
+The original license, pinned source revision and Blinker modification details
+are preserved in ThirdParty/MacbookDuoEffect/, included in the application's
+Resources directory and available from its offline license view.
+
 Official references
 -------------------
 GNU license text: https://www.gnu.org/licenses/gpl-3.0.txt

@@ -88,7 +88,7 @@ jobs:
             1. 也可下载下方的 `Blinker-v*.dmg`，将 `Blinker.app` 拖入“应用程序”。
             2. 本应用使用 ad-hoc 签名，未使用 Developer ID，也未经过 Apple 公证。首次启动可能被 Gatekeeper 拦截。
             3. 确认下载来源后，在“系统设置 → 隐私与安全性”中查看提示，选择“仍要打开”；系统或组织策略可能不允许此操作。
-            4. 启动后按提示授予辅助功能权限；窗口缩略图另需屏幕录制权限。
+            4. 启动后按提示授予辅助功能权限；窗口缩略图和 Duo 开合盖特效另需屏幕录制权限。
 
             安装方式不会绕过 Gatekeeper。详见 [Apple 的打开应用说明](https://support.apple.com/102445)。
           generate_release_notes: true

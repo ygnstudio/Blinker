@@ -12,6 +12,9 @@ import sys
 import tempfile
 
 ROOT = Path(__file__).resolve().parent.parent
+LICENSE_RESOURCES = ("LICENSE", "NOTICE", "ThirdParty/StatusTrio/LICENSE",
+                     "ThirdParty/StatusTrio/NOTICE", "ThirdParty/StatusTrio/README.md",
+                     "ThirdParty/MacbookDuoEffect/LICENSE", "ThirdParty/MacbookDuoEffect/README.md")
 TAG = re.compile(r"v((?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*))"
                  r"(?:-(alpha|beta|rc)\.([1-9][0-9]*))?")
 
@@ -67,7 +70,7 @@ def verify_app(app, tag, build, source_root=ROOT, run=run_command):
         raise ValidationError(f"expected arm64 + x86_64, got {sorted(architectures)}")
     resources = contents / "Resources"
     regular_file(resources / "Blinker.icns")
-    for name in ("LICENSE", "NOTICE"):
+    for name in LICENSE_RESOURCES:
         if regular_file(resources / name).read_bytes() != (source_root / name).read_bytes():
             raise ValidationError(f"bundled {name} differs from this release's source")
     core = resources / "Blinker_BlinkerCore.bundle/Contents"

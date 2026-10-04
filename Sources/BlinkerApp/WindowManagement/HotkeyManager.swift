@@ -3,9 +3,7 @@ import BlinkerCore
 import Carbon.HIToolbox
 import os
 
-/// Registers and manages the global hotkeys that trigger window actions on
-/// the frontmost window. Bindings are persisted per action; a master switch
-/// enables or disables the whole feature.
+/// Owns layout, hover and desktop shortcuts behind one master switch.
 final class HotkeyManager: ObservableObject {
     /// The actions users can bind, in display order.
     static let bindableActions: [ButtonAction] = [
@@ -59,6 +57,7 @@ final class HotkeyManager: ObservableObject {
     private static let storageKey = "com.ygnstudio.blinker.hotkeys"
     private static let enabledKey = "com.ygnstudio.blinker.hotkeysEnabled"
     private static let hoverToggleStorageKey = "com.ygnstudio.blinker.hover-toggle-hotkey"
+    private static let desktopToggleStorageKey = "com.ygnstudio.blinker.desktop-toggle-hotkey"
     private static let hotkeySignature = OSType(0x424C_4E4B) // 'BLNK'
 
     /// The default hover-toggle combo shipped on first launch.
@@ -67,37 +66,10 @@ final class HotkeyManager: ObservableObject {
         modifiers: UInt32(controlKey | optionKey)
     )
 
-    /// A bindable hotkey slot: either a window action row or the reserved
-    /// hover-toggle command. Both the recorder and the Carbon registration
-    /// path dispatch on this one enum.
-    enum BindingTarget: Equatable {
-        case windowAction(ButtonAction)
-        case hoverToggle
-
-        /// Stable registration key shared by the ref table.
-        var registrationKey: String {
-            switch self {
-            case let .windowAction(action): action.rawValue
-            case .hoverToggle: "hoverToggle"
-            }
-        }
-
-        /// Stable Carbon hot key id: for window actions, the table index + 1
-        /// (0 is reserved); for the hover toggle, a reserved id far outside
-        /// that range.
-        var hotKeyID: UInt32 {
-            switch self {
-            case let .windowAction(action):
-                UInt32(HotkeyManager.bindableActions.firstIndex(of: action)?.advanced(by: 1) ?? 0)
-            case .hoverToggle:
-                Self.hoverToggleHotKeyID
-            }
-        }
-
-        /// Reserved hot key id for the hover-overlay toggle command; far
-        /// outside the window-action id range (table index + 1).
-        fileprivate static let hoverToggleHotKeyID: UInt32 = 0x484F // 'HO'
-    }
+    private static let defaultDesktopToggleCombo = HotkeyCombo(
+        keyCode: UInt32(kVK_ANSI_D),
+        modifiers: UInt32(controlKey | optionKey)
+    )
 
     /// The combo that toggles hover enlargement from anywhere; `nil` disables
     /// the command hotkey. `nil` is persisted (encoded as JSON `null`) so a
@@ -109,6 +81,15 @@ final class HotkeyManager: ObservableObject {
     /// Invoked when the hover-toggle hotkey fires; wired to the app
     /// delegate, which flips `HoverOverlaySettings.isEnabled`.
     var onToggleHoverOverlay: (() -> Void)?
+
+    @Published private(set) var desktopToggleCombo: HotkeyCombo? {
+        didSet {
+            storeEncoded(desktopToggleCombo, forKey: Self.desktopToggleStorageKey,
+                         in: defaults, category: "hotkeys")
+        }
+    }
+
+    var onToggleDesktop: (() -> Void)?
 
     @Published private(set) var bindings: [String: HotkeyCombo] {
         didSet { persist() }
@@ -128,15 +109,21 @@ final class HotkeyManager: ObservableObject {
 
     private var sessionPaused = false
     @Published private(set) var registrationFailures: [String: GlobalHotkeyRegistry.Failure] = [:]
-    private let registry = GlobalHotkeyRegistry(signature: hotkeySignature)
+    private let registry: GlobalHotkeyRegistry
     private var localMonitor: Any?
     private let frontWindowPerformer: FrontWindowActionPerformer
     private let defaults: UserDefaults
     private let logger = Logger(subsystem: "com.ygnstudio.blinker", category: "hotkeys")
 
-    init(frontWindowPerformer: FrontWindowActionPerformer, defaults: UserDefaults = .standard) {
+    init(frontWindowPerformer: FrontWindowActionPerformer, defaults: UserDefaults = .standard,
+         registry: GlobalHotkeyRegistry? = nil) {
         self.frontWindowPerformer = frontWindowPerformer
         self.defaults = defaults
+        self.registry = registry ?? GlobalHotkeyRegistry(signature: Self.hotkeySignature)
+        desktopToggleCombo = Self.loadCommandCombo(
+            forKey: Self.desktopToggleStorageKey, defaults: defaults,
+            fallback: Self.defaultDesktopToggleCombo
+        )
 
         if defaults.object(forKey: Self.enabledKey) == nil {
             // First launch: ship the default scheme. Assignments in init do
@@ -155,6 +142,8 @@ final class HotkeyManager: ObservableObject {
                 in: defaults,
                 category: "hotkeys"
             )
+            storeEncoded(desktopToggleCombo, forKey: Self.desktopToggleStorageKey,
+                         in: defaults, category: "hotkeys")
         } else {
             isEnabled = defaults.bool(forKey: Self.enabledKey)
             if let data = defaults.data(forKey: Self.storageKey) {
@@ -165,15 +154,13 @@ final class HotkeyManager: ObservableObject {
             // A stored JSON `null` decodes as `nil` — an explicitly cleared
             // binding stays cleared; a missing key means "never configured"
             // and falls back to the shipped default.
-            if let data = defaults.data(forKey: Self.hoverToggleStorageKey),
-               let decoded = try? JSONDecoder().decode(HotkeyCombo?.self, from: data) {
-                hoverToggleCombo = decoded
-            } else {
-                hoverToggleCombo = Self.defaultHoverToggleCombo
-            }
+            hoverToggleCombo = Self.loadCommandCombo(
+                forKey: Self.hoverToggleStorageKey, defaults: defaults,
+                fallback: Self.defaultHoverToggleCombo
+            )
         }
 
-        registry.onPress = { [weak self] in self?.handleHotKeyID($0) }
+        self.registry.onPress = { [weak self] in self?.handleHotKeyID($0) }
         reregisterAll()
     }
 
@@ -181,6 +168,9 @@ final class HotkeyManager: ObservableObject {
 
     func setEnabled(_ enabled: Bool) {
         isEnabled = enabled
+        if !enabled {
+            endRecording()
+        }
         reregisterAll()
     }
 
@@ -209,24 +199,33 @@ final class HotkeyManager: ObservableObject {
         recordNextKey(target: .hoverToggle)
     }
 
+    func beginRecordingDesktopToggle() {
+        recordNextKey(target: .desktopToggle)
+    }
+
     /// Cancels any in-flight recording. Also called when the settings UI
     /// goes away, so the local monitor can never outlive its row.
     func endRecording() {
+        let wasRecording = recordingTarget != nil
         if let localMonitor {
             NSEvent.removeMonitor(localMonitor)
         }
         localMonitor = nil
         recordingTarget = nil
         recordingHint = nil
+        if wasRecording {
+            reregisterAll()
+        }
     }
 
-    /// The single recorder both binding kinds share: one local key monitor,
+    /// The single recorder all binding kinds share: one local key monitor,
     /// one set of rules, one dispatch on completion.
     private func recordNextKey(target: BindingTarget) {
         let wasRecordingTarget = recordingTarget == target
         endRecording()
-        guard !wasRecordingTarget else { return }
+        guard !wasRecordingTarget, isEnabled else { return }
         recordingTarget = target
+        reregisterAll()
         localMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
             guard let self else { return event }
             return handleRecordingKeyEvent(event) ? nil : event
@@ -237,7 +236,7 @@ final class HotkeyManager: ObservableObject {
     /// was swallowed (it resolved, canceled or was rejected by the
     /// recorder); `false` lets it propagate — only bare Tab does, so
     /// keyboard navigation out of the recorder keeps working.
-    private func handleRecordingKeyEvent(_ event: NSEvent) -> Bool {
+    func handleRecordingKeyEvent(_ event: NSEvent) -> Bool {
         guard let target = recordingTarget else { return false }
 
         // Esc cancels the recording (and is swallowed so it cannot close the
@@ -268,6 +267,8 @@ final class HotkeyManager: ObservableObject {
             bind(combo, for: action)
         case .hoverToggle:
             bindHoverToggle(combo)
+        case .desktopToggle:
+            bindDesktopToggle(combo)
         }
         return true
     }
@@ -275,7 +276,13 @@ final class HotkeyManager: ObservableObject {
     // MARK: - Registration
 
     private func handleHotKeyID(_ identity: UInt32) {
-        if identity == BindingTarget.hoverToggleHotKeyID {
+        guard isEnabled, !sessionPaused, recordingTarget == nil else { return }
+        if identity == BindingTarget.desktopToggle.hotKeyID {
+            logger.info("hotkey fired: toggle desktop")
+            onToggleDesktop?()
+            return
+        }
+        if identity == BindingTarget.hoverToggle.hotKeyID {
             logger.info("hotkey fired: toggle hover overlay")
             onToggleHoverOverlay?()
             return
@@ -289,6 +296,9 @@ final class HotkeyManager: ObservableObject {
 
     func setSessionPaused(_ paused: Bool) {
         sessionPaused = paused
+        if paused {
+            endRecording()
+        }
         reregisterAll()
     }
 
@@ -317,7 +327,10 @@ final class HotkeyManager: ObservableObject {
         if let combo = hoverToggleCombo {
             requested.append(registration(combo, target: .hoverToggle))
         }
-        registry.update(requested, enabled: isEnabled, paused: sessionPaused)
+        if let combo = desktopToggleCombo {
+            requested.append(registration(combo, target: .desktopToggle))
+        }
+        registry.update(requested, enabled: isEnabled, paused: sessionPaused || recordingTarget != nil)
         registrationFailures = registry.failures
     }
 
@@ -334,6 +347,17 @@ final class HotkeyManager: ObservableObject {
 
     private func persistEnabled() {
         defaults.set(isEnabled, forKey: Self.enabledKey)
+    }
+
+    private static func loadCommandCombo(forKey key: String, defaults: UserDefaults,
+                                         fallback: HotkeyCombo) -> HotkeyCombo? {
+        guard let data = defaults.data(forKey: key) else { return fallback }
+        // Preserve an explicit JSON null; optional binding would turn it into the fallback.
+        do {
+            return try JSONDecoder().decode(HotkeyCombo?.self, from: data)
+        } catch {
+            return fallback
+        }
     }
 }
 
@@ -385,30 +409,40 @@ extension HotkeyManager {
         return String(localized: "与系统快捷键冲突：") + name
     }
 
-    /// Warns when `combo` is already bound to another Blinker command —
-    /// Carbon would register both but only ever deliver one of them, leaving
-    /// the other silently dead. Pass `action: nil` when recording the hover
-    /// toggle; its own current binding is then exempt.
-    func internalConflictWarning(for combo: HotkeyCombo, action: ButtonAction?) -> String? {
-        for other in Self.bindableActions where other != action {
+    /// Excludes only the edited slot, so command shortcuts also warn about one another.
+    func internalConflictWarning(for combo: HotkeyCombo, target: BindingTarget) -> String? {
+        for other in Self.bindableActions where .windowAction(other) != target {
             if bindings[other.rawValue] == combo {
                 return String(localized: "已用于「\(other.localizedLabel)」")
             }
         }
-        if action != nil, hoverToggleCombo == combo {
+        if target != .hoverToggle, hoverToggleCombo == combo {
             return String(localized: "已用于「悬停放大开关」")
+        }
+        if target != .desktopToggle, desktopToggleCombo == combo {
+            return String(localized: "已用于「显示桌面 / 恢复窗口」")
         }
         return nil
     }
 }
 
-// MARK: - Hover-toggle command hotkey
+// MARK: - Command hotkeys
 
 /// The hover-enlargement toggle lives outside the window-action table: it
 /// dispatches through a reserved hot key id and a callback wired by the app
 /// delegate instead of `FrontWindowActionPerformer`. Recording goes through
 /// the shared `recordNextKey` path.
 extension HotkeyManager {
+    func bindDesktopToggle(_ combo: HotkeyCombo) {
+        desktopToggleCombo = combo
+        reregisterAll()
+    }
+
+    func clearDesktopToggleBinding() {
+        desktopToggleCombo = nil
+        reregisterAll()
+    }
+
     func bindHoverToggle(_ combo: HotkeyCombo) {
         hoverToggleCombo = combo
         reregisterAll()

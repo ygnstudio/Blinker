@@ -2249,22 +2249,6 @@
         }
       }
     },
-    "恢复 Blinker": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Resume Blinker"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "恢复 Blinker"
-          }
-        }
-      }
-    },
     "恢复当前应用：": {
       "localizations": {
         "en": {
@@ -3013,22 +2997,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "暂停 10 分钟"
-          }
-        }
-      }
-    },
-    "暂停全部": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Pause All"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "暂停全部"
           }
         }
       }
@@ -3870,7 +3838,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Windows"
+            "value": "Window Management"
           }
         },
         "zh-Hans": {
@@ -5305,22 +5273,6 @@
         }
       }
     },
-    "可选，仅用于窗口缩略图。未授权时仍可使用图标和标题，图片只缓存在内存中。": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Optional, for window thumbnails only. Icons and titles remain available without permission. Images are cached only in memory."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "可选，仅用于窗口缩略图。未授权时仍可使用图标和标题，图片只缓存在内存中。"
-          }
-        }
-      }
-    },
     "屏幕录制": {
       "localizations": {
         "en": {
@@ -5765,38 +5717,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "记录当前可识别窗口的位置和大小，包括最小化和其他桌面的窗口；同名保存会覆盖旧布局。"
-          }
-        }
-      }
-    },
-    "启用布局与悬停快捷键": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Enable Layout and Hover Shortcuts"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "启用布局与悬停快捷键"
-          }
-        }
-      }
-    },
-    "点击组合录制快捷键，Esc 取消，减号清除。此开关同时控制窗口布局和悬停放大快捷键。": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Click a shortcut to record, press Esc to cancel, or use minus to clear. This switch controls both window layout and hover enlargement shortcuts."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "点击组合录制快捷键，Esc 取消，减号清除。此开关同时控制窗口布局和悬停放大快捷键。"
           }
         }
       }
@@ -6533,6 +6453,4326 @@
           "stringUnit": {
             "state": "translated",
             "value": "重试"
+          }
+        }
+      }
+    },
+    "单击打开应用规则，右键打开菜单。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Click to open app rules; secondary-click for the menu."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "单击打开应用规则，右键打开菜单。"
+          }
+        }
+      }
+    },
+    "电池": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Battery"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "电池"
+          }
+        }
+      }
+    },
+    "网络": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Network"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "网络"
+          }
+        }
+      }
+    },
+    "音量": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Volume"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "音量"
+          }
+        }
+      }
+    },
+    "暂无电池信息": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Battery unavailable"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "暂无电池信息"
+          }
+        }
+      }
+    },
+    "电量未知": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Charge unknown"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "电量未知"
+          }
+        }
+      }
+    },
+    "充电中": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Charging"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "充电中"
+          }
+        }
+      }
+    },
+    "已接电源": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plugged in"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已接电源"
+          }
+        }
+      }
+    },
+    "低电量模式": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Low Power Mode"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "低电量模式"
+          }
+        }
+      }
+    },
+    "网络状态未知": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Network unknown"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "网络状态未知"
+          }
+        }
+      }
+    },
+    "Wi-Fi 已关闭": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wi-Fi off"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wi-Fi 已关闭"
+          }
+        }
+      }
+    },
+    "Wi-Fi 未连接": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wi-Fi disconnected"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wi-Fi 未连接"
+          }
+        }
+      }
+    },
+    "Wi-Fi 已连接": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wi-Fi connected"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wi-Fi 已连接"
+          }
+        }
+      }
+    },
+    "有线网络": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ethernet"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "有线网络"
+          }
+        }
+      }
+    },
+    "音量未知": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Volume unavailable"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "音量未知"
+          }
+        }
+      }
+    },
+    "静音": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Muted"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "静音"
+          }
+        }
+      }
+    },
+    "许可证": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Licenses"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "许可证"
+          }
+        }
+      }
+    },
+    "Apache 官方许可证": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Official Apache License"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apache 官方许可证"
+          }
+        }
+      }
+    },
+    "仅菜单栏": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Menu Bar Only"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "仅菜单栏"
+          }
+        }
+      }
+    },
+    "仅 Dock": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dock Only"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "仅 Dock"
+          }
+        }
+      }
+    },
+    "菜单栏与 Dock": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Menu Bar and Dock"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "菜单栏与 Dock"
+          }
+        }
+      }
+    },
+    "透明": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Transparent"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "透明"
+          }
+        }
+      }
+    },
+    "细": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Light"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "细"
+          }
+        }
+      }
+    },
+    "标准": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Regular"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "标准"
+          }
+        }
+      }
+    },
+    "粗": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bold"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "粗"
+          }
+        }
+      }
+    },
+    "圆点": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dots"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "圆点"
+          }
+        }
+      }
+    },
+    "弧线": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Arc"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "弧线"
+          }
+        }
+      }
+    },
+    "状态面板": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Status Panel"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "状态面板"
+          }
+        }
+      }
+    },
+    "整个状态面板": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Entire Status Panel"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "整个状态面板"
+          }
+        }
+      }
+    },
+    "仅音量控件": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Volume Control Only"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "仅音量控件"
+          }
+        }
+      }
+    },
+    "向上": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Up"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "向上"
+          }
+        }
+      }
+    },
+    "向下": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Down"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "向下"
+          }
+        }
+      }
+    },
+    "菜单栏设置分类": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Menu Bar Settings Category"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "菜单栏设置分类"
+          }
+        }
+      }
+    },
+    "恢复菜单栏默认设置…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reset Menu Bar Settings…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "恢复菜单栏默认设置…"
+          }
+        }
+      }
+    },
+    "恢复菜单栏默认设置？": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reset Menu Bar Settings?"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "恢复菜单栏默认设置？"
+          }
+        }
+      }
+    },
+    "恢复默认设置": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Restore Defaults"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "恢复默认设置"
+          }
+        }
+      }
+    },
+    "将重置图标、状态面板和音量交互的自定义设置。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This resets the icon, status panel, and volume interaction preferences."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "将重置图标、状态面板和音量交互的自定义设置。"
+          }
+        }
+      }
+    },
+    "显示位置": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show In"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "显示位置"
+          }
+        }
+      }
+    },
+    "菜单栏图标大小": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Menu Bar Icon Size"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "菜单栏图标大小"
+          }
+        }
+      }
+    },
+    "线条粗细": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stroke Weight"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "线条粗细"
+          }
+        }
+      }
+    },
+    "Dock 图标背景": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dock Icon Background"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dock 图标背景"
+          }
+        }
+      }
+    },
+    "图标外观": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Icon Appearance"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "图标外观"
+          }
+        }
+      }
+    },
+    "图标大小受系统菜单栏高度限制。Dock 图标背景单独设置，预览背景不会改变系统外观。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Icon size is limited by the system menu bar height. The Dock background is separate; preview backgrounds do not change system appearance."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "图标大小受系统菜单栏高度限制。Dock 图标背景单独设置，预览背景不会改变系统外观。"
+          }
+        }
+      }
+    },
+    "左键点击": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Left Click"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "左键点击"
+          }
+        }
+      }
+    },
+    "状态刷新间隔": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Status Refresh Interval"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "状态刷新间隔"
+          }
+        }
+      }
+    },
+    "操作与刷新": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Actions and Refresh"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "操作与刷新"
+          }
+        }
+      }
+    },
+    "右键保留应用规则、设置和暂停菜单。状态变化会自动刷新，此间隔用于定期补充检查。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Right-click opens app rules, settings, and pause controls. Status changes refresh automatically; this interval provides an additional periodic check."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "右键保留应用规则、设置和暂停菜单。状态变化会自动刷新，此间隔用于定期补充检查。"
+          }
+        }
+      }
+    },
+    "电量显示": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Battery Display"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "电量显示"
+          }
+        }
+      }
+    },
+    "显示电量百分比": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show Battery Percentage"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "显示电量百分比"
+          }
+        }
+      }
+    },
+    "在图标中央显示电量": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show Battery Percentage in Center"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "在图标中央显示电量"
+          }
+        }
+      }
+    },
+    "用电量数字替代中央网络图形。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Replace the center network symbol with the battery percentage."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "用电量数字替代中央网络图形。"
+          }
+        }
+      }
+    },
+    "显示充电与电源标记": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show Charging and Power Indicators"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "显示充电与电源标记"
+          }
+        }
+      }
+    },
+    "电池标记大小": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Battery Indicator Size"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "电池标记大小"
+          }
+        }
+      }
+    },
+    "使用电池状态颜色": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Use Battery Status Colors"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "使用电池状态颜色"
+          }
+        }
+      }
+    },
+    "低电量阈值": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Low Battery Threshold"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "低电量阈值"
+          }
+        }
+      }
+    },
+    "电池颜色": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Battery Colors"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "电池颜色"
+          }
+        }
+      }
+    },
+    "低于阈值时显示红色；否则，低电量模式显示黄色，充电或接电显示绿色。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Below the threshold, show red. Otherwise, use yellow in Low Power Mode and green when charging or connected to power."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "低于阈值时显示红色；否则，低电量模式显示黄色，充电或接电显示绿色。"
+          }
+        }
+      }
+    },
+    "菜单栏充电光效": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Menu Bar Charging Effect"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "菜单栏充电光效"
+          }
+        }
+      }
+    },
+    "闪电呼吸": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pulsing Lightning Bolt"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "闪电呼吸"
+          }
+        }
+      }
+    },
+    "充电效果": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Charging Effects"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "充电效果"
+          }
+        }
+      }
+    },
+    "仅在充电时播放；减少动态效果、低电量模式或屏幕休眠时停用动画。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Animate only while charging. Animations stop with Reduce Motion, Low Power Mode, or display sleep."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "仅在充电时播放；减少动态效果、低电量模式或屏幕休眠时停用动画。"
+          }
+        }
+      }
+    },
+    "Wi-Fi 图形大小": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wi-Fi Symbol Size"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wi-Fi 图形大小"
+          }
+        }
+      }
+    },
+    "有线连接也使用 Wi-Fi 图形": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Use Wi-Fi Symbol for Wired Connections"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "有线连接也使用 Wi-Fi 图形"
+          }
+        }
+      }
+    },
+    "蓝牙音频图形": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bluetooth Audio Symbol"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "蓝牙音频图形"
+          }
+        }
+      }
+    },
+    "蓝牙音频替代网络图形": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Replace Network Symbol with Bluetooth Audio"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "蓝牙音频替代网络图形"
+          }
+        }
+      }
+    },
+    "优先显示网络异常": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prioritize Network Problems"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "优先显示网络异常"
+          }
+        }
+      }
+    },
+    "蓝牙图形大小": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bluetooth Symbol Size"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "蓝牙图形大小"
+          }
+        }
+      }
+    },
+    "蓝牙音频使用音量强调色": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tint Volume for Bluetooth Audio"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "蓝牙音频使用音量强调色"
+          }
+        }
+      }
+    },
+    "网络图形": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Network Symbol"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "网络图形"
+          }
+        }
+      }
+    },
+    "蓝牙图形取决于当前音频输出设备。在图标中央显示电量时，中央图形由电量数字替代。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The Bluetooth symbol follows the current audio output. Center battery percentage takes precedence over these symbols."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "蓝牙图形取决于当前音频输出设备。在图标中央显示电量时，中央图形由电量数字替代。"
+          }
+        }
+      }
+    },
+    "图标": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Icon"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "图标"
+          }
+        }
+      }
+    },
+    "网络与音量": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Network and Volume"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "网络与音量"
+          }
+        }
+      }
+    },
+    "图标预览": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Icon Preview"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "图标预览"
+          }
+        }
+      }
+    },
+    "预览状态": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preview State"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "预览状态"
+          }
+        }
+      }
+    },
+    "实际尺寸": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Actual Size"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "实际尺寸"
+          }
+        }
+      }
+    },
+    "放大示意": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enlarged Preview"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "放大示意"
+          }
+        }
+      }
+    },
+    "深色预览背景": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dark Preview Background"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "深色预览背景"
+          }
+        }
+      }
+    },
+    "使用当前状态": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Use Current Status"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "使用当前状态"
+          }
+        }
+      }
+    },
+    "模拟数据，仅用于预览": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Simulated data for preview only"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "模拟数据，仅用于预览"
+          }
+        }
+      }
+    },
+    "当前状态": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Current Status"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "当前状态"
+          }
+        }
+      }
+    },
+    "模拟：电池供电": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Simulate: On Battery"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "模拟：电池供电"
+          }
+        }
+      }
+    },
+    "模拟：充电": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Simulate: Charging"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "模拟：充电"
+          }
+        }
+      }
+    },
+    "模拟：低电量": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Simulate: Low Battery"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "模拟：低电量"
+          }
+        }
+      }
+    },
+    "模拟：低电量模式": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Simulate: Low Power Mode"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "模拟：低电量模式"
+          }
+        }
+      }
+    },
+    "模拟：有线连接": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Simulate: Wired Connection"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "模拟：有线连接"
+          }
+        }
+      }
+    },
+    "模拟：静音": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Simulate: Muted"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "模拟：静音"
+          }
+        }
+      }
+    },
+    "模拟：蓝牙音频": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Simulate: Bluetooth Audio"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "模拟：蓝牙音频"
+          }
+        }
+      }
+    },
+    "模拟：蓝牙音频与断网": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Simulate: Bluetooth Audio, No Network"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "模拟：蓝牙音频与断网"
+          }
+        }
+      }
+    },
+    "模拟：状态未知": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Simulate: Unknown Status"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "模拟：状态未知"
+          }
+        }
+      }
+    },
+    "音量显示": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Volume Display"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "音量显示"
+          }
+        }
+      }
+    },
+    "音量图形": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Volume Symbol"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "音量图形"
+          }
+        }
+      }
+    },
+    "始终显示全部输出设备": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Always Show All Output Devices"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "始终显示全部输出设备"
+          }
+        }
+      }
+    },
+    "最多显示设备数": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Maximum Visible Devices"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "最多显示设备数"
+          }
+        }
+      }
+    },
+    "重试读取输出设备": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Retry Loading Output Devices"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "重试读取输出设备"
+          }
+        }
+      }
+    },
+    "正在读取输出设备…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Loading output devices…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在读取输出设备…"
+          }
+        }
+      }
+    },
+    "暂无可用的输出设备": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No output devices available"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "暂无可用的输出设备"
+          }
+        }
+      }
+    },
+    "当前设备": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Current Device"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "当前设备"
+          }
+        }
+      }
+    },
+    "上移": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Move Up"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "上移"
+          }
+        }
+      }
+    },
+    "下移": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Move Down"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "下移"
+          }
+        }
+      }
+    },
+    "恢复默认设备顺序": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reset Device Order"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "恢复默认设备顺序"
+          }
+        }
+      }
+    },
+    "输出设备顺序": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Output Device Order"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "输出设备顺序"
+          }
+        }
+      }
+    },
+    "使用上下按钮调整状态面板中的设备顺序，不会切换当前输出设备。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Use the arrows to reorder devices in the status panel. This does not change the current output."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "使用上下按钮调整状态面板中的设备顺序，不会切换当前输出设备。"
+          }
+        }
+      }
+    },
+    "面板区块与顺序": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Panel Sections and Order"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "面板区块与顺序"
+          }
+        }
+      }
+    },
+    "关闭区块仅隐藏面板中的内容。全部关闭时，仍可从面板进入应用规则和设置。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Turning off a section only hides its panel content. App rules and settings remain accessible when all sections are hidden."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "关闭区块仅隐藏面板中的内容。全部关闭时，仍可从面板进入应用规则和设置。"
+          }
+        }
+      }
+    },
+    "滚动调节音量": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Scroll to Adjust Volume"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "滚动调节音量"
+          }
+        }
+      }
+    },
+    "响应范围": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Scroll Area"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "响应范围"
+          }
+        }
+      }
+    },
+    "增大音量的方向": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Scroll Direction to Increase Volume"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "增大音量的方向"
+          }
+        }
+      }
+    },
+    "跟随系统自然滚动": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Follow System Natural Scrolling"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "跟随系统自然滚动"
+          }
+        }
+      }
+    },
+    "面板音量操作": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Panel Volume Controls"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "面板音量操作"
+          }
+        }
+      }
+    },
+    "滚动会更改当前输出设备的音量。仅在所选范围内响应，关闭后仍可使用面板中的音量控件。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Scrolling changes the current output volume within the selected area. The panel volume controls remain available when scrolling is disabled."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "滚动会更改当前输出设备的音量。仅在所选范围内响应，关闭后仍可使用面板中的音量控件。"
+          }
+        }
+      }
+    },
+    "%lld 秒": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld sec"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld 秒"
+          }
+        }
+      }
+    },
+    "单击打开状态面板，右键打开菜单。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Click to open the status panel; right-click for the menu."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "单击打开状态面板，右键打开菜单。"
+          }
+        }
+      }
+    },
+    "系统状态": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "System Status"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "系统状态"
+          }
+        }
+      }
+    },
+    "系统状态…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "System Status…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "系统状态…"
+          }
+        }
+      }
+    },
+    "所有状态区块均已隐藏，可在菜单栏设置中重新开启。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All status sections are hidden. Enable them in Menu Bar settings."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "所有状态区块均已隐藏，可在菜单栏设置中重新开启。"
+          }
+        }
+      }
+    },
+    "菜单栏设置…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Menu Bar Settings…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "菜单栏设置…"
+          }
+        }
+      }
+    },
+    "电量": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Battery Level"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "电量"
+          }
+        }
+      }
+    },
+    "电池设置…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Battery Settings…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "电池设置…"
+          }
+        }
+      }
+    },
+    "信号强": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Strong Signal"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "信号强"
+          }
+        }
+      }
+    },
+    "信号中等": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Moderate Signal"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "信号中等"
+          }
+        }
+      }
+    },
+    "信号弱": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Weak Signal"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "信号弱"
+          }
+        }
+      }
+    },
+    "网络设置…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Network Settings…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "网络设置…"
+          }
+        }
+      }
+    },
+    "取消静音": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unmute"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "取消静音"
+          }
+        }
+      }
+    },
+    "输出音量": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Output Volume"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "输出音量"
+          }
+        }
+      }
+    },
+    "此输出设备不提供系统音量控制。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "System volume control is unavailable for this output."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "此输出设备不提供系统音量控制。"
+          }
+        }
+      }
+    },
+    "声音设置…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sound Settings…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "声音设置…"
+          }
+        }
+      }
+    },
+    "当前输出设备": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Current Output"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "当前输出设备"
+          }
+        }
+      }
+    },
+    "收起设备": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show Fewer Devices"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "收起设备"
+          }
+        }
+      }
+    },
+    "显示全部设备": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show All Devices"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "显示全部设备"
+          }
+        }
+      }
+    },
+    "菜单栏": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Menu Bar"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "菜单栏"
+          }
+        }
+      }
+    },
+    "无法读取音频输出设备，请稍后重试。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unable to read audio output devices. Try again later."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法读取音频输出设备，请稍后重试。"
+          }
+        }
+      }
+    },
+    "音频输出已改变，请重新调整。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The audio output changed. Adjust it again."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "音频输出已改变，请重新调整。"
+          }
+        }
+      }
+    },
+    "此输出设备不支持这项控制。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This output device does not support this control."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "此输出设备不支持这项控制。"
+          }
+        }
+      }
+    },
+    "音频设置未能完成，请重试。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The audio change could not be completed. Try again."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "音频设置未能完成，请重试。"
+          }
+        }
+      }
+    },
+    "系统音频服务未响应，请稍后重试。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The system audio service did not respond. Try again later."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "系统音频服务未响应，请稍后重试。"
+          }
+        }
+      }
+    },
+    "刷新": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Refresh"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "刷新"
+          }
+        }
+      }
+    },
+    "音频输出设备": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Audio Output Device"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "音频输出设备"
+          }
+        }
+      }
+    },
+    "接电未充电时显示百分比": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show Percentage When Plugged In, Not Charging"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "接电未充电时显示百分比"
+          }
+        }
+      }
+    },
+    "放大示意（仅预览）": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enlarged (preview only)"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "放大示意（仅预览）"
+          }
+        }
+      }
+    },
+    "%@ 秒": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ s"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ 秒"
+          }
+        }
+      }
+    },
+    "%lld 帧": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld frames"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld 帧"
+          }
+        }
+      }
+    },
+    "Duo 开合盖效果": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Duo Lid Effect"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Duo 开合盖效果"
+          }
+        }
+      }
+    },
+    "Duo 画面": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Duo Appearance"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Duo 画面"
+          }
+        }
+      }
+    },
+    "GPU 渲染失败，请重试开合盖效果。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "GPU rendering failed. Try the lid effect again."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "GPU 渲染失败，请重试开合盖效果。"
+          }
+        }
+      }
+    },
+    "MIT 原始许可证": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Original MIT License"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "MIT 原始许可证"
+          }
+        }
+      }
+    },
+    "仅作用于内置屏幕，不录音、不保存屏幕画面。可从菜单暂停；按 Esc 暂停其他应用上方的特效需要辅助功能权限。这不是隐私防护。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Applies only to the built-in display. No audio is recorded and no screen images are saved. Pause from the menu; using Esc to pause effects over other apps requires Accessibility permission. This is not privacy protection."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "仅作用于内置屏幕，不录音、不保存屏幕画面。可从菜单暂停；按 Esc 暂停其他应用上方的特效需要辅助功能权限。这不是隐私防护。"
+          }
+        }
+      }
+    },
+    "每次开盖或合盖至少达到设定幅度才会触发，数值越大越能忽略晃动。参考角度和满效果跨度决定效果强度。停稳后按延时清除；开启保持后不自动清除。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Each opening or closing movement must reach this threshold to start the effect. Higher values ignore more shaking. The reference angle and full-effect range determine its strength. Once the lid settles, the effect clears after the delay unless Hold is on."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "每次开盖或合盖至少达到设定幅度才会触发，数值越大越能忽略晃动。参考角度和满效果跨度决定效果强度。停稳后按延时清除；开启保持后不自动清除。"
+          }
+        }
+      }
+    },
+    "保持特效直到重新打开": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hold effect until reopened"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "保持特效直到重新打开"
+          }
+        }
+      }
+    },
+    "减少动态效果已开启，特效暂停": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Paused while Reduce Motion is enabled"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "减少动态效果已开启，特效暂停"
+          }
+        }
+      }
+    },
+    "参考角度": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reference angle"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "参考角度"
+          }
+        }
+      }
+    },
+    "可选，用于窗口缩略图和开合盖屏幕特效。画面只在内存中处理，不录音、不保存录像。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Optional, for window thumbnails and lid effects. Images are processed only in memory. No audio is captured and no video is saved."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "可选，用于窗口缩略图和开合盖屏幕特效。画面只在内存中处理，不录音、不保存录像。"
+          }
+        }
+      }
+    },
+    "后仰": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tilt"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "后仰"
+          }
+        }
+      }
+    },
+    "启用 Duo 开合盖效果": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enable Duo lid effect"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "启用 Duo 开合盖效果"
+          }
+        }
+      }
+    },
+    "将关闭 Duo 开合盖效果，并重置校准角度和所有效果参数。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This will turn off the Duo lid effect and reset the calibrated angle and all effect settings."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "将关闭 Duo 开合盖效果，并重置校准角度和所有效果参数。"
+          }
+        }
+      }
+    },
+    "尚未读取": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not yet read"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "尚未读取"
+          }
+        }
+      }
+    },
+    "屏幕特效": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Screen Effects"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "屏幕特效"
+          }
+        }
+      }
+    },
+    "屏幕特效需要屏幕录制权限。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Screen effects require Screen Recording permission."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "屏幕特效需要屏幕录制权限。"
+          }
+        }
+      }
+    },
+    "屏幕特效需要屏幕录制权限；预览和读取开合角度无需此权限。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Screen effects require Screen Recording permission. Previews and lid angle readings do not."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "屏幕特效需要屏幕录制权限；预览和读取开合角度无需此权限。"
+          }
+        }
+      }
+    },
+    "屏幕画面已中断，特效已移除。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Screen capture was interrupted. The effect has been removed."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "屏幕画面已中断，特效已移除。"
+          }
+        }
+      }
+    },
+    "已暂停": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Paused"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已暂停"
+          }
+        }
+      }
+    },
+    "平滑度": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Smoothing"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "平滑度"
+          }
+        }
+      }
+    },
+    "开合角度": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lid angle"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "开合角度"
+          }
+        }
+      }
+    },
+    "恢复屏幕特效默认设置…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reset Screen Effects…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "恢复屏幕特效默认设置…"
+          }
+        }
+      }
+    },
+    "恢复屏幕特效默认设置？": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reset screen effects to defaults?"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "恢复屏幕特效默认设置？"
+          }
+        }
+      }
+    },
+    "授权屏幕特效…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Authorize Screen Effects…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "授权屏幕特效…"
+          }
+        }
+      }
+    },
+    "效果预览": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Effect Preview"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "效果预览"
+          }
+        }
+      }
+    },
+    "无法启动屏幕特效，请检查屏幕录制权限后重试。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Could not start screen effects. Check Screen Recording permission and try again."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法启动屏幕特效，请检查屏幕录制权限后重试。"
+          }
+        }
+      }
+    },
+    "无限": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unlimited"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无限"
+          }
+        }
+      }
+    },
+    "显示画面已暂停，开合盖效果已移除。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Screen capture is paused. The lid effect has been removed."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "显示画面已暂停，开合盖效果已移除。"
+          }
+        }
+      }
+    },
+    "暂停屏幕特效": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pause Screen Effects"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "暂停屏幕特效"
+          }
+        }
+      }
+    },
+    "暂停特效": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pause Effect"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "暂停特效"
+          }
+        }
+      }
+    },
+    "暂时无法生成预览，请调整参数重试。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Could not generate a preview. Adjust the settings and try again."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "暂时无法生成预览，请调整参数重试。"
+          }
+        }
+      }
+    },
+    "暗化": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dimming"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "暗化"
+          }
+        }
+      }
+    },
+    "未找到受支持的开合角度传感器": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No supported lid angle sensor found"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未找到受支持的开合角度传感器"
+          }
+        }
+      }
+    },
+    "未收到屏幕画面，特效已移除。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No screen frames were received. The effect has been removed."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未收到屏幕画面，特效已移除。"
+          }
+        }
+      }
+    },
+    "校准为当前角度": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Calibrate to Current Angle"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "校准为当前角度"
+          }
+        }
+      }
+    },
+    "桌面随合盖逐渐倾斜、雾化和变暗。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The desktop gradually tilts, frosts over, and dims as the lid closes."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "桌面随合盖逐渐倾斜、雾化和变暗。"
+          }
+        }
+      }
+    },
+    "模拟合盖": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Simulate closing"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "模拟合盖"
+          }
+        }
+      }
+    },
+    "模拟合盖程度": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Simulated lid closure"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "模拟合盖程度"
+          }
+        }
+      }
+    },
+    "模拟画面，不读取屏幕": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sample image; no screen capture"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "模拟画面，不读取屏幕"
+          }
+        }
+      }
+    },
+    "模糊": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Blur"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "模糊"
+          }
+        }
+      }
+    },
+    "正在读取开合角度…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reading lid angle…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在读取开合角度…"
+          }
+        }
+      }
+    },
+    "此设备无法渲染开合盖效果。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This device cannot render the lid effect."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "此设备无法渲染开合盖效果。"
+          }
+        }
+      }
+    },
+    "清除延时": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clear delay"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "清除延时"
+          }
+        }
+      }
+    },
+    "满效果跨度": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Angle range to full effect"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "满效果跨度"
+          }
+        }
+      }
+    },
+    "特效状态": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Effect status"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "特效状态"
+          }
+        }
+      }
+    },
+    "特效运行中": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Effect active"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "特效运行中"
+          }
+        }
+      }
+    },
+    "等待开合动作": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Waiting for opening or closing"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "等待开合动作"
+          }
+        }
+      }
+    },
+    "等待屏幕录制授权": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Waiting for Screen Recording permission"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "等待屏幕录制授权"
+          }
+        }
+      }
+    },
+    "等待有效的开合角度": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Waiting for a valid lid angle"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "等待有效的开合角度"
+          }
+        }
+      }
+    },
+    "系统休眠或锁定期间暂停": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Paused while this Mac is asleep or locked"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "系统休眠或锁定期间暂停"
+          }
+        }
+      }
+    },
+    "继续屏幕特效": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Resume Screen Effects"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "继续屏幕特效"
+          }
+        }
+      }
+    },
+    "继续特效": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Resume Effect"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "继续特效"
+          }
+        }
+      }
+    },
+    "角度不可用": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Angle unavailable"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "角度不可用"
+          }
+        }
+      }
+    },
+    "触发与过渡": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trigger & Transition"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "触发与过渡"
+          }
+        }
+      }
+    },
+    "开合触发幅度": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lid movement threshold"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "开合触发幅度"
+          }
+        }
+      }
+    },
+    "动画速度": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Animation speed"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "动画速度"
+          }
+        }
+      }
+    },
+    "动画速度 100% 为原速，只改变过渡速度，不影响触发幅度、采样频率或清除延时。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "100% keeps the original animation speed. This changes transitions only, not the movement threshold, sampling rate, or clear delay."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "动画速度 100% 为原速，只改变过渡速度，不影响触发幅度、采样频率或清除延时。"
+          }
+        }
+      }
+    },
+    "读取失败，请重试": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reading failed. Try again."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "读取失败，请重试"
+          }
+        }
+      }
+    },
+    "边界过渡": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Edge softness"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "边界过渡"
+          }
+        }
+      }
+    },
+    "重试屏幕特效": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Retry Screen Effects"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "重试屏幕特效"
+          }
+        }
+      }
+    },
+    "重试读取角度": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Retry Angle Reading"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "重试读取角度"
+          }
+        }
+      }
+    },
+    "雾面": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Frost"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "雾面"
+          }
+        }
+      }
+    },
+    "点击 Dock 图标收起窗口": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Click Dock Icons to Minimize Windows"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "点击 Dock 图标收起窗口"
+          }
+        }
+      }
+    },
+    "全局暂停期间不处理 Dock 点击。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dock click actions are paused with Blinker."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "全局暂停期间不处理 Dock 点击。"
+          }
+        }
+      }
+    },
+    "Dock 点击监听未启动。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dock click detection is not running."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dock 点击监听未启动。"
+          }
+        }
+      }
+    },
+    "Dock 点击": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dock Clicks"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dock 点击"
+          }
+        }
+      }
+    },
+    "点击前台应用的 Dock 图标，收起它在当前桌面的普通窗口；再次点击恢复。其他应用的打开方式保持系统默认。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Click the active app’s Dock icon to minimize its normal windows on the current desktop. Click again to restore them. Other apps open as usual."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "点击前台应用的 Dock 图标，收起它在当前桌面的普通窗口；再次点击恢复。其他应用的打开方式保持系统默认。"
+          }
+        }
+      }
+    },
+    "显示桌面": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show Desktop"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "显示桌面"
+          }
+        }
+      }
+    },
+    "恢复窗口": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Restore Windows"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "恢复窗口"
+          }
+        }
+      }
+    },
+    "正在调整窗口…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Updating windows…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在调整窗口…"
+          }
+        }
+      }
+    },
+    "前往快捷键…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open Shortcuts Settings…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "前往快捷键…"
+          }
+        }
+      }
+    },
+    "有 %lld 个窗口未能完成操作。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Windows that could not be updated: %lld."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "有 %lld 个窗口未能完成操作。"
+          }
+        }
+      }
+    },
+    "显示桌面与恢复": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show Desktop and Restore"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "显示桌面与恢复"
+          }
+        }
+      }
+    },
+    "收起当前桌面的普通窗口，再次执行只恢复本次收起的窗口。原本最小化和全屏的窗口保持原状；切换桌面后不再恢复上一桌面的窗口。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Minimize normal windows on the current desktop, then run again to restore only those windows. Previously minimized and full-screen windows stay as they are. Switching desktops clears the previous desktop’s restore list."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "收起当前桌面的普通窗口，再次执行只恢复本次收起的窗口。原本最小化和全屏的窗口保持原状；切换桌面后不再恢复上一桌面的窗口。"
+          }
+        }
+      }
+    },
+    "启用布局、悬停与桌面快捷键": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enable Layout, Hover and Desktop Shortcuts"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "启用布局、悬停与桌面快捷键"
+          }
+        }
+      }
+    },
+    "点击组合录制快捷键，Esc 取消，减号清除。此开关同时控制窗口布局、悬停放大和显示桌面快捷键。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Click a shortcut to record it, press Esc to cancel, or use the minus button to clear it. This switch controls layout, hover enlargement and Show Desktop shortcuts."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "点击组合录制快捷键，Esc 取消，减号清除。此开关同时控制窗口布局、悬停放大和显示桌面快捷键。"
+          }
+        }
+      }
+    },
+    "桌面": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Desktop"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "桌面"
+          }
+        }
+      }
+    },
+    "显示桌面 / 恢复窗口": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show Desktop / Restore Windows"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "显示桌面 / 恢复窗口"
+          }
+        }
+      }
+    },
+    "已用于「显示桌面 / 恢复窗口」": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Already assigned to Show Desktop / Restore Windows"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已用于「显示桌面 / 恢复窗口」"
+          }
+        }
+      }
+    },
+    "应用推荐参数": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apply Recommended Settings"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "应用推荐参数"
+          }
+        }
+      }
+    },
+    "兼顾防晃动和连续开合，保留当前启用状态与校准角度。应用后仍可单独调整。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Balances wobble rejection with continuous lid motion, keeping the current enable state and calibrated angle. You can still adjust each setting afterward."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "兼顾防晃动和连续开合，保留当前启用状态与校准角度。应用后仍可单独调整。"
+          }
+        }
+      }
+    },
+    "状态图标": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Status Icons"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "状态图标"
+          }
+        }
+      }
+    },
+    "窗口操作": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Window Controls"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "窗口操作"
+          }
+        }
+      }
+    },
+    "外观与特效": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Appearance & Effects"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "外观与特效"
+          }
+        }
+      }
+    },
+    "可自定义的快捷键": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Custom Shortcuts"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "可自定义的快捷键"
+          }
+        }
+      }
+    },
+    "⌥Tab 独立启用，在「预览与切换」中设置，不受下方自定义快捷键开关影响。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Option-Tab is enabled separately in Previews & Switching. The custom shortcut switch below does not affect it."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "⌥Tab 独立启用，在「预览与切换」中设置，不受下方自定义快捷键开关影响。"
+          }
+        }
+      }
+    },
+    "保存并恢复一组窗口的位置和大小。关闭此功能会保留已有布局；同应用的相似窗口可能匹配错误，移回原桌面使用非公开系统接口。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Save and restore window positions and sizes. Turning this off keeps saved layouts. Similar windows in the same app may be mismatched; restoring their original Space uses private system APIs."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "保存并恢复一组窗口的位置和大小。关闭此功能会保留已有布局；同应用的相似窗口可能匹配错误，移回原桌面使用非公开系统接口。"
+          }
+        }
+      }
+    },
+    "参数预设": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preset"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "参数预设"
+          }
+        }
+      }
+    },
+    "开合触发": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lid Motion Trigger"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "开合触发"
+          }
+        }
+      }
+    },
+    "每次开盖或合盖至少移动设定幅度才触发。数值越大，越容易忽略轻微晃动。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opening or closing must move through at least this angle to trigger the effect. A larger value ignores more small movements."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "每次开盖或合盖至少移动设定幅度才触发。数值越大，越容易忽略轻微晃动。"
+          }
+        }
+      }
+    },
+    "桌面随合盖逐渐倾斜、雾化和变暗。关闭特效时仍可调整参数并查看模拟预览。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The desktop tilts, blurs and dims as the lid closes. You can adjust the settings and use the simulated preview while the effect is off."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "桌面随合盖逐渐倾斜、雾化和变暗。关闭特效时仍可调整参数并查看模拟预览。"
+          }
+        }
+      }
+    },
+    "校准与强度": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Calibration & Strength"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "校准与强度"
+          }
+        }
+      }
+    },
+    "先把屏幕放到平时使用的角度再校准。参考角度决定效果起点，跨度越大，画面变化越缓。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Set the display to your usual angle before calibrating. The reference angle sets where the effect begins; a larger span makes the change more gradual."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "先把屏幕放到平时使用的角度再校准。参考角度决定效果起点，跨度越大，画面变化越缓。"
+          }
+        }
+      }
+    },
+    "动画与结束方式": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Animation & Ending"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "动画与结束方式"
+          }
+        }
+      }
+    },
+    "停稳后按延时淡出；开启保持后，重新开盖才恢复画面。动画速度只调整过渡快慢，100% 为原速。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The effect fades after the delay when motion stops. With hold enabled, reopen the lid to clear it. Animation speed only changes transitions; 100% is the original speed."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "停稳后按延时淡出；开启保持后，重新开盖才恢复画面。动画速度只调整过渡快慢，100% 为原速。"
+          }
+        }
+      }
+    },
+    "窗口预览与切换需要辅助功能权限。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Window previews and switching require Accessibility access."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "窗口预览与切换需要辅助功能权限。"
+          }
+        }
+      }
+    },
+    "键盘窗口切换": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keyboard Window Switching"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "键盘窗口切换"
+          }
+        }
+      }
+    },
+    "Dock 悬停预览": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dock Hover Previews"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dock 悬停预览"
+          }
+        }
+      }
+    },
+    "共用的显示内容": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Shared Content"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "共用的显示内容"
+          }
+        }
+      }
+    },
+    "共用的预览外观": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Shared Preview Appearance"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "共用的预览外观"
+          }
+        }
+      }
+    },
+    "标签页支持标准 macOS 标签栏和 Safari；没有缓存画面的后台标签页显示图标和标题。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tabs are supported for standard macOS tab bars and Safari. Background tabs without a cached image show their icon and title."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "标签页支持标准 macOS 标签栏和 Safari；没有缓存画面的后台标签页显示图标和标题。"
+          }
+        }
+      }
+    },
+    "打开窗口面板…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open Window Panel…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "打开窗口面板…"
+          }
+        }
+      }
+    },
+    "显示内容和预览外观供键盘切换、Dock 悬停预览与手动窗口面板共用。缩略图只在面板打开时采集并缓存在内存中。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Content and appearance settings apply to keyboard switching, Dock hover previews, and manually opened window panels. Thumbnails are captured only while a panel is open and cached in memory."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "显示内容和预览外观供键盘切换、Dock 悬停预览与手动窗口面板共用。缩略图只在面板打开时采集并缓存在内存中。"
+          }
+        }
+      }
+    },
+    "启用窗口增强": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enable Window Enhancements"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "启用窗口增强"
+          }
+        }
+      }
+    },
+    "控制窗口按钮、预览切换、贴靠、Dock 收起和快捷键。开合盖特效与状态图标独立运行，关闭本开关会保留所有设置。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Controls window buttons, previews and switching, snapping, Dock minimization, and shortcuts. Lid effects and status icons run independently. Turning this off preserves all settings."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "控制窗口按钮、预览切换、贴靠、Dock 收起和快捷键。开合盖特效与状态图标独立运行，关闭本开关会保留所有设置。"
+          }
+        }
+      }
+    },
+    "点击保护": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Click Protection"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "点击保护"
+          }
+        }
+      }
+    },
+    "保护期间点击不会执行，进度环结束后再点。仅保护退出时，其他操作立即响应；保护时间为零时，所有操作立即响应。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clicks are ignored during the protection period. Click again after the progress ring completes. Protecting only Quit leaves other actions immediate; a zero duration makes all actions immediate."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "保护期间点击不会执行，进度环结束后再点。仅保护退出时，其他操作立即响应；保护时间为零时，所有操作立即响应。"
+          }
+        }
+      }
+    },
+    "配置窗口快捷键…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Configure Window Shortcuts…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "配置窗口快捷键…"
+          }
+        }
+      }
+    },
+    "布局与快捷键": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Layouts and Shortcuts"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "布局与快捷键"
+          }
+        }
+      }
+    },
+    "窗口布局和显示桌面的快捷键统一在「快捷键」中设置，与拖拽贴靠分别启用。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Configure window layout and Show Desktop shortcuts in Shortcuts. They are enabled separately from drag-to-snap."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "窗口布局和显示桌面的快捷键统一在「快捷键」中设置，与拖拽贴靠分别启用。"
+          }
+        }
+      }
+    },
+    "状态图标设置分类": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Status Icon Settings Categories"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "状态图标设置分类"
+          }
+        }
+      }
+    },
+    "恢复状态图标默认设置…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reset Status Icon Settings…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "恢复状态图标默认设置…"
+          }
+        }
+      }
+    },
+    "恢复状态图标默认设置？": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reset Status Icon Settings?"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "恢复状态图标默认设置？"
+          }
+        }
+      }
+    },
+    "将重置显示位置、图标、状态面板和音量交互的自定义设置。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This resets the display location, icon, status panel, and volume interaction settings."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "将重置显示位置、图标、状态面板和音量交互的自定义设置。"
+          }
+        }
+      }
+    },
+    "菜单栏单击": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Menu Bar Click"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "菜单栏单击"
+          }
+        }
+      }
+    },
+    "图标大小受系统菜单栏高度限制。右键打开应用规则、设置和暂停菜单。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Icon size is limited by the system menu bar height. Right-click for application rules, settings, and pause controls."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "图标大小受系统菜单栏高度限制。右键打开应用规则、设置和暂停菜单。"
+          }
+        }
+      }
+    },
+    "点击 Blinker 的 Dock 图标打开状态面板。预览背景不会改变 Dock 图标或系统外观。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Click Blinker's Dock icon to open the status panel. The preview background does not change the Dock icon or system appearance."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "点击 Blinker 的 Dock 图标打开状态面板。预览背景不会改变 Dock 图标或系统外观。"
+          }
+        }
+      }
+    },
+    "状态刷新": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Status Updates"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "状态刷新"
+          }
+        }
+      }
+    },
+    "状态变化会自动刷新，此间隔用于定期补充检查。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Status changes update automatically. This interval controls periodic fallback checks."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "状态变化会自动刷新，此间隔用于定期补充检查。"
+          }
+        }
+      }
+    },
+    "中央电量显示开启且电量可用时，电量数字会替代网络或蓝牙图形。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "When the center battery display is enabled and a battery level is available, the percentage replaces the network or Bluetooth symbol."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "中央电量显示开启且电量可用时，电量数字会替代网络或蓝牙图形。"
+          }
+        }
+      }
+    },
+    "当前音频输出为蓝牙设备时，在图标中央显示设备图形。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show the device symbol in the center when the current audio output is a Bluetooth device."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "当前音频输出为蓝牙设备时，在图标中央显示设备图形。"
+          }
+        }
+      }
+    },
+    "强调色用于音量圆点或圆弧，与中央蓝牙图形分别设置。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The accent color applies to the volume dots or arc, independently of the center Bluetooth symbol."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "强调色用于音量圆点或圆弧，与中央蓝牙图形分别设置。"
+          }
+        }
+      }
+    },
+    "输出设备列表": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Output Device List"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "输出设备列表"
+          }
+        }
+      }
+    },
+    "隐藏区块不影响状态图标。隐藏音量区块也会停用面板滚轮调音量；全部隐藏后，仍可进入应用规则和设置。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hiding sections does not affect the status icon. Hiding Volume also disables scroll-to-adjust volume in the panel. Application rules and settings remain accessible when all sections are hidden."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "隐藏区块不影响状态图标。隐藏音量区块也会停用面板滚轮调音量；全部隐藏后，仍可进入应用规则和设置。"
+          }
+        }
+      }
+    },
+    "启用音量区块后，滚轮可在所选范围内调节当前输出设备音量。关闭滚轮操作后，仍可使用音量滑块；各项偏好会保留。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "With Volume enabled, scrolling within the selected area adjusts the current output device. The volume slider remains available when scrolling is disabled. All preferences are preserved."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "启用音量区块后，滚轮可在所选范围内调节当前输出设备音量。关闭滚轮操作后，仍可使用音量滑块；各项偏好会保留。"
+          }
+        }
+      }
+    },
+    "状态图标设置…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Status Icon Settings…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "状态图标设置…"
+          }
+        }
+      }
+    },
+    "所有状态区块均已隐藏，可在状态图标设置中重新开启。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All status sections are hidden. Enable them in Status Icon Settings."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "所有状态区块均已隐藏，可在状态图标设置中重新开启。"
+          }
+        }
+      }
+    },
+    "暂停窗口增强": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pause Window Enhancements"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "暂停窗口增强"
+          }
+        }
+      }
+    },
+    "恢复窗口增强": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Resume Window Enhancements"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "恢复窗口增强"
           }
         }
       }
