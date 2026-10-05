@@ -5,6 +5,7 @@
 import CoreWLAN
 import Foundation
 import IOKit.ps
+import SystemConfiguration
 
 @MainActor
 final class SystemStatusReader: SystemStatusReading {
@@ -103,12 +104,18 @@ final class SystemStatusReader: SystemStatusReading {
         guard let interface = CWWiFiClient.shared().interface() else {
             return path?.isSatisfied == false ? .disconnected : .unknown
         }
-        return network(path: path, powerOn: interface.powerOn(),
-                       associated: interface.serviceActive(), rssi: interface.rssiValue())
+        let powerOn = interface.powerOn()
+        let associated = interface.serviceActive()
+        // Sharing is only meaningful on an active Wi-Fi service, matching upstream.
+        let sharing = powerOn && associated && Self.internetSharingActive()
+        return network(path: path, powerOn: powerOn, associated: associated,
+                       adHoc: interface.interfaceMode() == .IBSS,
+                       rssi: interface.rssiValue(), sharing: sharing)
     }
 
     nonisolated static func network(path: SystemNetworkPath?, powerOn: Bool,
-                                    associated: Bool, rssi: Int?) -> MenuBarSystemSnapshot.Network {
+                                    associated: Bool, adHoc: Bool = false, rssi: Int?,
+                                    sharing: Bool = false) -> MenuBarSystemSnapshot.Network {
         if let path, path.isSatisfied, path.usesWired {
             return .wired
         }
@@ -116,13 +123,41 @@ final class SystemStatusReader: SystemStatusReading {
         guard let path else { return .unknown }
         guard path.isSatisfied else { return .disconnected }
         guard path.usesWiFi, associated else { return .unknown }
-        let strength = switch rssi {
+        return specialState(path: path, adHoc: adHoc, rssi: rssi, sharing: sharing)
+    }
+
+    /// Connection-type detail on a satisfied Wi-Fi path. Upstream priority:
+    /// sharing, then ad-hoc, then the expensive-path hotspot.
+    private nonisolated static func specialState(
+        path: SystemNetworkPath, adHoc: Bool, rssi: Int?, sharing: Bool
+    ) -> MenuBarSystemSnapshot.Network {
+        if sharing { return .sharing }
+        if adHoc { return .temporary }
+        let strength = wifiStrength(rssi: rssi)
+        return path.isExpensive ? .personalHotspot(strength: strength) : .wifi(strength: strength)
+    }
+
+    nonisolated static func wifiStrength(rssi: Int?) -> Int {
+        switch rssi {
         case .some((-60) ... -1): 3
         case .some(-78 ... -61): 2
         case .some(-88 ... -79): 1
         default: 0
         }
-        return .wifi(strength: strength)
+    }
+
+    /// Internet Sharing state from the dynamic store. The `com.apple.nat` key is
+    /// undocumented, so a missing or unreadable value means not sharing.
+    private nonisolated static func internetSharingActive() -> Bool {
+        guard let store = SCDynamicStoreCreate(nil, "Blinker" as CFString, nil, nil),
+              let value = SCDynamicStoreCopyValue(store, "com.apple.nat" as CFString),
+              let nat = (value as? [String: Any])?["NAT"] as? [String: Any]
+        else { return false }
+        switch nat["Enabled"] {
+        case let flag as Bool: return flag
+        case let number as NSNumber: return number.intValue == 1
+        default: return false
+        }
     }
 }
 

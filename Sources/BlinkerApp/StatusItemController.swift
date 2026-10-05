@@ -13,6 +13,8 @@ final class StatusItemController: NSObject, NSMenuDelegate, NSMenuItemValidation
     private var presentation: MenuBarPresentation?
     /// Invoked for the settings menu entry.
     var onOpenSettings: (() -> Void)?
+    /// Invoked by status-panel section gears; carries the target status-icon page.
+    var onOpenMenuBarPage: ((MenuBarSettingsPage) -> Void)?
     var onPauseAll: ((Int?) -> Void)?
     var onResumeAll: (() -> Void)?
     private var targetApp: NSRunningApplication?
@@ -44,7 +46,8 @@ final class StatusItemController: NSObject, NSMenuDelegate, NSMenuItemValidation
         presentation = MenuBarPresentation(
             item: item, monitor: systemStatus, audio: audio, preferences: preferences,
             onOpenApplications: { [weak self] in self?.onOpenApplications?() },
-            onOpenSettings: { [weak self] in self?.onOpenMenuBarSettings?() }
+            onOpenSettings: { [weak self] in self?.onOpenMenuBarSettings?() },
+            onOpenMenuBarPage: { [weak self] page in self?.onOpenMenuBarPage?(page) }
         )
         presentation?.start()
     }

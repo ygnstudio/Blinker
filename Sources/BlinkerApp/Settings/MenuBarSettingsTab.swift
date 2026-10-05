@@ -1,27 +1,29 @@
+import AppKit
 import SwiftUI
 
 struct MenuBarSettingsTab: View {
     @ObservedObject var preferences: MenuBarPreferences
     @ObservedObject var monitor: SystemStatusMonitor
     @ObservedObject var audio: SystemAudioController
-    @State private var page = MenuBarSettingsPage.icon
+    @ObservedObject var navigation: SettingsNavigation
     @State private var confirmingReset = false
 
     init(preferences: MenuBarPreferences? = nil, monitor: SystemStatusMonitor,
-         audio: SystemAudioController) {
+         audio: SystemAudioController, navigation: SettingsNavigation) {
         self.preferences = preferences ?? .shared
         self.monitor = monitor
         self.audio = audio
+        self.navigation = navigation
     }
 
     var body: some View {
         VStack(spacing: 0) {
-            if page != .panel {
+            if navigation.menuBarPage != .panel {
                 MenuBarIconPreview(configuration: configuration, snapshot: monitor.snapshot)
                     .padding(.horizontal, 20)
                     .padding(.top, 12)
             }
-            Picker("状态图标设置分类", selection: $page) {
+            Picker("状态图标设置分类", selection: $navigation.menuBarPage) {
                 ForEach(MenuBarSettingsPage.allCases, id: \.self) { page in
                     Text(page.title).tag(page)
                 }
@@ -31,7 +33,7 @@ struct MenuBarSettingsTab: View {
             .padding(.horizontal, 20)
             .padding(.top, 12)
             Form {
-                switch page {
+                switch navigation.menuBarPage {
                 case .icon: iconSettings
                 case .battery: batterySettings
                 case .networkAndVolume:
@@ -67,16 +69,22 @@ struct MenuBarSettingsTab: View {
     @ViewBuilder
     private var iconSettings: some View {
         Section {
-            Picker("显示位置", selection: binding(\.placement)) {
-                ForEach(MenuBarConfiguration.Placement.allCases, id: \.self) {
-                    Text($0.title).tag($0)
-                }
-            }
-            Picker("线条粗细", selection: binding(\.stroke)) {
-                ForEach(MenuBarConfiguration.Stroke.allCases, id: \.self) {
-                    Text($0.title).tag($0)
-                }
-            }
+            MenuBarOptionCardGroup(
+                label: String(localized: "显示位置"),
+                options: MenuBarConfiguration.Placement.allCases,
+                selection: configuration.placement,
+                title: { $0.title },
+                image: placementImage,
+                onSelect: { choice in preferences.update { $0.placement = choice } }
+            )
+            MenuBarOptionCardGroup(
+                label: String(localized: "线条粗细"),
+                options: MenuBarConfiguration.Stroke.allCases,
+                selection: configuration.stroke,
+                title: { $0.title },
+                image: strokeImage,
+                onSelect: { choice in preferences.update { $0.stroke = choice } }
+            )
         } header: {
             Text("图标外观")
         }
@@ -97,11 +105,14 @@ struct MenuBarSettingsTab: View {
             Text("图标大小受系统菜单栏高度限制。右键打开应用规则、设置和暂停菜单。")
         }
         Section {
-            Picker("Dock 图标背景", selection: binding(\.dockBackground)) {
-                ForEach(MenuBarConfiguration.DockBackground.allCases, id: \.self) {
-                    Text($0.title).tag($0)
-                }
-            }
+            MenuBarOptionCardGroup(
+                label: String(localized: "Dock 图标背景"),
+                options: MenuBarConfiguration.DockBackground.allCases,
+                selection: configuration.dockBackground,
+                title: { $0.title },
+                image: dockBackgroundImage,
+                onSelect: { choice in preferences.update { $0.dockBackground = choice } }
+            )
             .disabled(!configuration.showsDock)
         } header: {
             Text("Dock")
@@ -130,7 +141,7 @@ struct MenuBarSettingsTab: View {
                 .disabled(!configuration.showsBatteryPercentage || !configuration.showsChargingIndicator)
             SliderReadoutRow(label: String(localized: "电池标记大小"),
                              readout: percent(configuration.batterySymbolScale),
-                             value: binding(\.batterySymbolScale), range: 0.9 ... 1.1, step: 0.05)
+                             value: binding(\.batterySymbolScale), range: 0.5 ... 2, step: 0.05)
         }
         Section {
             Toggle("使用电池状态颜色", isOn: binding(\.usesBatteryColors))
@@ -161,10 +172,13 @@ struct MenuBarSettingsTab: View {
                              readout: percent(configuration.wifiSymbolScale),
                              value: binding(\.wifiSymbolScale), range: 1 ... 1.8, step: 0.05)
             Toggle("有线连接也使用 Wi-Fi 图形", isOn: binding(\.showsWiFiForWired))
+            Toggle("个人热点使用 Wi-Fi 图形", isOn: binding(\.showsWiFiForHotspot))
+            Toggle("临时连接使用 Wi-Fi 图形", isOn: binding(\.showsWiFiForTemporary))
+            Toggle("互联网共享使用 Wi-Fi 图形", isOn: binding(\.showsWiFiForSharing))
         } header: {
             Text("网络图形")
         } footer: {
-            Text("中央电量显示开启且电量可用时，电量数字会替代网络或蓝牙图形。")
+            Text("开启替换后，对应连接类型显示普通 Wi-Fi 图形而非专用标记。中央电量显示开启且电量可用时，电量数字会替代网络或蓝牙图形。")
         }
         Section {
             Toggle("蓝牙音频替代网络图形", isOn: binding(\.replacesNetworkWithBluetooth))
@@ -181,12 +195,46 @@ struct MenuBarSettingsTab: View {
         }
     }
 
+    private func glyphImage(_ change: (inout MenuBarConfiguration) -> Void) -> NSImage {
+        var value = configuration
+        change(&value)
+        return TrioIconRenderer.image(snapshot: .optionCardPreview, size: 44,
+                                      appearance: nil, configuration: value)
+    }
+
+    private func placementImage(_ placement: MenuBarConfiguration.Placement) -> NSImage {
+        switch placement {
+        case .menuBar:
+            return glyphImage { _ in }
+        case .dock:
+            return DockIconRenderer.image(snapshot: .optionCardPreview, configuration: configuration)
+        case .both:
+            let menuBar = glyphImage { _ in }
+            let dock = DockIconRenderer.image(snapshot: .optionCardPreview, configuration: configuration)
+            return NSImage(size: NSSize(width: 96, height: 44), flipped: false) { _ in
+                menuBar.draw(in: CGRect(x: 0, y: 0, width: 44, height: 44))
+                dock.draw(in: CGRect(x: 52, y: 0, width: 44, height: 44))
+                return true
+            }
+        }
+    }
+
+    private func strokeImage(_ stroke: MenuBarConfiguration.Stroke) -> NSImage {
+        glyphImage { $0.stroke = stroke }
+    }
+
+    private func dockBackgroundImage(_ background: MenuBarConfiguration.DockBackground) -> NSImage {
+        var value = configuration
+        value.dockBackground = background
+        return DockIconRenderer.image(snapshot: .optionCardPreview, configuration: value)
+    }
+
     private func percent(_ value: Double) -> String {
         "\(Int((value * 100).rounded()))%"
     }
 }
 
-private enum MenuBarSettingsPage: CaseIterable, Hashable {
+enum MenuBarSettingsPage: CaseIterable, Hashable {
     case icon, battery, networkAndVolume, panel
 
     var title: String {

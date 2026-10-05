@@ -205,6 +205,20 @@ private extension TrioIconRenderer {
     ) {
         let symbolSize = 38 * configuration.wifiSymbolScale
         switch network {
+        case .wired, .wifi, .disconnected, .off, .unknown:
+            drawBaseNetwork(network, configuration: configuration, symbolSize: symbolSize,
+                            in: context, foreground: foreground)
+        case .personalHotspot, .temporary, .sharing:
+            drawSpecialNetwork(network, configuration: configuration, symbolSize: symbolSize,
+                               in: context, foreground: foreground)
+        }
+    }
+
+    private static func drawBaseNetwork(
+        _ network: MenuBarSystemSnapshot.Network, configuration: MenuBarConfiguration,
+        symbolSize: CGFloat, in context: CGContext, foreground: CGColor
+    ) {
+        switch network {
         case .wired where configuration.showsWiFiForWired:
             drawSymbol("wifi", pointSize: symbolSize, in: context, foreground: foreground)
         case .wired:
@@ -221,17 +235,44 @@ private extension TrioIconRenderer {
                                                width: radius * 2, height: radius * 2))
             }
         case let .wifi(strength):
-            let value = TrioIconMapping.wifiValue(strength: strength)
-            let color = value == 0 ? foreground.copy(alpha: inactiveAlpha) ?? foreground : foreground
-            drawSymbol("wifi", value: value, pointSize: symbolSize, in: context, foreground: color)
+            drawWiFiSignal(strength: strength, pointSize: symbolSize, in: context, foreground: foreground)
         case .disconnected:
             drawSymbol("wifi", value: 0, pointSize: symbolSize, in: context, foreground: foreground)
         case .off:
             drawSymbol("wifi.slash", pointSize: symbolSize, in: context, foreground: foreground)
-        case .unknown:
+        default:
             drawSymbol("questionmark", pointSize: 32 * configuration.wifiSymbolScale,
                        in: context, foreground: foreground)
         }
+    }
+
+    private static func drawSpecialNetwork(
+        _ network: MenuBarSystemSnapshot.Network, configuration: MenuBarConfiguration,
+        symbolSize: CGFloat, in context: CGContext, foreground: CGColor
+    ) {
+        switch network {
+        case let .personalHotspot(strength):
+            if configuration.showsWiFiForHotspot {
+                drawWiFiSignal(strength: strength, pointSize: symbolSize,
+                               in: context, foreground: foreground)
+            } else {
+                drawSymbol("personalhotspot", pointSize: symbolSize, in: context, foreground: foreground)
+            }
+        case .temporary:
+            drawSymbol(configuration.showsWiFiForTemporary ? "wifi" : "dot.radiowaves.left.and.right",
+                       pointSize: symbolSize, in: context, foreground: foreground)
+        default: // .sharing
+            drawSymbol(configuration.showsWiFiForSharing ? "wifi" : "wifi.router",
+                       pointSize: symbolSize, in: context, foreground: foreground)
+        }
+    }
+
+    private static func drawWiFiSignal(
+        strength: Int, pointSize: CGFloat, in context: CGContext, foreground: CGColor
+    ) {
+        let value = TrioIconMapping.wifiValue(strength: strength)
+        let color = value == 0 ? foreground.copy(alpha: inactiveAlpha) ?? foreground : foreground
+        drawSymbol("wifi", value: value, pointSize: pointSize, in: context, foreground: color)
     }
 
     private static func drawSymbol(
@@ -372,7 +413,7 @@ enum TrioIconMapping {
               snapshot.volume?.isBluetooth == true else { return false }
         guard configuration.prioritizesNetworkErrors else { return true }
         switch snapshot.network {
-        case .wired, .wifi: return true
+        case .wired, .wifi, .personalHotspot, .temporary, .sharing: return true
         case .unknown, .off, .disconnected: return false
         }
     }

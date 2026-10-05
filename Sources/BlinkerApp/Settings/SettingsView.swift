@@ -38,6 +38,8 @@ enum SettingsDestination: String, CaseIterable, Identifiable {
 /// Shared routing lets About and contextual links reveal the same settings window.
 final class SettingsNavigation: ObservableObject {
     @Published var selection: SettingsDestination? = .general
+    /// Sub-page within the status-icon tab, e.g. deep links from the status panel.
+    @Published var menuBarPage: MenuBarSettingsPage = .icon
 }
 
 /// Preferences only. App rules are managed in their own window.
@@ -102,7 +104,7 @@ struct SettingsView: View {
     private var detail: some View {
         switch navigation.selection ?? .general {
         case .general: GeneralTab(onShowOnboarding: onShowOnboarding, onShowAbout: onShowAbout)
-        case .menuBar: MenuBarSettingsTab(monitor: menuBarStatus, audio: systemAudio)
+        case .menuBar: MenuBarSettingsTab(monitor: menuBarStatus, audio: systemAudio, navigation: navigation)
         case .effects: ScreenEffectsSettingsTab(controller: screenEffects)
         case .permissions: PermissionsSettingsTab()
         case .hover: HoverSettingsTab(onApply: onApplyHoverSettings,

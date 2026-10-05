@@ -80,7 +80,9 @@ struct MenuBarIconPreview: View {
 }
 
 private enum MenuBarPreviewScenario: CaseIterable, Hashable {
-    case live, battery, charging, lowBattery, lowPower, wired, muted, bluetooth, bluetoothOffline, unavailable
+    case live, battery, charging, lowBattery, lowPower
+    case wired, hotspot, temporary, sharing
+    case muted, bluetooth, bluetoothOffline, unavailable
 
     var title: String {
         switch self {
@@ -90,6 +92,9 @@ private enum MenuBarPreviewScenario: CaseIterable, Hashable {
         case .lowBattery: String(localized: "模拟：低电量")
         case .lowPower: String(localized: "模拟：低电量模式")
         case .wired: String(localized: "模拟：有线连接")
+        case .hotspot: String(localized: "模拟：个人热点")
+        case .temporary: String(localized: "模拟：临时连接")
+        case .sharing: String(localized: "模拟：互联网共享")
         case .muted: String(localized: "模拟：静音")
         case .bluetooth: String(localized: "模拟：蓝牙音频")
         case .bluetoothOffline: String(localized: "模拟：蓝牙音频与断网")
@@ -100,13 +105,20 @@ private enum MenuBarPreviewScenario: CaseIterable, Hashable {
     func snapshot(live: MenuBarSystemSnapshot) -> MenuBarSystemSnapshot {
         guard self != .live else { return live }
         guard self != .unavailable else { return .unknown }
+        let network: MenuBarSystemSnapshot.Network = switch self {
+        case .wired: .wired
+        case .hotspot: .personalHotspot(strength: 3)
+        case .temporary: .temporary
+        case .sharing: .sharing
+        case .bluetoothOffline: .disconnected
+        default: .wifi(strength: 3)
+        }
         return MenuBarSystemSnapshot(
             battery: .init(percentage: self == .lowBattery ? 10 : 65,
                            isCharging: self == .charging,
                            isConnectedToPower: self == .charging,
                            isLowPower: self == .lowPower),
-            network: self == .wired ? .wired :
-                (self == .bluetoothOffline ? .disconnected : .wifi(strength: 3)),
+            network: network,
             volume: .init(scalar: 0.5, isMuted: self == .muted,
                           isBluetooth: self == .bluetooth || self == .bluetoothOffline,
                           symbolName: "headphones")

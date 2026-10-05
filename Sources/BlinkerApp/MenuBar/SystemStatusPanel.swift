@@ -7,6 +7,7 @@ struct SystemStatusPanel: View {
     @ObservedObject var preferences: MenuBarPreferences
     let onOpenApplications: () -> Void
     let onOpenSettings: () -> Void
+    let onOpenMenuBarPage: (MenuBarSettingsPage) -> Void
     @State private var expandedDevices = false
 
     var body: some View {
@@ -60,7 +61,7 @@ struct SystemStatusPanel: View {
 
     private var batterySection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            heading("电池", symbol: "battery.100percent")
+            heading("电池", symbol: "battery.100percent", page: .battery)
             Text(monitor.snapshot.batteryDescription).font(.title3).monospacedDigit()
             if let value = monitor.snapshot.battery?.percentage {
                 ProgressView(value: Double(value), total: 100).tint(batteryColor)
@@ -84,7 +85,7 @@ struct SystemStatusPanel: View {
 
     private var networkSection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            heading("网络", symbol: "network")
+            heading("网络", symbol: "network", page: .networkAndVolume)
             Text(monitor.snapshot.networkDescription)
             if case let .wifi(strength) = monitor.snapshot.network {
                 Label(strength == 3 ? String(localized: "信号强")
@@ -98,7 +99,7 @@ struct SystemStatusPanel: View {
 
     private var volumeSection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            heading("音量", symbol: "speaker.wave.2")
+            heading("音量", symbol: "speaker.wave.2", page: .panel)
             if let device = audio.outputs.first(where: { $0.id == audio.currentDeviceID }) {
                 Text(device.name).font(.callout).foregroundStyle(.secondary).lineLimit(2)
                     .accessibilityLabel(String(localized: "当前输出设备") + " " + device.name)
@@ -166,8 +167,18 @@ struct SystemStatusPanel: View {
         .background(MenuBarPanelRegion(identifier: "BlinkerAudioDeviceList"))
     }
 
-    private func heading(_ title: LocalizedStringKey, symbol: String) -> some View {
-        Label(title, systemImage: symbol).font(.callout.weight(.semibold))
+    private func heading(_ title: LocalizedStringKey, symbol: String,
+                         page: MenuBarSettingsPage) -> some View {
+        HStack {
+            Label(title, systemImage: symbol).font(.callout.weight(.semibold))
+            Spacer()
+            Button { onOpenMenuBarPage(page) } label: {
+                Image(systemName: "gearshape")
+            }
+            .buttonStyle(.borderless).foregroundStyle(.secondary)
+            .help("打开相关设置")
+            .accessibilityLabel(String(localized: "打开相关设置"))
+        }
     }
 
     private func settingsLink(_ title: LocalizedStringKey, destination: String) -> some View {

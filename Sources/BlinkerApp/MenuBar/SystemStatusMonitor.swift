@@ -11,6 +11,7 @@ struct SystemNetworkPath: Equatable, Sendable {
     var isSatisfied: Bool
     var usesWiFi: Bool
     var usesWired: Bool
+    var isExpensive = false
 }
 
 @MainActor
@@ -218,7 +219,8 @@ private final class SystemStatusEvents: SystemStatusEventObserving {
         monitor.pathUpdateHandler = { path in
             let value = SystemNetworkPath(isSatisfied: path.status == .satisfied,
                                           usesWiFi: path.usesInterfaceType(.wifi),
-                                          usesWired: path.usesInterfaceType(.wiredEthernet))
+                                          usesWired: path.usesInterfaceType(.wiredEthernet),
+                                          isExpensive: path.isExpensive)
             Task { @MainActor in onPath(value) }
         }
         pathMonitor = monitor

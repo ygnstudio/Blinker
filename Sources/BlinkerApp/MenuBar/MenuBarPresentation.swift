@@ -11,6 +11,7 @@ final class MenuBarPresentation: NSObject, NSPopoverDelegate, NSWindowDelegate {
     private let preferences: MenuBarPreferences
     private let onOpenApplications: () -> Void
     private let onOpenSettings: () -> Void
+    private let onOpenMenuBarPage: (MenuBarSettingsPage) -> Void
     private let popover = NSPopover()
     private let charging = MenuBarChargingAnimation()
     private let scrolling = MenuBarVolumeScroll()
@@ -23,13 +24,15 @@ final class MenuBarPresentation: NSObject, NSPopoverDelegate, NSWindowDelegate {
 
     init(item: NSStatusItem, monitor: SystemStatusMonitor, audio: SystemAudioController,
          preferences: MenuBarPreferences, onOpenApplications: @escaping () -> Void,
-         onOpenSettings: @escaping () -> Void) {
+         onOpenSettings: @escaping () -> Void,
+         onOpenMenuBarPage: @escaping (MenuBarSettingsPage) -> Void) {
         self.item = item
         self.monitor = monitor
         self.audio = audio
         self.preferences = preferences
         self.onOpenApplications = onOpenApplications
         self.onOpenSettings = onOpenSettings
+        self.onOpenMenuBarPage = onOpenMenuBarPage
         super.init()
         popover.behavior = .transient
         popover.delegate = self
@@ -152,6 +155,9 @@ final class MenuBarPresentation: NSObject, NSPopoverDelegate, NSWindowDelegate {
             }, onOpenSettings: { [weak self] in
                 self?.closePanel()
                 self?.onOpenSettings()
+            }, onOpenMenuBarPage: { [weak self] page in
+                self?.closePanel()
+                self?.onOpenMenuBarPage(page)
             }
         ))
         controller.sizingOptions = [.preferredContentSize]

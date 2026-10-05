@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 struct MenuBarAudioSettings: View {
@@ -5,17 +6,27 @@ struct MenuBarAudioSettings: View {
 
     var body: some View {
         Section {
-            Picker("音量图形", selection: binding(\.volumeStyle)) {
-                ForEach(MenuBarConfiguration.VolumeStyle.allCases, id: \.self) {
-                    Text($0.title).tag($0)
-                }
-            }
+            MenuBarOptionCardGroup(
+                label: String(localized: "音量图形"),
+                options: MenuBarConfiguration.VolumeStyle.allCases,
+                selection: preferences.configuration.volumeStyle,
+                title: { $0.title },
+                image: volumeStyleImage,
+                onSelect: { choice in preferences.update { $0.volumeStyle = choice } }
+            )
             Toggle("蓝牙音频使用音量强调色", isOn: binding(\.usesBluetoothVolumeColor))
         } header: {
             Text("音量图形")
         } footer: {
             Text("强调色用于音量圆点或圆弧，与中央蓝牙图形分别设置。")
         }
+    }
+
+    private func volumeStyleImage(_ style: MenuBarConfiguration.VolumeStyle) -> NSImage {
+        var value = preferences.configuration
+        value.volumeStyle = style
+        return TrioIconRenderer.image(snapshot: .optionCardPreview, size: 44,
+                                      appearance: nil, configuration: value)
     }
 
     private func binding<Value>(_ keyPath: WritableKeyPath<MenuBarConfiguration, Value>) -> Binding<Value> {
@@ -63,23 +74,12 @@ struct MenuBarOutputDeviceSettings: View {
                             Text("当前设备").font(.caption).foregroundStyle(.secondary)
                         }
                         Spacer()
-                        Button {
-                            move(device, offset: -1)
-                        } label: {
-                            Image(systemName: "arrow.up")
-                        }
-                        .disabled(ordered.first?.id == device.id)
-                        .help("上移")
-                        .accessibilityLabel(String(localized: "上移") + " " + device.name)
-                        Button {
-                            move(device, offset: 1)
-                        } label: {
-                            Image(systemName: "arrow.down")
-                        }
-                        .disabled(ordered.last?.id == device.id)
-                        .help("下移")
-                        .accessibilityLabel(String(localized: "下移") + " " + device.name)
                     }
+                }
+                .onMove { offsets, destination in
+                    var uids = ordered.map(\.uid)
+                    uids.move(fromOffsets: offsets, toOffset: destination)
+                    preferences.update { $0.outputDeviceOrder = uids }
                 }
             }
             Button("恢复默认设备顺序") {
@@ -89,7 +89,7 @@ struct MenuBarOutputDeviceSettings: View {
         } header: {
             Text("输出设备顺序")
         } footer: {
-            Text("使用上下按钮调整状态面板中的设备顺序，不会切换当前输出设备。")
+            Text("拖动调整状态面板中的设备顺序，不会切换当前输出设备。")
         }
     }
 
@@ -106,13 +106,5 @@ struct MenuBarOutputDeviceSettings: View {
     private func binding<Value>(_ keyPath: WritableKeyPath<MenuBarConfiguration, Value>) -> Binding<Value> {
         Binding(get: { preferences.configuration[keyPath: keyPath] },
                 set: { value in preferences.update { $0[keyPath: keyPath] = value } })
-    }
-
-    private func move(_ device: SystemAudioOutput, offset: Int) {
-        var ordered = orderedOutputs
-        guard let index = ordered.firstIndex(where: { $0.id == device.id }),
-              ordered.indices.contains(index + offset) else { return }
-        ordered.swapAt(index, index + offset)
-        preferences.update { $0.outputDeviceOrder = ordered.map(\.uid) }
     }
 }

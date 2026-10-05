@@ -55,6 +55,9 @@ extension MenuBarSystemSnapshot {
         case .disconnected: String(localized: "Wi-Fi 未连接")
         case .wifi: String(localized: "Wi-Fi 已连接")
         case .wired: String(localized: "有线网络")
+        case .personalHotspot: String(localized: "个人热点")
+        case .temporary: String(localized: "临时连接")
+        case .sharing: String(localized: "互联网共享")
         }
     }
 

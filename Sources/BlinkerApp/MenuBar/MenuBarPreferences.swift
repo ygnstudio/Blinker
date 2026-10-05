@@ -24,7 +24,7 @@ struct MenuBarConfiguration: Codable, Equatable {
 
     var placement: Placement = .menuBar
     var dockBackground: DockBackground = .system
-    var iconSize: Double = 24
+    var iconSize: Double = 20
     var stroke: Stroke = .regular
     var showsBatteryPercentage = true
     var showsChargingIndicator = true
@@ -36,6 +36,9 @@ struct MenuBarConfiguration: Codable, Equatable {
     var showsChargingHeartbeat = true
     var wifiSymbolScale: Double = 1.6
     var showsWiFiForWired = false
+    var showsWiFiForHotspot = false
+    var showsWiFiForTemporary = false
+    var showsWiFiForSharing = false
     var showsBatteryInCenter = false
     var volumeStyle: VolumeStyle = .dots
     var replacesNetworkWithBluetooth = false
@@ -71,9 +74,9 @@ struct MenuBarConfiguration: Codable, Equatable {
         func clamp(_ input: Double, _ range: ClosedRange<Double>, fallback: Double) -> Double {
             input.isFinite ? min(range.upperBound, max(range.lowerBound, input)) : fallback
         }
-        value.iconSize = clamp(iconSize, 16 ... 36, fallback: 24)
+        value.iconSize = clamp(iconSize, 16 ... 36, fallback: 20)
         value.batteryCriticalThreshold = clamp(batteryCriticalThreshold, 0 ... 100, fallback: 20)
-        value.batterySymbolScale = clamp(batterySymbolScale, 0.9 ... 1.1, fallback: 1)
+        value.batterySymbolScale = clamp(batterySymbolScale, 0.5 ... 2, fallback: 1)
         value.wifiSymbolScale = clamp(wifiSymbolScale, 1 ... 1.8, fallback: 1.6)
         value.bluetoothSymbolScale = clamp(bluetoothSymbolScale, 1 ... 1.8, fallback: 1.6)
         value.refreshInterval = clamp(refreshInterval, 5 ... 60, fallback: 15)

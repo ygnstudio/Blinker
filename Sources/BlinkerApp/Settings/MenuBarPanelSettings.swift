@@ -7,32 +7,18 @@ struct MenuBarPanelSettings: View {
     var body: some View {
         Section {
             ForEach(preferences.configuration.sectionOrder, id: \.self) { section in
-                HStack {
-                    Toggle(section.title, isOn: visibility(for: section))
-                        .toggleStyle(.checkbox)
-                    Spacer()
-                    Button {
-                        move(section, offset: -1)
-                    } label: {
-                        Image(systemName: "arrow.up")
-                    }
-                    .disabled(preferences.configuration.sectionOrder.first == section)
-                    .help("上移")
-                    .accessibilityLabel(String(localized: "上移") + " " + section.title)
-                    Button {
-                        move(section, offset: 1)
-                    } label: {
-                        Image(systemName: "arrow.down")
-                    }
-                    .disabled(preferences.configuration.sectionOrder.last == section)
-                    .help("下移")
-                    .accessibilityLabel(String(localized: "下移") + " " + section.title)
+                Toggle(section.title, isOn: visibility(for: section))
+                    .toggleStyle(.checkbox)
+            }
+            .onMove { offsets, destination in
+                preferences.update {
+                    $0.sectionOrder.move(fromOffsets: offsets, toOffset: destination)
                 }
             }
         } header: {
             Text("面板区块与顺序")
         } footer: {
-            Text("隐藏区块不影响状态图标。隐藏音量区块也会停用面板滚轮调音量；全部隐藏后，仍可进入应用规则和设置。")
+            Text("勾选显示并拖动排序。隐藏区块不影响状态图标。隐藏音量区块也会停用面板滚轮调音量；全部隐藏后，仍可进入应用规则和设置。")
         }
         MenuBarOutputDeviceSettings(preferences: preferences, audio: audio)
             .disabled(!isVolumeSectionEnabled)
@@ -56,7 +42,8 @@ struct MenuBarPanelSettings: View {
         } header: {
             Text("面板音量操作")
         } footer: {
-            Text("启用音量区块后，滚轮可在所选范围内调节当前输出设备音量。关闭滚轮操作后，仍可使用音量滑块；各项偏好会保留。")
+            Text("启用音量区块后，滚轮可在所选范围内调节当前输出设备音量。关闭滚轮操作后，仍可使用音量滑块；各项偏好会保留。"
+                 + "若与 MOS、Scroll Reverser、LinearMouse 等滚动增强工具冲突，请在其设置中将 Blinker 设为不处理（白名单）。")
         }
     }
 
@@ -79,13 +66,5 @@ struct MenuBarPanelSettings: View {
                 }
             }
         })
-    }
-
-    private func move(_ section: MenuBarConfiguration.Section, offset: Int) {
-        preferences.update {
-            guard let index = $0.sectionOrder.firstIndex(of: section),
-                  $0.sectionOrder.indices.contains(index + offset) else { return }
-            $0.sectionOrder.swapAt(index, index + offset)
-        }
     }
 }

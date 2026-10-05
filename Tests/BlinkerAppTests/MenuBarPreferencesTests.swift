@@ -72,6 +72,9 @@ final class MenuBarPreferencesTests: XCTestCase {
                 $0.showsChargingHeartbeat = false
                 $0.wifiSymbolScale = 1.4
                 $0.showsWiFiForWired = true
+                $0.showsWiFiForHotspot = true
+                $0.showsWiFiForTemporary = true
+                $0.showsWiFiForSharing = true
                 $0.showsBatteryInCenter = true
                 $0.volumeStyle = .arc
                 $0.replacesNetworkWithBluetooth = true
@@ -110,7 +113,7 @@ final class MenuBarPreferencesTests: XCTestCase {
                 $0.outputDeviceLimit = Int.max
             }
             let value = preferences.configuration
-            XCTAssertEqual(value.iconSize, 24)
+            XCTAssertEqual(value.iconSize, 20)
             XCTAssertEqual(value.batteryCriticalThreshold, 20)
             XCTAssertEqual(value.batterySymbolScale, 1)
             XCTAssertEqual(value.wifiSymbolScale, 1.6)
@@ -137,7 +140,7 @@ final class MenuBarPreferencesTests: XCTestCase {
             let value = preferences.configuration
             XCTAssertEqual(value.iconSize, 16)
             XCTAssertEqual(value.batteryCriticalThreshold, 0)
-            XCTAssertEqual(value.batterySymbolScale, 0.9)
+            XCTAssertEqual(value.batterySymbolScale, 0.5)
             XCTAssertEqual(value.wifiSymbolScale, 1)
             XCTAssertEqual(value.bluetoothSymbolScale, 1.8)
             XCTAssertEqual(value.refreshInterval, 60)

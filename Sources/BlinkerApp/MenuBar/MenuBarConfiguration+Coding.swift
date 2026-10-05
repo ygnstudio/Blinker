@@ -16,6 +16,9 @@ extension MenuBarConfiguration {
         case showsChargingHeartbeat
         case wifiSymbolScale
         case showsWiFiForWired
+        case showsWiFiForHotspot
+        case showsWiFiForTemporary
+        case showsWiFiForSharing
         case showsBatteryInCenter
         case volumeStyle
         case replacesNetworkWithBluetooth
@@ -56,6 +59,9 @@ extension MenuBarConfiguration {
         showsChargingHeartbeat = values.decode(.showsChargingHeartbeat, default: showsChargingHeartbeat)
         wifiSymbolScale = values.decode(.wifiSymbolScale, default: wifiSymbolScale)
         showsWiFiForWired = values.decode(.showsWiFiForWired, default: showsWiFiForWired)
+        showsWiFiForHotspot = values.decode(.showsWiFiForHotspot, default: showsWiFiForHotspot)
+        showsWiFiForTemporary = values.decode(.showsWiFiForTemporary, default: showsWiFiForTemporary)
+        showsWiFiForSharing = values.decode(.showsWiFiForSharing, default: showsWiFiForSharing)
         showsBatteryInCenter = values.decode(.showsBatteryInCenter, default: showsBatteryInCenter)
         volumeStyle = values.decode(.volumeStyle, default: volumeStyle)
         replacesNetworkWithBluetooth = values.decode(

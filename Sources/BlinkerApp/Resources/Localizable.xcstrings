@@ -8009,38 +8009,6 @@
         }
       }
     },
-    "上移": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Move Up"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "上移"
-          }
-        }
-      }
-    },
-    "下移": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Move Down"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "下移"
-          }
-        }
-      }
-    },
     "恢复默认设备顺序": {
       "localizations": {
         "en": {
@@ -8073,18 +8041,18 @@
         }
       }
     },
-    "使用上下按钮调整状态面板中的设备顺序，不会切换当前输出设备。": {
+    "拖动调整状态面板中的设备顺序，不会切换当前输出设备。": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Use the arrows to reorder devices in the status panel. This does not change the current output."
+            "value": "Drag to reorder devices in the status panel. Reordering does not change the current output device."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "使用上下按钮调整状态面板中的设备顺序，不会切换当前输出设备。"
+            "value": "拖动调整状态面板中的设备顺序，不会切换当前输出设备。"
           }
         }
       }
@@ -10617,18 +10585,18 @@
         }
       }
     },
-    "中央电量显示开启且电量可用时，电量数字会替代网络或蓝牙图形。": {
+    "开启替换后，对应连接类型显示普通 Wi-Fi 图形而非专用标记。中央电量显示开启且电量可用时，电量数字会替代网络或蓝牙图形。": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "When the center battery display is enabled and a battery level is available, the percentage replaces the network or Bluetooth symbol."
+            "value": "When a substitution is enabled, that connection type shows the plain Wi-Fi glyph instead of its dedicated mark. When Show Battery in Center is on and a charge level is available, the number replaces the network or Bluetooth glyph."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "中央电量显示开启且电量可用时，电量数字会替代网络或蓝牙图形。"
+            "value": "开启替换后，对应连接类型显示普通 Wi-Fi 图形而非专用标记。中央电量显示开启且电量可用时，电量数字会替代网络或蓝牙图形。"
           }
         }
       }
@@ -10681,34 +10649,34 @@
         }
       }
     },
-    "隐藏区块不影响状态图标。隐藏音量区块也会停用面板滚轮调音量；全部隐藏后，仍可进入应用规则和设置。": {
+    "勾选显示并拖动排序。隐藏区块不影响状态图标。隐藏音量区块也会停用面板滚轮调音量；全部隐藏后，仍可进入应用规则和设置。": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Hiding sections does not affect the status icon. Hiding Volume also disables scroll-to-adjust volume in the panel. Application rules and settings remain accessible when all sections are hidden."
+            "value": "Check to show and drag to reorder. Hidden sections do not affect the status icon. Hiding Volume also disables scroll-to-adjust in the panel. App Rules and Settings remain available when all sections are hidden."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "隐藏区块不影响状态图标。隐藏音量区块也会停用面板滚轮调音量；全部隐藏后，仍可进入应用规则和设置。"
+            "value": "勾选显示并拖动排序。隐藏区块不影响状态图标。隐藏音量区块也会停用面板滚轮调音量；全部隐藏后，仍可进入应用规则和设置。"
           }
         }
       }
     },
-    "启用音量区块后，滚轮可在所选范围内调节当前输出设备音量。关闭滚轮操作后，仍可使用音量滑块；各项偏好会保留。": {
+    "启用音量区块后，滚轮可在所选范围内调节当前输出设备音量。关闭滚轮操作后，仍可使用音量滑块；各项偏好会保留。若与 MOS、Scroll Reverser、LinearMouse 等滚动增强工具冲突，请在其设置中将 Blinker 设为不处理（白名单）。": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "With Volume enabled, scrolling within the selected area adjusts the current output device. The volume slider remains available when scrolling is disabled. All preferences are preserved."
+            "value": "With Volume enabled, scrolling within the selected area adjusts the current output device. The volume slider remains available when scrolling is disabled. All preferences are preserved. If scrolling conflicts with enhancement tools such as MOS, Scroll Reverser or LinearMouse, set Blinker to be ignored (whitelisted) in that tool's settings."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "启用音量区块后，滚轮可在所选范围内调节当前输出设备音量。关闭滚轮操作后，仍可使用音量滑块；各项偏好会保留。"
+            "value": "启用音量区块后，滚轮可在所选范围内调节当前输出设备音量。关闭滚轮操作后，仍可使用音量滑块；各项偏好会保留。若与 MOS、Scroll Reverser、LinearMouse 等滚动增强工具冲突，请在其设置中将 Blinker 设为不处理（白名单）。"
           }
         }
       }
@@ -10773,6 +10741,166 @@
           "stringUnit": {
             "state": "translated",
             "value": "恢复窗口增强"
+          }
+        }
+      }
+    },
+    "打开相关设置": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open related settings"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "打开相关设置"
+          }
+        }
+      }
+    },
+    "个人热点使用 Wi-Fi 图形": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Use the Wi-Fi glyph for Personal Hotspot"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "个人热点使用 Wi-Fi 图形"
+          }
+        }
+      }
+    },
+    "临时连接使用 Wi-Fi 图形": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Use the Wi-Fi glyph for ad-hoc connections"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "临时连接使用 Wi-Fi 图形"
+          }
+        }
+      }
+    },
+    "互联网共享使用 Wi-Fi 图形": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Use the Wi-Fi glyph for Internet Sharing"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "互联网共享使用 Wi-Fi 图形"
+          }
+        }
+      }
+    },
+    "个人热点": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Personal Hotspot"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "个人热点"
+          }
+        }
+      }
+    },
+    "临时连接": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ad-hoc Connection"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "临时连接"
+          }
+        }
+      }
+    },
+    "互联网共享": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Internet Sharing"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "互联网共享"
+          }
+        }
+      }
+    },
+    "模拟：个人热点": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Simulated: Personal Hotspot"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "模拟：个人热点"
+          }
+        }
+      }
+    },
+    "模拟：临时连接": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Simulated: Ad-hoc"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "模拟：临时连接"
+          }
+        }
+      }
+    },
+    "模拟：互联网共享": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Simulated: Internet Sharing"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "模拟：互联网共享"
           }
         }
       }

@@ -57,6 +57,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
             self?.settingsNavigation.selection = .menuBar
             self?.openSettings()
         }
+        controller.onOpenMenuBarPage = { [weak self] page in
+            self?.settingsNavigation.selection = .menuBar
+            self?.settingsNavigation.menuBarPage = page
+            self?.openSettings()
+        }
         controller.screenEffectsState = { [weak self] in
             (self?.screenEffects.preferences.configuration.isEnabled == true,
              self?.screenEffects.isPaused == true)

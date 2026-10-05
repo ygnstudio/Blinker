@@ -16,6 +16,12 @@ struct MenuBarSystemSnapshot: Equatable, Sendable {
         case disconnected
         case wifi(strength: Int)
         case wired
+        /// Expensive Wi-Fi path, the personal-hotspot heuristic.
+        case personalHotspot(strength: Int)
+        /// Ad-hoc (IBSS) Wi-Fi.
+        case temporary
+        /// This Mac shares its connection (Internet Sharing NAT active).
+        case sharing
     }
 
     struct Volume: Equatable, Sendable {

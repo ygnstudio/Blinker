@@ -213,6 +213,36 @@ final class SystemStatusMonitorTests: XCTestCase {
         )
     }
 
+    func testNetworkClassifiesHotspotAdHocAndSharingInUpstreamOrder() {
+        let expensive = SystemNetworkPath(isSatisfied: true, usesWiFi: true, usesWired: false,
+                                          isExpensive: true)
+        XCTAssertEqual(
+            SystemStatusReader.network(path: expensive, powerOn: true, associated: true, rssi: -55),
+            .personalHotspot(strength: 3)
+        )
+        XCTAssertEqual(
+            SystemStatusReader.network(path: wifi, powerOn: true, associated: true,
+                                       adHoc: true, rssi: -55),
+            .temporary
+        )
+        XCTAssertEqual(
+            SystemStatusReader.network(path: wifi, powerOn: true, associated: true,
+                                       rssi: -55, sharing: true),
+            .sharing
+        )
+        // Sharing wins over ad-hoc and hotspot; ad-hoc wins over hotspot.
+        XCTAssertEqual(
+            SystemStatusReader.network(path: expensive, powerOn: true, associated: true,
+                                       adHoc: true, rssi: -55, sharing: true),
+            .sharing
+        )
+        XCTAssertEqual(
+            SystemStatusReader.network(path: expensive, powerOn: true, associated: true,
+                                       adHoc: true, rssi: -55),
+            .temporary
+        )
+    }
+
     func testInvalidAudioScalarsRemainUnknownAndValidChannelsAreAveraged() {
         XCTAssertNil(SystemAudioStatusReader.average([]))
         XCTAssertNil(SystemAudioStatusReader.average([.nan, .infinity, -1, 2]))
