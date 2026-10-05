@@ -20,7 +20,7 @@ struct MenuBarConfiguration: Codable, Equatable {
     enum ClickAction: String, Codable, CaseIterable { case panel, rules }
     enum ScrollScope: String, Codable, CaseIterable { case panel, volumeControl }
     enum ScrollDirection: String, Codable, CaseIterable { case upward = "up", down }
-    enum Section: String, Codable, CaseIterable { case battery, network, volume, bluetooth }
+    enum Section: String, Codable, CaseIterable { case battery, network, volume, bluetooth, quickActions }
     enum PanelDensity: String, Codable, CaseIterable { case comfortable, compact }
 
     var placement: Placement = .menuBar
@@ -95,6 +95,15 @@ struct MenuBarConfiguration: Codable, Equatable {
     var enablesBluetoothDeviceControl = false
     /// Section spacing and padding in the status panel.
     var panelDensity: PanelDensity = .comfortable
+    /// Quick actions section: microphone mute row for the default input.
+    var showsQuickActionMicMute = true
+    /// Quick actions section: display cleaning overlay entry.
+    var showsQuickActionDisplayCleaning = true
+    /// Quick actions section: keyboard cleaning overlay entry.
+    var showsQuickActionKeyboardCleaning = true
+    /// User-named Shortcut slots run from the panel. Blinker does not know
+    /// what a shortcut does; 0...3 names, matched against the Shortcuts app.
+    var shortcutSlots: [String] = []
 
     var showsMenuBar: Bool {
         placement != .dock
@@ -131,6 +140,11 @@ struct MenuBarConfiguration: Codable, Equatable {
             .filter { !$0.isEmpty && addresses.insert($0).inserted }
             .prefix(100).map { $0 }
         value.hiddenBluetoothDevices = Set(hiddenBluetoothDevices.filter { !$0.isEmpty }.prefix(100))
+        var slots = Set<String>()
+        value.shortcutSlots = shortcutSlots
+            .map { String($0.trimmingCharacters(in: .whitespacesAndNewlines).prefix(64)) }
+            .filter { !$0.isEmpty && slots.insert($0).inserted }
+            .prefix(3).map { $0 }
         return value
     }
 }

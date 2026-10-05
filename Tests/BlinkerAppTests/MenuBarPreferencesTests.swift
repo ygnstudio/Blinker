@@ -25,7 +25,7 @@ final class MenuBarPreferencesTests: XCTestCase {
             XCTAssertEqual(preferences.configuration, MenuBarConfiguration())
             XCTAssertEqual(preferences.configuration.leftClick, .panel)
             XCTAssertEqual(preferences.configuration.visibleSections,
-                           [.battery, .network, .volume, .bluetooth])
+                           [.battery, .network, .volume, .bluetooth, .quickActions])
             XCTAssertEqual(defaults.writes, 0)
         }
     }
@@ -64,10 +64,10 @@ final class MenuBarPreferencesTests: XCTestCase {
             defaults.set(legacy, forKey: MenuBarPreferences.key)
             let preferences = MenuBarPreferences(defaults: defaults)
             XCTAssertEqual(preferences.configuration.sectionOrder,
-                           [.battery, .network, .volume, .bluetooth])
+                           [.battery, .network, .volume, .bluetooth, .quickActions])
             XCTAssertTrue(preferences.configuration.enabledSections.contains(.bluetooth))
             XCTAssertEqual(preferences.configuration.visibleSections,
-                           [.battery, .network, .volume, .bluetooth])
+                           [.battery, .network, .volume, .bluetooth, .quickActions])
         }
     }
 
@@ -80,7 +80,9 @@ final class MenuBarPreferencesTests: XCTestCase {
             defaults.set(saved, forKey: MenuBarPreferences.key)
             let preferences = MenuBarPreferences(defaults: defaults)
             XCTAssertFalse(preferences.configuration.enabledSections.contains(.bluetooth))
-            XCTAssertEqual(preferences.configuration.visibleSections, [.battery, .network, .volume])
+            // quickActions migrates on independently of the bluetooth choice.
+            XCTAssertEqual(preferences.configuration.visibleSections,
+                           [.battery, .network, .volume, .quickActions])
         }
     }
 
@@ -250,7 +252,7 @@ final class MenuBarPreferencesTests: XCTestCase {
                 $0.enabledSections = []
             }
             XCTAssertEqual(preferences.configuration.sectionOrder,
-                           [.volume, .battery, .network, .bluetooth])
+                           [.volume, .battery, .network, .bluetooth, .quickActions])
             XCTAssertEqual(preferences.configuration.visibleSections, [])
             preferences.update { $0.enabledSections.insert(.battery) }
             XCTAssertEqual(preferences.configuration.visibleSections, [.battery])

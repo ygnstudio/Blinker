@@ -52,6 +52,10 @@ extension MenuBarConfiguration {
         case showsBluetoothSignalStrength
         case enablesBluetoothDeviceControl
         case panelDensity
+        case showsQuickActionMicMute
+        case showsQuickActionDisplayCleaning
+        case showsQuickActionKeyboardCleaning
+        case shortcutSlots
     }
 
     /// New settings retain defaults when reading an older saved configuration.
@@ -66,6 +70,10 @@ extension MenuBarConfiguration {
         // once. Saves written afterwards always list it, enabled or not.
         if !sectionOrder.contains(.bluetooth) {
             enabledSections.insert(.bluetooth)
+        }
+        // Same one-time enable for the quick actions section.
+        if !sectionOrder.contains(.quickActions) {
+            enabledSections.insert(.quickActions)
         }
         self = normalized()
     }
@@ -151,6 +159,16 @@ extension MenuBarConfiguration {
             default: enablesBluetoothDeviceControl
         )
         panelDensity = values.decode(.panelDensity, default: panelDensity)
+        showsQuickActionMicMute = values.decode(.showsQuickActionMicMute, default: showsQuickActionMicMute)
+        showsQuickActionDisplayCleaning = values.decode(
+            .showsQuickActionDisplayCleaning,
+            default: showsQuickActionDisplayCleaning
+        )
+        showsQuickActionKeyboardCleaning = values.decode(
+            .showsQuickActionKeyboardCleaning,
+            default: showsQuickActionKeyboardCleaning
+        )
+        shortcutSlots = values.decode(.shortcutSlots, default: shortcutSlots)
     }
 }
 

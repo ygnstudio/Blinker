@@ -16,6 +16,8 @@ final class MenuBarPresentation: NSObject, NSPopoverDelegate, NSWindowDelegate {
     private let popover = NSPopover()
     private let charging = MenuBarChargingAnimation()
     private let scrolling = MenuBarVolumeScroll()
+    private let cleaning = CleaningWindowController()
+    private let shortcutRunner = ShortcutRunner()
     private var dockWindow: NSWindow?
     private var subscriptions = Set<AnyCancellable>()
     private var appearanceObservation: NSKeyValueObservation?
@@ -179,6 +181,7 @@ final class MenuBarPresentation: NSObject, NSPopoverDelegate, NSWindowDelegate {
         scanner.refresh()
         let controller = NSHostingController(rootView: SystemStatusPanel(
             monitor: monitor, audio: audio, scanner: scanner, preferences: preferences,
+            cleaning: cleaning, shortcutRunner: shortcutRunner,
             onOpenApplications: { [weak self] in
                 self?.closePanel()
                 self?.onOpenApplications()

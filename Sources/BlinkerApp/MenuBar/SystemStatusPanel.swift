@@ -6,11 +6,14 @@ struct SystemStatusPanel: View {
     @ObservedObject var audio: SystemAudioController
     @ObservedObject var scanner: BluetoothLEScanner
     @ObservedObject var preferences: MenuBarPreferences
+    let cleaning: CleaningWindowController
+    let shortcutRunner: ShortcutRunner
     let onOpenApplications: () -> Void
     let onOpenSettings: () -> Void
     let onOpenMenuBarPage: (MenuBarSettingsPage) -> Void
     @State private var expandedDevices = false
     @State var expandedBluetoothDevices = false
+    @State var shortcutSlotStates: [String: ShortcutSlotState] = [:]
 
     var body: some View {
         let density = preferences.configuration.panelDensity
@@ -36,6 +39,7 @@ struct SystemStatusPanel: View {
                         case .network: networkSection
                         case .volume: volumeSection
                         case .bluetooth: bluetoothSection
+                        case .quickActions: quickActionsSection
                         }
                     }
                     if preferences.configuration.visibleSections.isEmpty {

@@ -45,6 +45,8 @@ struct MenuBarSettingsTab: View {
                 case .bluetooth:
                     MenuBarBluetoothSettings(preferences: preferences, monitor: monitor,
                                              scanner: scanner)
+                case .quickActions:
+                    MenuBarQuickActionsSettings(preferences: preferences)
                 case .panel: MenuBarPanelSettings(preferences: preferences, audio: audio)
                 }
                 Section {
@@ -272,7 +274,7 @@ struct MenuBarSettingsTab: View {
 }
 
 enum MenuBarSettingsPage: CaseIterable, Hashable {
-    case icon, battery, networkAndVolume, bluetooth, panel
+    case icon, battery, networkAndVolume, bluetooth, quickActions, panel
 
     var title: String {
         switch self {
@@ -280,6 +282,7 @@ enum MenuBarSettingsPage: CaseIterable, Hashable {
         case .battery: String(localized: "电池")
         case .networkAndVolume: String(localized: "网络与音量")
         case .bluetooth: String(localized: "蓝牙")
+        case .quickActions: String(localized: "快速操作")
         case .panel: String(localized: "状态面板")
         }
     }
