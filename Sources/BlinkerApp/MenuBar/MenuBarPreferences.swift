@@ -56,6 +56,13 @@ struct MenuBarConfiguration: Codable, Equatable {
     var outputDeviceLimit = 5
     var alwaysShowsAllOutputDevices = false
     var outputDeviceOrder: [String] = []
+    /// Panel network block: VPN/proxy row. Read-only probe, no permission.
+    var showsVPNStatus = true
+    /// Panel network block: Wi-Fi name row. Needs Location Services to un-redact
+    /// the SSID, so it defaults off and the panel guides the grant in place.
+    var showsWiFiName = false
+    /// Panel volume block: default input device row with level and mute.
+    var showsAudioInput = true
 
     var showsMenuBar: Bool {
         placement != .dock

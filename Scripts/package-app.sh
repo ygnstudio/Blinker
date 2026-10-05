@@ -139,6 +139,8 @@ ${ICON_PLIST_ENTRY}
     <string>15.0</string>
     <key>LSUIElement</key>
     <true/>
+    <key>NSLocationWhenInUseUsageDescription</key>
+    <string>定位权限仅用于解除系统对 Wi-Fi 名称的隐藏，以便在状态面板显示当前网络名称。Blinker 不会读取或记录您的位置。Location access is only used to un-redact the Wi-Fi network name for the status panel. Blinker never reads or records your location.</string>
     <key>NSPrincipalClass</key>
     <string>NSApplication</string>
 </dict>

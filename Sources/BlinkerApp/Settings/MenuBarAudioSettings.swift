@@ -20,6 +20,13 @@ struct MenuBarAudioSettings: View {
         } footer: {
             Text("强调色用于音量圆点或圆弧，与中央蓝牙图形分别设置。")
         }
+        Section {
+            Toggle("显示声音输入", isOn: binding(\.showsAudioInput))
+        } header: {
+            Text("面板音量区块")
+        } footer: {
+            Text("在状态面板显示默认输入设备的音量与静音；设备被占用时标记“使用中”。")
+        }
     }
 
     private func volumeStyleImage(_ style: MenuBarConfiguration.VolumeStyle) -> NSImage {

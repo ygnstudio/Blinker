@@ -193,6 +193,26 @@ struct MenuBarSettingsTab: View {
         } footer: {
             Text("当前音频输出为蓝牙设备时，在图标中央显示设备图形。")
         }
+        Section {
+            Toggle("显示 VPN 状态", isOn: binding(\.showsVPNStatus))
+            Toggle("显示 Wi-Fi 名称", isOn: wiFiNameBinding)
+        } header: {
+            Text("面板网络区块")
+        } footer: {
+            Text("Wi-Fi 名称需要定位权限来解除系统对网络名称的隐藏；Blinker 不读取位置本身。VPN 行在检测到隧道或系统代理时显示。")
+        }
+    }
+
+    /// Turning the row on kicks off the authorization flow right away, so the
+    /// user sees the system prompt in context instead of discovering it later.
+    private var wiFiNameBinding: Binding<Bool> {
+        Binding(get: { configuration.showsWiFiName }, set: { enabled in
+            preferences.update { $0.showsWiFiName = enabled }
+            guard enabled,
+                  monitor.requestWiFiNameAccess() == .openLocationSettings,
+                  let url = ProjectLinks.locationPrivacy else { return }
+            NSWorkspace.shared.open(url)
+        })
     }
 
     private func glyphImage(_ change: (inout MenuBarConfiguration) -> Void) -> NSImage {

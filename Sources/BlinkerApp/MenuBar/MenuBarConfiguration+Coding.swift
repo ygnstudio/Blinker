@@ -36,6 +36,9 @@ extension MenuBarConfiguration {
         case outputDeviceLimit
         case alwaysShowsAllOutputDevices
         case outputDeviceOrder
+        case showsVPNStatus
+        case showsWiFiName
+        case showsAudioInput
     }
 
     /// New settings retain defaults when reading an older saved configuration.
@@ -85,6 +88,9 @@ extension MenuBarConfiguration {
             default: alwaysShowsAllOutputDevices
         )
         outputDeviceOrder = values.decode(.outputDeviceOrder, default: outputDeviceOrder)
+        showsVPNStatus = values.decode(.showsVPNStatus, default: showsVPNStatus)
+        showsWiFiName = values.decode(.showsWiFiName, default: showsWiFiName)
+        showsAudioInput = values.decode(.showsAudioInput, default: showsAudioInput)
         self = normalized()
     }
 }

@@ -92,6 +92,9 @@ final class MenuBarPreferencesTests: XCTestCase {
                 $0.outputDeviceLimit = 8
                 $0.alwaysShowsAllOutputDevices = true
                 $0.outputDeviceOrder = ["headphones", "speakers"]
+                $0.showsVPNStatus = false
+                $0.showsWiFiName = true
+                $0.showsAudioInput = false
             }
             let expected = preferences.configuration
             let reloaded = MenuBarPreferences(defaults: defaults)

@@ -1,6 +1,7 @@
 // Monitoring design adapted from Status Trio, Copyright 2026 lingyired.
 // Apache-2.0; upstream d1672377a172ee4cb4af53d5054610c407c0d34f.
-// Modified for Blinker: restartable, read-only, bounded workers, no device names or SSIDs.
+// Modified for Blinker: restartable, read-only, bounded workers; VPN and
+// Wi-Fi name reads are opt-in per read via SystemStatusReadOptions.
 // See ThirdParty/StatusTrio for license and attribution.
 import Combine
 import Foundation
@@ -14,11 +15,18 @@ struct SystemNetworkPath: Equatable, Sendable {
     var isExpensive = false
 }
 
+/// Per-read opt-ins for details that cost extra I/O or need a permission.
+struct SystemStatusReadOptions: Equatable, Sendable {
+    var includeVPN = false
+    var includeWiFiName = false
+}
+
 @MainActor
 protocol SystemStatusReading: AnyObject {
     var onChange: (@MainActor @Sendable () -> Void)? { get set }
     func read(
         path: SystemNetworkPath?,
+        options: SystemStatusReadOptions,
         completion: @escaping @MainActor @Sendable (MenuBarSystemSnapshot) -> Void
     )
     func stop()
@@ -38,7 +46,9 @@ final class SystemStatusMonitor: ObservableObject {
     @Published private(set) var snapshot = MenuBarSystemSnapshot.unknown
     private let reader: any SystemStatusReading
     private let events: any SystemStatusEventObserving
+    private let nameAuthorizer: any WiFiNameAuthorizing
     private(set) var refreshInterval: TimeInterval
+    private var readOptions = SystemStatusReadOptions()
     private let readTimeout: TimeInterval
     private var timer: Timer?
     private var debounce: Timer?
@@ -52,16 +62,40 @@ final class SystemStatusMonitor: ObservableObject {
     private var pending = false
 
     convenience init() {
-        self.init(reader: SystemStatusReader(), events: SystemStatusEvents())
+        self.init(reader: SystemStatusReader(), events: SystemStatusEvents(),
+                  nameAuthorizer: CoreLocationWiFiNameAuthorizer())
     }
 
     init(reader: any SystemStatusReading, events: any SystemStatusEventObserving,
+         nameAuthorizer: any WiFiNameAuthorizing,
          refreshInterval: TimeInterval = 30, readTimeout: TimeInterval = 5) {
         self.reader = reader
         self.events = events
+        self.nameAuthorizer = nameAuthorizer
         self.refreshInterval = refreshInterval.isFinite ? min(60, max(5, refreshInterval)) : 30
         self.readTimeout = readTimeout
         reader.onChange = { [weak self] in self?.scheduleRefresh() }
+        nameAuthorizer.onAccessChange = { [weak self] in
+            guard let self, isRunning, readOptions.includeWiFiName else { return }
+            scheduleRefresh()
+        }
+    }
+
+    var wiFiNameAccess: WiFiNameAccess {
+        nameAuthorizer.access
+    }
+
+    /// Panel toggles decide what each read pays for. Wi-Fi name additionally
+    /// requires location authorization; the SSID is only read when both hold.
+    func setReadOptions(_ options: SystemStatusReadOptions) {
+        guard options != readOptions else { return }
+        readOptions = options
+        scheduleRefresh()
+    }
+
+    @discardableResult
+    func requestWiFiNameAccess() -> WiFiNameAccessRequestResult {
+        nameAuthorizer.requestAccess()
     }
 
     func start() {
@@ -134,7 +168,9 @@ final class SystemStatusMonitor: ObservableObject {
         armReadTimeout()
         let session = generation
         let capturedPath = path
-        reader.read(path: capturedPath) { [weak self] value in
+        var options = readOptions
+        options.includeWiFiName = options.includeWiFiName && nameAuthorizer.access == .authorized
+        reader.read(path: capturedPath, options: options) { [weak self] value in
             guard let self else { return }
             inFlight = false
             deadline?.invalidate()

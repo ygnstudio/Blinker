@@ -11,6 +11,7 @@ final class SystemAudioController: ObservableObject {
     @Published private(set) var isMuted = false
     @Published private(set) var canSetVolume = false
     @Published private(set) var canMute = false
+    @Published private(set) var input: SystemAudioInput?
     @Published private(set) var isBusy = false
     @Published private(set) var errorMessage: String?
     var onChange: (() -> Void)?
@@ -24,6 +25,8 @@ final class SystemAudioController: ObservableObject {
     private var pendingSelection: SystemAudioRequest?
     private var pendingVolume: SystemAudioRequest?
     private var pendingMute: SystemAudioRequest?
+    private var pendingInputVolume: SystemAudioRequest?
+    private var pendingInputMute: SystemAudioRequest?
     private var refreshPending = false
     private var deadline: Timer?
 
@@ -94,6 +97,18 @@ final class SystemAudioController: ObservableObject {
         drain()
     }
 
+    func setInputVolume(_ value: Double) {
+        guard running, value.isFinite, input?.canSetVolume == true, !isSwitching else { return }
+        pendingInputVolume = .inputVolume(min(1, max(0, value)))
+        drain()
+    }
+
+    func setInputMuted(_ value: Bool) {
+        guard running, input?.canMute == true, !isSwitching else { return }
+        pendingInputMute = .inputMute(value)
+        drain()
+    }
+
     private var currentOutput: SystemAudioOutput? {
         outputs.first { $0.id == currentDeviceID }
     }
@@ -152,6 +167,12 @@ final class SystemAudioController: ObservableObject {
         } else if let mute = pendingMute {
             pendingMute = nil
             return mute
+        } else if let inputVolume = pendingInputVolume {
+            pendingInputVolume = nil
+            return inputVolume
+        } else if let inputMute = pendingInputMute {
+            pendingInputMute = nil
+            return inputMute
         } else if refreshPending {
             refreshPending = false
             return .refresh
@@ -182,12 +203,15 @@ final class SystemAudioController: ObservableObject {
         isMuted = state.isMuted
         canSetVolume = state.canSetVolume && currentOutput != nil
         canMute = state.canMute && currentOutput != nil
+        input = state.input
     }
 
     private func clearPending() {
         pendingSelection = nil
         pendingVolume = nil
         pendingMute = nil
+        pendingInputVolume = nil
+        pendingInputMute = nil
         refreshPending = false
     }
 

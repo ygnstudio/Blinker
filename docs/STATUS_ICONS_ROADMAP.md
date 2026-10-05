@@ -1,6 +1,6 @@
 # 状态图标路线图：对齐并超越 Status Trio
 
-[返回 README](../README.md) · 状态：施工目标（2026-10-05 定） · 分支：`dev`
+[返回 README](../README.md) · 状态：Stage 1/2 已交付（2026-10-06） · 分支：`dev`
 
 ## 方向
 
@@ -15,17 +15,17 @@ Blinker 的状态图标改编自已归档的 Status Trio（Apache 2.0，钉在 `
 
 | # | 项 | 数据源 | 权限 | 阶段 |
 |---|------|--------|------|------|
-| A1 | VPN 状态行（面板区块） | SCDynamicStore / NE 配置 | 无 | 2 |
-| A2 | Wi-Fi 名称（SSID）+ 面板内定位权限引导行 | CoreWLAN | 定位 | 2 |
+| A1 | VPN 状态行（面板区块）✅ | getifaddrs 隧道探针 + SCNetworkService + 系统代理端点 | 无 | 2 |
+| A2 | Wi-Fi 名称（SSID）+ 面板内定位权限引导行 ✅ | CoreWLAN + CoreLocation 授权流 | 定位 | 2 |
 | A3 | 蓝牙设备列表：已配对、连接态、类型图标、电量、可见性、排序、上限 | IOBluetooth | 无新权限 | 3 |
 | A4 | 附近 BLE 设备电量扫描（可关，默认关） | CoreBluetooth | 蓝牙 | 3 |
-| A5 | 声音输入区块（默认输入设备） | CoreAudio | 无 | 2 |
-| A6 | Wi-Fi 替换样式补全：个人热点 / 临时连接 / 互联网共享 | 网络类型分类（参照上游 WiFiMonitor） | 无 | 1 |
-| A7 | 电池标记缩放放宽：0.9–1.1 → 0.5–2.0（数字/闪电统一） | — | — | 1 |
-| A8 | 面板行内齿轮直达对应设置页 | 设置窗路由 | — | 1 |
-| A9 | 枚举选择器卡片化：显示位置 / 线条粗细 / Dock 背景 / 音量样式，选项即渲染预览 | 复用 TrioIconRenderer / DockIconRenderer | — | 1 |
-| A10 | 自然滚动与 MOS / Scroll Reverser / LinearMouse 冲突的诚实文案 | — | — | 1 |
-| A11 | 区块与设备排序改拖拽（替换箭头按钮） | — | — | 1 |
+| A5 | 声音输入区块（默认输入设备，音量/静音/使用中标记）✅ | CoreAudio | 无 | 2 |
+| A6 | Wi-Fi 替换样式补全：个人热点 / 临时连接 / 互联网共享 ✅ | 网络类型分类（参照上游 WiFiMonitor） | 无 | 1 |
+| A7 | 电池标记缩放放宽：0.9–1.1 → 0.5–2.0（数字/闪电统一）✅ | — | — | 1 |
+| A8 | 面板行内齿轮直达对应设置页 ✅ | 设置窗路由 | — | 1 |
+| A9 | 枚举选择器卡片化：显示位置 / 线条粗细 / Dock 背景 / 音量样式 ✅ | 复用 TrioIconRenderer / DockIconRenderer | — | 1 |
+| A10 | 自然滚动与 MOS / Scroll Reverser / LinearMouse 冲突的诚实文案 ✅ | — | — | 1 |
+| A11 | 区块与设备排序改拖拽（替换箭头按钮）✅ | — | — | 1 |
 
 ## B 系列 · 超越 Trio
 
@@ -38,8 +38,8 @@ Blinker 的状态图标改编自已归档的 Status Trio（Apache 2.0，钉在 `
 
 ## 阶段
 
-1. **表现层**：A6、A7、A8、A9、A10、A11 + pt 默认值 20。无权限、无新数据源。
-2. **面板内容**：A1、A2、A5。新增定位权限引导（A2）。
+1. **表现层**（已交付，`dde9544`）：A6、A7、A8、A9、A10、A11 + pt 默认值 20。无权限、无新数据源。
+2. **面板内容**（已交付）：A1、A2、A5。新增定位权限引导（A2），Info.plist 已含 `NSLocationWhenInUseUsageDescription`。
 3. **蓝牙域**：A3、A4。新增蓝牙授权（A4）。
 4. **超越项**：B1–B4。
 

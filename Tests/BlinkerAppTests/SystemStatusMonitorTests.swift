@@ -9,11 +9,13 @@ final class SystemStatusMonitorTests: XCTestCase {
         var onChange: (@MainActor @Sendable () -> Void)?
         var completions: [@MainActor @Sendable (MenuBarSystemSnapshot) -> Void] = []
         var paths: [SystemNetworkPath?] = []
+        var readOptions: [SystemStatusReadOptions] = []
         var stopCount = 0
 
-        func read(path: SystemNetworkPath?,
+        func read(path: SystemNetworkPath?, options: SystemStatusReadOptions,
                   completion: @escaping @MainActor @Sendable (MenuBarSystemSnapshot) -> Void) {
             paths.append(path)
+            readOptions.append(options)
             completions.append(completion)
         }
 
@@ -23,6 +25,19 @@ final class SystemStatusMonitorTests: XCTestCase {
 
         func complete(_ value: MenuBarSystemSnapshot) {
             completions.removeFirst()(value)
+        }
+    }
+
+    private final class NameAuthorizer: WiFiNameAuthorizing {
+        var access: WiFiNameAccess = .notDetermined
+        var onAccessChange: (() -> Void)?
+        var requestCount = 0
+        var requestResult: WiFiNameAccessRequestResult = .requested
+
+        @discardableResult
+        func requestAccess() -> WiFiNameAccessRequestResult {
+            requestCount += 1
+            return requestResult
         }
     }
 
@@ -51,7 +66,7 @@ final class SystemStatusMonitorTests: XCTestCase {
     func testInitializationDoesNoWorkAndLifecycleIsIdempotent() {
         let reader = Reader()
         let events = Events()
-        let monitor = SystemStatusMonitor(reader: reader, events: events)
+        let monitor = SystemStatusMonitor(reader: reader, events: events, nameAuthorizer: NameAuthorizer())
         XCTAssertEqual(monitor.snapshot, .unknown)
         monitor.refresh()
         monitor.stop()
@@ -71,7 +86,7 @@ final class SystemStatusMonitorTests: XCTestCase {
 
     func testRefreshBurstRetainsOnlyOneFollowUpAndDeduplicatesPublications() {
         let reader = Reader()
-        let monitor = SystemStatusMonitor(reader: reader, events: Events())
+        let monitor = SystemStatusMonitor(reader: reader, events: Events(), nameAuthorizer: NameAuthorizer())
         var publications = 0
         let subscription = monitor.$snapshot.sink { _ in publications += 1 }
         monitor.start()
@@ -92,7 +107,7 @@ final class SystemStatusMonitorTests: XCTestCase {
     func testStopStartKeepsOldReadBoundedAndRejectsItsResultAndOldEvents() {
         let reader = Reader()
         let events = Events()
-        let monitor = SystemStatusMonitor(reader: reader, events: events)
+        let monitor = SystemStatusMonitor(reader: reader, events: events, nameAuthorizer: NameAuthorizer())
         monitor.start()
         monitor.stop()
         monitor.start()
@@ -113,7 +128,7 @@ final class SystemStatusMonitorTests: XCTestCase {
     func testChangedNetworkPathRejectsAReadingTakenForTheOldPath() {
         let reader = Reader()
         let events = Events()
-        let monitor = SystemStatusMonitor(reader: reader, events: events)
+        let monitor = SystemStatusMonitor(reader: reader, events: events, nameAuthorizer: NameAuthorizer())
         monitor.start()
         events.pathCallbacks[0](wifi)
         monitor.refresh()
@@ -129,7 +144,8 @@ final class SystemStatusMonitorTests: XCTestCase {
 
     func testTimeoutClearsStaleStatusWithoutStartingMoreWorkersAndCanRecover() async {
         let reader = Reader()
-        let monitor = SystemStatusMonitor(reader: reader, events: Events(), readTimeout: 0.01)
+        let monitor = SystemStatusMonitor(reader: reader, events: Events(),
+                                          nameAuthorizer: NameAuthorizer(), readTimeout: 0.01)
         monitor.start()
         reader.complete(healthy)
         let timedOut = expectation(description: "Stalled hardware stops reporting healthy status")
@@ -156,7 +172,7 @@ final class SystemStatusMonitorTests: XCTestCase {
     func testRefreshIntervalClampsWithoutRestartingObserversOrStartingReads() {
         let reader = Reader()
         let events = Events()
-        let monitor = SystemStatusMonitor(reader: reader, events: events)
+        let monitor = SystemStatusMonitor(reader: reader, events: events, nameAuthorizer: NameAuthorizer())
         monitor.setRefreshInterval(2)
         XCTAssertEqual(monitor.refreshInterval, 5)
         monitor.start()
@@ -170,6 +186,61 @@ final class SystemStatusMonitorTests: XCTestCase {
         XCTAssertEqual(events.stopCount, 0)
         XCTAssertEqual(reader.paths.count, 1)
         monitor.stop()
+    }
+
+    func testReadOptionsPassThroughAndWiFiNameRequiresAuthorization() {
+        let reader = Reader()
+        let authorizer = NameAuthorizer()
+        let monitor = SystemStatusMonitor(reader: reader, events: Events(),
+                                          nameAuthorizer: authorizer)
+        monitor.start()
+        // Default: nothing extra is paid for.
+        XCTAssertEqual(reader.readOptions, [SystemStatusReadOptions()])
+        reader.complete(healthy)
+
+        monitor.setReadOptions(SystemStatusReadOptions(includeVPN: true, includeWiFiName: true))
+        RunLoop.main.run(until: Date(timeIntervalSinceNow: 0.3))
+        // Wi-Fi name stays off until the grant; VPN passes through.
+        XCTAssertEqual(reader.readOptions.last,
+                       SystemStatusReadOptions(includeVPN: true, includeWiFiName: false))
+
+        authorizer.access = .authorized
+        reader.complete(healthy)
+        monitor.refresh()
+        XCTAssertEqual(reader.readOptions.last,
+                       SystemStatusReadOptions(includeVPN: true, includeWiFiName: true))
+        monitor.stop()
+    }
+
+    func testWiFiNameAccessGrantTriggersRefreshOnlyWhenWanted() {
+        let reader = Reader()
+        let authorizer = NameAuthorizer()
+        let monitor = SystemStatusMonitor(reader: reader, events: Events(),
+                                          nameAuthorizer: authorizer)
+        monitor.start()
+        reader.complete(healthy)
+        let reads = reader.paths.count
+        // Grant without the feature on: no refresh.
+        authorizer.access = .authorized
+        authorizer.onAccessChange?()
+        RunLoop.main.run(until: Date(timeIntervalSinceNow: 0.3))
+        XCTAssertEqual(reader.paths.count, reads)
+
+        monitor.setReadOptions(SystemStatusReadOptions(includeWiFiName: true))
+        authorizer.onAccessChange?()
+        RunLoop.main.run(until: Date(timeIntervalSinceNow: 0.3))
+        XCTAssertGreaterThan(reader.paths.count, reads)
+        monitor.stop()
+    }
+
+    func testWiFiNameAccessRequestPassesThrough() {
+        let authorizer = NameAuthorizer()
+        authorizer.requestResult = .openLocationSettings
+        let monitor = SystemStatusMonitor(reader: Reader(), events: Events(),
+                                          nameAuthorizer: authorizer)
+        XCTAssertEqual(monitor.requestWiFiNameAccess(), .openLocationSettings)
+        XCTAssertEqual(authorizer.requestCount, 1)
+        XCTAssertEqual(monitor.wiFiNameAccess, .notDetermined)
     }
 
     func testBatteryParsingKeepsMissingAndInvalidCapacityUnknown() {

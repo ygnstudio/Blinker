@@ -31,10 +31,41 @@ struct MenuBarSystemSnapshot: Equatable, Sendable {
         var symbolName: String?
     }
 
+    /// VPN/proxy presence for the panel row. nil when nothing is active.
+    struct VPN: Equatable, Sendable {
+        /// Active tunnel interface names (`utun4`, `ppp0`, …), sorted.
+        var tunnels: [String] = []
+        /// Name of the connected system VPN service, when one is up.
+        var serviceName: String?
+        /// Active system-wide proxy endpoint (`host:port`), when configured.
+        var proxyEndpoint: String?
+
+        var isTunnelConnected: Bool {
+            !tunnels.isEmpty || serviceName != nil
+        }
+
+        var isActive: Bool {
+            isTunnelConnected || proxyEndpoint != nil
+        }
+    }
+
     /// nil also covers desktop Macs without an internal battery.
     var battery: Battery?
     var network: Network
     var volume: Volume?
+    /// Current Wi-Fi network name; nil unless authorized and connected.
+    var wifiName: String?
+    /// Active VPN/proxy; nil when there is nothing to report.
+    var vpn: VPN?
 
     static let unknown = Self(battery: nil, network: .unknown, volume: nil)
+
+    init(battery: Battery?, network: Network, volume: Volume?,
+         wifiName: String? = nil, vpn: VPN? = nil) {
+        self.battery = battery
+        self.network = network
+        self.volume = volume
+        self.wifiName = wifiName
+        self.vpn = vpn
+    }
 }

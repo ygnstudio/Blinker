@@ -114,6 +114,15 @@ final class SystemAudioStatusReader: @unchecked Sendable {
         )
     }
 
+    func defaultInputDevice() -> AudioDeviceID? {
+        uint32(
+            object: AudioObjectID(kAudioObjectSystemObject),
+            selector: kAudioHardwarePropertyDefaultInputDevice,
+            scope: kAudioObjectPropertyScopeGlobal,
+            element: kAudioObjectPropertyElementMain
+        )
+    }
+
     func isBluetooth(_ device: AudioDeviceID) -> Bool {
         let transport = uint32(object: device, selector: kAudioDevicePropertyTransportType,
                                scope: kAudioObjectPropertyScopeGlobal,
@@ -220,8 +229,17 @@ final class SystemAudioStatusReader: @unchecked Sendable {
     }
 
     func outputChannels(_ device: AudioDeviceID) -> [AudioObjectPropertyElement] {
+        channels(device, scope: kAudioObjectPropertyScopeOutput)
+    }
+
+    func inputChannels(_ device: AudioDeviceID) -> [AudioObjectPropertyElement] {
+        channels(device, scope: kAudioObjectPropertyScopeInput)
+    }
+
+    private func channels(_ device: AudioDeviceID,
+                          scope: AudioObjectPropertyScope) -> [AudioObjectPropertyElement] {
         var address = AudioObjectPropertyAddress(mSelector: kAudioDevicePropertyStreamConfiguration,
-                                                 mScope: kAudioObjectPropertyScopeOutput,
+                                                 mScope: scope,
                                                  mElement: kAudioObjectPropertyElementMain)
         var size: UInt32 = 0
         guard AudioObjectGetPropertyDataSize(device, &address, 0, nil, &size) == noErr,

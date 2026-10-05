@@ -7,6 +7,19 @@ struct SystemAudioOutput: Identifiable, Equatable, Sendable {
     var isBluetooth: Bool
 }
 
+/// The default input device as the panel shows it. Read-only identity plus
+/// the controls the device actually supports; unsupported controls stay nil/false.
+struct SystemAudioInput: Equatable, Sendable {
+    var deviceID: UInt32
+    var name: String
+    var volume: Double?
+    var isMuted = false
+    var canSetVolume = false
+    var canMute = false
+    /// Some process is currently capturing from this device.
+    var isInUse = false
+}
+
 struct SystemAudioState: Equatable, Sendable {
     var outputs: [SystemAudioOutput] = []
     var currentDeviceID: UInt32?
@@ -14,6 +27,7 @@ struct SystemAudioState: Equatable, Sendable {
     var isMuted = false
     var canSetVolume = false
     var canMute = false
+    var input: SystemAudioInput?
     static let empty = Self()
 }
 
@@ -22,6 +36,8 @@ enum SystemAudioRequest: Equatable, Sendable {
     case volume(SystemAudioOutput, Double)
     case mute(SystemAudioOutput, Bool)
     case select(SystemAudioOutput)
+    case inputVolume(Double)
+    case inputMute(Bool)
 }
 
 enum SystemAudioFailure: Error, Sendable {

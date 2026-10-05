@@ -52,8 +52,9 @@ final class SystemAudioHardware: @unchecked Sendable {
             }
             return $0.name.localizedStandardCompare($1.name) == .orderedAscending
         }
+        let input = readInput()
         guard let current, outputs.contains(where: { $0.id == current }) else {
-            return .init(outputs: outputs)
+            return .init(outputs: outputs, input: input)
         }
         return .init(outputs: outputs, currentDeviceID: current, volume: volume?.scalar,
                      isMuted: volume?.isMuted ?? false,
@@ -61,7 +62,47 @@ final class SystemAudioHardware: @unchecked Sendable {
                          current,
                          selector: kAudioDevicePropertyVolumeScalar
                      ).isEmpty,
-                     canMute: !writableElements(current, selector: kAudioDevicePropertyMute).isEmpty)
+                     canMute: !writableElements(current, selector: kAudioDevicePropertyMute).isEmpty,
+                     input: input)
+    }
+
+    /// The default input device, or nil when the Mac has none (rare) or it
+    /// vanished mid-read. Input controls use the input scope throughout.
+    private func readInput() -> SystemAudioInput? {
+        guard let device = reader.defaultInputDevice(),
+              device != kAudioObjectUnknown,
+              reader.uint32(object: device, selector: kAudioObjectPropertyClass,
+                            scope: kAudioObjectPropertyScopeGlobal,
+                            element: kAudioObjectPropertyElementMain) == kAudioDeviceClassID,
+              reader.uint32(object: device, selector: kAudioDevicePropertyDeviceIsAlive,
+                            scope: kAudioObjectPropertyScopeGlobal,
+                            element: kAudioObjectPropertyElementMain) == 1
+        else { return nil }
+        let name = string(device, selector: kAudioObjectPropertyName)
+            ?? String(localized: "音频输入设备")
+        let volume = inputScalar(device)
+        let muted = reader.uint32(object: device, selector: kAudioDevicePropertyMute,
+                                  scope: kAudioObjectPropertyScopeInput,
+                                  element: kAudioObjectPropertyElementMain).map { $0 != 0 } ?? false
+        let inUse = reader.uint32(object: device, selector: kAudioDevicePropertyDeviceIsRunningSomewhere,
+                                  scope: kAudioObjectPropertyScopeGlobal,
+                                  element: kAudioObjectPropertyElementMain).map { $0 != 0 } ?? false
+        return SystemAudioInput(
+            deviceID: device, name: name, volume: volume, isMuted: muted,
+            canSetVolume: !writableInputElements(device, selector: kAudioDevicePropertyVolumeScalar).isEmpty,
+            canMute: !writableInputElements(device, selector: kAudioDevicePropertyMute).isEmpty,
+            isInUse: inUse
+        )
+    }
+
+    private func inputScalar(_ device: AudioDeviceID) -> Double? {
+        var address = property(kAudioDevicePropertyVolumeScalar, scope: kAudioObjectPropertyScopeInput)
+        var value: Float32 = 0
+        var size = UInt32(MemoryLayout<Float32>.size)
+        guard AudioObjectGetPropertyData(device, &address, 0, nil, &size, &value) == noErr,
+              size == MemoryLayout<Float32>.size, value.isFinite, (0 ... 1).contains(value)
+        else { return nil }
+        return Double(value)
     }
 
     private func execute(_ request: SystemAudioRequest, cancellation: SystemAudioCancellation) throws {
@@ -71,7 +112,58 @@ final class SystemAudioHardware: @unchecked Sendable {
         case let .select(target): try select(target, cancellation: cancellation)
         case let .volume(target, scalar): try setVolume(scalar, target: target, cancellation: cancellation)
         case let .mute(target, muted): try setMuted(muted, target: target, cancellation: cancellation)
+        case let .inputVolume(scalar): try setInputVolume(scalar, cancellation: cancellation)
+        case let .inputMute(muted): try setInputMuted(muted, cancellation: cancellation)
         }
+    }
+
+    /// Input commands address whichever device is the default *at write time*,
+    /// re-read between elements so a mid-write switch cannot leak onto the
+    /// next device.
+    private func setInputVolume(_ scalar: Double, cancellation: SystemAudioCancellation) throws {
+        guard scalar.isFinite, (0 ... 1).contains(scalar) else { throw SystemAudioFailure.unsupported }
+        guard let device = currentInputDevice(cancellation: cancellation) else {
+            throw SystemAudioFailure.deviceChanged
+        }
+        let elements = writableInputElements(device, selector: kAudioDevicePropertyVolumeScalar)
+        guard !elements.isEmpty else { throw SystemAudioFailure.unsupported }
+        for element in elements {
+            guard currentInputDevice(cancellation: cancellation) == device else {
+                throw SystemAudioFailure.deviceChanged
+            }
+            var address = property(kAudioDevicePropertyVolumeScalar,
+                                   scope: kAudioObjectPropertyScopeInput, element: element)
+            var value = Float32(scalar)
+            guard !cancellation.isCancelled,
+                  AudioObjectSetPropertyData(device, &address, 0, nil, 4, &value) == noErr
+            else { throw SystemAudioFailure.writeFailed }
+        }
+    }
+
+    private func setInputMuted(_ muted: Bool, cancellation: SystemAudioCancellation) throws {
+        guard let device = currentInputDevice(cancellation: cancellation) else {
+            throw SystemAudioFailure.deviceChanged
+        }
+        let elements = writableInputElements(device, selector: kAudioDevicePropertyMute)
+        guard !elements.isEmpty else { throw SystemAudioFailure.unsupported }
+        for element in elements {
+            guard currentInputDevice(cancellation: cancellation) == device else {
+                throw SystemAudioFailure.deviceChanged
+            }
+            var address = property(kAudioDevicePropertyMute,
+                                   scope: kAudioObjectPropertyScopeInput, element: element)
+            var value: UInt32 = muted ? 1 : 0
+            guard !cancellation.isCancelled,
+                  AudioObjectSetPropertyData(device, &address, 0, nil, 4, &value) == noErr
+            else { throw SystemAudioFailure.writeFailed }
+        }
+    }
+
+    private func currentInputDevice(cancellation: SystemAudioCancellation) -> AudioDeviceID? {
+        guard !cancellation.isCancelled,
+              let device = reader.defaultInputDevice(), device != kAudioObjectUnknown
+        else { return nil }
+        return device
     }
 
     private func select(_ target: SystemAudioOutput, cancellation: SystemAudioCancellation) throws {
@@ -160,6 +252,19 @@ final class SystemAudioHardware: @unchecked Sendable {
         return reader.outputChannels(device).filter { isSettable(
             device,
             address: property(selector, element: $0)
+        ) }
+    }
+
+    private func writableInputElements(
+        _ device: AudioDeviceID,
+        selector: AudioObjectPropertySelector
+    ) -> [AudioObjectPropertyElement] {
+        if isSettable(device, address: property(selector, scope: kAudioObjectPropertyScopeInput)) {
+            return [kAudioObjectPropertyElementMain]
+        }
+        return reader.inputChannels(device).filter { isSettable(
+            device,
+            address: property(selector, scope: kAudioObjectPropertyScopeInput, element: $0)
         ) }
     }
 

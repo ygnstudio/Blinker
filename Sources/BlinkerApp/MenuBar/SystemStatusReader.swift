@@ -1,6 +1,7 @@
 // Monitoring design adapted from Status Trio, Copyright 2026 lingyired.
 // Apache-2.0; upstream d1672377a172ee4cb4af53d5054610c407c0d34f.
-// Modified for Blinker: minimal local values, no identifying network/device data.
+// Modified for Blinker: minimal local values; the Wi-Fi name is read only
+// behind an explicit opt-in and a Location Services grant.
 // See ThirdParty/StatusTrio for license and attribution.
 import CoreWLAN
 import Foundation
@@ -22,6 +23,7 @@ final class SystemStatusReader: SystemStatusReading {
 
     func read(
         path: SystemNetworkPath?,
+        options: SystemStatusReadOptions,
         completion: @escaping @MainActor @Sendable (MenuBarSystemSnapshot) -> Void
     ) {
         let generation = lifetime.activate()
@@ -37,13 +39,17 @@ final class SystemStatusReader: SystemStatusReading {
             }
             let battery = Self.readBattery()
             let network = Self.readNetwork(path: path)
+            let vpn = options.includeVPN ? SystemVPNProbe.read() : nil
             let volume = audio.read(onChange: changed)
             // A stop during synchronous IPC cannot interrupt the system call.
             // Retire listeners before returning instead of starting another worker.
             if !lifetime.isActive(generation) {
                 audio.stop()
             }
-            let result = MenuBarSystemSnapshot(battery: battery, network: network, volume: volume)
+            let result = MenuBarSystemSnapshot(battery: battery, network: network, volume: volume,
+                                               wifiName: options.includeWiFiName
+                                                   ? Self.readWiFiName(network: network) : nil,
+                                               vpn: vpn)
             Task { @MainActor in completion(result) }
         }
     }
@@ -144,6 +150,23 @@ final class SystemStatusReader: SystemStatusReading {
         case .some(-88 ... -79): 1
         default: 0
         }
+    }
+
+    /// The SSID is only read for Wi-Fi-family states where a name exists, and
+    /// only after the monitor has confirmed location authorization. Reads the
+    /// associated interface; never triggers a scan. Blank names normalize to nil.
+    private nonisolated static func readWiFiName(
+        network: MenuBarSystemSnapshot.Network
+    ) -> String? {
+        switch network {
+        case .wifi, .personalHotspot, .temporary, .sharing:
+            break
+        case .unknown, .off, .disconnected, .wired:
+            return nil
+        }
+        guard let raw = CWWiFiClient.shared().interface()?.ssid() else { return nil }
+        let name = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        return name.isEmpty ? nil : name
     }
 
     /// Internet Sharing state from the dynamic store. The `com.apple.nat` key is

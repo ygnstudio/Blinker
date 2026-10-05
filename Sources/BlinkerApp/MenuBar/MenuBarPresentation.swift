@@ -102,6 +102,10 @@ final class MenuBarPresentation: NSObject, NSPopoverDelegate, NSWindowDelegate {
 
     private func render(_ snapshot: MenuBarSystemSnapshot, configuration: MenuBarConfiguration) {
         monitor.setRefreshInterval(configuration.refreshInterval)
+        monitor.setReadOptions(SystemStatusReadOptions(
+            includeVPN: configuration.showsVPNStatus,
+            includeWiFiName: configuration.showsWiFiName
+        ))
         if previousPlacement != configuration.placement {
             closePanel()
             item.isVisible = configuration.showsMenuBar
