@@ -46,6 +46,7 @@ final class SettingsNavigation: ObservableObject {
 struct SettingsView: View {
     @EnvironmentObject private var menuBarStatus: SystemStatusMonitor
     @EnvironmentObject private var systemAudio: SystemAudioController
+    @EnvironmentObject private var bluetoothScanner: BluetoothLEScanner
     @EnvironmentObject private var screenEffects: ScreenEffectController
     @EnvironmentObject var hotkeyManager: HotkeyManager
     let onApplyHoverSettings: (HoverOverlaySettings) -> Void
@@ -104,7 +105,8 @@ struct SettingsView: View {
     private var detail: some View {
         switch navigation.selection ?? .general {
         case .general: GeneralTab(onShowOnboarding: onShowOnboarding, onShowAbout: onShowAbout)
-        case .menuBar: MenuBarSettingsTab(monitor: menuBarStatus, audio: systemAudio, navigation: navigation)
+        case .menuBar: MenuBarSettingsTab(monitor: menuBarStatus, audio: systemAudio,
+                                         scanner: bluetoothScanner, navigation: navigation)
         case .effects: ScreenEffectsSettingsTab(controller: screenEffects)
         case .permissions: PermissionsSettingsTab()
         case .hover: HoverSettingsTab(onApply: onApplyHoverSettings,

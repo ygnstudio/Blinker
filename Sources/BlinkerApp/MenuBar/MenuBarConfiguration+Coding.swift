@@ -39,12 +39,31 @@ extension MenuBarConfiguration {
         case showsVPNStatus
         case showsWiFiName
         case showsAudioInput
+        case bluetoothDeviceLimit
+        case alwaysShowsAllBluetoothDevices
+        case bluetoothDeviceOrder
+        case hiddenBluetoothDevices
+        case hidesUnpairedBluetoothDevices
+        case scansNearbyBluetoothDevices
     }
 
     /// New settings retain defaults when reading an older saved configuration.
     init(from decoder: Decoder) throws {
         self.init()
         let values = try decoder.container(keyedBy: CodingKeys.self)
+        decodeAppearance(from: values)
+        decodeInteraction(from: values)
+        decodeBluetooth(from: values)
+        // A save written before the bluetooth section existed carries no trace
+        // of it in sectionOrder; enable the section for those users exactly
+        // once. Saves written afterwards always list it, enabled or not.
+        if !sectionOrder.contains(.bluetooth) {
+            enabledSections.insert(.bluetooth)
+        }
+        self = normalized()
+    }
+
+    private mutating func decodeAppearance(from values: KeyedDecodingContainer<CodingKeys>) {
         placement = values.decode(.placement, default: placement)
         dockBackground = values.decode(.dockBackground, default: dockBackground)
         iconSize = values.decode(.iconSize, default: iconSize)
@@ -75,6 +94,12 @@ extension MenuBarConfiguration {
         prioritizesNetworkErrors = values.decode(.prioritizesNetworkErrors, default: prioritizesNetworkErrors)
         bluetoothSymbolScale = values.decode(.bluetoothSymbolScale, default: bluetoothSymbolScale)
         refreshInterval = values.decode(.refreshInterval, default: refreshInterval)
+        showsVPNStatus = values.decode(.showsVPNStatus, default: showsVPNStatus)
+        showsWiFiName = values.decode(.showsWiFiName, default: showsWiFiName)
+        showsAudioInput = values.decode(.showsAudioInput, default: showsAudioInput)
+    }
+
+    private mutating func decodeInteraction(from values: KeyedDecodingContainer<CodingKeys>) {
         leftClick = values.decode(.leftClick, default: leftClick)
         sectionOrder = values.decode(.sectionOrder, default: sectionOrder)
         enabledSections = values.decode(.enabledSections, default: enabledSections)
@@ -88,10 +113,24 @@ extension MenuBarConfiguration {
             default: alwaysShowsAllOutputDevices
         )
         outputDeviceOrder = values.decode(.outputDeviceOrder, default: outputDeviceOrder)
-        showsVPNStatus = values.decode(.showsVPNStatus, default: showsVPNStatus)
-        showsWiFiName = values.decode(.showsWiFiName, default: showsWiFiName)
-        showsAudioInput = values.decode(.showsAudioInput, default: showsAudioInput)
-        self = normalized()
+    }
+
+    private mutating func decodeBluetooth(from values: KeyedDecodingContainer<CodingKeys>) {
+        bluetoothDeviceLimit = values.decode(.bluetoothDeviceLimit, default: bluetoothDeviceLimit)
+        alwaysShowsAllBluetoothDevices = values.decode(
+            .alwaysShowsAllBluetoothDevices,
+            default: alwaysShowsAllBluetoothDevices
+        )
+        bluetoothDeviceOrder = values.decode(.bluetoothDeviceOrder, default: bluetoothDeviceOrder)
+        hiddenBluetoothDevices = values.decode(.hiddenBluetoothDevices, default: hiddenBluetoothDevices)
+        hidesUnpairedBluetoothDevices = values.decode(
+            .hidesUnpairedBluetoothDevices,
+            default: hidesUnpairedBluetoothDevices
+        )
+        scansNearbyBluetoothDevices = values.decode(
+            .scansNearbyBluetoothDevices,
+            default: scansNearbyBluetoothDevices
+        )
     }
 }
 

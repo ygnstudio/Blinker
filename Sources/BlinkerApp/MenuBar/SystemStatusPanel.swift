@@ -4,11 +4,13 @@ import SwiftUI
 struct SystemStatusPanel: View {
     @ObservedObject var monitor: SystemStatusMonitor
     @ObservedObject var audio: SystemAudioController
+    @ObservedObject var scanner: BluetoothLEScanner
     @ObservedObject var preferences: MenuBarPreferences
     let onOpenApplications: () -> Void
     let onOpenSettings: () -> Void
     let onOpenMenuBarPage: (MenuBarSettingsPage) -> Void
     @State private var expandedDevices = false
+    @State var expandedBluetoothDevices = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -32,6 +34,7 @@ struct SystemStatusPanel: View {
                         case .battery: batterySection
                         case .network: networkSection
                         case .volume: volumeSection
+                        case .bluetooth: bluetoothSection
                         }
                     }
                     if preferences.configuration.visibleSections.isEmpty {
@@ -269,8 +272,8 @@ struct SystemStatusPanel: View {
         .background(MenuBarPanelRegion(identifier: "BlinkerAudioDeviceList"))
     }
 
-    private func heading(_ title: LocalizedStringKey, symbol: String,
-                         page: MenuBarSettingsPage) -> some View {
+    func heading(_ title: LocalizedStringKey, symbol: String,
+                 page: MenuBarSettingsPage) -> some View {
         HStack {
             Label(title, systemImage: symbol).font(.callout.weight(.semibold))
             Spacer()
@@ -283,7 +286,7 @@ struct SystemStatusPanel: View {
         }
     }
 
-    private func settingsLink(_ title: LocalizedStringKey, destination: String) -> some View {
+    func settingsLink(_ title: LocalizedStringKey, destination: String) -> some View {
         Button(title) {
             if let url = URL(string: "x-apple.systempreferences:" + destination) {
                 NSWorkspace.shared.open(url)

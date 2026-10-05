@@ -11208,6 +11208,310 @@
           }
         }
       }
+    },
+    "蓝牙": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bluetooth"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "蓝牙"
+          }
+        }
+      }
+    },
+    "蓝牙设备列表": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bluetooth Devices"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "蓝牙设备列表"
+          }
+        }
+      }
+    },
+    "勾选显示并拖动排序；「未配对」是扫描残留，系统设置也不会列出。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Check to show and drag to reorder. \"Unpaired\" entries are inquiry residue that System Settings never lists either."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "勾选显示并拖动排序；「未配对」是扫描残留，系统设置也不会列出。"
+          }
+        }
+      }
+    },
+    "未配对": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unpaired"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未配对"
+          }
+        }
+      }
+    },
+    "始终显示全部蓝牙设备": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Always Show All Bluetooth Devices"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "始终显示全部蓝牙设备"
+          }
+        }
+      }
+    },
+    "隐藏未配对设备": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hide Unpaired Devices"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "隐藏未配对设备"
+          }
+        }
+      }
+    },
+    "面板显示": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Panel Display"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "面板显示"
+          }
+        }
+      }
+    },
+    "与系统设置的「我的设备」一致：未配对的扫描残留默认隐藏。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Matches \"My Devices\" in System Settings: unpaired inquiry residue is hidden by default."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "与系统设置的「我的设备」一致：未配对的扫描残留默认隐藏。"
+          }
+        }
+      }
+    },
+    "附近设备": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nearby Devices"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "附近设备"
+          }
+        }
+      }
+    },
+    "扫描附近设备电量": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Scan Nearby Device Battery"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "扫描附近设备电量"
+          }
+        }
+      }
+    },
+    "开启后申请蓝牙权限，每分钟扫描约 5 秒，读取附近设备的公开电量；不会配对或上传任何数据。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "When on, Bluetooth access is requested and a ~5-second scan runs every minute to read public battery levels of nearby devices. Nothing is paired or uploaded."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "开启后申请蓝牙权限，每分钟扫描约 5 秒，读取附近设备的公开电量；不会配对或上传任何数据。"
+          }
+        }
+      }
+    },
+    "打开蓝牙隐私设置…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open Bluetooth Privacy Settings…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "打开蓝牙隐私设置…"
+          }
+        }
+      }
+    },
+    "没有已配对的蓝牙设备。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No paired Bluetooth devices."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "没有已配对的蓝牙设备。"
+          }
+        }
+      }
+    },
+    "正在读取…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reading…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在读取…"
+          }
+        }
+      }
+    },
+    "未连接": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not Connected"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未连接"
+          }
+        }
+      }
+    },
+    "未知设备": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unknown Device"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未知设备"
+          }
+        }
+      }
+    },
+    "允许蓝牙以显示附近设备电量": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Allow Bluetooth to Show Nearby Battery"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "允许蓝牙以显示附近设备电量"
+          }
+        }
+      }
+    },
+    "蓝牙权限已关闭，无法扫描附近设备": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bluetooth access is off; cannot scan nearby devices"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "蓝牙权限已关闭，无法扫描附近设备"
+          }
+        }
+      }
+    },
+    "蓝牙设置…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bluetooth Settings…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "蓝牙设置…"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

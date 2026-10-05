@@ -57,15 +57,21 @@ struct MenuBarSystemSnapshot: Equatable, Sendable {
     var wifiName: String?
     /// Active VPN/proxy; nil when there is nothing to report.
     var vpn: VPN?
+    /// Paired Bluetooth devices for the panel block. nil means the list was
+    /// not read this cycle (section hidden) or has never been read
+    /// successfully; an empty array means the machine has no paired devices.
+    var bluetoothDevices: [BluetoothDevice]?
 
     static let unknown = Self(battery: nil, network: .unknown, volume: nil)
 
     init(battery: Battery?, network: Network, volume: Volume?,
-         wifiName: String? = nil, vpn: VPN? = nil) {
+         wifiName: String? = nil, vpn: VPN? = nil,
+         bluetoothDevices: [BluetoothDevice]? = nil) {
         self.battery = battery
         self.network = network
         self.volume = volume
         self.wifiName = wifiName
         self.vpn = vpn
+        self.bluetoothDevices = bluetoothDevices
     }
 }

@@ -9,4 +9,7 @@ enum ProjectLinks {
     /// System Settings → Privacy & Security → Location Services.
     static let locationPrivacy = URL(string: "x-apple.systempreferences:"
         + "com.apple.preference.security?Privacy_LocationServices")
+    /// System Settings → Privacy & Security → Bluetooth.
+    static let bluetoothPrivacy = URL(string: "x-apple.systempreferences:"
+        + "com.apple.preference.security?Privacy_Bluetooth")
 }

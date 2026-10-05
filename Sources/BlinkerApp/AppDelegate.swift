@@ -18,6 +18,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
     private lazy var permissionAssistant = PermissionAssistantController(permissions: permissions)
     let menuBarStatus = SystemStatusMonitor()
     let systemAudio = SystemAudioController()
+    let bluetoothScanner = BluetoothLEScanner()
     private lazy var screenEffects = ScreenEffectController()
     private lazy var desktopActions = DesktopActionsCoordinator(
         preferences: .shared,
@@ -47,7 +48,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
         let controller = StatusItemController(
             coordinator: interception,
             systemStatus: menuBarStatus,
-            audio: systemAudio
+            audio: systemAudio,
+            bluetoothScanner: bluetoothScanner
         )
         controller.onOpenSettings = { [weak self] in self?.openSettings() }
         controller.onPauseAll = { [weak self] minutes in self?.interception.pause(minutes: minutes) }
@@ -109,6 +111,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
                 .environmentObject(permissionAssistant)
                 .environmentObject(menuBarStatus)
                 .environmentObject(systemAudio)
+                .environmentObject(bluetoothScanner)
                 .environmentObject(screenEffects)
                 .environmentObject(desktopActions)
             )

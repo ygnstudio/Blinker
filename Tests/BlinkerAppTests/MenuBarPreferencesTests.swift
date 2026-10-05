@@ -24,7 +24,8 @@ final class MenuBarPreferencesTests: XCTestCase {
             let preferences = MenuBarPreferences(defaults: defaults)
             XCTAssertEqual(preferences.configuration, MenuBarConfiguration())
             XCTAssertEqual(preferences.configuration.leftClick, .panel)
-            XCTAssertEqual(preferences.configuration.visibleSections, [.battery, .network, .volume])
+            XCTAssertEqual(preferences.configuration.visibleSections,
+                           [.battery, .network, .volume, .bluetooth])
             XCTAssertEqual(defaults.writes, 0)
         }
     }
@@ -51,6 +52,57 @@ final class MenuBarPreferencesTests: XCTestCase {
             XCTAssertEqual(preferences.configuration, MenuBarConfiguration())
             XCTAssertEqual(defaults.data(forKey: MenuBarPreferences.key), malformed)
             XCTAssertEqual(defaults.writes, writes)
+        }
+    }
+
+    /// A save from before the bluetooth section existed has no trace of it in
+    /// sectionOrder; those users get the section enabled exactly once.
+    func testPreBluetoothSaveMigratesSectionOn() throws {
+        try withDefaults { defaults in
+            let legacy = Data(("{\"sectionOrder\":[\"battery\",\"network\",\"volume\"],"
+                + "\"enabledSections\":[\"battery\",\"network\",\"volume\"]}").utf8)
+            defaults.set(legacy, forKey: MenuBarPreferences.key)
+            let preferences = MenuBarPreferences(defaults: defaults)
+            XCTAssertEqual(preferences.configuration.sectionOrder,
+                           [.battery, .network, .volume, .bluetooth])
+            XCTAssertTrue(preferences.configuration.enabledSections.contains(.bluetooth))
+            XCTAssertEqual(preferences.configuration.visibleSections,
+                           [.battery, .network, .volume, .bluetooth])
+        }
+    }
+
+    /// Once a save lists the bluetooth section, its enabled state is the
+    /// user's own choice and is never re-migrated.
+    func testBluetoothSectionChoiceIsNotReMigrated() throws {
+        try withDefaults { defaults in
+            let saved = Data(("{\"sectionOrder\":[\"battery\",\"network\",\"volume\",\"bluetooth\"],"
+                + "\"enabledSections\":[\"battery\",\"network\",\"volume\"]}").utf8)
+            defaults.set(saved, forKey: MenuBarPreferences.key)
+            let preferences = MenuBarPreferences(defaults: defaults)
+            XCTAssertFalse(preferences.configuration.enabledSections.contains(.bluetooth))
+            XCTAssertEqual(preferences.configuration.visibleSections, [.battery, .network, .volume])
+        }
+    }
+
+    func testBluetoothDeviceManagementChoicesSurviveReload() throws {
+        try withDefaults { defaults in
+            let preferences = MenuBarPreferences(defaults: defaults)
+            preferences.update {
+                $0.bluetoothDeviceLimit = 3
+                $0.alwaysShowsAllBluetoothDevices = true
+                $0.bluetoothDeviceOrder = ["AA:BB", "CC:DD"]
+                $0.hiddenBluetoothDevices = ["EE:FF"]
+                $0.hidesUnpairedBluetoothDevices = false
+                $0.scansNearbyBluetoothDevices = true
+            }
+            let reloaded = MenuBarPreferences(defaults: defaults)
+            let value = reloaded.configuration
+            XCTAssertEqual(value.bluetoothDeviceLimit, 3)
+            XCTAssertTrue(value.alwaysShowsAllBluetoothDevices)
+            XCTAssertEqual(value.bluetoothDeviceOrder, ["AA:BB", "CC:DD"])
+            XCTAssertEqual(value.hiddenBluetoothDevices, ["EE:FF"])
+            XCTAssertFalse(value.hidesUnpairedBluetoothDevices)
+            XCTAssertTrue(value.scansNearbyBluetoothDevices)
         }
     }
 
@@ -158,7 +210,8 @@ final class MenuBarPreferencesTests: XCTestCase {
                 $0.sectionOrder = [.volume, .volume, .battery]
                 $0.enabledSections = []
             }
-            XCTAssertEqual(preferences.configuration.sectionOrder, [.volume, .battery, .network])
+            XCTAssertEqual(preferences.configuration.sectionOrder,
+                           [.volume, .battery, .network, .bluetooth])
             XCTAssertEqual(preferences.configuration.visibleSections, [])
             preferences.update { $0.enabledSections.insert(.battery) }
             XCTAssertEqual(preferences.configuration.visibleSections, [.battery])

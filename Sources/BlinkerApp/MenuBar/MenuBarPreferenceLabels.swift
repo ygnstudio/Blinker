@@ -73,6 +73,7 @@ extension MenuBarConfiguration.Section {
         case .battery: String(localized: "电池")
         case .network: String(localized: "网络")
         case .volume: String(localized: "音量")
+        case .bluetooth: String(localized: "蓝牙")
         }
     }
 }

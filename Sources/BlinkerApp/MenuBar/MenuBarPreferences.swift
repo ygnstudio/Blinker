@@ -20,7 +20,7 @@ struct MenuBarConfiguration: Codable, Equatable {
     enum ClickAction: String, Codable, CaseIterable { case panel, rules }
     enum ScrollScope: String, Codable, CaseIterable { case panel, volumeControl }
     enum ScrollDirection: String, Codable, CaseIterable { case upward = "up", down }
-    enum Section: String, Codable, CaseIterable { case battery, network, volume }
+    enum Section: String, Codable, CaseIterable { case battery, network, volume, bluetooth }
 
     var placement: Placement = .menuBar
     var dockBackground: DockBackground = .system
@@ -63,6 +63,17 @@ struct MenuBarConfiguration: Codable, Equatable {
     var showsWiFiName = false
     /// Panel volume block: default input device row with level and mute.
     var showsAudioInput = true
+    /// Panel bluetooth block: per-device list management. Keys are addresses.
+    var bluetoothDeviceLimit = 5
+    var alwaysShowsAllBluetoothDevices = false
+    var bluetoothDeviceOrder: [String] = []
+    var hiddenBluetoothDevices: Set<String> = []
+    /// Inquiry residue without a pairing record clutters the list; System
+    /// Settings never shows it either, so the panel hides it by default.
+    var hidesUnpairedBluetoothDevices = true
+    /// Nearby BLE battery scan (A4). Default off: it carries the Bluetooth
+    /// authorization prompt and periodic radio use.
+    var scansNearbyBluetoothDevices = false
 
     var showsMenuBar: Bool {
         placement != .dock
@@ -88,11 +99,17 @@ struct MenuBarConfiguration: Codable, Equatable {
         value.bluetoothSymbolScale = clamp(bluetoothSymbolScale, 1 ... 1.8, fallback: 1.6)
         value.refreshInterval = clamp(refreshInterval, 5 ... 60, fallback: 15)
         value.outputDeviceLimit = min(20, max(1, outputDeviceLimit))
+        value.bluetoothDeviceLimit = min(20, max(1, bluetoothDeviceLimit))
         var seen = Set<Section>()
         value.sectionOrder = (sectionOrder + Section.allCases).filter { seen.insert($0).inserted }
         var devices = Set<String>()
         value.outputDeviceOrder = outputDeviceOrder.filter { !$0.isEmpty && devices.insert($0).inserted }
             .prefix(100).map { $0 }
+        var addresses = Set<String>()
+        value.bluetoothDeviceOrder = bluetoothDeviceOrder
+            .filter { !$0.isEmpty && addresses.insert($0).inserted }
+            .prefix(100).map { $0 }
+        value.hiddenBluetoothDevices = Set(hiddenBluetoothDevices.filter { !$0.isEmpty }.prefix(100))
         return value
     }
 }

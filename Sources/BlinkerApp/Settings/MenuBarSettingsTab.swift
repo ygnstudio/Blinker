@@ -5,14 +5,17 @@ struct MenuBarSettingsTab: View {
     @ObservedObject var preferences: MenuBarPreferences
     @ObservedObject var monitor: SystemStatusMonitor
     @ObservedObject var audio: SystemAudioController
+    @ObservedObject var scanner: BluetoothLEScanner
     @ObservedObject var navigation: SettingsNavigation
     @State private var confirmingReset = false
 
     init(preferences: MenuBarPreferences? = nil, monitor: SystemStatusMonitor,
-         audio: SystemAudioController, navigation: SettingsNavigation) {
+         audio: SystemAudioController, scanner: BluetoothLEScanner,
+         navigation: SettingsNavigation) {
         self.preferences = preferences ?? .shared
         self.monitor = monitor
         self.audio = audio
+        self.scanner = scanner
         self.navigation = navigation
     }
 
@@ -39,6 +42,9 @@ struct MenuBarSettingsTab: View {
                 case .networkAndVolume:
                     networkSettings
                     MenuBarAudioSettings(preferences: preferences)
+                case .bluetooth:
+                    MenuBarBluetoothSettings(preferences: preferences, monitor: monitor,
+                                             scanner: scanner)
                 case .panel: MenuBarPanelSettings(preferences: preferences, audio: audio)
                 }
                 Section {
@@ -255,13 +261,14 @@ struct MenuBarSettingsTab: View {
 }
 
 enum MenuBarSettingsPage: CaseIterable, Hashable {
-    case icon, battery, networkAndVolume, panel
+    case icon, battery, networkAndVolume, bluetooth, panel
 
     var title: String {
         switch self {
         case .icon: String(localized: "图标")
         case .battery: String(localized: "电池")
         case .networkAndVolume: String(localized: "网络与音量")
+        case .bluetooth: String(localized: "蓝牙")
         case .panel: String(localized: "状态面板")
         }
     }

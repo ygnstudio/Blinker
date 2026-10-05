@@ -9,6 +9,7 @@ final class StatusItemController: NSObject, NSMenuDelegate, NSMenuItemValidation
     private let coordinator: InterceptionCoordinator
     private let systemStatus: SystemStatusMonitor
     private let audio: SystemAudioController
+    private let bluetoothScanner: BluetoothLEScanner
     private let preferences: MenuBarPreferences
     private var presentation: MenuBarPresentation?
     /// Invoked for the settings menu entry.
@@ -26,10 +27,12 @@ final class StatusItemController: NSObject, NSMenuDelegate, NSMenuItemValidation
     var onToggleDesktop: (() -> Void)?
 
     init(coordinator: InterceptionCoordinator, systemStatus: SystemStatusMonitor,
-         audio: SystemAudioController, preferences: MenuBarPreferences? = nil) {
+         audio: SystemAudioController, bluetoothScanner: BluetoothLEScanner,
+         preferences: MenuBarPreferences? = nil) {
         self.coordinator = coordinator
         self.systemStatus = systemStatus
         self.audio = audio
+        self.bluetoothScanner = bluetoothScanner
         self.preferences = preferences ?? .shared
     }
 
@@ -44,7 +47,8 @@ final class StatusItemController: NSObject, NSMenuDelegate, NSMenuItemValidation
         item.button?.sendAction(on: [.leftMouseUp, .rightMouseUp, .otherMouseUp])
         statusItem = item
         presentation = MenuBarPresentation(
-            item: item, monitor: systemStatus, audio: audio, preferences: preferences,
+            item: item, monitor: systemStatus, audio: audio, scanner: bluetoothScanner,
+            preferences: preferences,
             onOpenApplications: { [weak self] in self?.onOpenApplications?() },
             onOpenSettings: { [weak self] in self?.onOpenMenuBarSettings?() },
             onOpenMenuBarPage: { [weak self] page in self?.onOpenMenuBarPage?(page) }

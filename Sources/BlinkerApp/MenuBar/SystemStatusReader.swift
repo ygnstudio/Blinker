@@ -13,6 +13,7 @@ final class SystemStatusReader: SystemStatusReading {
     var onChange: (@MainActor @Sendable () -> Void)?
     private let queue: DispatchQueue
     private let audio: SystemAudioStatusReader
+    private let bluetooth = SystemBluetoothProfiler()
     private let lifetime = SystemStatusReaderLifetime()
 
     init() {
@@ -28,6 +29,7 @@ final class SystemStatusReader: SystemStatusReading {
     ) {
         let generation = lifetime.activate()
         let audio = audio
+        let bluetooth = bluetooth
         let lifetime = lifetime
         let changed: @Sendable () -> Void = { [weak self] in
             Task { @MainActor [weak self] in self?.onChange?() }
@@ -40,6 +42,7 @@ final class SystemStatusReader: SystemStatusReading {
             let battery = Self.readBattery()
             let network = Self.readNetwork(path: path)
             let vpn = options.includeVPN ? SystemVPNProbe.read() : nil
+            let devices = options.includeBluetoothDevices ? bluetooth.readDevices() : nil
             let volume = audio.read(onChange: changed)
             // A stop during synchronous IPC cannot interrupt the system call.
             // Retire listeners before returning instead of starting another worker.
@@ -49,7 +52,8 @@ final class SystemStatusReader: SystemStatusReading {
             let result = MenuBarSystemSnapshot(battery: battery, network: network, volume: volume,
                                                wifiName: options.includeWiFiName
                                                    ? Self.readWiFiName(network: network) : nil,
-                                               vpn: vpn)
+                                               vpn: vpn,
+                                               bluetoothDevices: devices)
             Task { @MainActor in completion(result) }
         }
     }

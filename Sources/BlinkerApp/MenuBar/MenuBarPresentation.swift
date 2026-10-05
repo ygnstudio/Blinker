@@ -8,6 +8,7 @@ final class MenuBarPresentation: NSObject, NSPopoverDelegate, NSWindowDelegate {
     private let item: NSStatusItem
     private let monitor: SystemStatusMonitor
     private let audio: SystemAudioController
+    private let scanner: BluetoothLEScanner
     private let preferences: MenuBarPreferences
     private let onOpenApplications: () -> Void
     private let onOpenSettings: () -> Void
@@ -23,12 +24,14 @@ final class MenuBarPresentation: NSObject, NSPopoverDelegate, NSWindowDelegate {
     private var previousPlacement: MenuBarConfiguration.Placement?
 
     init(item: NSStatusItem, monitor: SystemStatusMonitor, audio: SystemAudioController,
+         scanner: BluetoothLEScanner,
          preferences: MenuBarPreferences, onOpenApplications: @escaping () -> Void,
          onOpenSettings: @escaping () -> Void,
          onOpenMenuBarPage: @escaping (MenuBarSettingsPage) -> Void) {
         self.item = item
         self.monitor = monitor
         self.audio = audio
+        self.scanner = scanner
         self.preferences = preferences
         self.onOpenApplications = onOpenApplications
         self.onOpenSettings = onOpenSettings
@@ -80,6 +83,7 @@ final class MenuBarPresentation: NSObject, NSPopoverDelegate, NSWindowDelegate {
         suspended = true
         monitor.stop()
         audio.stop()
+        scanner.setEnabled(false)
         charging.stop()
         scrolling.stop()
     }
@@ -104,8 +108,14 @@ final class MenuBarPresentation: NSObject, NSPopoverDelegate, NSWindowDelegate {
         monitor.setRefreshInterval(configuration.refreshInterval)
         monitor.setReadOptions(SystemStatusReadOptions(
             includeVPN: configuration.showsVPNStatus,
-            includeWiFiName: configuration.showsWiFiName
+            includeWiFiName: configuration.showsWiFiName,
+            includeBluetoothDevices: configuration.enabledSections.contains(.bluetooth)
         ))
+        if !suspended {
+            // The scan only has somewhere to display while the block is visible.
+            scanner.setEnabled(configuration.scansNearbyBluetoothDevices
+                && configuration.enabledSections.contains(.bluetooth))
+        }
         if previousPlacement != configuration.placement {
             closePanel()
             item.isVisible = configuration.showsMenuBar
@@ -151,8 +161,9 @@ final class MenuBarPresentation: NSObject, NSPopoverDelegate, NSWindowDelegate {
         }
         monitor.refresh()
         audio.refresh()
+        scanner.refresh()
         let controller = NSHostingController(rootView: SystemStatusPanel(
-            monitor: monitor, audio: audio, preferences: preferences,
+            monitor: monitor, audio: audio, scanner: scanner, preferences: preferences,
             onOpenApplications: { [weak self] in
                 self?.closePanel()
                 self?.onOpenApplications()

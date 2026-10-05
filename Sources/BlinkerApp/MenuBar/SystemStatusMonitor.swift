@@ -19,6 +19,8 @@ struct SystemNetworkPath: Equatable, Sendable {
 struct SystemStatusReadOptions: Equatable, Sendable {
     var includeVPN = false
     var includeWiFiName = false
+    /// Paired Bluetooth devices via one `system_profiler` subprocess.
+    var includeBluetoothDevices = false
 }
 
 @MainActor

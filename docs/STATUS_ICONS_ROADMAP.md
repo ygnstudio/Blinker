@@ -1,6 +1,6 @@
 # 状态图标路线图：对齐并超越 Status Trio
 
-[返回 README](../README.md) · 状态：Stage 1/2 已交付（2026-10-06） · 分支：`dev`
+[返回 README](../README.md) · 状态：Stage 1–3 已交付（2026-10-06） · 分支：`dev`
 
 ## 方向
 
@@ -17,8 +17,8 @@ Blinker 的状态图标改编自已归档的 Status Trio（Apache 2.0，钉在 `
 |---|------|--------|------|------|
 | A1 | VPN 状态行（面板区块）✅ | getifaddrs 隧道探针 + SCNetworkService + 系统代理端点 | 无 | 2 |
 | A2 | Wi-Fi 名称（SSID）+ 面板内定位权限引导行 ✅ | CoreWLAN + CoreLocation 授权流 | 定位 | 2 |
-| A3 | 蓝牙设备列表：已配对、连接态、类型图标、电量、可见性、排序、上限 | IOBluetooth | 无新权限 | 3 |
-| A4 | 附近 BLE 设备电量扫描（可关，默认关） | CoreBluetooth | 蓝牙 | 3 |
+| A3 | 蓝牙设备列表：已配对、连接态、类型图标、电量（含 L/R/充电盒）、可见性、拖拽排序、上限 ✅ | system_profiler（上游同源方案） | 无新权限 | 3 |
+| A4 | 附近 BLE 设备电量扫描（可关，默认关）✅ | CoreBluetooth GATT（180F/2A19 + DIS） | 蓝牙 | 3 |
 | A5 | 声音输入区块（默认输入设备，音量/静音/使用中标记）✅ | CoreAudio | 无 | 2 |
 | A6 | Wi-Fi 替换样式补全：个人热点 / 临时连接 / 互联网共享 ✅ | 网络类型分类（参照上游 WiFiMonitor） | 无 | 1 |
 | A7 | 电池标记缩放放宽：0.9–1.1 → 0.5–2.0（数字/闪电统一）✅ | — | — | 1 |
@@ -40,7 +40,7 @@ Blinker 的状态图标改编自已归档的 Status Trio（Apache 2.0，钉在 `
 
 1. **表现层**（已交付，`dde9544`）：A6、A7、A8、A9、A10、A11 + pt 默认值 20。无权限、无新数据源。
 2. **面板内容**（已交付）：A1、A2、A5。新增定位权限引导（A2），Info.plist 已含 `NSLocationWhenInUseUsageDescription`。
-3. **蓝牙域**：A3、A4。新增蓝牙授权（A4）。
+3. **蓝牙域**（已交付）：A3、A4。配对设备走 `system_profiler`（与上游同方案：名称不陈旧、电量同报告、免权限、免私有 API）；BLE 扫描复刻上游候选过滤与并发/冷却策略（5 秒窗口 / 60 秒间隔 / 2 并发 / 8 队列 / 4 秒超时），Info.plist 已含 `NSBluetoothAlwaysUsageDescription`。HID usage 修正（罗技误标类）未做，列入后续缺口。
 4. **超越项**：B1–B4。
 
 每阶段验收：`swift build` + `swift test` 全量 + SwiftLint / SwiftFormat 通过；新配置键走 `MenuBarConfiguration+Coding` 向后兼容解码（缺键取默认）。
@@ -57,3 +57,5 @@ Blinker 的状态图标改编自已归档的 Status Trio（Apache 2.0，钉在 `
 
 - DDC 显示器亮度、应用内更新器、分析：维持不做，与 Trio 对齐目标无关。
 - 公网 IP（B2）是唯一出网行为，默认关，开启时明示端点。
+- HID usage 修正（上游遍历 IORegistry 纠正厂商误标的类型，如罗技键盘报为鼠标）暂未做；类型图标以系统报告的分类为准。
+- BLE 结果 30 分钟有效期内按名折叠进配对列表（上游同规则）；非苹果移动设备留在附近行。
