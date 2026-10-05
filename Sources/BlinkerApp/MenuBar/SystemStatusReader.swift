@@ -14,6 +14,8 @@ final class SystemStatusReader: SystemStatusReading {
     private let queue: DispatchQueue
     private let audio: SystemAudioStatusReader
     private let bluetooth = SystemBluetoothProfiler()
+    private let networkSampler = NetworkThroughputSampler()
+    private let publicIP = PublicIPProbe()
     private let lifetime = SystemStatusReaderLifetime()
 
     init() {
@@ -30,6 +32,8 @@ final class SystemStatusReader: SystemStatusReading {
         let generation = lifetime.activate()
         let audio = audio
         let bluetooth = bluetooth
+        let networkSampler = networkSampler
+        let publicIP = publicIP
         let lifetime = lifetime
         let changed: @Sendable () -> Void = { [weak self] in
             Task { @MainActor [weak self] in self?.onChange?() }
@@ -42,7 +46,19 @@ final class SystemStatusReader: SystemStatusReading {
             let battery = Self.readBattery()
             let network = Self.readNetwork(path: path)
             let vpn = options.includeVPN ? SystemVPNProbe.read() : nil
-            let devices = options.includeBluetoothDevices ? bluetooth.readDevices() : nil
+            var devices = options.includeBluetoothDevices ? bluetooth.readDevices() : nil
+            if options.includeBluetoothDeviceControl, let listed = devices {
+                devices = BluetoothConnectionDetails.attachingCodecs(to: listed)
+            }
+            let batteryDetails = options.includeBatteryDetails ? SystemBatteryDetails.read() : nil
+            let networkReading = networkSampler.read(
+                includeActivity: options.includeNetworkActivity,
+                includeAddress: options.includeLocalIPAddress
+            )
+            let publicAddress: String? = options.includePublicIPAddress ? publicIP.cachedValue() : nil
+            if options.includePublicIPAddress {
+                publicIP.refreshIfNeeded(onChange: changed)
+            }
             let volume = audio.read(onChange: changed)
             // A stop during synchronous IPC cannot interrupt the system call.
             // Retire listeners before returning instead of starting another worker.
@@ -53,7 +69,11 @@ final class SystemStatusReader: SystemStatusReading {
                                                wifiName: options.includeWiFiName
                                                    ? Self.readWiFiName(network: network) : nil,
                                                vpn: vpn,
-                                               bluetoothDevices: devices)
+                                               bluetoothDevices: devices,
+                                               batteryDetails: batteryDetails,
+                                               networkActivity: networkReading.activity,
+                                               localIPAddress: networkReading.localIPv4,
+                                               publicIPAddress: publicAddress)
             Task { @MainActor in completion(result) }
         }
     }

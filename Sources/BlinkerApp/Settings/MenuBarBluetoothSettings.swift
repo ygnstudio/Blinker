@@ -11,6 +11,7 @@ struct MenuBarBluetoothSettings: View {
     var body: some View {
         deviceSection
         displaySection
+        deviceControlSection
         nearbySection
     }
 
@@ -73,11 +74,47 @@ struct MenuBarBluetoothSettings: View {
             }
             .disabled(preferences.configuration.alwaysShowsAllBluetoothDevices)
             Toggle("隐藏未配对设备", isOn: binding(\.hidesUnpairedBluetoothDevices))
+            Toggle("显示信号强度", isOn: binding(\.showsBluetoothSignalStrength))
         } header: {
             Text("面板显示")
         } footer: {
-            Text("与系统设置的「我的设备」一致：未配对的扫描残留默认隐藏。")
+            Text("与系统设置的「我的设备」一致：未配对的扫描残留默认隐藏。信号强度取自系统蓝牙报告，无需权限；无测量值的设备不显示。")
         }
+    }
+
+    private var deviceControlSection: some View {
+        Section {
+            Toggle("编解码器与断开操作", isOn: deviceControlBinding)
+            if preferences.configuration.enablesBluetoothDeviceControl {
+                switch scanner.authorization {
+                case .allowedAlways, .notDetermined:
+                    EmptyView()
+                case .denied, .restricted:
+                    Button("打开蓝牙隐私设置…") {
+                        if let url = ProjectLinks.bluetoothPrivacy {
+                            NSWorkspace.shared.open(url)
+                        }
+                    }
+                @unknown default:
+                    EmptyView()
+                }
+            }
+        } header: {
+            Text("已连接设备")
+        } footer: {
+            Text("开启后申请蓝牙权限（与附近设备扫描同一授权），面板显示音频编解码器并为已连接设备提供「断开」；断开仅结束当前连接，配对关系保留。未授权时不影响其他功能。")
+        }
+    }
+
+    /// Turning control on starts the authorization flow right away, so the
+    /// system prompt appears in context instead of on first disconnect.
+    private var deviceControlBinding: Binding<Bool> {
+        Binding(get: { preferences.configuration.enablesBluetoothDeviceControl }, set: { enabled in
+            preferences.update { $0.enablesBluetoothDeviceControl = enabled }
+            if enabled {
+                scanner.requestAccess()
+            }
+        })
     }
 
     private var nearbySection: some View {

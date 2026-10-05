@@ -1,6 +1,6 @@
 # 状态图标路线图：对齐并超越 Status Trio
 
-[返回 README](../README.md) · 状态：Stage 1–3 已交付（2026-10-06） · 分支：`dev`
+[返回 README](../README.md) · 状态：Stage 1–4 已交付（2026-10-06） · 分支：`dev`
 
 ## 方向
 
@@ -31,17 +31,17 @@ Blinker 的状态图标改编自已归档的 Status Trio（Apache 2.0，钉在 `
 
 | # | 项 | 数据源 | 权限 | 阶段 |
 |---|------|--------|------|------|
-| B1 | 电池深度：循环次数、健康度、温度、充放功率 | IOKit / AppleSmartBattery | 无 | 4 |
-| B2 | 网络深度：实时上下行速率、本机 / 公网 IP 行 | getifaddrs / 外部服务（可关） | 无（公网 IP 出网，需明示） | 4 |
-| B3 | 蓝牙深度：编解码器（AAC / SBC…）、RSSI、单设备断开 | IOBluetooth A2DP 元数据 | 无 | 4 |
-| B4 | 面板密度：紧凑 / 宽松两档 + 行级副标题显示自定义 | — | — | 4 |
+| B1 | 电池深度：循环次数、健康度、温度、充放功率 ✅ | IOKit / AppleSmartBattery | 无 | 4 |
+| B2 | 网络深度：实时上下行速率、本机 / 公网 IP 行 ✅ | getifaddrs / api.ipify.org（默认关） | 无（公网 IP 出网，已明示） | 4 |
+| B3 | 蓝牙深度：RSSI ✅、编解码器与单设备断开 ✅ | 报告 RSSI；IOBluetooth（编解码/断开） | RSSI 无；编解码/断开走蓝牙授权（默认关） | 4 |
+| B4 | 面板密度：舒适 / 紧凑两档 ✅ + 行级副标题显示自定义 ✅ | — | — | 4 |
 
 ## 阶段
 
 1. **表现层**（已交付，`dde9544`）：A6、A7、A8、A9、A10、A11 + pt 默认值 20。无权限、无新数据源。
 2. **面板内容**（已交付）：A1、A2、A5。新增定位权限引导（A2），Info.plist 已含 `NSLocationWhenInUseUsageDescription`。
 3. **蓝牙域**（已交付）：A3、A4。配对设备走 `system_profiler`（与上游同方案：名称不陈旧、电量同报告、免权限、免私有 API）；BLE 扫描复刻上游候选过滤与并发/冷却策略（5 秒窗口 / 60 秒间隔 / 2 并发 / 8 队列 / 4 秒超时），Info.plist 已含 `NSBluetoothAlwaysUsageDescription`。HID usage 修正（罗技误标类）未做，列入后续缺口。
-4. **超越项**：B1–B4。
+4. **超越项**（已交付）：B1–B4。电池深度走 IOKit 电池控制器（无权限，温度按控制器代际在厘开氏/分开氏/厘摄氏间按工作温域消歧）；网络深度走 getifaddrs 计数器差值（en* 物理接口，32 位回绕恢复）与本机 IPv4 选取（跳过链路本地占位地址），公网 IP 经 api.ipify.org（唯一出网行为，默认关，TTL 缓存 + 失败退避）；蓝牙 RSSI 沿用 system_profiler 报告字段（零权限），编解码器与单设备断开必须 IOBluetooth——该框架在 macOS 15 与附近扫描同属蓝牙隐私门控，故独立开关默认关、授权确认前 reader 不触碰 IOBluetooth；面板密度舒适/紧凑两档，全部副标题行均有独立开关。
 
 每阶段验收：`swift build` + `swift test` 全量 + SwiftLint / SwiftFormat 通过；新配置键走 `MenuBarConfiguration+Coding` 向后兼容解码（缺键取默认）。
 

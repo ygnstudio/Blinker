@@ -169,6 +169,13 @@ struct MenuBarSettingsTab: View {
         } footer: {
             Text("仅在充电时播放；减少动态效果、低电量模式或屏幕休眠时停用动画。")
         }
+        Section {
+            Toggle("显示电池详情", isOn: binding(\.showsBatteryDetails))
+        } header: {
+            Text("面板电池区块")
+        } footer: {
+            Text("循环次数、健康度、温度与充放功率读取自电池控制器；无内置电池的机型不显示。")
+        }
     }
 
     @ViewBuilder
@@ -202,10 +209,14 @@ struct MenuBarSettingsTab: View {
         Section {
             Toggle("显示 VPN 状态", isOn: binding(\.showsVPNStatus))
             Toggle("显示 Wi-Fi 名称", isOn: wiFiNameBinding)
+            Toggle("显示实时上下行速率", isOn: binding(\.showsNetworkActivity))
+            Toggle("显示本机 IP", isOn: binding(\.showsLocalIPAddress))
+            Toggle("显示公网 IP", isOn: binding(\.showsPublicIPAddress))
         } header: {
             Text("面板网络区块")
         } footer: {
-            Text("Wi-Fi 名称需要定位权限来解除系统对网络名称的隐藏；Blinker 不读取位置本身。VPN 行在检测到隧道或系统代理时显示。")
+            Text("Wi-Fi 名称需要定位权限来解除系统对网络名称的隐藏；Blinker 不读取位置本身。VPN 行在检测到隧道或系统代理时显示。"
+                 + "速率为两次刷新间的平均值；公网 IP 通过 api.ipify.org 查询，仅在开启时发起请求。")
         }
     }
 

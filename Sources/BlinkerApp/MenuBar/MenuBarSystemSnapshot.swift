@@ -49,6 +49,12 @@ struct MenuBarSystemSnapshot: Equatable, Sendable {
         }
     }
 
+    /// Averaged interface throughput since the previous read.
+    struct NetworkActivity: Equatable, Sendable {
+        var downBytesPerSecond: Double
+        var upBytesPerSecond: Double
+    }
+
     /// nil also covers desktop Macs without an internal battery.
     var battery: Battery?
     var network: Network
@@ -61,17 +67,35 @@ struct MenuBarSystemSnapshot: Equatable, Sendable {
     /// not read this cycle (section hidden) or has never been read
     /// successfully; an empty array means the machine has no paired devices.
     var bluetoothDevices: [BluetoothDevice]?
+    /// Cycle count, health, temperature and power; nil unless opted in and
+    /// the machine has a battery controller.
+    var batteryDetails: SystemBatteryDetails.Value?
+    /// Throughput averaged over the last refresh interval; nil until two
+    /// samples exist or while the row is disabled.
+    var networkActivity: NetworkActivity?
+    /// First active IPv4 address on a physical interface.
+    var localIPAddress: String?
+    /// External address as seen by the lookup endpoint; opt-in, fetched
+    /// asynchronously with a TTL cache.
+    var publicIPAddress: String?
 
     static let unknown = Self(battery: nil, network: .unknown, volume: nil)
 
     init(battery: Battery?, network: Network, volume: Volume?,
          wifiName: String? = nil, vpn: VPN? = nil,
-         bluetoothDevices: [BluetoothDevice]? = nil) {
+         bluetoothDevices: [BluetoothDevice]? = nil,
+         batteryDetails: SystemBatteryDetails.Value? = nil,
+         networkActivity: NetworkActivity? = nil,
+         localIPAddress: String? = nil, publicIPAddress: String? = nil) {
         self.battery = battery
         self.network = network
         self.volume = volume
         self.wifiName = wifiName
         self.vpn = vpn
         self.bluetoothDevices = bluetoothDevices
+        self.batteryDetails = batteryDetails
+        self.networkActivity = networkActivity
+        self.localIPAddress = localIPAddress
+        self.publicIPAddress = publicIPAddress
     }
 }

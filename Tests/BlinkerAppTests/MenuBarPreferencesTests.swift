@@ -94,6 +94,8 @@ final class MenuBarPreferencesTests: XCTestCase {
                 $0.hiddenBluetoothDevices = ["EE:FF"]
                 $0.hidesUnpairedBluetoothDevices = false
                 $0.scansNearbyBluetoothDevices = true
+                $0.showsBluetoothSignalStrength = false
+                $0.enablesBluetoothDeviceControl = true
             }
             let reloaded = MenuBarPreferences(defaults: defaults)
             let value = reloaded.configuration
@@ -103,6 +105,43 @@ final class MenuBarPreferencesTests: XCTestCase {
             XCTAssertEqual(value.hiddenBluetoothDevices, ["EE:FF"])
             XCTAssertFalse(value.hidesUnpairedBluetoothDevices)
             XCTAssertTrue(value.scansNearbyBluetoothDevices)
+            XCTAssertFalse(value.showsBluetoothSignalStrength)
+            XCTAssertTrue(value.enablesBluetoothDeviceControl)
+        }
+    }
+
+    func testPanelDetailChoicesSurviveReload() throws {
+        try withDefaults { defaults in
+            let preferences = MenuBarPreferences(defaults: defaults)
+            preferences.update {
+                $0.showsBatteryDetails = false
+                $0.showsNetworkActivity = false
+                $0.showsLocalIPAddress = false
+                $0.showsPublicIPAddress = true
+                $0.panelDensity = .compact
+            }
+            let value = MenuBarPreferences(defaults: defaults).configuration
+            XCTAssertFalse(value.showsBatteryDetails)
+            XCTAssertFalse(value.showsNetworkActivity)
+            XCTAssertFalse(value.showsLocalIPAddress)
+            XCTAssertTrue(value.showsPublicIPAddress)
+            XCTAssertEqual(value.panelDensity, .compact)
+        }
+    }
+
+    /// Saves from before the detail rows existed keep the new defaults:
+    /// local readings on, the outbound public-IP lookup off.
+    func testLegacySaveDefaultsNewDetailRows() throws {
+        try withDefaults { defaults in
+            defaults.set(Data(#"{"iconSize":24}"#.utf8), forKey: MenuBarPreferences.key)
+            let value = MenuBarPreferences(defaults: defaults).configuration
+            XCTAssertTrue(value.showsBatteryDetails)
+            XCTAssertTrue(value.showsNetworkActivity)
+            XCTAssertTrue(value.showsLocalIPAddress)
+            XCTAssertFalse(value.showsPublicIPAddress)
+            XCTAssertTrue(value.showsBluetoothSignalStrength)
+            XCTAssertFalse(value.enablesBluetoothDeviceControl)
+            XCTAssertEqual(value.panelDensity, .comfortable)
         }
     }
 

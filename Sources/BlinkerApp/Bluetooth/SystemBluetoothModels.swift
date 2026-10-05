@@ -12,6 +12,13 @@ struct BluetoothDevice: Identifiable, Equatable, Sendable {
     var isUnpairedGhost = false
     /// Battery channels from the same report; nil when the device reports none.
     var battery: BluetoothDeviceBattery?
+    /// Signal strength in dBm from the same report, when the system has a
+    /// measurement; a snapshot value, freshest for recently seen devices.
+    var rssi: Int?
+    /// A2DP codec while audio streams; undocumented system value, shown
+    /// only for the identifiers macOS is known to negotiate, and only read
+    /// after the Bluetooth grant (see BluetoothConnectionDetails).
+    var audioCodec: BluetoothConnectionDetails.AudioCodec?
 
     /// Address reduced to uppercase hex digits, the deduplication key. Two
     /// spellings of one address (`aa-bb` vs `AA:BB`) fold to one row.

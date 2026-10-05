@@ -21,6 +21,7 @@ struct MenuBarConfiguration: Codable, Equatable {
     enum ScrollScope: String, Codable, CaseIterable { case panel, volumeControl }
     enum ScrollDirection: String, Codable, CaseIterable { case upward = "up", down }
     enum Section: String, Codable, CaseIterable { case battery, network, volume, bluetooth }
+    enum PanelDensity: String, Codable, CaseIterable { case comfortable, compact }
 
     var placement: Placement = .menuBar
     var dockBackground: DockBackground = .system
@@ -74,6 +75,26 @@ struct MenuBarConfiguration: Codable, Equatable {
     /// Nearby BLE battery scan (A4). Default off: it carries the Bluetooth
     /// authorization prompt and periodic radio use.
     var scansNearbyBluetoothDevices = false
+    /// Panel battery block: cycle count, health, temperature and power rows
+    /// from the battery controller; unavailable fields simply stay hidden.
+    var showsBatteryDetails = true
+    /// Panel network block: averaged up/down throughput row.
+    var showsNetworkActivity = true
+    /// Panel network block: the machine's own IPv4 address row. Local only.
+    var showsLocalIPAddress = true
+    /// Panel network block: external address from a lookup endpoint. This is
+    /// the only outbound request the panel can make, so it defaults off and
+    /// settings name the endpoint.
+    var showsPublicIPAddress = false
+    /// Panel bluetooth block: signal-strength subtitles from the system
+    /// report, when a measurement exists. No permission required.
+    var showsBluetoothSignalStrength = true
+    /// Panel bluetooth block: codec subtitles and per-device disconnect via
+    /// IOBluetooth, which is gated by the same Bluetooth privacy grant as
+    /// the nearby scan. Default off; enabling requests the grant in context.
+    var enablesBluetoothDeviceControl = false
+    /// Section spacing and padding in the status panel.
+    var panelDensity: PanelDensity = .comfortable
 
     var showsMenuBar: Bool {
         placement != .dock

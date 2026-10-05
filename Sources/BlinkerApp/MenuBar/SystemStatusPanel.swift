@@ -13,6 +13,7 @@ struct SystemStatusPanel: View {
     @State var expandedBluetoothDevices = false
 
     var body: some View {
+        let density = preferences.configuration.panelDensity
         VStack(spacing: 0) {
             HStack {
                 Text("系统状态").font(.headline)
@@ -26,9 +27,9 @@ struct SystemStatusPanel: View {
                 }
                 .labelStyle(.iconOnly).buttonStyle(.borderless)
             }
-            .padding(16)
+            .padding(density.headerPadding)
             ScrollView {
-                VStack(alignment: .leading, spacing: 18) {
+                VStack(alignment: .leading, spacing: density.sectionSpacing) {
                     ForEach(preferences.configuration.visibleSections, id: \.self) { section in
                         switch section {
                         case .battery: batterySection
@@ -46,7 +47,8 @@ struct SystemStatusPanel: View {
                             .fixedSize(horizontal: false, vertical: true)
                     }
                 }
-                .padding(.horizontal, 16).padding(.bottom, 16)
+                .padding(.horizontal, density.horizontalPadding)
+                .padding(.bottom, density.horizontalPadding)
             }
             .scrollBounceBehavior(.basedOnSize)
             .frame(maxHeight: 460)
@@ -56,19 +58,26 @@ struct SystemStatusPanel: View {
                 Spacer()
                 Button("状态图标设置…", action: onOpenSettings)
             }
-            .buttonStyle(.borderless).padding(14)
+            .buttonStyle(.borderless).padding(density.footerPadding)
         }
         .frame(width: 340)
         .fixedSize(horizontal: false, vertical: true)
     }
 
     private var batterySection: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading,
+               spacing: preferences.configuration.panelDensity.rowSpacing) {
             heading("电池", symbol: "battery.100percent", page: .battery)
             Text(monitor.snapshot.batteryDescription).font(.title3).monospacedDigit()
             if let value = monitor.snapshot.battery?.percentage {
                 ProgressView(value: Double(value), total: 100).tint(batteryColor)
                     .accessibilityLabel("电量").accessibilityValue("\(value)%")
+            }
+            if preferences.configuration.showsBatteryDetails,
+               let details = monitor.snapshot.batteryDetails {
+                batteryDetailsRows(details)
+                    .font(.caption).foregroundStyle(.secondary)
+                    .monospacedDigit()
             }
             settingsLink("电池设置…", destination: "com.apple.Battery-Settings.extension")
         }
@@ -87,7 +96,8 @@ struct SystemStatusPanel: View {
     }
 
     private var networkSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading,
+               spacing: preferences.configuration.panelDensity.rowSpacing) {
             heading("网络", symbol: "network", page: .networkAndVolume)
             Text(monitor.snapshot.networkDescription)
             if case let .wifi(strength) = monitor.snapshot.network {
@@ -96,74 +106,14 @@ struct SystemStatusPanel: View {
                     systemImage: "wifi")
                     .foregroundStyle(.secondary).font(.callout)
             }
-            if preferences.configuration.showsWiFiName {
-                wifiNameRow
-            }
-            if preferences.configuration.showsVPNStatus, let vpn = monitor.snapshot.vpn {
-                vpnRow(vpn)
-            }
+            networkDetailRows
             settingsLink("网络设置…", destination: "com.apple.Network-Settings.extension")
         }
     }
 
-    @ViewBuilder
-    private var wifiNameRow: some View {
-        if let name = monitor.snapshot.wifiName {
-            Label(name, systemImage: "wifi")
-                .foregroundStyle(.secondary).font(.callout).lineLimit(2)
-        } else {
-            switch monitor.wiFiNameAccess {
-            case .authorized:
-                EmptyView()
-            case .notDetermined:
-                Button {
-                    handleWiFiNameAccess(monitor.requestWiFiNameAccess())
-                } label: {
-                    Label("允许定位以显示 Wi-Fi 名称", systemImage: "location")
-                        .font(.callout)
-                }
-                .buttonStyle(.borderless)
-            case .denied, .restricted:
-                Button {
-                    openLocationSettings()
-                } label: {
-                    Label("定位已关闭，无法显示 Wi-Fi 名称", systemImage: "location.slash")
-                        .font(.callout)
-                }
-                .buttonStyle(.borderless).foregroundStyle(.secondary)
-            }
-        }
-    }
-
-    private func handleWiFiNameAccess(_ result: WiFiNameAccessRequestResult) {
-        if result == .openLocationSettings {
-            openLocationSettings()
-        }
-    }
-
-    private func openLocationSettings() {
-        guard let url = ProjectLinks.locationPrivacy else { return }
-        NSWorkspace.shared.open(url)
-    }
-
-    private func vpnRow(_ vpn: MenuBarSystemSnapshot.VPN) -> some View {
-        HStack(spacing: 6) {
-            Image(systemName: vpn.isTunnelConnected ? "lock.shield" : "network.badge.shield.half.filled")
-                .frame(width: 18)
-            if let service = vpn.serviceName {
-                Text("VPN：\(service)").lineLimit(2)
-            } else if vpn.isTunnelConnected {
-                Text("VPN：已连接")
-            } else if let endpoint = vpn.proxyEndpoint {
-                Text("代理：\(endpoint)").lineLimit(2)
-            }
-        }
-        .foregroundStyle(.secondary).font(.callout)
-        .accessibilityElement(children: .combine)
-    }
-
     private var volumeSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading,
+               spacing: preferences.configuration.panelDensity.rowSpacing) {
             heading("音量", symbol: "speaker.wave.2", page: .panel)
             if let device = audio.outputs.first(where: { $0.id == audio.currentDeviceID }) {
                 Text(device.name).font(.callout).foregroundStyle(.secondary).lineLimit(2)

@@ -21,6 +21,17 @@ struct SystemStatusReadOptions: Equatable, Sendable {
     var includeWiFiName = false
     /// Paired Bluetooth devices via one `system_profiler` subprocess.
     var includeBluetoothDevices = false
+    /// Cycle count, health, temperature and power from the battery controller.
+    var includeBatteryDetails = false
+    /// Averaged up/down throughput since the previous read.
+    var includeNetworkActivity = false
+    /// The machine's own IPv4 address.
+    var includeLocalIPAddress = false
+    /// External address from a lookup endpoint; the only outbound request.
+    var includePublicIPAddress = false
+    /// A2DP codec enrichment via IOBluetooth. Only set after the Bluetooth
+    /// privacy grant is confirmed; ungranted reads never touch IOBluetooth.
+    var includeBluetoothDeviceControl = false
 }
 
 @MainActor

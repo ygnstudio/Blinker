@@ -5,7 +5,8 @@ import SwiftUI
 /// the nearby BLE readings, plus the scan's permission guidance.
 extension SystemStatusPanel {
     var bluetoothSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading,
+               spacing: preferences.configuration.panelDensity.rowSpacing) {
             heading("蓝牙", symbol: "antenna.radiowaves.left.and.right", page: .bluetooth)
             bluetoothContent
             if preferences.configuration.scansNearbyBluetoothDevices {
@@ -55,7 +56,13 @@ extension SystemStatusPanel {
     private func bluetoothRow(_ device: BluetoothDevice) -> some View {
         HStack(spacing: 6) {
             Image(systemName: device.kind.symbolName).frame(width: 18)
-            Text(device.name).lineLimit(2).fixedSize(horizontal: false, vertical: true)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(device.name).lineLimit(2).fixedSize(horizontal: false, vertical: true)
+                if let subtitle = bluetoothSubtitle(device) {
+                    Text(subtitle)
+                        .font(.caption).foregroundStyle(.tertiary)
+                }
+            }
             Spacer(minLength: 8)
             if let battery = device.battery {
                 bluetoothBatteryView(battery)
@@ -63,10 +70,46 @@ extension SystemStatusPanel {
                 Text("未连接")
                     .font(.caption).foregroundStyle(.tertiary)
             }
+            if preferences.configuration.enablesBluetoothDeviceControl,
+               scanner.authorization == .allowedAlways, device.isConnected {
+                Button(String(localized: "断开")) { disconnect(device) }
+                    .buttonStyle(.borderless).font(.caption)
+                    .help("断开当前连接；设备保持已配对，可随时重新连接")
+                    .accessibilityLabel(String(localized: "断开") + " " + device.name)
+            }
         }
         .font(.callout)
         .foregroundStyle(device.isConnected ? .primary : .secondary)
         .accessibilityElement(children: .combine)
+    }
+
+    /// Codec requires the device-control opt-in and the Bluetooth grant;
+    /// signal strength comes from the system report without any permission.
+    private func bluetoothSubtitle(_ device: BluetoothDevice) -> String? {
+        let configuration = preferences.configuration
+        var parts: [String] = []
+        if configuration.enablesBluetoothDeviceControl, let codec = device.audioCodec {
+            parts.append(codec.rawValue)
+        }
+        if configuration.showsBluetoothSignalStrength, let rssi = device.rssi {
+            parts.append("\(rssi) dBm")
+        }
+        return parts.isEmpty ? nil : parts.joined(separator: " · ")
+    }
+
+    /// The profiler cache holds the previous list for a few seconds, so the
+    /// row is refreshed once quickly and again after the cache expires.
+    private func disconnect(_ device: BluetoothDevice) {
+        let address = device.id
+        DispatchQueue.global(qos: .userInitiated).async {
+            _ = BluetoothConnectionDetails.disconnect(address: address)
+            Task { @MainActor in
+                try? await Task.sleep(nanoseconds: 1_000_000_000)
+                monitor.refresh()
+                try? await Task.sleep(nanoseconds: 5_000_000_000)
+                monitor.refresh()
+            }
+        }
     }
 
     private func bluetoothBatteryView(_ battery: BluetoothDeviceBattery) -> some View {

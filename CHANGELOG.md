@@ -5,6 +5,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+
+- Status panel battery section can show cycle count, health, temperature and charge/discharge power from the battery controller; unavailable fields stay hidden and Macs without a battery show nothing.
+- Status panel network section can show averaged up/down throughput, the local IPv4 address and — off by default, naming the api.ipify.org endpoint — the public IP, the panel's only outbound request.
+- Bluetooth device rows can show the system-reported signal strength; a separate opt-in, sharing the Bluetooth privacy grant with nearby scanning, adds A2DP codec subtitles and a per-device Disconnect action that keeps the pairing.
+- Status panel density switches between Comfortable and Compact, and every secondary row (battery details, throughput, IPs, Wi-Fi name, VPN, audio input, signal strength, codec) has its own settings toggle.
+
 ## [0.7.0] - 2026-10-04
 
 ### Added

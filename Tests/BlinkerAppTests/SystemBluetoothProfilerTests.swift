@@ -122,4 +122,30 @@ final class SystemBluetoothProfilerTests: XCTestCase {
         ]])
         XCTAssertNil(SystemBluetoothProfiler.parse(json: json)?.first?.battery)
     }
+
+    func testRSSIValidation() {
+        XCTAssertEqual(SystemBluetoothProfiler.rssi(NSNumber(value: -67)), -67)
+        XCTAssertEqual(SystemBluetoothProfiler.rssi("-89"), -89)
+        XCTAssertEqual(SystemBluetoothProfiler.rssi(NSNumber(value: 0)), 0)
+        XCTAssertEqual(SystemBluetoothProfiler.rssi(NSNumber(value: -100)), -100)
+        XCTAssertEqual(SystemBluetoothProfiler.rssi(NSNumber(value: 20)), 20)
+        XCTAssertNil(SystemBluetoothProfiler.rssi(NSNumber(value: 127)))
+        XCTAssertNil(SystemBluetoothProfiler.rssi(NSNumber(value: -128)))
+        XCTAssertNil(SystemBluetoothProfiler.rssi(NSNumber(value: -67.5)))
+        XCTAssertNil(SystemBluetoothProfiler.rssi("loud"))
+        XCTAssertNil(SystemBluetoothProfiler.rssi(nil))
+    }
+
+    func testReportRSSILandsOnTheDevice() throws {
+        let json = try report([[
+            "device_not_connected": [
+                entry("Speaker", address: "AA:BB:CC:00:00:0A", minorType: "Speaker",
+                      battery: ["device_rssi": NSNumber(value: -71)]),
+                entry("Mouse", address: "AA:BB:CC:00:00:0B", minorType: "Mouse"),
+            ],
+        ]])
+        let devices = SystemBluetoothProfiler.parse(json: json)
+        XCTAssertEqual(devices?.first { $0.name == "Speaker" }?.rssi, -71)
+        XCTAssertNil(devices?.first { $0.name == "Mouse" }?.rssi)
+    }
 }

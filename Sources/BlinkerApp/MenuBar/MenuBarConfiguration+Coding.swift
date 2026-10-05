@@ -45,6 +45,13 @@ extension MenuBarConfiguration {
         case hiddenBluetoothDevices
         case hidesUnpairedBluetoothDevices
         case scansNearbyBluetoothDevices
+        case showsBatteryDetails
+        case showsNetworkActivity
+        case showsLocalIPAddress
+        case showsPublicIPAddress
+        case showsBluetoothSignalStrength
+        case enablesBluetoothDeviceControl
+        case panelDensity
     }
 
     /// New settings retain defaults when reading an older saved configuration.
@@ -97,6 +104,10 @@ extension MenuBarConfiguration {
         showsVPNStatus = values.decode(.showsVPNStatus, default: showsVPNStatus)
         showsWiFiName = values.decode(.showsWiFiName, default: showsWiFiName)
         showsAudioInput = values.decode(.showsAudioInput, default: showsAudioInput)
+        showsBatteryDetails = values.decode(.showsBatteryDetails, default: showsBatteryDetails)
+        showsNetworkActivity = values.decode(.showsNetworkActivity, default: showsNetworkActivity)
+        showsLocalIPAddress = values.decode(.showsLocalIPAddress, default: showsLocalIPAddress)
+        showsPublicIPAddress = values.decode(.showsPublicIPAddress, default: showsPublicIPAddress)
     }
 
     private mutating func decodeInteraction(from values: KeyedDecodingContainer<CodingKeys>) {
@@ -131,6 +142,15 @@ extension MenuBarConfiguration {
             .scansNearbyBluetoothDevices,
             default: scansNearbyBluetoothDevices
         )
+        showsBluetoothSignalStrength = values.decode(
+            .showsBluetoothSignalStrength,
+            default: showsBluetoothSignalStrength
+        )
+        enablesBluetoothDeviceControl = values.decode(
+            .enablesBluetoothDeviceControl,
+            default: enablesBluetoothDeviceControl
+        )
+        panelDensity = values.decode(.panelDensity, default: panelDensity)
     }
 }
 

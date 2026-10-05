@@ -11512,6 +11512,438 @@
           }
         }
       }
+    },
+    "循环 %lld 次": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld Cycles"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "循环 %lld 次"
+          }
+        }
+      }
+    },
+    "健康度 %lld%%": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Health %lld%%"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "健康度 %lld%%"
+          }
+        }
+      }
+    },
+    "充电 %@ W": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Charging %@ W"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "充电 %@ W"
+          }
+        }
+      }
+    },
+    "放电 %@ W": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Discharging %@ W"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "放电 %@ W"
+          }
+        }
+      }
+    },
+    "实时上下行速率": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Live Throughput"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "实时上下行速率"
+          }
+        }
+      }
+    },
+    "本机 IP %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Local IP %@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "本机 IP %@"
+          }
+        }
+      }
+    },
+    "公网 IP %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Public IP %@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "公网 IP %@"
+          }
+        }
+      }
+    },
+    "公网 IP 读取中…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reading Public IP…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "公网 IP 读取中…"
+          }
+        }
+      }
+    },
+    "断开": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Disconnect"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "断开"
+          }
+        }
+      }
+    },
+    "断开当前连接；设备保持已配对，可随时重新连接": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ends the current connection; the pairing is kept and the device can reconnect anytime."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "断开当前连接；设备保持已配对，可随时重新连接"
+          }
+        }
+      }
+    },
+    "显示电池详情": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show Battery Details"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "显示电池详情"
+          }
+        }
+      }
+    },
+    "面板电池区块": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Panel Battery Section"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "面板电池区块"
+          }
+        }
+      }
+    },
+    "循环次数、健康度、温度与充放功率读取自电池控制器；无内置电池的机型不显示。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cycle count, health, temperature and charge/discharge power come from the battery controller; Macs without an internal battery show nothing."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "循环次数、健康度、温度与充放功率读取自电池控制器；无内置电池的机型不显示。"
+          }
+        }
+      }
+    },
+    "显示实时上下行速率": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show Live Throughput"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "显示实时上下行速率"
+          }
+        }
+      }
+    },
+    "显示本机 IP": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show Local IP"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "显示本机 IP"
+          }
+        }
+      }
+    },
+    "显示公网 IP": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show Public IP"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "显示公网 IP"
+          }
+        }
+      }
+    },
+    "Wi-Fi 名称需要定位权限来解除系统对网络名称的隐藏；Blinker 不读取位置本身。VPN 行在检测到隧道或系统代理时显示。速率为两次刷新间的平均值；公网 IP 通过 api.ipify.org 查询，仅在开启时发起请求。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Un-redacting the Wi-Fi name requires Location Services; Blinker never reads location itself. The VPN row appears when a tunnel or system proxy is detected. Throughput averages between refreshes; the public IP is queried from api.ipify.org only while enabled."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wi-Fi 名称需要定位权限来解除系统对网络名称的隐藏；Blinker 不读取位置本身。VPN 行在检测到隧道或系统代理时显示。速率为两次刷新间的平均值；公网 IP 通过 api.ipify.org 查询，仅在开启时发起请求。"
+          }
+        }
+      }
+    },
+    "显示信号强度": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show Signal Strength"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "显示信号强度"
+          }
+        }
+      }
+    },
+    "与系统设置的「我的设备」一致：未配对的扫描残留默认隐藏。信号强度取自系统蓝牙报告，无需权限；无测量值的设备不显示。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Matches System Settings' My Devices: unpaired inquiry residue is hidden by default. Signal strength comes from the system Bluetooth report without any permission; devices without a measurement show nothing."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "与系统设置的「我的设备」一致：未配对的扫描残留默认隐藏。信号强度取自系统蓝牙报告，无需权限；无测量值的设备不显示。"
+          }
+        }
+      }
+    },
+    "编解码器与断开操作": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Codec & Disconnect"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "编解码器与断开操作"
+          }
+        }
+      }
+    },
+    "已连接设备": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connected Devices"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已连接设备"
+          }
+        }
+      }
+    },
+    "开启后申请蓝牙权限（与附近设备扫描同一授权），面板显示音频编解码器并为已连接设备提供「断开」；断开仅结束当前连接，配对关系保留。未授权时不影响其他功能。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enabling requests the Bluetooth grant (shared with nearby scanning). The panel then shows the audio codec and offers Disconnect for connected devices; disconnecting only ends the current link and the pairing is kept. Everything else works without the grant."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "开启后申请蓝牙权限（与附近设备扫描同一授权），面板显示音频编解码器并为已连接设备提供「断开」；断开仅结束当前连接，配对关系保留。未授权时不影响其他功能。"
+          }
+        }
+      }
+    },
+    "面板密度": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Panel Density"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "面板密度"
+          }
+        }
+      }
+    },
+    "紧凑密度缩小区块间距与边距，设备较多时可在一屏内查看。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Compact reduces section spacing and padding so more devices fit on one screen."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "紧凑密度缩小区块间距与边距，设备较多时可在一屏内查看。"
+          }
+        }
+      }
+    },
+    "舒适": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Comfortable"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "舒适"
+          }
+        }
+      }
+    },
+    "紧凑": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Compact"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "紧凑"
+          }
+        }
+      }
+    },
+    "0 B/s": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "0 B/s"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "0 B/s"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

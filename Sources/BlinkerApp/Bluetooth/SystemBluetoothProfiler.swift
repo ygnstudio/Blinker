@@ -137,7 +137,8 @@ final class SystemBluetoothProfiler: @unchecked Sendable {
             kind: BluetoothDeviceKindResolver.kind(properties: properties),
             isConnected: connected,
             isUnpairedGhost: isGhost(properties: properties),
-            battery: battery(properties: properties)
+            battery: battery(properties: properties),
+            rssi: rssi(properties["device_rssi"])
         )
     }
 
@@ -157,6 +158,24 @@ final class SystemBluetoothProfiler: @unchecked Sendable {
             caseLevel: percentage(properties["device_batteryLevelCase"])
         )
         return value.hasAny ? value : nil
+    }
+
+    /// Last measured signal strength as reported by the system. The value
+    /// is a snapshot — fresher for recently seen devices — and simply absent
+    /// for most connected entries, where the row then shows no reading.
+    /// Numbers and signed strings parse; 127 is the HCI "invalid" sentinel.
+    static func rssi(_ value: Any?) -> Int? {
+        let raw: Int?
+        switch value {
+        case let number as NSNumber:
+            raw = number.doubleValue.rounded() == number.doubleValue ? number.intValue : nil
+        case let string as String:
+            raw = Int(string.trimmingCharacters(in: .whitespacesAndNewlines))
+        default:
+            raw = nil
+        }
+        guard let raw, (-100 ... 20).contains(raw) else { return nil }
+        return raw
     }
 
     /// Levels arrive as `NSNumber` or a percent-suffixed string; anything

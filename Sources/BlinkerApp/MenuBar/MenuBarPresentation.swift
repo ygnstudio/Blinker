@@ -104,13 +104,28 @@ final class MenuBarPresentation: NSObject, NSPopoverDelegate, NSWindowDelegate {
         render(monitor.snapshot, configuration: preferences.configuration)
     }
 
-    private func render(_ snapshot: MenuBarSystemSnapshot, configuration: MenuBarConfiguration) {
-        monitor.setRefreshInterval(configuration.refreshInterval)
-        monitor.setReadOptions(SystemStatusReadOptions(
+    /// Panel toggles decide what each read pays for; IOBluetooth is only
+    /// touched after the Bluetooth grant is confirmed.
+    private func readOptions(for configuration: MenuBarConfiguration) -> SystemStatusReadOptions {
+        let networkEnabled = configuration.enabledSections.contains(.network)
+        return SystemStatusReadOptions(
             includeVPN: configuration.showsVPNStatus,
             includeWiFiName: configuration.showsWiFiName,
-            includeBluetoothDevices: configuration.enabledSections.contains(.bluetooth)
-        ))
+            includeBluetoothDevices: configuration.enabledSections.contains(.bluetooth),
+            includeBatteryDetails: configuration.showsBatteryDetails
+                && configuration.enabledSections.contains(.battery),
+            includeNetworkActivity: configuration.showsNetworkActivity && networkEnabled,
+            includeLocalIPAddress: configuration.showsLocalIPAddress && networkEnabled,
+            includePublicIPAddress: configuration.showsPublicIPAddress && networkEnabled,
+            includeBluetoothDeviceControl: configuration.enablesBluetoothDeviceControl
+                && configuration.enabledSections.contains(.bluetooth)
+                && scanner.authorization == .allowedAlways
+        )
+    }
+
+    private func render(_ snapshot: MenuBarSystemSnapshot, configuration: MenuBarConfiguration) {
+        monitor.setRefreshInterval(configuration.refreshInterval)
+        monitor.setReadOptions(readOptions(for: configuration))
         if !suspended {
             // The scan only has somewhere to display while the block is visible.
             scanner.setEnabled(configuration.scansNearbyBluetoothDevices

@@ -23,6 +23,17 @@ struct MenuBarPanelSettings: View {
         MenuBarOutputDeviceSettings(preferences: preferences, audio: audio)
             .disabled(!isVolumeSectionEnabled)
         Section {
+            Picker("面板密度", selection: binding(\.panelDensity)) {
+                ForEach(MenuBarConfiguration.PanelDensity.allCases, id: \.self) {
+                    Text($0.title).tag($0)
+                }
+            }
+        } header: {
+            Text("面板密度")
+        } footer: {
+            Text("紧凑密度缩小区块间距与边距，设备较多时可在一屏内查看。")
+        }
+        Section {
             Toggle("滚动调节音量", isOn: binding(\.scrollAdjustsVolume))
                 .disabled(!isVolumeSectionEnabled)
             Picker("响应范围", selection: binding(\.scrollScope)) {
