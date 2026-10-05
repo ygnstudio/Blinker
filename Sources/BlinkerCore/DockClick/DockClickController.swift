@@ -91,13 +91,14 @@ public final class DockClickController: ObservableObject {
     }
 
     private func handle(_ candidate: DockClickCandidate, waitForActivation: Bool = true) {
-        guard isEnabled, isAvailable, observer.isCurrent(candidate.ticket), AccessibilityPermission.isTrusted,
-              candidate.isFresh(at: ProcessInfo.processInfo.systemUptime),
-              NSEvent.pressedMouseButtons == 0,
-              let application = NSWorkspace.shared.runningApplications.first(where: {
-                  $0.bundleURL?.standardizedFileURL == candidate.applicationURL
-              }), !application.isTerminated, application.activationPolicy == .regular,
-              application.processIdentifier != ProcessInfo.processInfo.processIdentifier else { return }
+        guard Self.acceptsCompletedClick(candidate, isActive: isEnabled && isAvailable,
+                                         isCurrent: observer.isCurrent(candidate.ticket),
+                                         isTrusted: AccessibilityPermission.isTrusted,
+                                         uptime: ProcessInfo.processInfo.systemUptime),
+            let application = NSWorkspace.shared.runningApplications.first(where: {
+                $0.bundleURL?.standardizedFileURL == candidate.applicationURL
+            }), !application.isTerminated, application.activationPolicy == .regular,
+            application.processIdentifier != ProcessInfo.processInfo.processIdentifier else { return }
         let allowed = !SessionPause.shared.contains(application.bundleIdentifier ?? "")
         let currentPID = NSWorkspace.shared.frontmostApplication?.processIdentifier
         if waitForActivation, allowed, currentPID != application.processIdentifier,
@@ -108,6 +109,14 @@ public final class DockClickController: ObservableObject {
         actions.route(pid: application.processIdentifier, frontmostPIDAtDown: candidate.frontmostPIDAtDown,
                       currentPID: currentPID, eligibleWindowIDs: candidate.eligibleWindowIDs,
                       isAllowed: allowed)
+    }
+
+    static func acceptsCompletedClick(_ candidate: DockClickCandidate, isActive: Bool,
+                                      isCurrent: Bool, isTrusted: Bool, uptime: TimeInterval) -> Bool {
+        // The candidate already contains a validated mouse-up; AppKit's global
+        // button bitmap may still report the preceding down. A subsequent input
+        // invalidates the observer ticket instead of relying on that stale bitmap.
+        isActive && isCurrent && isTrusted && candidate.isFresh(at: uptime)
     }
 
     private func applicationTerminated(_ app: NSRunningApplication) {
