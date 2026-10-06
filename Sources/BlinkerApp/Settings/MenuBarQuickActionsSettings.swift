@@ -12,10 +12,12 @@ struct MenuBarQuickActionsSettings: View {
             Toggle("麦克风静音", isOn: binding(\.showsQuickActionMicMute))
             Toggle("显示器清洁模式", isOn: binding(\.showsQuickActionDisplayCleaning))
             Toggle("键盘清洁模式", isOn: binding(\.showsQuickActionKeyboardCleaning))
+            Toggle("清空回收站", isOn: binding(\.showsQuickActionEmptyTrash))
         } header: {
             Text("面板显示")
         } footer: {
             Text("显示器清洁以全屏黑窗覆盖所有屏幕，无需权限。键盘清洁通过系统级事件拦截锁定键盘与媒体键，需辅助功能与输入监控权限；权限不足时会先引导授权。")
+            Text("清空回收站仅针对启动盘，删除前需二次确认；外置盘的回收站请在访达中清倒。")
         }
         Section {
             ForEach(0 ..< 3, id: \.self) { index in

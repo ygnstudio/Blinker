@@ -1,9 +1,9 @@
 import SwiftUI
 
 /// The quick actions block: microphone mute for the default input, display
-/// and keyboard cleaning overlays, and the user's named Shortcut slots.
-/// Rows the user hides in settings simply leave the block out; an entirely
-/// empty block hides the section.
+/// and keyboard cleaning overlays, trash emptying, and the user's named
+/// Shortcut slots. Rows the user hides in settings simply leave the block
+/// out; an entirely empty block hides the section.
 extension SystemStatusPanel {
     enum ShortcutSlotState: Equatable {
         case idle, running, failed(ShortcutRunner.Failure)
@@ -15,6 +15,7 @@ extension SystemStatusPanel {
         return configuration.showsQuickActionMicMute
             || configuration.showsQuickActionDisplayCleaning
             || configuration.showsQuickActionKeyboardCleaning
+            || configuration.showsQuickActionEmptyTrash
             || !configuration.shortcutSlots.isEmpty
     }
 
@@ -56,6 +57,9 @@ extension SystemStatusPanel {
                         cleaning.start(.keyboard)
                     }
                 }
+                if configuration.showsQuickActionEmptyTrash {
+                    trashRow
+                }
                 ForEach(configuration.shortcutSlots, id: \.self, content: shortcutRow)
             }
         }
@@ -96,6 +100,48 @@ extension SystemStatusPanel {
                 .help(help)
         }
         .font(.callout)
+    }
+
+    /// Trash row: the snapshot's item count, a confirm-before-empty button,
+    /// and an inline note for items the system refused to delete. Emptying
+    /// is destructive, so the button never acts directly.
+    private var trashRow: some View {
+        let count = monitor.snapshot.trashItemCount
+        return VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 6) {
+                Image(systemName: "trash").frame(width: 18)
+                Text("回收站")
+                if let count, count > 0 {
+                    Text(String(localized: "\(count) 项"))
+                        .font(.caption).foregroundStyle(.tertiary)
+                }
+                Spacer(minLength: 8)
+                if trashEmptier.isEmptying {
+                    ProgressView().controlSize(.small)
+                } else {
+                    Button("清空") { confirmingTrashEmpty = true }
+                        .buttonStyle(.borderless)
+                        .disabled(count == 0)
+                        .help(String(localized: "清空回收站"))
+                }
+            }
+            .font(.callout)
+            if let unemptied = trashEmptier.unemptiedCount {
+                Text(String(localized: "\(unemptied) 个项目无法删除（可能正被使用）"))
+                    .font(.caption).foregroundStyle(.red)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .accessibilityElement(children: .combine)
+        .confirmationDialog("清空回收站？", isPresented: $confirmingTrashEmpty,
+                            titleVisibility: .visible) {
+            Button("清空回收站", role: .destructive) {
+                trashEmptier.empty { monitor.refresh() }
+            }
+            Button("取消", role: .cancel) {}
+        } message: {
+            Text("将永久删除启动盘回收站中的所有项目，此操作无法撤销。")
+        }
     }
 
     private func shortcutRow(_ name: String) -> some View {

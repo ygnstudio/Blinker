@@ -36,6 +36,8 @@ struct SystemStatusReadOptions: Equatable, Sendable {
     var includeStorage = false
     /// CPU load, memory, swap and uptime from mach host calls.
     var includePerformance = false
+    /// Trash item count for the quick actions page. Cheap local listing.
+    var includeTrash = false
 }
 
 @MainActor

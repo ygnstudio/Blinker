@@ -18,7 +18,9 @@ struct SystemStatusPanel: View {
     @State private var page = PanelPage.status
     @State var expandedBluetoothDevices = false
     @State var shortcutSlotStates: [String: ShortcutSlotState] = [:]
+    @State var confirmingTrashEmpty = false
     @StateObject var ejector = VolumeEjectController()
+    @StateObject var trashEmptier = TrashEmptyController()
 
     var body: some View {
         let density = preferences.configuration.panelDensity

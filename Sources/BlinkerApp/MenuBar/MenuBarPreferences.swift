@@ -109,6 +109,8 @@ struct MenuBarConfiguration: Codable, Equatable {
     var showsQuickActionDisplayCleaning = true
     /// Quick actions section: keyboard cleaning overlay entry.
     var showsQuickActionKeyboardCleaning = true
+    /// Quick actions section: empty-trash row for the boot volume's trash.
+    var showsQuickActionEmptyTrash = true
     /// User-named Shortcut slots run from the panel. Blinker does not know
     /// what a shortcut does; 0...3 names, matched against the Shortcuts app.
     var shortcutSlots: [String] = []

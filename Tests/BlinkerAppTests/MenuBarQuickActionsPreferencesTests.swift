@@ -64,12 +64,14 @@ final class MenuBarQuickActionsPreferencesTests: XCTestCase {
                 $0.showsQuickActionMicMute = false
                 $0.showsQuickActionDisplayCleaning = false
                 $0.showsQuickActionKeyboardCleaning = false
+                $0.showsQuickActionEmptyTrash = false
                 $0.shortcutSlots = ["  清洁模式  ", "", "清洁模式", "夜间", longName, "第四个" ]
             }
             let value = MenuBarPreferences(defaults: defaults).configuration
             XCTAssertFalse(value.showsQuickActionMicMute)
             XCTAssertFalse(value.showsQuickActionDisplayCleaning)
             XCTAssertFalse(value.showsQuickActionKeyboardCleaning)
+            XCTAssertFalse(value.showsQuickActionEmptyTrash)
             XCTAssertEqual(value.shortcutSlots, ["清洁模式", "夜间", String(repeating: "长", count: 64)])
         }
     }

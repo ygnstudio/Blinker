@@ -55,6 +55,7 @@ extension MenuBarConfiguration {
         case showsQuickActionMicMute
         case showsQuickActionDisplayCleaning
         case showsQuickActionKeyboardCleaning
+        case showsQuickActionEmptyTrash
         case shortcutSlots
         case showsInternalStorage
         case showsExternalVolumes
@@ -181,6 +182,10 @@ extension MenuBarConfiguration {
         showsQuickActionKeyboardCleaning = values.decode(
             .showsQuickActionKeyboardCleaning,
             default: showsQuickActionKeyboardCleaning
+        )
+        showsQuickActionEmptyTrash = values.decode(
+            .showsQuickActionEmptyTrash,
+            default: showsQuickActionEmptyTrash
         )
         shortcutSlots = values.decode(.shortcutSlots, default: shortcutSlots)
         showsInternalStorage = values.decode(.showsInternalStorage, default: showsInternalStorage)

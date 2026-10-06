@@ -128,7 +128,9 @@ final class MenuBarPresentation: NSObject, NSPopoverDelegate, NSWindowDelegate {
                 && configuration.enabledSections.contains(.bluetooth)
                 && scanner.authorization == .allowedAlways,
             includeStorage: configuration.enabledSections.contains(.storage),
-            includePerformance: configuration.enabledSections.contains(.performance)
+            includePerformance: configuration.enabledSections.contains(.performance),
+            includeTrash: configuration.enabledSections.contains(.quickActions)
+                && configuration.showsQuickActionEmptyTrash
         )
     }
 

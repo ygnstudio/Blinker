@@ -84,6 +84,9 @@ struct MenuBarSystemSnapshot: Equatable, Sendable {
     /// CPU load, memory, swap and uptime; nil while the performance
     /// section is hidden.
     var performance: SystemPerformance.Value?
+    /// Top-level entries in the user's trash; nil while the quick actions
+    /// page or its trash row is hidden.
+    var trashItemCount: Int?
 
     static let unknown = Self(battery: nil, network: .unknown, volume: nil)
 
@@ -94,7 +97,8 @@ struct MenuBarSystemSnapshot: Equatable, Sendable {
          networkActivity: NetworkActivity? = nil,
          localIPAddress: String? = nil, publicIPAddress: String? = nil,
          storage: SystemStorageInfo.Value? = nil,
-         performance: SystemPerformance.Value? = nil) {
+         performance: SystemPerformance.Value? = nil,
+         trashItemCount: Int? = nil) {
         self.battery = battery
         self.network = network
         self.volume = volume
@@ -107,5 +111,6 @@ struct MenuBarSystemSnapshot: Equatable, Sendable {
         self.publicIPAddress = publicIPAddress
         self.storage = storage
         self.performance = performance
+        self.trashItemCount = trashItemCount
     }
 }

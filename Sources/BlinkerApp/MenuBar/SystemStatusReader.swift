@@ -53,33 +53,30 @@ final class SystemStatusReader: SystemStatusReading {
                 devices = BluetoothConnectionDetails.attachingCodecs(to: listed)
             }
             let batteryDetails = options.includeBatteryDetails ? SystemBatteryDetails.read() : nil
-            let storage = options.includeStorage ? SystemStorageInfo.read() : nil
-            let performance = performanceSampler.read(include: options.includePerformance)
-            let networkReading = networkSampler.read(
-                includeActivity: options.includeNetworkActivity,
-                includeAddress: options.includeLocalIPAddress
-            )
+            let additions = Self.readPanelAdditions(options: options, networkSampler: networkSampler,
+                                                    performanceSampler: performanceSampler)
             let publicAddress: String? = options.includePublicIPAddress ? publicIP.cachedValue() : nil
             if options.includePublicIPAddress {
                 publicIP.refreshIfNeeded(onChange: changed)
             }
             let volume = audio.read(onChange: changed)
+            let wifiName = options.includeWiFiName ? Self.readWiFiName(network: network) : nil
             // A stop during synchronous IPC cannot interrupt the system call.
             // Retire listeners before returning instead of starting another worker.
             if !lifetime.isActive(generation) {
                 audio.stop()
             }
             let result = MenuBarSystemSnapshot(battery: battery, network: network, volume: volume,
-                                               wifiName: options.includeWiFiName
-                                                   ? Self.readWiFiName(network: network) : nil,
+                                               wifiName: wifiName,
                                                vpn: vpn,
                                                bluetoothDevices: devices,
                                                batteryDetails: batteryDetails,
-                                               networkActivity: networkReading.activity,
-                                               localIPAddress: networkReading.localIPv4,
+                                               networkActivity: additions.networkActivity,
+                                               localIPAddress: additions.localIPAddress,
                                                publicIPAddress: publicAddress,
-                                               storage: storage,
-                                               performance: performance)
+                                               storage: additions.storage,
+                                               performance: additions.performance,
+                                               trashItemCount: additions.trashItemCount)
             Task { @MainActor in completion(result) }
         }
     }
@@ -97,6 +94,27 @@ final class SystemStatusReader: SystemStatusReading {
     deinit {
         let audio = audio
         queue.async { audio.stop() }
+    }
+
+    /// Optional panel blocks with no system listener of their own. The
+    /// network sampler is read exactly once per cycle: its throughput is a
+    /// delta between reads, so a second call would corrupt the baseline.
+    private nonisolated static func readPanelAdditions(
+        options: SystemStatusReadOptions,
+        networkSampler: NetworkThroughputSampler,
+        performanceSampler: SystemPerformanceSampler
+    ) -> SystemStatusPanelAdditions {
+        let networkReading = networkSampler.read(
+            includeActivity: options.includeNetworkActivity,
+            includeAddress: options.includeLocalIPAddress
+        )
+        return SystemStatusPanelAdditions(
+            storage: options.includeStorage ? SystemStorageInfo.read() : nil,
+            performance: performanceSampler.read(include: options.includePerformance),
+            trashItemCount: options.includeTrash ? SystemTrashInfo.itemCount() : nil,
+            networkActivity: networkReading.activity,
+            localIPAddress: networkReading.localIPv4
+        )
     }
 
     private nonisolated static func readBattery() -> MenuBarSystemSnapshot.Battery? {
@@ -212,6 +230,17 @@ final class SystemStatusReader: SystemStatusReading {
         default: return false
         }
     }
+}
+
+/// Optional panel readings bundled so the main read stays a flat list of
+/// system sources. A nil field means its row is hidden and the read was
+/// skipped this cycle.
+struct SystemStatusPanelAdditions: Sendable {
+    var storage: SystemStorageInfo.Value?
+    var performance: SystemPerformance.Value?
+    var trashItemCount: Int?
+    var networkActivity: MenuBarSystemSnapshot.NetworkActivity?
+    var localIPAddress: String?
 }
 
 /// Only this small cross-queue state is shared. Hardware and listener storage
