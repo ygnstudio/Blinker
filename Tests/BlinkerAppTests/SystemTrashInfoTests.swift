@@ -70,4 +70,11 @@ final class SystemTrashInfoTests: XCTestCase {
         }
         XCTAssertFalse(message.isEmpty)
     }
+
+    /// The Finder errors when asked to empty an already-empty trash; the
+    /// script must count first so that case becomes a silent success.
+    func testEmptyTrashScriptShortCircuitsAnEmptyTrash() {
+        XCTAssertTrue(SystemTrashInfo.emptyTrashScript.contains("count of items of trash"))
+        XCTAssertTrue(SystemTrashInfo.emptyTrashScript.contains("empty trash"))
+    }
 }

@@ -23,8 +23,17 @@ enum SystemTrashInfo {
     }
 
     /// The Finder owns the semantics: every volume, locked-item handling
-    /// and in-use reporting identical to Empty Trash in its menu.
-    static let emptyTrashScript = "tell application \"Finder\" to empty trash"
+    /// and in-use reporting identical to Empty Trash in its menu. The count
+    /// guard works around a Finder quirk: "empty trash" on an already-empty
+    /// trash fails with "unable to complete this operation", so an empty
+    /// trash short-circuits into a no-op success instead.
+    static let emptyTrashScript = """
+        tell application "Finder"
+            if (count of items of trash) > 0 then
+                empty trash
+            end if
+        end tell
+        """
 
     enum EmptyFailure: Equatable, Sendable {
         /// errAEEventNotPermitted — the user declined (or has not yet been
