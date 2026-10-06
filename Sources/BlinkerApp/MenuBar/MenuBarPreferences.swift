@@ -129,6 +129,12 @@ struct MenuBarConfiguration: Codable, Equatable {
     /// Quick actions section: lock the screen. The row hides itself when
     /// the system's lock entry point is gone.
     var showsQuickActionLockScreen = true
+    /// Quick actions section: dark-mode switch. Writing goes through the
+    /// System Events appearance suite, which asks for Automation consent
+    /// once; reading the global domain needs no grant.
+    var showsQuickActionDarkMode = true
+    /// Quick actions section: one resolution picker row per active display.
+    var showsQuickActionResolution = true
     /// Quick actions section: reconnect a chosen paired Bluetooth audio
     /// device. The row stays hidden until a device is picked in settings.
     var showsQuickActionBluetoothConnect = true

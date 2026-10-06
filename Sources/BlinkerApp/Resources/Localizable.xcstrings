@@ -13288,6 +13288,118 @@
           }
         }
       }
+    },
+    "深色模式": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dark Mode"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "深色模式"
+          }
+        }
+      }
+    },
+    "分辨率": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Resolution"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "分辨率"
+          }
+        }
+      }
+    },
+    "显示器 %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Display %@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "显示器 %@"
+          }
+        }
+      }
+    },
+    "切换深色模式失败": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Failed to switch appearance"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "切换深色模式失败"
+          }
+        }
+      }
+    },
+    "需要允许 Blinker 控制系统事件。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Blinker needs permission to control System Events."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "需要允许 Blinker 控制系统事件。"
+          }
+        }
+      }
+    },
+    "分辨率切换失败，显示器可能不支持该模式。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn't apply the resolution — the display may not support that mode."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "分辨率切换失败，显示器可能不支持该模式。"
+          }
+        }
+      }
+    },
+    "深色模式经系统事件写入，首次使用需允许 Blinker 控制系统事件。分辨率为每台已接显示器各出一行，选择立即生效；镜像输出只显示主屏一行。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dark Mode is written through System Events; the first use asks for consent to control it. Resolution adds one row per connected display and applies immediately; mirrored outputs show only the leading display."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "深色模式经系统事件写入，首次使用需允许 Blinker 控制系统事件。分辨率为每台已接显示器各出一行，选择立即生效；镜像输出只显示主屏一行。"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

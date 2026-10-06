@@ -23,6 +23,8 @@ struct SystemStatusPanel: View {
     @State var confirmingTrashEmpty = false
     @StateObject var ejector = VolumeEjectController()
     @StateObject var trashEmptier = TrashEmptyController()
+    @StateObject var appearanceToggle = AppearanceToggleController()
+    @StateObject var displayModes = DisplayModesController()
 
     var body: some View {
         let density = preferences.configuration.panelDensity

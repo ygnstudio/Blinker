@@ -21,6 +21,8 @@ struct MenuBarQuickActionsSettings: View {
             Toggle("屏幕保护", isOn: binding(\.showsQuickActionScreenSaver))
             Toggle("关闭显示器", isOn: binding(\.showsQuickActionDisplaySleep))
             Toggle("锁定屏幕", isOn: binding(\.showsQuickActionLockScreen))
+            Toggle("深色模式", isOn: binding(\.showsQuickActionDarkMode))
+            Toggle("分辨率", isOn: binding(\.showsQuickActionResolution))
             Toggle("连接蓝牙耳机", isOn: binding(\.showsQuickActionBluetoothConnect))
         } header: {
             Text("面板显示")
@@ -28,6 +30,7 @@ struct MenuBarQuickActionsSettings: View {
             Text("显示器清洁以全屏黑窗覆盖所有屏幕，无需权限。键盘清洁通过系统级事件拦截锁定键盘与媒体键，需辅助功能与输入监控权限；权限不足时会先引导授权。")
             Text("清空回收站经访达进行，删除前需二次确认；首次使用需允许 Blinker 控制访达。")
             Text("保持唤醒仅阻止系统自动睡眠，不影响合盖与电源策略。访达两项开关写入后重启访达生效，桌面会短暂重绘；系统缺少锁屏入口时该行自动隐藏。")
+            Text("深色模式经系统事件写入，首次使用需允许 Blinker 控制系统事件。分辨率为每台已接显示器各出一行，选择立即生效；镜像输出只显示主屏一行。")
         }
         bluetoothDeviceSection
         Section {

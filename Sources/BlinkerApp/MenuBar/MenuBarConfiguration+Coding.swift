@@ -63,6 +63,8 @@ extension MenuBarConfiguration {
         case showsQuickActionScreenSaver
         case showsQuickActionDisplaySleep
         case showsQuickActionLockScreen
+        case showsQuickActionDarkMode
+        case showsQuickActionResolution
         case showsQuickActionBluetoothConnect
         case quickActionAudioDeviceAddress
         case quickActionAudioDeviceName
@@ -235,6 +237,14 @@ extension MenuBarConfiguration {
         showsQuickActionLockScreen = values.decode(
             .showsQuickActionLockScreen,
             default: showsQuickActionLockScreen
+        )
+        showsQuickActionDarkMode = values.decode(
+            .showsQuickActionDarkMode,
+            default: showsQuickActionDarkMode
+        )
+        showsQuickActionResolution = values.decode(
+            .showsQuickActionResolution,
+            default: showsQuickActionResolution
         )
         showsQuickActionBluetoothConnect = values.decode(
             .showsQuickActionBluetoothConnect,

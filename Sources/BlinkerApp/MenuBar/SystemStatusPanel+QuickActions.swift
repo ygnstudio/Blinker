@@ -22,6 +22,8 @@ extension SystemStatusPanel {
             || (configuration.showsQuickActionScreenSaver && SystemScreenActions.isScreenSaverAvailable)
             || configuration.showsQuickActionDisplaySleep
             || (configuration.showsQuickActionLockScreen && SystemScreenActions.isLockScreenAvailable)
+            || configuration.showsQuickActionDarkMode
+            || (configuration.showsQuickActionResolution && !displayModes.displays.isEmpty)
             || (configuration.showsQuickActionBluetoothConnect
                 && !configuration.quickActionAudioDeviceAddress.isEmpty)
             || !configuration.shortcutSlots.isEmpty
@@ -29,7 +31,8 @@ extension SystemStatusPanel {
 
     /// The panel's second page. An entirely unconfigured page still keeps its
     /// heading gear so the way back to settings stays discoverable. Landing
-    /// on the page re-syncs the Finder switches with the preference domain.
+    /// on the page re-syncs the Finder switches, the dark-mode switch and the
+    /// display list with the system.
     var quickActionsPage: some View {
         VStack(alignment: .leading,
                spacing: preferences.configuration.panelDensity.sectionSpacing) {
@@ -42,7 +45,11 @@ extension SystemStatusPanel {
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
-        .onAppear { finderToggles.refresh() }
+        .onAppear {
+            finderToggles.refresh()
+            appearanceToggle.refresh()
+            displayModes.refresh()
+        }
     }
 
     @ViewBuilder
@@ -87,6 +94,9 @@ extension SystemStatusPanel {
                     Text("写入失败，请重试。")
                         .font(.caption).foregroundStyle(.red)
                 }
+                if configuration.showsQuickActionDarkMode {
+                    darkModeRow
+                }
                 if configuration.showsQuickActionScreenSaver,
                    SystemScreenActions.isScreenSaverAvailable {
                     actionRow(title: "屏幕保护", symbol: "photo.on.rectangle",
@@ -108,6 +118,13 @@ extension SystemStatusPanel {
                               buttonTitle: "锁定",
                               help: String(localized: "返回登录窗口，会话与应用保持运行")) {
                         SystemScreenActions.lockScreenNow()
+                    }
+                }
+                if configuration.showsQuickActionResolution {
+                    ForEach(displayModes.displays, content: resolutionRow)
+                    if displayModes.applyFailed {
+                        Text("分辨率切换失败，显示器可能不支持该模式。")
+                            .font(.caption).foregroundStyle(.red)
                     }
                 }
                 if configuration.showsQuickActionBluetoothConnect,
@@ -182,6 +199,73 @@ extension SystemStatusPanel {
     private var hiddenFilesBinding: Binding<Bool> {
         Binding(get: { finderToggles.hiddenFilesShown },
                 set: { finderToggles.setHiddenFilesShown($0) })
+    }
+
+    /// Dark mode sits with the other system-wide visual switches. Writing
+    /// runs through System Events, so a missing Automation consent explains
+    /// itself inline the same way the trash row does.
+    private var darkModeRow: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 6) {
+                Image(systemName: appearanceToggle.isDarkMode ? "moon.fill" : "moon")
+                    .frame(width: 18)
+                Text("深色模式")
+                Spacer(minLength: 8)
+                Toggle("深色模式", isOn: darkModeBinding)
+                    .toggleStyle(.switch).labelsHidden()
+                    .disabled(appearanceToggle.isApplying)
+            }
+            .font(.callout)
+            switch appearanceToggle.failure {
+            case .automationDenied:
+                Text("需要允许 Blinker 控制系统事件。")
+                    .font(.caption).foregroundStyle(.red)
+                    .fixedSize(horizontal: false, vertical: true)
+                settingsLink("打开自动化设置…",
+                             destination: "com.apple.preference.security?Privacy_Automation")
+                    .font(.caption)
+            case .failed(let message):
+                Text(message)
+                    .font(.caption).foregroundStyle(.red)
+                    .fixedSize(horizontal: false, vertical: true)
+            case nil:
+                EmptyView()
+            }
+        }
+    }
+
+    private var darkModeBinding: Binding<Bool> {
+        Binding(get: { appearanceToggle.isDarkMode },
+                set: { appearanceToggle.setDarkMode($0) })
+    }
+
+    /// One picker per active display. The menu leads with the current mode;
+    /// applying re-reads the list so the checkmark follows what the display
+    /// actually did.
+    private func resolutionRow(_ display: DisplayEntry) -> some View {
+        HStack(spacing: 6) {
+            Image(systemName: "rectangle.resize").frame(width: 18)
+            Text(display.name).lineLimit(1)
+            Spacer(minLength: 8)
+            Menu {
+                ForEach(display.modes) { mode in
+                    Button {
+                        displayModes.setMode(mode, for: display)
+                    } label: {
+                        if mode.isCurrent {
+                            Label(mode.title, systemImage: "checkmark")
+                        } else {
+                            Text(mode.title)
+                        }
+                    }
+                }
+            } label: {
+                Text(display.modes.first(where: \.isCurrent)?.title ?? "—")
+            }
+            .menuStyle(.borderlessButton)
+            .fixedSize()
+        }
+        .font(.callout)
     }
 
     private func cleaningRow(title: LocalizedStringKey, symbol: String, help: String,

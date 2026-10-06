@@ -65,6 +65,8 @@ final class MenuBarQuickActionsPreferencesTests: XCTestCase {
                 $0.showsQuickActionDisplayCleaning = false
                 $0.showsQuickActionKeyboardCleaning = false
                 $0.showsQuickActionEmptyTrash = false
+                $0.showsQuickActionDarkMode = false
+                $0.showsQuickActionResolution = false
                 $0.shortcutSlots = ["  清洁模式  ", "", "清洁模式", "夜间", longName, "第四个" ]
             }
             let value = MenuBarPreferences(defaults: defaults).configuration
@@ -72,6 +74,8 @@ final class MenuBarQuickActionsPreferencesTests: XCTestCase {
             XCTAssertFalse(value.showsQuickActionDisplayCleaning)
             XCTAssertFalse(value.showsQuickActionKeyboardCleaning)
             XCTAssertFalse(value.showsQuickActionEmptyTrash)
+            XCTAssertFalse(value.showsQuickActionDarkMode)
+            XCTAssertFalse(value.showsQuickActionResolution)
             XCTAssertEqual(value.shortcutSlots, ["清洁模式", "夜间", String(repeating: "长", count: 64)])
         }
     }
@@ -91,6 +95,8 @@ final class MenuBarQuickActionsPreferencesTests: XCTestCase {
             XCTAssertTrue(value.showsQuickActionScreenSaver)
             XCTAssertTrue(value.showsQuickActionDisplaySleep)
             XCTAssertTrue(value.showsQuickActionLockScreen)
+            XCTAssertTrue(value.showsQuickActionDarkMode)
+            XCTAssertTrue(value.showsQuickActionResolution)
             XCTAssertTrue(value.showsQuickActionBluetoothConnect)
             XCTAssertEqual(value.quickActionAudioDeviceAddress, "")
             XCTAssertEqual(value.quickActionAudioDeviceName, "")
