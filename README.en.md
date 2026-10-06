@@ -48,7 +48,7 @@ App rules and settings have separate windows. An unconfigured ordinary left clic
 
 - **Status panel depth rows**: battery cycle count, health, temperature and charge/discharge power; averaged up/down throughput and the local IP; an opt-in public IP (off by default, the panel's only outbound request); Bluetooth signal strength. Two panel densities, with an individual toggle for every row family.
 - **Bluetooth devices and nearby batteries**: the paired-device list shows kind icons, battery and signal strength with ordering, limits and inquiry-residue hiding; connected devices mislabeled by the manufacturer (a keyboard reporting itself as a mouse) are corrected from the interfaces the system enumerates. Optional nearby-device battery scanning, plus A2DP codec subtitles and per-device disconnect, share one Bluetooth grant.
-- **Quick Actions page**: a second panel page with a microphone mute, display cleaning (full-screen black overlays, no permission), keyboard cleaning (system-wide lock requiring Accessibility and Input Monitoring), empty trash (startup disk, confirmed first, leftovers reported inline) and up to three Shortcut slots.
+- **Quick Actions page**: a second panel page with a microphone mute, display cleaning (full-screen black overlays, no permission), keyboard cleaning (system-wide lock requiring Accessibility and Input Monitoring), empty trash (run by the Finder itself, one Automation consent, confirmed first) and up to three Shortcut slots.
 - **Wi-Fi name and VPN rows**: the Wi-Fi name needs a Location grant to un-redact the SSID; the VPN row is a read-only view of tunnels, system services or the proxy endpoint.
 - **Audio input**: volume and mute for the default input device.
 - **Storage and performance sections**: boot-volume available space (Finder-identical) with a usage bar; external volumes listed individually with eject buttons and inline failure reasons. CPU load, memory and swap usage, plus uptime (off by default) — all read from local kernel interfaces, no permission needed.
@@ -66,6 +66,7 @@ App rules and settings have separate windows. An unconfigured ordinary left clic
 | Location (optional) | Show the current Wi-Fi name in the status panel; the name simply stays hidden without it |
 | Bluetooth (optional) | Scan nearby devices for battery levels, show A2DP codecs and disconnect connected devices; the paired list and signal strength need no grant |
 | Input Monitoring (optional) | Keyboard cleaning's system-wide key interception, required together with Accessibility; keyboard cleaning will not start without it |
+| Automation (optional) | Empty Trash runs through the Finder; macOS asks once on first use, and a refusal is reported inline with a settings shortcut. Showing the trash item count separately needs Full Disk Access — without it only the count stays hidden |
 
 Screen images stay in memory, with no audio capture or saved recordings. Blinker does not upload rules, window titles or screen content, and has no analytics; apart from the optional public-IP lookup (off by default, with the endpoint named when enabled), it makes no automatic network requests. Opening project and help links uses your browser.
 

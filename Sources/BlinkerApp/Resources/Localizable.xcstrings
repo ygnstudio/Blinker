@@ -12809,22 +12809,6 @@
         }
       }
     },
-    "将永久删除启动盘回收站中的所有项目，此操作无法撤销。": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "This permanently deletes everything in the startup disk's Trash and cannot be undone."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "将永久删除启动盘回收站中的所有项目，此操作无法撤销。"
-          }
-        }
-      }
-    },
     "%lld 项": {
       "localizations": {
         "en": {
@@ -12837,22 +12821,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "%lld 项"
-          }
-        }
-      }
-    },
-    "%lld 个项目无法删除（可能正被使用）": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%lld items could not be deleted (they may be in use)"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%lld 个项目无法删除（可能正被使用）"
           }
         }
       }
@@ -12873,18 +12841,82 @@
         }
       }
     },
-    "清空回收站仅针对启动盘，删除前需二次确认；外置盘的回收站请在访达中清倒。": {
+    "将永久删除回收站中的所有项目，此操作无法撤销。": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Empty Trash only targets the startup disk, asks for confirmation first, and leaves external drives' Trash to the Finder."
+            "value": "This permanently deletes everything in the Trash and cannot be undone."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "清空回收站仅针对启动盘，删除前需二次确认；外置盘的回收站请在访达中清倒。"
+            "value": "将永久删除回收站中的所有项目，此操作无法撤销。"
+          }
+        }
+      }
+    },
+    "清空回收站经访达进行，删除前需二次确认；首次使用需允许 Blinker 控制访达。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Empty Trash runs through the Finder and asks for confirmation first; on first use macOS asks for consent to control the Finder."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "清空回收站经访达进行，删除前需二次确认；首次使用需允许 Blinker 控制访达。"
+          }
+        }
+      }
+    },
+    "需要允许 Blinker 控制访达。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Blinker needs consent to control the Finder."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "需要允许 Blinker 控制访达。"
+          }
+        }
+      }
+    },
+    "打开自动化设置…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open Automation Settings…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "打开自动化设置…"
+          }
+        }
+      }
+    },
+    "清空回收站失败": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Failed to empty the Trash"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "清空回收站失败"
           }
         }
       }

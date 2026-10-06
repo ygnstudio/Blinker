@@ -17,7 +17,7 @@ struct MenuBarQuickActionsSettings: View {
             Text("面板显示")
         } footer: {
             Text("显示器清洁以全屏黑窗覆盖所有屏幕，无需权限。键盘清洁通过系统级事件拦截锁定键盘与媒体键，需辅助功能与输入监控权限；权限不足时会先引导授权。")
-            Text("清空回收站仅针对启动盘，删除前需二次确认；外置盘的回收站请在访达中清倒。")
+            Text("清空回收站经访达进行，删除前需二次确认；首次使用需允许 Blinker 控制访达。")
         }
         Section {
             ForEach(0 ..< 3, id: \.self) { index in

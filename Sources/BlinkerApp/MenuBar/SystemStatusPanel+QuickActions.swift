@@ -102,9 +102,11 @@ extension SystemStatusPanel {
         .font(.callout)
     }
 
-    /// Trash row: the snapshot's item count, a confirm-before-empty button,
-    /// and an inline note for items the system refused to delete. Emptying
-    /// is destructive, so the button never acts directly.
+    /// Trash row: the snapshot's item count (hidden without Full Disk
+    /// Access), a confirm-before-empty button, and an inline note when the
+    /// Finder refuses. Emptying is destructive, so the button never acts
+    /// directly; it runs through the Finder, which asks for Automation
+    /// consent once and needs no other grant.
     private var trashRow: some View {
         let count = monitor.snapshot.trashItemCount
         return VStack(alignment: .leading, spacing: 4) {
@@ -126,10 +128,20 @@ extension SystemStatusPanel {
                 }
             }
             .font(.callout)
-            if let unemptied = trashEmptier.unemptiedCount {
-                Text(String(localized: "\(unemptied) 个项目无法删除（可能正被使用）"))
+            switch trashEmptier.failure {
+            case .automationDenied:
+                Text("需要允许 Blinker 控制访达。")
                     .font(.caption).foregroundStyle(.red)
                     .fixedSize(horizontal: false, vertical: true)
+                settingsLink("打开自动化设置…",
+                             destination: "com.apple.preference.security?Privacy_Automation")
+                    .font(.caption)
+            case .failed(let message):
+                Text(message)
+                    .font(.caption).foregroundStyle(.red)
+                    .fixedSize(horizontal: false, vertical: true)
+            case nil:
+                EmptyView()
             }
         }
         .accessibilityElement(children: .combine)
@@ -140,7 +152,7 @@ extension SystemStatusPanel {
             }
             Button("取消", role: .cancel) {}
         } message: {
-            Text("将永久删除启动盘回收站中的所有项目，此操作无法撤销。")
+            Text("将永久删除回收站中的所有项目，此操作无法撤销。")
         }
     }
 

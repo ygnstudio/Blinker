@@ -1,9 +1,9 @@
 @testable import BlinkerApp
 import XCTest
 
-/// Trash listing and emptying against a temporary stand-in directory:
-/// hidden entries count, subdirectories count as one item, and locked items
-/// survive the sweep as failures instead of blocking it.
+/// Trash listing and Apple Events error mapping: hidden entries and
+/// directories count, a refused listing reads as nil rather than zero, and
+/// script error dictionaries map to the row's two failure states.
 final class SystemTrashInfoTests: XCTestCase {
     private var trashURL: URL!
 
@@ -16,22 +16,10 @@ final class SystemTrashInfoTests: XCTestCase {
 
     override func tearDownWithError() throws {
         if let trashURL {
-            unlockContents(of: trashURL)
             try? FileManager.default.removeItem(at: trashURL)
         }
         trashURL = nil
         try super.tearDownWithError()
-    }
-
-    /// A locked item cannot be removed — and neither can the temp directory
-    /// at teardown — until the flag is cleared.
-    private func unlockContents(of url: URL) {
-        let manager = FileManager.default
-        guard let items = try? manager.contentsOfDirectory(
-            at: url, includingPropertiesForKeys: nil) else { return }
-        for item in items {
-            try? manager.setAttributes([.immutable: false], ofItemAtPath: item.path)
-        }
     }
 
     private func makeItem(_ name: String, isDirectory: Bool = false) throws {
@@ -52,33 +40,34 @@ final class SystemTrashInfoTests: XCTestCase {
         XCTAssertEqual(SystemTrashInfo.itemCount(at: trashURL), 3)
     }
 
-    func testItemCountForMissingDirectoryIsZero() {
+    /// A listing the system refuses must not masquerade as an empty trash.
+    func testItemCountForMissingDirectoryIsNil() {
         let missing = trashURL.appendingPathComponent("no-such-place")
-        XCTAssertEqual(SystemTrashInfo.itemCount(at: missing), 0)
+        XCTAssertNil(SystemTrashInfo.itemCount(at: missing))
     }
 
-    func testEmptyDeletesEverything() throws {
-        try makeItem("a.txt")
-        try makeItem("b.txt")
-        try makeItem("folder", isDirectory: true)
-        let report = SystemTrashInfo.empty(at: trashURL)
-        XCTAssertEqual(report, SystemTrashInfo.EmptyReport(emptied: 3, failed: 0))
-        XCTAssertEqual(SystemTrashInfo.itemCount(at: trashURL), 0)
+    func testFailureMapsNilToSuccess() {
+        XCTAssertNil(SystemTrashInfo.failure(from: nil))
     }
 
-    func testEmptyKeepsLockedItemsAndCountsThem() throws {
-        try makeItem("free.txt")
-        try makeItem("locked.txt")
-        let locked = trashURL.appendingPathComponent("locked.txt")
-        try FileManager.default.setAttributes([.immutable: true], ofItemAtPath: locked.path)
-        let report = SystemTrashInfo.empty(at: trashURL)
-        XCTAssertEqual(report, SystemTrashInfo.EmptyReport(emptied: 1, failed: 1))
-        XCTAssertEqual(SystemTrashInfo.itemCount(at: trashURL), 1)
+    func testFailureMapsNotPermittedToAutomationDenied() {
+        let info: [AnyHashable: Any] = [NSAppleScript.errorNumber: NSNumber(value: -1743)]
+        XCTAssertEqual(SystemTrashInfo.failure(from: info), .automationDenied)
     }
 
-    func testEmptyMissingDirectoryReportsZero() {
-        let missing = trashURL.appendingPathComponent("no-such-place")
-        XCTAssertEqual(SystemTrashInfo.empty(at: missing),
-                       SystemTrashInfo.EmptyReport(emptied: 0, failed: 0))
+    func testFailureMapsScriptErrorToMessage() {
+        let info: [AnyHashable: Any] = [
+            NSAppleScript.errorNumber: NSNumber(value: -10000),
+            NSAppleScript.errorMessage: "有项目正在使用。",
+        ]
+        XCTAssertEqual(SystemTrashInfo.failure(from: info), .failed("有项目正在使用。"))
+    }
+
+    func testFailureWithoutMessageFallsBackToGenericText() {
+        let info: [AnyHashable: Any] = [NSAppleScript.errorNumber: NSNumber(value: -10000)]
+        guard case .failed(let message) = SystemTrashInfo.failure(from: info) else {
+            return XCTFail("expected a generic failure")
+        }
+        XCTAssertFalse(message.isEmpty)
     }
 }
