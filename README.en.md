@@ -51,6 +51,7 @@ App rules and settings have separate windows. An unconfigured ordinary left clic
 - **Quick Actions page**: a second panel page with a microphone mute, display cleaning (full-screen black overlays, no permission), keyboard cleaning (system-wide lock requiring Accessibility and Input Monitoring) and up to three Shortcut slots.
 - **Wi-Fi name and VPN rows**: the Wi-Fi name needs a Location grant to un-redact the SSID; the VPN row is a read-only view of tunnels, system services or the proxy endpoint.
 - **Audio input**: volume and mute for the default input device.
+- **Storage and performance sections**: boot-volume available space (Finder-identical) with a usage bar; external volumes listed individually with eject buttons and inline failure reasons. CPU load, memory and swap usage, plus uptime (off by default) — all read from local kernel interfaces, no permission needed.
 
 ## Get started
 

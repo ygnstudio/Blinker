@@ -32,6 +32,10 @@ struct SystemStatusReadOptions: Equatable, Sendable {
     /// A2DP codec enrichment via IOBluetooth. Only set after the Bluetooth
     /// privacy grant is confirmed; ungranted reads never touch IOBluetooth.
     var includeBluetoothDeviceControl = false
+    /// Boot volume capacity and mounted external volumes.
+    var includeStorage = false
+    /// CPU load, memory, swap and uptime from mach host calls.
+    var includePerformance = false
 }
 
 @MainActor

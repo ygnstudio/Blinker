@@ -56,6 +56,12 @@ extension MenuBarConfiguration {
         case showsQuickActionDisplayCleaning
         case showsQuickActionKeyboardCleaning
         case shortcutSlots
+        case showsInternalStorage
+        case showsExternalVolumes
+        case showsCPULoad
+        case showsMemoryUsage
+        case showsSwapUsage
+        case showsUptime
     }
 
     /// New settings retain defaults when reading an older saved configuration.
@@ -77,6 +83,11 @@ extension MenuBarConfiguration {
         // strips it now that quick actions is a page of its own.)
         if !values.contains(.showsQuickActionMicMute) {
             enabledSections.insert(.quickActions)
+        }
+        // Same one-time enable for storage and performance: saves written
+        // before they existed carry none of their keys; newer saves always do.
+        if !values.contains(.showsCPULoad) {
+            enabledSections.formUnion([.storage, .performance])
         }
         self = normalized()
     }
@@ -172,6 +183,12 @@ extension MenuBarConfiguration {
             default: showsQuickActionKeyboardCleaning
         )
         shortcutSlots = values.decode(.shortcutSlots, default: shortcutSlots)
+        showsInternalStorage = values.decode(.showsInternalStorage, default: showsInternalStorage)
+        showsExternalVolumes = values.decode(.showsExternalVolumes, default: showsExternalVolumes)
+        showsCPULoad = values.decode(.showsCPULoad, default: showsCPULoad)
+        showsMemoryUsage = values.decode(.showsMemoryUsage, default: showsMemoryUsage)
+        showsSwapUsage = values.decode(.showsSwapUsage, default: showsSwapUsage)
+        showsUptime = values.decode(.showsUptime, default: showsUptime)
     }
 }
 

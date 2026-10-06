@@ -126,7 +126,9 @@ final class MenuBarPresentation: NSObject, NSPopoverDelegate, NSWindowDelegate {
             includePublicIPAddress: configuration.showsPublicIPAddress && networkEnabled,
             includeBluetoothDeviceControl: configuration.enablesBluetoothDeviceControl
                 && configuration.enabledSections.contains(.bluetooth)
-                && scanner.authorization == .allowedAlways
+                && scanner.authorization == .allowedAlways,
+            includeStorage: configuration.enabledSections.contains(.storage),
+            includePerformance: configuration.enabledSections.contains(.performance)
         )
     }
 

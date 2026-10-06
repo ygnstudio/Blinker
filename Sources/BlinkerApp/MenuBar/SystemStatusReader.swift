@@ -15,6 +15,7 @@ final class SystemStatusReader: SystemStatusReading {
     private let audio: SystemAudioStatusReader
     private let bluetooth = SystemBluetoothProfiler()
     private let networkSampler = NetworkThroughputSampler()
+    private let performanceSampler = SystemPerformanceSampler()
     private let publicIP = PublicIPProbe()
     private let lifetime = SystemStatusReaderLifetime()
 
@@ -33,6 +34,7 @@ final class SystemStatusReader: SystemStatusReading {
         let audio = audio
         let bluetooth = bluetooth
         let networkSampler = networkSampler
+        let performanceSampler = performanceSampler
         let publicIP = publicIP
         let lifetime = lifetime
         let changed: @Sendable () -> Void = { [weak self] in
@@ -51,6 +53,8 @@ final class SystemStatusReader: SystemStatusReading {
                 devices = BluetoothConnectionDetails.attachingCodecs(to: listed)
             }
             let batteryDetails = options.includeBatteryDetails ? SystemBatteryDetails.read() : nil
+            let storage = options.includeStorage ? SystemStorageInfo.read() : nil
+            let performance = performanceSampler.read(include: options.includePerformance)
             let networkReading = networkSampler.read(
                 includeActivity: options.includeNetworkActivity,
                 includeAddress: options.includeLocalIPAddress
@@ -73,7 +77,9 @@ final class SystemStatusReader: SystemStatusReading {
                                                batteryDetails: batteryDetails,
                                                networkActivity: networkReading.activity,
                                                localIPAddress: networkReading.localIPv4,
-                                               publicIPAddress: publicAddress)
+                                               publicIPAddress: publicAddress,
+                                               storage: storage,
+                                               performance: performance)
             Task { @MainActor in completion(result) }
         }
     }

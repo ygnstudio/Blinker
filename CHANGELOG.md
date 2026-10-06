@@ -13,6 +13,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Status panel network section can show averaged up/down throughput, the local IPv4 address and — off by default, naming the api.ipify.org endpoint — the public IP, the panel's only outbound request.
 - Bluetooth device rows can show the system-reported signal strength; a separate opt-in, sharing the Bluetooth privacy grant with nearby scanning, adds A2DP codec subtitles and a per-device Disconnect action that keeps the pairing.
 - Status panel density switches between Comfortable and Compact, and every secondary row (battery details, throughput, IPs, Wi-Fi name, VPN, audio input, signal strength, codec) has its own settings toggle.
+- Status panel gains a storage section: boot-volume capacity with a usage bar in Finder-identical numbers, and every mounted external volume as its own row with an eject button; a failed eject reports its reason inline. Each row family has a toggle in the new Storage settings page; everything is local and needs no permission.
+- Status panel gains a performance section: CPU load averaged over the refresh interval, memory used vs. total approximating Activity Monitor, swap usage, and an uptime row that defaults off. Toggles live in the new Performance settings page; all readings come from local kernel interfaces.
 
 ### Changed
 

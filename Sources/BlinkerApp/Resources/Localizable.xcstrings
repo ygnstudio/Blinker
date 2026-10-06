@@ -12424,6 +12424,342 @@
           }
         }
       }
+    },
+    "存储": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Storage"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "存储"
+          }
+        }
+      }
+    },
+    "性能": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Performance"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "性能"
+          }
+        }
+      }
+    },
+    "CPU 使用率": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CPU Usage"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CPU 使用率"
+          }
+        }
+      }
+    },
+    "内存用量": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Memory Usage"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "内存用量"
+          }
+        }
+      }
+    },
+    "交换空间用量": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Swap Usage"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "交换空间用量"
+          }
+        }
+      }
+    },
+    "运行时间": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uptime"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "运行时间"
+          }
+        }
+      }
+    },
+    "内置磁盘用量": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Internal Disk Usage"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "内置磁盘用量"
+          }
+        }
+      }
+    },
+    "打开活动监视器": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open Activity Monitor"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "打开活动监视器"
+          }
+        }
+      }
+    },
+    "储存空间设置…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Storage Settings…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "储存空间设置…"
+          }
+        }
+      }
+    },
+    "内置磁盘可用空间": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Internal Disk Available Space"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "内置磁盘可用空间"
+          }
+        }
+      }
+    },
+    "外置卷与推出按钮": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "External Volumes and Eject Buttons"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "外置卷与推出按钮"
+          }
+        }
+      }
+    },
+    "面板存储区块": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Panel Storage Section"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "面板存储区块"
+          }
+        }
+      }
+    },
+    "面板性能区块": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Panel Performance Section"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "面板性能区块"
+          }
+        }
+      }
+    },
+    "CPU %lld%%": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CPU %lld%%"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CPU %lld%%"
+          }
+        }
+      }
+    },
+    "可用 %@（共 %@）": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ available (%@ total)"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "可用 %@（共 %@）"
+          }
+        }
+      }
+    },
+    "内存 %@ / %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Memory %@ / %@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "内存 %@ / %@"
+          }
+        }
+      }
+    },
+    "交换 %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Swap %@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "交换 %@"
+          }
+        }
+      }
+    },
+    "推出 %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Eject %@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "推出 %@"
+          }
+        }
+      }
+    },
+    "已运行 %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Up %@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已运行 %@"
+          }
+        }
+      }
+    },
+    "容量口径与访达一致（十进制 GB）。推出按钮作用于每个已挂载的外置卷；推出失败会在面板行内显示原因。全部读取与推出均为本地操作，无需权限。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Capacities match the Finder (decimal GB). The eject button acts on each mounted external volume; a failed eject reports its reason inline. All reads and ejects are local and need no permission."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "容量口径与访达一致（十进制 GB）。推出按钮作用于每个已挂载的外置卷；推出失败会在面板行内显示原因。全部读取与推出均为本地操作，无需权限。"
+          }
+        }
+      }
+    },
+    "CPU 为相邻两次刷新的平均占用；内存口径近似活动监视器（应用内存 + 有线 + 压缩）。全部来自内核接口，本地读取，无需权限。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CPU is the average load between two refreshes; memory approximates Activity Monitor (app + wired + compressed). Everything comes from local kernel interfaces and needs no permission."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CPU 为相邻两次刷新的平均占用；内存口径近似活动监视器（应用内存 + 有线 + 压缩）。全部来自内核接口，本地读取，无需权限。"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

@@ -78,6 +78,12 @@ struct MenuBarSystemSnapshot: Equatable, Sendable {
     /// External address as seen by the lookup endpoint; opt-in, fetched
     /// asynchronously with a TTL cache.
     var publicIPAddress: String?
+    /// Boot volume capacity and mounted external volumes; nil while the
+    /// storage section is hidden.
+    var storage: SystemStorageInfo.Value?
+    /// CPU load, memory, swap and uptime; nil while the performance
+    /// section is hidden.
+    var performance: SystemPerformance.Value?
 
     static let unknown = Self(battery: nil, network: .unknown, volume: nil)
 
@@ -86,7 +92,9 @@ struct MenuBarSystemSnapshot: Equatable, Sendable {
          bluetoothDevices: [BluetoothDevice]? = nil,
          batteryDetails: SystemBatteryDetails.Value? = nil,
          networkActivity: NetworkActivity? = nil,
-         localIPAddress: String? = nil, publicIPAddress: String? = nil) {
+         localIPAddress: String? = nil, publicIPAddress: String? = nil,
+         storage: SystemStorageInfo.Value? = nil,
+         performance: SystemPerformance.Value? = nil) {
         self.battery = battery
         self.network = network
         self.volume = volume
@@ -97,5 +105,7 @@ struct MenuBarSystemSnapshot: Equatable, Sendable {
         self.networkActivity = networkActivity
         self.localIPAddress = localIPAddress
         self.publicIPAddress = publicIPAddress
+        self.storage = storage
+        self.performance = performance
     }
 }

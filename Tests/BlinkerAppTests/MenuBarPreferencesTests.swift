@@ -25,7 +25,7 @@ final class MenuBarPreferencesTests: XCTestCase {
             XCTAssertEqual(preferences.configuration, MenuBarConfiguration())
             XCTAssertEqual(preferences.configuration.leftClick, .panel)
             XCTAssertEqual(preferences.configuration.visibleSections,
-                           [.battery, .network, .volume, .bluetooth])
+                           [.battery, .network, .volume, .bluetooth, .storage, .performance])
             // The quick actions page is on by default but rides no block.
             XCTAssertTrue(preferences.configuration.enabledSections.contains(.quickActions))
             XCTAssertEqual(defaults.writes, 0)
@@ -66,10 +66,10 @@ final class MenuBarPreferencesTests: XCTestCase {
             defaults.set(legacy, forKey: MenuBarPreferences.key)
             let preferences = MenuBarPreferences(defaults: defaults)
             XCTAssertEqual(preferences.configuration.sectionOrder,
-                           [.battery, .network, .volume, .bluetooth])
+                           [.battery, .network, .volume, .bluetooth, .storage, .performance])
             XCTAssertTrue(preferences.configuration.enabledSections.contains(.bluetooth))
             XCTAssertEqual(preferences.configuration.visibleSections,
-                           [.battery, .network, .volume, .bluetooth])
+                           [.battery, .network, .volume, .bluetooth, .storage, .performance])
         }
     }
 
@@ -85,8 +85,28 @@ final class MenuBarPreferencesTests: XCTestCase {
             // quickActions migrates on independently of the bluetooth choice,
             // and lives on its own page rather than among the status blocks.
             XCTAssertTrue(preferences.configuration.enabledSections.contains(.quickActions))
+            // So do storage and performance: the save predates their keys.
+            XCTAssertTrue(preferences.configuration.enabledSections.contains(.storage))
+            XCTAssertTrue(preferences.configuration.enabledSections.contains(.performance))
             XCTAssertEqual(preferences.configuration.visibleSections,
-                           [.battery, .network, .volume])
+                           [.battery, .network, .volume, .storage, .performance])
+        }
+    }
+
+    /// A save written after storage and performance shipped always carries
+    /// their keys, so their enabled state is the user's own choice.
+    func testStorageAndPerformanceChoicesAreNotReMigrated() throws {
+        try withDefaults { defaults in
+            let saved = Data(("{\"sectionOrder\":[\"battery\",\"network\",\"volume\",\"bluetooth\","
+                + "\"storage\",\"performance\"],"
+                + "\"enabledSections\":[\"battery\",\"network\",\"volume\",\"bluetooth\"],"
+                + "\"showsCPULoad\":true}").utf8)
+            defaults.set(saved, forKey: MenuBarPreferences.key)
+            let preferences = MenuBarPreferences(defaults: defaults)
+            XCTAssertFalse(preferences.configuration.enabledSections.contains(.storage))
+            XCTAssertFalse(preferences.configuration.enabledSections.contains(.performance))
+            XCTAssertEqual(preferences.configuration.visibleSections,
+                           [.battery, .network, .volume, .bluetooth])
         }
     }
 
@@ -256,7 +276,7 @@ final class MenuBarPreferencesTests: XCTestCase {
                 $0.enabledSections = []
             }
             XCTAssertEqual(preferences.configuration.sectionOrder,
-                           [.volume, .battery, .network, .bluetooth])
+                           [.volume, .battery, .network, .bluetooth, .storage, .performance])
             XCTAssertEqual(preferences.configuration.visibleSections, [])
             preferences.update { $0.enabledSections.insert(.battery) }
             XCTAssertEqual(preferences.configuration.visibleSections, [.battery])

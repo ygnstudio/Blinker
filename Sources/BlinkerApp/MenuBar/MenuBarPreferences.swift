@@ -20,11 +20,15 @@ struct MenuBarConfiguration: Codable, Equatable {
     enum ClickAction: String, Codable, CaseIterable { case panel, rules }
     enum ScrollScope: String, Codable, CaseIterable { case panel, volumeControl }
     enum ScrollDirection: String, Codable, CaseIterable { case upward = "up", down }
-    enum Section: String, Codable, CaseIterable { case battery, network, volume, bluetooth, quickActions }
+    enum Section: String, Codable, CaseIterable {
+        case battery, network, volume, bluetooth, quickActions, storage, performance
+    }
 
     /// The status page's orderable blocks. Quick actions is a separate panel
     /// page: it is enabled or hidden, never reordered.
-    static let statusSections: [Section] = [.battery, .network, .volume, .bluetooth]
+    static let statusSections: [Section] = [
+        .battery, .network, .volume, .bluetooth, .storage, .performance,
+    ]
     enum PanelDensity: String, Codable, CaseIterable { case comfortable, compact }
 
     var placement: Placement = .menuBar
@@ -108,6 +112,19 @@ struct MenuBarConfiguration: Codable, Equatable {
     /// User-named Shortcut slots run from the panel. Blinker does not know
     /// what a shortcut does; 0...3 names, matched against the Shortcuts app.
     var shortcutSlots: [String] = []
+    /// Panel storage block: the boot volume's capacity row.
+    var showsInternalStorage = true
+    /// Panel storage block: mounted external volumes with an eject action.
+    var showsExternalVolumes = true
+    /// Panel performance block: CPU load averaged over the refresh interval.
+    var showsCPULoad = true
+    /// Panel performance block: memory used vs. total.
+    var showsMemoryUsage = true
+    /// Panel performance block: swap in use.
+    var showsSwapUsage = true
+    /// Panel performance block: time since boot. Off by default — steady
+    /// uptime is trivia for most, one toggle away for the curious.
+    var showsUptime = false
 
     var showsMenuBar: Bool {
         placement != .dock

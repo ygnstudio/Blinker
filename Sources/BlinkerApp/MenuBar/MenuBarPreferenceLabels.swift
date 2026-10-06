@@ -94,6 +94,8 @@ extension MenuBarConfiguration.Section {
         case .volume: String(localized: "音量")
         case .bluetooth: String(localized: "蓝牙")
         case .quickActions: String(localized: "快速操作")
+        case .storage: String(localized: "存储")
+        case .performance: String(localized: "性能")
         }
     }
 }

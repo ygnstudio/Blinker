@@ -48,6 +48,8 @@ struct MenuBarSettingsTab: View {
                 case .quickActions:
                     MenuBarQuickActionsSettings(preferences: preferences)
                 case .panel: MenuBarPanelSettings(preferences: preferences, audio: audio)
+                case .storage: MenuBarStorageSettings(preferences: preferences)
+                case .performance: MenuBarPerformanceSettings(preferences: preferences)
                 }
                 Section {
                     Button("恢复状态图标默认设置…") { confirmingReset = true }
@@ -274,7 +276,7 @@ struct MenuBarSettingsTab: View {
 }
 
 enum MenuBarSettingsPage: CaseIterable, Hashable {
-    case icon, battery, networkAndVolume, bluetooth, quickActions, panel
+    case icon, battery, networkAndVolume, bluetooth, quickActions, panel, storage, performance
 
     var title: String {
         switch self {
@@ -284,6 +286,8 @@ enum MenuBarSettingsPage: CaseIterable, Hashable {
         case .bluetooth: String(localized: "蓝牙")
         case .quickActions: String(localized: "快速操作")
         case .panel: String(localized: "状态面板")
+        case .storage: String(localized: "存储")
+        case .performance: String(localized: "性能")
         }
     }
 }

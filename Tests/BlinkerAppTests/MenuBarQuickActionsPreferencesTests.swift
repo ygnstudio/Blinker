@@ -32,7 +32,7 @@ final class MenuBarQuickActionsPreferencesTests: XCTestCase {
             let preferences = MenuBarPreferences(defaults: defaults)
             XCTAssertTrue(preferences.configuration.enabledSections.contains(.quickActions))
             XCTAssertEqual(preferences.configuration.sectionOrder,
-                           [.battery, .network, .volume, .bluetooth])
+                           [.battery, .network, .volume, .bluetooth, .storage, .performance])
         }
     }
 
@@ -50,7 +50,7 @@ final class MenuBarQuickActionsPreferencesTests: XCTestCase {
             let preferences = MenuBarPreferences(defaults: defaults)
             XCTAssertFalse(preferences.configuration.enabledSections.contains(.quickActions))
             XCTAssertEqual(preferences.configuration.sectionOrder,
-                           [.battery, .network, .volume, .bluetooth])
+                           [.battery, .network, .volume, .bluetooth, .storage, .performance])
         }
     }
 

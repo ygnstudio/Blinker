@@ -18,6 +18,7 @@ struct SystemStatusPanel: View {
     @State private var page = PanelPage.status
     @State var expandedBluetoothDevices = false
     @State var shortcutSlotStates: [String: ShortcutSlotState] = [:]
+    @StateObject var ejector = VolumeEjectController()
 
     var body: some View {
         let density = preferences.configuration.panelDensity
@@ -70,6 +71,9 @@ struct SystemStatusPanel: View {
         }
         .frame(width: 340)
         .fixedSize(horizontal: false, vertical: true)
+        .onChange(of: monitor.snapshot.storage) { _, newValue in
+            ejector.prune(keeping: newValue?.external ?? [])
+        }
     }
 
     private func statusPage(density: MenuBarConfiguration.PanelDensity) -> some View {
@@ -80,6 +84,8 @@ struct SystemStatusPanel: View {
                 case .network: networkSection
                 case .volume: volumeSection
                 case .bluetooth: bluetoothSection
+                case .storage: storageSection
+                case .performance: performanceSection
                 // Unreachable: visibleSections lists status blocks only.
                 case .quickActions: EmptyView()
                 }
