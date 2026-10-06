@@ -7,7 +7,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
-- Status panel gains a second page for Quick Actions, switched with a segmented control: microphone mute for the default input, display cleaning (black full-screen overlays, Esc/click to exit) and keyboard cleaning (keystrokes swallowed, mouse-only exit) modes that need no accessibility permission, and up to three user-named Shortcut slots run via the Shortcuts CLI with inline error reporting. Row visibility and slot names live in the new Quick Actions settings page; the page itself can be hidden from Panel settings.
+- Status panel gains a second page for Quick Actions, switched with a segmented control: microphone mute for the default input, display cleaning and keyboard cleaning modes, and up to three user-named Shortcut slots run via the Shortcuts CLI with inline error reporting. Row visibility and slot names live in the new Quick Actions settings page; the page itself can be hidden from Panel settings.
+- Display cleaning covers every screen with black full-screen overlays and needs no permission: click to exit, or Esc when the input grants below exist. Keyboard cleaning locks the keyboard system-wide through a CGEvent tap that swallows keystrokes and media keys, and exits via the on-screen button or Esc pressed three times. Keyboard cleaning requires Accessibility and Input Monitoring; without both it refuses to start rather than show a lock that is not holding, and opens the permission assistant, which gained an Input Monitoring row alongside Accessibility and Screen Recording.
 - Status panel battery section can show cycle count, health, temperature and charge/discharge power from the battery controller; unavailable fields stay hidden and Macs without a battery show nothing.
 - Status panel network section can show averaged up/down throughput, the local IPv4 address and — off by default, naming the api.ipify.org endpoint — the public IP, the panel's only outbound request.
 - Bluetooth device rows can show the system-reported signal strength; a separate opt-in, sharing the Bluetooth privacy grant with nearby scanning, adds A2DP codec subtitles and a per-device Disconnect action that keeps the pairing.
@@ -19,7 +20,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
-- Exiting display or keyboard cleaning no longer crashes the app: cleaning windows own their lifetime (`isReleasedWhenClosed = false`, the same pattern as the upstream Duo overlay) and close on the next runloop turn — closing a window mid-dispatch of its own Esc/click event left AppKit's transform animation pointing at freed memory (SIGSEGV on exit). Cleaning windows also swallow every key equivalent at the window level, so ⌘Q can never reach the main menu during a session.
+- Exiting display or keyboard cleaning no longer crashes the app: cleaning windows are kept alive for the app's lifetime and reused across sessions — closing or releasing a window left AppKit's transform animation pointing at freed memory, crashing in the CA commit's autorelease drain (SIGSEGV on exit).
+- The Bluetooth device list corrects manufacturer-mislabeled classes from the HID usages the I/O Registry enumerates: a Logitech keyboard that reports itself as a mouse now shows the keyboard it is. Only connected devices are corrected; the system report stays authoritative otherwise.
 
 ## [0.7.0] - 2026-10-04
 

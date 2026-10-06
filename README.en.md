@@ -44,6 +44,14 @@ App rules and settings have separate windows. An unconfigured ordinary left clic
 - **Minimize and restore** optionally makes another click on the frontmost app's Dock icon minimize its windows, then restore them on the next click. Show Desktop defaults to Control-Option-D; repeating it restores only that operation's windows. Both skip fullscreen and previously minimized windows.
 - **Duo lid effect** tilts, blurs, dims or restores the built-in display as a compatible MacBook opens or closes. It is off by default, with a simulated preview, calibration and recommended settings. It requires a readable lid-angle sensor, preserves normal lid-close sleep and is not a privacy screen.
 
+### New in the development build (unreleased)
+
+- **Status panel depth rows**: battery cycle count, health, temperature and charge/discharge power; averaged up/down throughput and the local IP; an opt-in public IP (off by default, the panel's only outbound request); Bluetooth signal strength. Two panel densities, with an individual toggle for every row family.
+- **Bluetooth devices and nearby batteries**: the paired-device list shows kind icons, battery and signal strength with ordering, limits and inquiry-residue hiding; connected devices mislabeled by the manufacturer (a keyboard reporting itself as a mouse) are corrected from the interfaces the system enumerates. Optional nearby-device battery scanning, plus A2DP codec subtitles and per-device disconnect, share one Bluetooth grant.
+- **Quick Actions page**: a second panel page with a microphone mute, display cleaning (full-screen black overlays, no permission), keyboard cleaning (system-wide lock requiring Accessibility and Input Monitoring) and up to three Shortcut slots.
+- **Wi-Fi name and VPN rows**: the Wi-Fi name needs a Location grant to un-redact the SSID; the VPN row is a read-only view of tunnels, system services or the proxy endpoint.
+- **Audio input**: volume and mute for the default input device.
+
 ## Get started
 
 1. Follow the first-launch guide to grant Accessibility, or click **Grant Access…** in **Settings → Privacy and Permissions**. You still need to approve access in System Settings.
@@ -52,10 +60,13 @@ App rules and settings have separate windows. An unconfigured ordinary left clic
 
 | Permission | Purpose |
 |---|---|
-| Accessibility | Identify windows, buttons and supported tabs, and perform window actions; also used to pause Duo with Esc while another app is active |
+| Accessibility | Identify windows, buttons and supported tabs, and perform window actions; also used to pause Duo with Esc while another app is active, and by keyboard cleaning's system-wide key interception |
 | Screen Recording (optional) | Generate window thumbnails and run Duo. Hover-button glass needs no screen capture |
+| Location (optional) | Show the current Wi-Fi name in the status panel; the name simply stays hidden without it |
+| Bluetooth (optional) | Scan nearby devices for battery levels, show A2DP codecs and disconnect connected devices; the paired list and signal strength need no grant |
+| Input Monitoring (optional) | Keyboard cleaning's system-wide key interception, required together with Accessibility; keyboard cleaning will not start without it |
 
-Screen images stay in memory, with no audio capture or saved recordings. Blinker does not upload rules, window titles or screen content, and has no analytics or automatic network requests. Opening project and help links uses your browser.
+Screen images stay in memory, with no audio capture or saved recordings. Blinker does not upload rules, window titles or screen content, and has no analytics; apart from the optional public-IP lookup (off by default, with the endpoint named when enabled), it makes no automatic network requests. Opening project and help links uses your browser.
 
 Custom tab bars, windows on other Spaces and minimized-window previews depend on macOS and the target app. Inactive tabs without their own cached image show an icon and title; closing or minimizing a tab item affects its whole window. Experimental workspaces match existing windows, do not restore documents or sessions, and use private APIs for original-Space restoration. See the [user guide (中文)](docs/USER_GUIDE.md) and [window browser documentation](docs/WINDOW_BROWSER.md) for permission troubleshooting and other limits.
 
