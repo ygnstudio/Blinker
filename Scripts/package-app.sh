@@ -141,6 +141,8 @@ ${ICON_PLIST_ENTRY}
     <true/>
     <key>NSLocationWhenInUseUsageDescription</key>
     <string>定位权限仅用于解除系统对 Wi-Fi 名称的隐藏，以便在状态面板显示当前网络名称。Blinker 不会读取或记录您的位置。Location access is only used to un-redact the Wi-Fi network name for the status panel. Blinker never reads or records your location.</string>
+    <key>NSAppleEventsUsageDescription</key>
+    <string>「清空回收站」通过访达执行，需要允许 Blinker 控制访达。Blinker 不会向其他应用发送任何指令。Empty Trash is performed by the Finder and requires consent to control it. Blinker sends no commands to any other app.</string>
     <key>NSBluetoothAlwaysUsageDescription</key>
     <string>开启「扫描附近设备电量」后，蓝牙权限用于读取附近设备的公开电量信息。Blinker 不会配对或上传任何数据。Bluetooth access is only used to read the public battery level of nearby devices when Nearby Device Battery is enabled. Blinker never pairs or uploads anything.</string>
     <key>NSPrincipalClass</key>
