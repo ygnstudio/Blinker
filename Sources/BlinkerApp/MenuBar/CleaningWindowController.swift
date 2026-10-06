@@ -13,16 +13,30 @@ final class CleaningWindowController {
         case keyboard
     }
 
+    /// Windows are kept alive for the whole app lifetime and reused. AppKit's
+    /// transform animation (`_NSWindowTransformAnimation`) only releases its
+    /// window reference when the CA transaction commits, which can happen long
+    /// after `stop()` returns; deallocating the window any earlier crashed in
+    /// the commit's autorelease drain (EXC_BAD_ACCESS in
+    /// `-[_NSWindowTransformAnimation dealloc]` → objc_release). Retired
+    /// windows (screen-set changes) stay referenced for the same reason — a
+    /// deliberate, tiny leak over a crash.
     private var windows: [NSWindow] = []
+    private var retiredWindows: [NSWindow] = []
     private(set) var isActive = false
 
     func start(_ mode: Mode) {
         guard !isActive, !NSScreen.screens.isEmpty else { return }
         isActive = true
         NSApp.activate(ignoringOtherApps: true)
-        windows = NSScreen.screens.map { screen in
-            CleaningWindow(screen: screen, mode: mode) { [weak self] in
-                Task { @MainActor in self?.stop() }
+        if reusableWindows(for: mode) {
+            windows.forEach { ($0.contentView as? CleaningView)?.resetForReuse() }
+        } else {
+            retiredWindows.append(contentsOf: windows)
+            windows = NSScreen.screens.map { screen in
+                CleaningWindow(screen: screen, mode: mode) { [weak self] in
+                    Task { @MainActor in self?.stop() }
+                }
             }
         }
         windows.forEach { $0.orderFrontRegardless() }
@@ -39,14 +53,21 @@ final class CleaningWindowController {
         guard isActive else { return }
         isActive = false
         NSCursor.unhide()
-        let closing = windows
-        windows = []
-        closing.forEach { $0.orderOut(nil) }
-        // Never close a window while its own event is still being dispatched:
-        // AppKit keeps transform-animation and CA-transaction references past
-        // the handler, and synchronous teardown crashed in the runloop's
-        // autorelease drain (SIGSEGV in _NSWindowTransformAnimation dealloc).
-        DispatchQueue.main.async { closing.forEach { $0.close() } }
+        // orderOut only — never close(), never drop the reference. See the
+        // comment on `windows` above.
+        windows.forEach { $0.orderOut(nil) }
+    }
+
+    /// Existing windows are reusable when they were built for the same mode
+    /// and cover exactly the current screens (count and frames).
+    private func reusableWindows(for mode: Mode) -> Bool {
+        let screens = NSScreen.screens
+        guard windows.count == screens.count,
+              windows.allSatisfy({ ($0 as? CleaningWindow)?.windowMode == mode })
+        else { return false }
+        let windowFrames = windows.map { NSStringFromRect($0.frame) }.sorted()
+        let screenFrames = screens.map { NSStringFromRect($0.frame) }.sorted()
+        return windowFrames == screenFrames
     }
 }
 
@@ -54,11 +75,11 @@ final class CleaningWindowController {
 /// window level: a first responder further down the chain could change, but
 /// the menu bar ⌘Q must stay unreachable for the whole session.
 private final class CleaningWindow: NSWindow {
-    private let mode: CleaningWindowController.Mode
+    let windowMode: CleaningWindowController.Mode
     private let onExit: () -> Void
 
     init(screen: NSScreen, mode: CleaningWindowController.Mode, onExit: @escaping () -> Void) {
-        self.mode = mode
+        self.windowMode = mode
         self.onExit = onExit
         super.init(contentRect: screen.frame,
                    styleMask: [.borderless],
@@ -82,7 +103,7 @@ private final class CleaningWindow: NSWindow {
 
     /// Swallows every chord before the main menu can match it (⌘Q included).
     override func performKeyEquivalent(with event: NSEvent) -> Bool {
-        if mode == .display, event.keyCode == 53,
+        if windowMode == .display, event.keyCode == 53,
            event.modifierFlags.isDisjoint(with: .deviceIndependentFlagsMask) {
             onExit()
         }
@@ -91,7 +112,7 @@ private final class CleaningWindow: NSWindow {
 
     /// Plain keys die here too; display mode only lets Esc out.
     override func keyDown(with event: NSEvent) {
-        if mode == .display, event.keyCode == 53, !event.isARepeat {
+        if windowMode == .display, event.keyCode == 53, !event.isARepeat {
             onExit()
         }
     }
@@ -103,6 +124,8 @@ private final class CleaningWindow: NSWindow {
 private final class CleaningView: NSView {
     private let mode: CleaningWindowController.Mode
     private let onExit: () -> Void
+    private var hintLabel: NSTextField?
+    private var hintFadeGeneration = 0
 
     init(frame: NSRect, mode: CleaningWindowController.Mode, onExit: @escaping () -> Void) {
         self.mode = mode
@@ -183,6 +206,15 @@ private final class CleaningView: NSView {
         ])
     }
 
+    /// Restores the display-mode hint for a reused window; a stale fade from
+    /// the previous session is cancelled via the generation counter.
+    func resetForReuse() {
+        guard let hint = hintLabel else { return }
+        hint.layer?.removeAllAnimations()
+        hint.alphaValue = 1
+        scheduleHintFade()
+    }
+
     /// A faint exit hint that fades out so the black screen stays clean.
     private func buildFadingHint() {
         let hint = NSTextField(labelWithString: String(
@@ -195,10 +227,18 @@ private final class CleaningView: NSView {
             hint.centerXAnchor.constraint(equalTo: centerXAnchor),
             hint.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -28),
         ])
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) { [weak hint] in
+        hintLabel = hint
+        scheduleHintFade()
+    }
+
+    private func scheduleHintFade() {
+        hintFadeGeneration += 1
+        let generation = hintFadeGeneration
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) { [weak self, weak hintLabel] in
+            guard let self, self.hintFadeGeneration == generation else { return }
             NSAnimationContext.runAnimationGroup { context in
                 context.duration = 0.8
-                hint?.animator().alphaValue = 0
+                hintLabel?.animator().alphaValue = 0
             }
         }
     }
