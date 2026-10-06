@@ -31,7 +31,14 @@ enum BluetoothConnectionDetails {
     static func codec(address: String) -> AudioCodec? {
         guard let device = IOBluetoothDevice(addressString: address),
               device.isConnected() else { return nil }
-        return (device.value(forKey: "AVCodec") as? NSNumber)
+        // "AVCodec" is undocumented and exists only while A2DP streams. On
+        // every other connected device (keyboards, mice, idle headsets)
+        // KVC raises NSUndefinedKeyException, which Swift cannot catch —
+        // the read aborted the process on the SystemRead queue. Probe the
+        // getter first so non-audio devices fall through as "no codec".
+        let key = "AVCodec"
+        guard device.responds(to: Selector(key)) else { return nil }
+        return (device.value(forKey: key) as? NSNumber)
             .flatMap { AudioCodec.mapped(from: $0.intValue) }
     }
 
