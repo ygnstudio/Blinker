@@ -20,6 +20,13 @@ struct MenuBarPanelSettings: View {
         } footer: {
             Text("勾选显示并拖动排序。隐藏区块不影响状态图标。隐藏音量区块也会停用面板滚轮调音量；全部隐藏后，仍可进入应用规则和设置。")
         }
+        Section {
+            Toggle("显示快速操作页", isOn: visibility(for: .quickActions))
+        } header: {
+            Text("快速操作页")
+        } footer: {
+            Text("快速操作独立为面板的第二页；页内项目在「快速操作」设置中配置。")
+        }
         MenuBarOutputDeviceSettings(preferences: preferences, audio: audio)
             .disabled(!isVolumeSectionEnabled)
         Section {

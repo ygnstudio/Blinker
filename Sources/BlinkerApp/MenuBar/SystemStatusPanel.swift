@@ -2,6 +2,9 @@ import AppKit
 import SwiftUI
 
 struct SystemStatusPanel: View {
+    /// The two panel pages; quick actions lives apart from the status blocks.
+    enum PanelPage { case status, quickActions }
+
     @ObservedObject var monitor: SystemStatusMonitor
     @ObservedObject var audio: SystemAudioController
     @ObservedObject var scanner: BluetoothLEScanner
@@ -12,14 +15,17 @@ struct SystemStatusPanel: View {
     let onOpenSettings: () -> Void
     let onOpenMenuBarPage: (MenuBarSettingsPage) -> Void
     @State private var expandedDevices = false
+    @State private var page = PanelPage.status
     @State var expandedBluetoothDevices = false
     @State var shortcutSlotStates: [String: ShortcutSlotState] = [:]
 
     var body: some View {
         let density = preferences.configuration.panelDensity
+        let showsQuickActions = preferences.configuration.enabledSections.contains(.quickActions)
+        let activePage = showsQuickActions ? page : .status
         VStack(spacing: 0) {
             HStack {
-                Text("系统状态").font(.headline)
+                Text(activePage == .status ? "系统状态" : "快速操作").font(.headline)
                 Spacer()
                 if audio.isBusy {
                     ProgressView().controlSize(.small)
@@ -31,24 +37,22 @@ struct SystemStatusPanel: View {
                 .labelStyle(.iconOnly).buttonStyle(.borderless)
             }
             .padding(density.headerPadding)
+            if showsQuickActions {
+                Picker("", selection: $page) {
+                    Text("状态").tag(PanelPage.status)
+                    Text("快速操作").tag(PanelPage.quickActions)
+                }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+                .padding(.horizontal, density.horizontalPadding)
+                .padding(.bottom, 8)
+            }
             ScrollView {
-                VStack(alignment: .leading, spacing: density.sectionSpacing) {
-                    ForEach(preferences.configuration.visibleSections, id: \.self) { section in
-                        switch section {
-                        case .battery: batterySection
-                        case .network: networkSection
-                        case .volume: volumeSection
-                        case .bluetooth: bluetoothSection
-                        case .quickActions: quickActionsSection
-                        }
-                    }
-                    if preferences.configuration.visibleSections.isEmpty {
-                        Text("所有状态区块均已隐藏，可在状态图标设置中重新开启。")
-                            .foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
-                    }
-                    if let error = audio.errorMessage {
-                        Text(error).font(.callout).foregroundStyle(.red)
-                            .fixedSize(horizontal: false, vertical: true)
+                Group {
+                    if activePage == .status {
+                        statusPage(density: density)
+                    } else {
+                        quickActionsPage
                     }
                 }
                 .padding(.horizontal, density.horizontalPadding)
@@ -66,6 +70,29 @@ struct SystemStatusPanel: View {
         }
         .frame(width: 340)
         .fixedSize(horizontal: false, vertical: true)
+    }
+
+    private func statusPage(density: MenuBarConfiguration.PanelDensity) -> some View {
+        VStack(alignment: .leading, spacing: density.sectionSpacing) {
+            ForEach(preferences.configuration.visibleSections, id: \.self) { section in
+                switch section {
+                case .battery: batterySection
+                case .network: networkSection
+                case .volume: volumeSection
+                case .bluetooth: bluetoothSection
+                // Unreachable: visibleSections lists status blocks only.
+                case .quickActions: EmptyView()
+                }
+            }
+            if preferences.configuration.visibleSections.isEmpty {
+                Text("所有状态区块均已隐藏，可在状态图标设置中重新开启。")
+                    .foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+            }
+            if let error = audio.errorMessage {
+                Text(error).font(.callout).foregroundStyle(.red)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
     }
 
     private var batterySection: some View {

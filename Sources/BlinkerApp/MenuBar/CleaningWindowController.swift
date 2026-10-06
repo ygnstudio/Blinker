@@ -26,7 +26,10 @@ final class CleaningWindowController {
             }
         }
         windows.forEach { $0.orderFrontRegardless() }
-        windows.first?.makeKey()
+        if let key = windows.first {
+            key.makeKey()
+            key.makeFirstResponder(key.contentView)
+        }
         if mode == .display {
             NSCursor.hide()
         }
@@ -42,10 +45,16 @@ final class CleaningWindowController {
     }
 }
 
-/// Borderless window covering one screen; key and mouse handling lives in
-/// the content view so the two modes can differ.
+/// Borderless window covering one screen. Key capture lives here, at the
+/// window level: a first responder further down the chain could change, but
+/// the menu bar ⌘Q must stay unreachable for the whole session.
 private final class CleaningWindow: NSWindow {
+    private let mode: CleaningWindowController.Mode
+    private let onExit: () -> Void
+
     init(screen: NSScreen, mode: CleaningWindowController.Mode, onExit: @escaping () -> Void) {
+        self.mode = mode
+        self.onExit = onExit
         super.init(contentRect: screen.frame,
                    styleMask: [.borderless],
                    backing: .buffered,
@@ -61,6 +70,22 @@ private final class CleaningWindow: NSWindow {
 
     override var canBecomeKey: Bool { true }
     override var canBecomeMain: Bool { true }
+
+    /// Swallows every chord before the main menu can match it (⌘Q included).
+    override func performKeyEquivalent(with event: NSEvent) -> Bool {
+        if mode == .display, event.keyCode == 53,
+           event.modifierFlags.isDisjoint(with: .deviceIndependentFlagsMask) {
+            onExit()
+        }
+        return true
+    }
+
+    /// Plain keys die here too; display mode only lets Esc out.
+    override func keyDown(with event: NSEvent) {
+        if mode == .display, event.keyCode == 53, !event.isARepeat {
+            onExit()
+        }
+    }
 }
 
 /// Swallows every keystroke and command chord. Display mode lets Esc and

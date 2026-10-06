@@ -12280,6 +12280,70 @@
           }
         }
       }
+    },
+    "显示快速操作页": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show Quick Actions Page"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "显示快速操作页"
+          }
+        }
+      }
+    },
+    "快速操作页": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quick Actions Page"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "快速操作页"
+          }
+        }
+      }
+    },
+    "快速操作独立为面板的第二页；页内项目在「快速操作」设置中配置。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quick actions is a separate second page of the panel; its rows are configured in Quick Actions settings."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "快速操作独立为面板的第二页；页内项目在「快速操作」设置中配置。"
+          }
+        }
+      }
+    },
+    "没有已开启的操作，可在快速操作设置中开启。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nothing is enabled yet. Turn actions on in Quick Actions settings."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "没有已开启的操作，可在快速操作设置中开启。"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

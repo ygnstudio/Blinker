@@ -9,15 +9,37 @@ extension SystemStatusPanel {
         case idle, running, failed(ShortcutRunner.Failure)
     }
 
+    /// True when at least one quick action row is configured to show.
+    var quickActionsHasRows: Bool {
+        let configuration = preferences.configuration
+        return configuration.showsQuickActionMicMute
+            || configuration.showsQuickActionDisplayCleaning
+            || configuration.showsQuickActionKeyboardCleaning
+            || !configuration.shortcutSlots.isEmpty
+    }
+
+    /// The panel's second page. An entirely unconfigured page still keeps its
+    /// heading gear so the way back to settings stays discoverable.
+    var quickActionsPage: some View {
+        VStack(alignment: .leading,
+               spacing: preferences.configuration.panelDensity.sectionSpacing) {
+            if quickActionsHasRows {
+                quickActionsSection
+            } else {
+                heading("快速操作", symbol: "bolt.circle", page: .quickActions)
+                Text("没有已开启的操作，可在快速操作设置中开启。")
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+    }
+
     @ViewBuilder
     var quickActionsSection: some View {
         let configuration = preferences.configuration
-        if configuration.showsQuickActionMicMute
-            || configuration.showsQuickActionDisplayCleaning
-            || configuration.showsQuickActionKeyboardCleaning
-            || !configuration.shortcutSlots.isEmpty {
+        if quickActionsHasRows {
             VStack(alignment: .leading,
-                   spacing: preferences.configuration.panelDensity.rowSpacing) {
+                   spacing: configuration.panelDensity.rowSpacing) {
                 heading("快速操作", symbol: "bolt.circle", page: .quickActions)
                 if configuration.showsQuickActionMicMute {
                     micMuteRow

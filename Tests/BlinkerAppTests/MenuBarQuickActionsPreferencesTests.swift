@@ -21,8 +21,9 @@ final class MenuBarQuickActionsPreferencesTests: XCTestCase {
         try body(defaults)
     }
 
-    /// Saves from builds that predate the quick actions section list every
-    /// older section; the new section is enabled exactly once, appended last.
+    /// Saves from builds that predate quick actions carry none of its keys;
+    /// the page is enabled exactly once for those users. It never joins the
+    /// reorderable status blocks.
     func testQuickActionsSectionEnabledOnceForOldSaves() throws {
         try withDefaults { defaults in
             let saved = Data(("{\"sectionOrder\":[\"battery\",\"network\",\"volume\",\"bluetooth\"],"
@@ -31,18 +32,25 @@ final class MenuBarQuickActionsPreferencesTests: XCTestCase {
             let preferences = MenuBarPreferences(defaults: defaults)
             XCTAssertTrue(preferences.configuration.enabledSections.contains(.quickActions))
             XCTAssertEqual(preferences.configuration.sectionOrder,
-                           [.battery, .network, .volume, .bluetooth, .quickActions])
+                           [.battery, .network, .volume, .bluetooth])
         }
     }
 
+    /// A save written after quick actions shipped always carries its keys,
+    /// even when the user hid the page; that choice is never re-migrated.
+    /// The page's leftover seat in sectionOrder is stripped on decode.
     func testQuickActionsSectionChoiceIsNotReMigrated() throws {
         try withDefaults { defaults in
             let saved = Data(("{\"sectionOrder\":[\"battery\",\"network\",\"volume\",\"bluetooth\","
                 + "\"quickActions\"],\"enabledSections\":[\"battery\",\"network\",\"volume\","
-                + "\"bluetooth\"]}").utf8)
+                + "\"bluetooth\"],\"showsQuickActionMicMute\":true,"
+                + "\"showsQuickActionDisplayCleaning\":true,"
+                + "\"showsQuickActionKeyboardCleaning\":true,\"shortcutSlots\":[]}").utf8)
             defaults.set(saved, forKey: MenuBarPreferences.key)
             let preferences = MenuBarPreferences(defaults: defaults)
             XCTAssertFalse(preferences.configuration.enabledSections.contains(.quickActions))
+            XCTAssertEqual(preferences.configuration.sectionOrder,
+                           [.battery, .network, .volume, .bluetooth])
         }
     }
 

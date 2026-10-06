@@ -21,6 +21,10 @@ struct MenuBarConfiguration: Codable, Equatable {
     enum ScrollScope: String, Codable, CaseIterable { case panel, volumeControl }
     enum ScrollDirection: String, Codable, CaseIterable { case upward = "up", down }
     enum Section: String, Codable, CaseIterable { case battery, network, volume, bluetooth, quickActions }
+
+    /// The status page's orderable blocks. Quick actions is a separate panel
+    /// page: it is enabled or hidden, never reordered.
+    static let statusSections: [Section] = [.battery, .network, .volume, .bluetooth]
     enum PanelDensity: String, Codable, CaseIterable { case comfortable, compact }
 
     var placement: Placement = .menuBar
@@ -48,7 +52,7 @@ struct MenuBarConfiguration: Codable, Equatable {
     var bluetoothSymbolScale: Double = 1.6
     var refreshInterval: Double = 15
     var leftClick: ClickAction = .panel
-    var sectionOrder: [Section] = Section.allCases
+    var sectionOrder: [Section] = statusSections
     var enabledSections: Set<Section> = Set(Section.allCases)
     var scrollAdjustsVolume = true
     var scrollScope: ScrollScope = .panel
@@ -113,8 +117,9 @@ struct MenuBarConfiguration: Codable, Equatable {
         placement != .menuBar
     }
 
+    /// Status page blocks in order; the quick actions page is not listed here.
     var visibleSections: [Section] {
-        sectionOrder.filter { enabledSections.contains($0) }
+        sectionOrder.filter { $0 != .quickActions && enabledSections.contains($0) }
     }
 
     func normalized() -> Self {
@@ -131,7 +136,9 @@ struct MenuBarConfiguration: Codable, Equatable {
         value.outputDeviceLimit = min(20, max(1, outputDeviceLimit))
         value.bluetoothDeviceLimit = min(20, max(1, bluetoothDeviceLimit))
         var seen = Set<Section>()
-        value.sectionOrder = (sectionOrder + Section.allCases).filter { seen.insert($0).inserted }
+        value.sectionOrder = (sectionOrder + Self.statusSections).filter {
+            $0 != .quickActions && seen.insert($0).inserted
+        }
         var devices = Set<String>()
         value.outputDeviceOrder = outputDeviceOrder.filter { !$0.isEmpty && devices.insert($0).inserted }
             .prefix(100).map { $0 }

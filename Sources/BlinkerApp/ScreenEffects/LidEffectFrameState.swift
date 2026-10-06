@@ -181,7 +181,9 @@ struct LidEffectMotion {
 
     private mutating func finish(elapsed: TimeInterval, frames: Int, speed: Double) -> Double {
         guard progress > 0 else { ending = nil; return 0 }
-        let duration = min(2, max(0.12, Double(min(30, max(1, frames))) / (30 * speed)))
+        // The tail is what reads as "the animation": too short and the effect
+        // is gone before the lid finishes opening. ~1.07 s at 100 % speed.
+        let duration = min(2, max(0.12, Double(min(30, max(1, frames))) / (15 * speed)))
         var transition = ending ?? Ending(start: progress, duration: duration)
         transition.elapsed = min(transition.duration, transition.elapsed + elapsed)
         if transition.duration - transition.elapsed < 0.000000001 {

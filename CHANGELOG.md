@@ -7,11 +7,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
-- Status panel gains a Quick Actions section: microphone mute for the default input, display cleaning (black full-screen overlays, Esc/click to exit) and keyboard cleaning (keystrokes swallowed, mouse-only exit) modes that need no accessibility permission, and up to three user-named Shortcut slots run via the Shortcuts CLI with inline error reporting. Row visibility and slot names live in the new Quick Actions settings page.
+- Status panel gains a second page for Quick Actions, switched with a segmented control: microphone mute for the default input, display cleaning (black full-screen overlays, Esc/click to exit) and keyboard cleaning (keystrokes swallowed, mouse-only exit) modes that need no accessibility permission, and up to three user-named Shortcut slots run via the Shortcuts CLI with inline error reporting. Row visibility and slot names live in the new Quick Actions settings page; the page itself can be hidden from Panel settings.
 - Status panel battery section can show cycle count, health, temperature and charge/discharge power from the battery controller; unavailable fields stay hidden and Macs without a battery show nothing.
 - Status panel network section can show averaged up/down throughput, the local IPv4 address and — off by default, naming the api.ipify.org endpoint — the public IP, the panel's only outbound request.
 - Bluetooth device rows can show the system-reported signal strength; a separate opt-in, sharing the Bluetooth privacy grant with nearby scanning, adds A2DP codec subtitles and a per-device Disconnect action that keeps the pairing.
 - Status panel density switches between Comfortable and Compact, and every secondary row (battery details, throughput, IPs, Wi-Fi name, VPN, audio input, signal strength, codec) has its own settings toggle.
+
+### Changed
+
+- The Duo lid effect's finish phase plays at half pace (about 1.07 s at 100% speed, still capped at 2 s), so the animation reads through the lid's full opening swing.
+
+### Fixed
+
+- Quitting display cleaning no longer quits Blinker: cleaning windows now swallow every key equivalent at the window level — ⌘Q can never reach the main menu during a session — and the app delegate never terminates after the last window closes.
 
 ## [0.7.0] - 2026-10-04
 

@@ -25,7 +25,9 @@ final class MenuBarPreferencesTests: XCTestCase {
             XCTAssertEqual(preferences.configuration, MenuBarConfiguration())
             XCTAssertEqual(preferences.configuration.leftClick, .panel)
             XCTAssertEqual(preferences.configuration.visibleSections,
-                           [.battery, .network, .volume, .bluetooth, .quickActions])
+                           [.battery, .network, .volume, .bluetooth])
+            // The quick actions page is on by default but rides no block.
+            XCTAssertTrue(preferences.configuration.enabledSections.contains(.quickActions))
             XCTAssertEqual(defaults.writes, 0)
         }
     }
@@ -64,10 +66,10 @@ final class MenuBarPreferencesTests: XCTestCase {
             defaults.set(legacy, forKey: MenuBarPreferences.key)
             let preferences = MenuBarPreferences(defaults: defaults)
             XCTAssertEqual(preferences.configuration.sectionOrder,
-                           [.battery, .network, .volume, .bluetooth, .quickActions])
+                           [.battery, .network, .volume, .bluetooth])
             XCTAssertTrue(preferences.configuration.enabledSections.contains(.bluetooth))
             XCTAssertEqual(preferences.configuration.visibleSections,
-                           [.battery, .network, .volume, .bluetooth, .quickActions])
+                           [.battery, .network, .volume, .bluetooth])
         }
     }
 
@@ -80,9 +82,11 @@ final class MenuBarPreferencesTests: XCTestCase {
             defaults.set(saved, forKey: MenuBarPreferences.key)
             let preferences = MenuBarPreferences(defaults: defaults)
             XCTAssertFalse(preferences.configuration.enabledSections.contains(.bluetooth))
-            // quickActions migrates on independently of the bluetooth choice.
+            // quickActions migrates on independently of the bluetooth choice,
+            // and lives on its own page rather than among the status blocks.
+            XCTAssertTrue(preferences.configuration.enabledSections.contains(.quickActions))
             XCTAssertEqual(preferences.configuration.visibleSections,
-                           [.battery, .network, .volume, .quickActions])
+                           [.battery, .network, .volume])
         }
     }
 
@@ -252,7 +256,7 @@ final class MenuBarPreferencesTests: XCTestCase {
                 $0.enabledSections = []
             }
             XCTAssertEqual(preferences.configuration.sectionOrder,
-                           [.volume, .battery, .network, .bluetooth, .quickActions])
+                           [.volume, .battery, .network, .bluetooth])
             XCTAssertEqual(preferences.configuration.visibleSections, [])
             preferences.update { $0.enabledSections.insert(.battery) }
             XCTAssertEqual(preferences.configuration.visibleSections, [.battery])

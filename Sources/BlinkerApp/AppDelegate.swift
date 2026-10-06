@@ -240,6 +240,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
         statusItemController.makeMenu()
     }
 
+    /// A menu bar app outlives every window it opens — cleaning overlays,
+    /// settings, onboarding. Never let the last close take the process down.
+    func applicationShouldTerminateAfterLastWindowClosed(_: NSApplication) -> Bool {
+        false
+    }
+
     func applicationWillTerminate(_: Notification) {
         statusItemController.stop()
         screenEffects.stop()

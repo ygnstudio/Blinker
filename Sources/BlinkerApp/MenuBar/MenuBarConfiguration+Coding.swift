@@ -71,8 +71,11 @@ extension MenuBarConfiguration {
         if !sectionOrder.contains(.bluetooth) {
             enabledSections.insert(.bluetooth)
         }
-        // Same one-time enable for the quick actions section.
-        if !sectionOrder.contains(.quickActions) {
+        // Same one-time enable for the quick actions page. Saves written
+        // before it existed carry none of its keys; newer saves always do.
+        // (The section used to ride along in sectionOrder; normalized()
+        // strips it now that quick actions is a page of its own.)
+        if !values.contains(.showsQuickActionMicMute) {
             enabledSections.insert(.quickActions)
         }
         self = normalized()
