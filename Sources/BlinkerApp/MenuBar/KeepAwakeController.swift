@@ -52,10 +52,14 @@ final class KeepAwakeController: ObservableObject {
 
     private nonisolated static func createAssertion() -> IOPMAssertionID? {
         var assertionID = IOPMAssertionID(0)
-        let status = IOPMAssertionCreateWithName(
-            "Blinker Keep Awake" as CFString,
-            IOPMAssertionLevel(kIOPMAssertionLevelOn),
+        // IOPMAssertionCreateWithName fails with 0xE00002C2 on macOS 26
+        // (verified on-device, C and Swift alike, while caffeinate works);
+        // the description variant — available since 10.6 — succeeds. Its
+        // argument order is type first, name second.
+        let status = IOPMAssertionCreateWithDescription(
             kIOPMAssertionTypePreventUserIdleSystemSleep as CFString,
+            "Blinker Keep Awake" as CFString,
+            nil, nil, nil, 0, nil,
             &assertionID
         )
         return status == kIOReturnSuccess ? assertionID : nil
