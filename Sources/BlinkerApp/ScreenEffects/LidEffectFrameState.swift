@@ -129,6 +129,12 @@ struct LidEffectMotion {
         var elapsed: TimeInterval = 0
     }
 
+    /// Downward steps never exceed this fraction per second at 100% speed:
+    /// a full opening sweep takes at least ~1.5 s even when the lid itself
+    /// flips open in a fraction of that, so the effect reads as an animation
+    /// instead of a snapshot. Rising (closing) steps stay 1:1 with the lid.
+    private static let openingSlewRate = 2.0 / 3
+
     private(set) var progress: Double
     private var hasInitialFrame: Bool
     private var ending: Ending?
@@ -175,7 +181,11 @@ struct LidEffectMotion {
         ending = nil
         guard frames > 1 || speed < 1 else { progress = target; return progress }
         let blend = 1 - exp(-min(0.1, elapsed) * 60 * speed / Double(min(30, max(1, frames))))
-        progress += (target - progress) * blend
+        var step = (target - progress) * blend
+        if step < 0 {
+            step = max(step, -Self.openingSlewRate * speed * min(0.1, elapsed))
+        }
+        progress += step
         return progress
     }
 

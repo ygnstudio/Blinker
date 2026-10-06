@@ -226,6 +226,44 @@ final class LidEffectFrameStateTests: XCTestCase {
                        "A delayed draw must not restart or stretch the ending")
     }
 
+    /// A lid flipped open in 0.3 s must still play the sweep out: downward
+    /// steps are capped at 2/3 of the range per second at 100% speed.
+    func testOpeningFadeIsSlewLimitedBelowTheBlendPace() {
+        var motion = LidEffectMotion(progress: 1)
+        _ = motion.advance(to: 0.1, elapsed: 0, frames: 30) // consume the seed frame
+        let first = motion.advance(to: 0.1, elapsed: 1.0 / 60, frames: 30)
+        XCTAssertEqual(first, 1 - (2.0 / 3) / 60, accuracy: 0.000001,
+                       "A fast target drop must not move faster than the slew cap")
+        for _ in 0 ..< 29 {
+            _ = motion.advance(to: 0.1, elapsed: 1.0 / 60, frames: 30)
+        }
+        XCTAssertEqual(motion.progress, 1 - (2.0 / 3) * 0.5, accuracy: 0.000001)
+    }
+
+    /// Slow lid swings stay 1:1 with the angle: below the cap, the blend
+    /// step passes through untouched.
+    func testOpeningFadeBelowTheCapKeepsTrackingTheLid() {
+        var capped = LidEffectMotion(progress: 0.55)
+        _ = capped.advance(to: 0.5, elapsed: 0, frames: 30)
+        let tracked = capped.advance(to: 0.5, elapsed: 1.0 / 60, frames: 30)
+        let blend = 1 - exp(-(1.0 / 60) * 60 / 30)
+        XCTAssertEqual(tracked, 0.55 - 0.05 * blend, accuracy: 0.000001)
+    }
+
+    /// Closing the lid brings the effect on at the blend pace, uncapped;
+    /// the speed preference scales the cap both ways.
+    func testSlewCapSkipsRisingStepsAndScalesWithSpeed() {
+        var rising = LidEffectMotion(progress: 0)
+        _ = rising.advance(to: 1, elapsed: 0, frames: 30)
+        let blend = 1 - exp(-(1.0 / 60) * 60 / 30)
+        XCTAssertEqual(rising.advance(to: 1, elapsed: 1.0 / 60, frames: 30), blend,
+                       accuracy: 0.000001)
+        var slow = LidEffectMotion(progress: 1)
+        _ = slow.advance(to: 0, elapsed: 0, frames: 30)
+        let step = slow.advance(to: 0.5, elapsed: 1.0 / 60, frames: 30, speed: 0.25)
+        XCTAssertEqual(1 - step, (2.0 / 3) * 0.25 / 60, accuracy: 0.000001)
+    }
+
     func testSettlementWaitsForZeroGPUCompletionAndDeliversOnlyOnce() throws {
         let state = LidEffectFrameState()
         let source = NSObject()

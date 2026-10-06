@@ -15,11 +15,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
-- The Duo lid effect's finish phase plays at half pace (about 1.07 s at 100% speed, still capped at 2 s), so the animation reads through the lid's full opening swing.
+- The Duo lid effect's opening sweep is slew-limited to at least ~1.5 s at 100% speed: a lid flipped open quickly still plays the full animation instead of tracking the lid 1:1. Closing stays exactly with the lid, and the finish phase plays at half pace (about 1.07 s, capped at 2 s).
 
 ### Fixed
 
-- Quitting display cleaning no longer quits Blinker: cleaning windows now swallow every key equivalent at the window level — ⌘Q can never reach the main menu during a session — and the app delegate never terminates after the last window closes.
+- Exiting display or keyboard cleaning no longer crashes the app: cleaning windows own their lifetime (`isReleasedWhenClosed = false`, the same pattern as the upstream Duo overlay) and close on the next runloop turn — closing a window mid-dispatch of its own Esc/click event left AppKit's transform animation pointing at freed memory (SIGSEGV on exit). Cleaning windows also swallow every key equivalent at the window level, so ⌘Q can never reach the main menu during a session.
 
 ## [0.7.0] - 2026-10-04
 

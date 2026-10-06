@@ -41,7 +41,12 @@ final class CleaningWindowController {
         NSCursor.unhide()
         let closing = windows
         windows = []
-        closing.forEach { $0.orderOut(nil); $0.close() }
+        closing.forEach { $0.orderOut(nil) }
+        // Never close a window while its own event is still being dispatched:
+        // AppKit keeps transform-animation and CA-transaction references past
+        // the handler, and synchronous teardown crashed in the runloop's
+        // autorelease drain (SIGSEGV in _NSWindowTransformAnimation dealloc).
+        DispatchQueue.main.async { closing.forEach { $0.close() } }
     }
 }
 
@@ -64,6 +69,10 @@ private final class CleaningWindow: NSWindow {
         collectionBehavior = [.canJoinAllSpaces, .stationary, .ignoresCycle]
         isOpaque = true
         hasShadow = false
+        // The controller owns the lifetime; close() must never release the
+        // window underneath an in-flight AppKit animation (upstream Duo does
+        // the same for its overlay).
+        isReleasedWhenClosed = false
         contentView = CleaningView(frame: NSRect(origin: .zero, size: screen.frame.size),
                                    mode: mode, onExit: onExit)
     }
