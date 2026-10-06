@@ -15,7 +15,7 @@ struct MenuBarQuickActionsSettings: View {
         } header: {
             Text("面板显示")
         } footer: {
-            Text("清洁模式以全屏窗口覆盖所有屏幕并锁定键盘；系统全局快捷键（如聚焦搜索）仍然生效，无需辅助功能权限。")
+            Text("显示器清洁以全屏黑窗覆盖所有屏幕，无需权限。键盘清洁通过系统级事件拦截锁定键盘与媒体键，需辅助功能与输入监控权限；权限不足时会先引导授权。")
         }
         Section {
             ForEach(0 ..< 3, id: \.self) { index in

@@ -108,6 +108,10 @@ private struct PermissionAssistantView: View {
                 Text("若系统提示退出并重新打开，请按提示重启 Blinker，让录屏权限生效。")
                     .font(.caption).foregroundStyle(.secondary)
             }
+            if permission == .inputMonitoring {
+                Text("授权后若仍无法进入键盘清洁，请退出并重新打开 Blinker。")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
         }
         .fixedSize(horizontal: false, vertical: true)
     }

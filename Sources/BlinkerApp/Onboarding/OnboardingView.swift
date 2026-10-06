@@ -65,7 +65,7 @@ struct OnboardingView: View {
     private var permissions: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("按需开启权限").font(.title2.bold())
-            ForEach(AppPermission.allCases) { permission in
+            ForEach(AppPermission.allCases.filter(\.isCore)) { permission in
                 GroupBox {
                     PermissionRow(permission: permission, allowsManagement: false).padding(.horizontal, 4)
                 }

@@ -25,6 +25,8 @@ final class StatusItemController: NSObject, NSMenuDelegate, NSMenuItemValidation
     var onToggleScreenEffects: (() -> Void)?
     var desktopState: (() -> (shown: Bool, available: Bool))?
     var onToggleDesktop: (() -> Void)?
+    /// Invoked when keyboard cleaning is blocked by a missing permission.
+    var onKeyboardCleaningPermissionNeeded: (() -> Void)?
 
     init(coordinator: InterceptionCoordinator, systemStatus: SystemStatusMonitor,
          audio: SystemAudioController, bluetoothScanner: BluetoothLEScanner,
@@ -53,6 +55,9 @@ final class StatusItemController: NSObject, NSMenuDelegate, NSMenuItemValidation
             onOpenSettings: { [weak self] in self?.onOpenMenuBarSettings?() },
             onOpenMenuBarPage: { [weak self] page in self?.onOpenMenuBarPage?(page) }
         )
+        presentation?.onKeyboardCleaningPermissionNeeded = { [weak self] in
+            self?.onKeyboardCleaningPermissionNeeded?()
+        }
         presentation?.start()
     }
 

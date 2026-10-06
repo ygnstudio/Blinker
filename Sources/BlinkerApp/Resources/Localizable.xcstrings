@@ -12009,22 +12009,6 @@
         }
       }
     },
-    "锁定键盘输入；点击屏幕上的退出按钮结束": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Locks keyboard input; click the on-screen exit button to finish."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "锁定键盘输入；点击屏幕上的退出按钮结束"
-          }
-        }
-      }
-    },
     "麦克风": {
       "localizations": {
         "en": {
@@ -12169,22 +12153,6 @@
         }
       }
     },
-    "除系统全局快捷键外，按键不会传给其他应用": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Keystrokes never reach other apps, except system-wide hotkeys"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "除系统全局快捷键外，按键不会传给其他应用"
-          }
-        }
-      }
-    },
     "退出键盘清洁": {
       "localizations": {
         "en": {
@@ -12213,22 +12181,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "按 Esc 或点击退出"
-          }
-        }
-      }
-    },
-    "清洁模式以全屏窗口覆盖所有屏幕并锁定键盘；系统全局快捷键（如聚焦搜索）仍然生效，无需辅助功能权限。": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Cleaning covers every screen with a full-screen window and locks the keyboard; system-wide hotkeys (e.g. Spotlight) still work. No accessibility permission needed."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "清洁模式以全屏窗口覆盖所有屏幕并锁定键盘；系统全局快捷键（如聚焦搜索）仍然生效，无需辅助功能权限。"
           }
         }
       }
@@ -12341,6 +12293,134 @@
           "stringUnit": {
             "state": "translated",
             "value": "没有已开启的操作，可在快速操作设置中开启。"
+          }
+        }
+      }
+    },
+    "输入监控": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Input Monitoring"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "输入监控"
+          }
+        }
+      }
+    },
+    "按键与媒体键已被系统级拦截，Touch ID 与电源键除外": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keystrokes and media keys are intercepted system-wide; Touch ID and the power button still work"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "按键与媒体键已被系统级拦截，Touch ID 与电源键除外"
+          }
+        }
+      }
+    },
+    "连按三次 Esc 也可退出": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Press Esc three times to exit as well"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "连按三次 Esc 也可退出"
+          }
+        }
+      }
+    },
+    "授权后若仍无法进入键盘清洁，请退出并重新打开 Blinker。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "If keyboard cleaning still will not start after granting, quit and reopen Blinker."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "授权后若仍无法进入键盘清洁，请退出并重新打开 Blinker。"
+          }
+        }
+      }
+    },
+    "用于键盘清洁模式：与辅助功能配合，系统级拦截按键与媒体键。只在清洁模式开启期间生效。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Used by Keyboard Cleaning: together with Accessibility, intercepts keystrokes and media keys system-wide. Active only while cleaning mode is on."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "用于键盘清洁模式：与辅助功能配合，系统级拦截按键与媒体键。只在清洁模式开启期间生效。"
+          }
+        }
+      }
+    },
+    "重新授权输入监控…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reauthorize Input Monitoring…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "重新授权输入监控…"
+          }
+        }
+      }
+    },
+    "系统级锁定键盘输入；点击退出按钮或连按三次 Esc 结束": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Locks the keyboard system-wide; click the exit button or press Esc three times to end"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "系统级锁定键盘输入；点击退出按钮或连按三次 Esc 结束"
+          }
+        }
+      }
+    },
+    "显示器清洁以全屏黑窗覆盖所有屏幕，无需权限。键盘清洁通过系统级事件拦截锁定键盘与媒体键，需辅助功能与输入监控权限；权限不足时会先引导授权。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Display Cleaning covers every screen with a black overlay and needs no permission. Keyboard Cleaning locks keystrokes and media keys through system-level event interception and requires Accessibility and Input Monitoring; you are guided to grant them first if missing."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "显示器清洁以全屏黑窗覆盖所有屏幕，无需权限。键盘清洁通过系统级事件拦截锁定键盘与媒体键，需辅助功能与输入监控权限；权限不足时会先引导授权。"
           }
         }
       }

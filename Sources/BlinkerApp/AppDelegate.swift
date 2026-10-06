@@ -82,6 +82,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
                     !desktopActions.isPaused && !desktopActions.desktop.isBusy)
         }
         controller.onToggleDesktop = { [weak self] in self?.desktopActions.toggleDesktop() }
+        controller.onKeyboardCleaningPermissionNeeded = { [weak self] in
+            guard let self else { return }
+            permissions.refresh()
+            // Accessibility is the core grant and usually present; guide to
+            // whichever half of the keyboard-lock pair is missing.
+            permissionAssistant.show(for: permissions.accessibilityGranted
+                ? .inputMonitoring : .accessibility)
+        }
         return controller
     }()
 

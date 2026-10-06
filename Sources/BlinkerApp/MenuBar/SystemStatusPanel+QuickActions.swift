@@ -52,7 +52,7 @@ extension SystemStatusPanel {
                 }
                 if configuration.showsQuickActionKeyboardCleaning {
                     cleaningRow(title: LocalizedStringKey("键盘清洁模式"), symbol: "keyboard",
-                                help: String(localized: "锁定键盘输入；点击屏幕上的退出按钮结束")) {
+                                help: String(localized: "系统级锁定键盘输入；点击退出按钮或连按三次 Esc 结束")) {
                         cleaning.start(.keyboard)
                     }
                 }

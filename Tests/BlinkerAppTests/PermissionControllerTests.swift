@@ -21,8 +21,10 @@ final class PermissionControllerTests: XCTestCase {
     private final class State {
         var accessibilityGranted = false
         var screenRecordingGranted = false
+        var inputMonitoringGranted = false
         var accessibilityRequests = 0
         var screenRecordingRequests = 0
+        var inputMonitoringRequests = 0
         var settingsOpenSucceeds = true
         var openedSettings: [AppPermission] = []
     }
@@ -37,6 +39,7 @@ final class PermissionControllerTests: XCTestCase {
         let state = State()
         state.accessibilityGranted = granted
         state.screenRecordingGranted = granted
+        state.inputMonitoringGranted = granted
         let thumbnails = WindowThumbnailStore(
             source: CaptureSource(), permissionCheck: { state.screenRecordingGranted }
         )
@@ -45,6 +48,8 @@ final class PermissionControllerTests: XCTestCase {
             accessibilityCheck: { state.accessibilityGranted },
             accessibilityRequest: { state.accessibilityRequests += 1 },
             screenRecordingRequest: { state.screenRecordingRequests += 1 },
+            inputMonitoringCheck: { state.inputMonitoringGranted },
+            inputMonitoringRequest: { state.inputMonitoringRequests += 1 },
             settingsOpener: {
                 state.openedSettings.append($0)
                 return state.settingsOpenSucceeds
@@ -59,9 +64,11 @@ final class PermissionControllerTests: XCTestCase {
         fixture.controller.refresh()
         XCTAssertEqual(fixture.state.accessibilityRequests, 0)
         XCTAssertEqual(fixture.state.screenRecordingRequests, 0)
+        XCTAssertEqual(fixture.state.inputMonitoringRequests, 0)
         XCTAssertTrue(fixture.state.openedSettings.isEmpty)
         XCTAssertFalse(fixture.controller.accessibilityGranted)
         XCTAssertFalse(fixture.controller.screenRecordingGranted)
+        XCTAssertFalse(fixture.controller.inputMonitoringGranted)
     }
 
     func testRepeatedExplicitRequestsPromptOnlyOnceAndDoNotAssumeApproval() {
@@ -73,8 +80,10 @@ final class PermissionControllerTests: XCTestCase {
         }
         XCTAssertEqual(fixture.state.accessibilityRequests, 1)
         XCTAssertEqual(fixture.state.screenRecordingRequests, 1)
+        XCTAssertEqual(fixture.state.inputMonitoringRequests, 1)
         XCTAssertEqual(fixture.state.openedSettings, [
             .accessibility, .accessibility, .screenRecording, .screenRecording,
+            .inputMonitoring, .inputMonitoring,
         ])
     }
 

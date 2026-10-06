@@ -25,6 +25,9 @@ struct PermissionsSettingsTab: View {
                     Button("重新授权屏幕录制…") {
                         assistant.show(for: .screenRecording, reauthorizing: true)
                     }
+                    Button("重新授权输入监控…") {
+                        assistant.show(for: .inputMonitoring, reauthorizing: true)
+                    }
                     Text("授权助手会引导你更新系统列表中的 Blinker，不会自动重置权限。")
                         .font(.callout).foregroundStyle(.secondary)
                     Text("若系统提示退出并重新打开，请按提示重启 Blinker，让录屏权限生效。")

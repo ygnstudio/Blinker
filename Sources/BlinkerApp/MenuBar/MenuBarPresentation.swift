@@ -18,6 +18,11 @@ final class MenuBarPresentation: NSObject, NSPopoverDelegate, NSWindowDelegate {
     private let scrolling = MenuBarVolumeScroll()
     private let cleaning = CleaningWindowController()
     private let shortcutRunner = ShortcutRunner()
+    /// Invoked when keyboard cleaning cannot start without new permissions
+    /// (Accessibility / Input Monitoring missing or stale).
+    var onKeyboardCleaningPermissionNeeded: (() -> Void)? {
+        didSet { cleaning.onKeyboardLockPermissionMissing = onKeyboardCleaningPermissionNeeded }
+    }
     private var dockWindow: NSWindow?
     private var subscriptions = Set<AnyCancellable>()
     private var appearanceObservation: NSKeyValueObservation?

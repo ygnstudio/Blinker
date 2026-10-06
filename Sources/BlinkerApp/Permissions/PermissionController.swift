@@ -5,6 +5,7 @@ import Combine
 enum AppPermission: String, CaseIterable, Identifiable {
     case accessibility
     case screenRecording
+    case inputMonitoring
 
     var id: String {
         rawValue
@@ -14,6 +15,16 @@ enum AppPermission: String, CaseIterable, Identifiable {
         switch self {
         case .accessibility: String(localized: "辅助功能")
         case .screenRecording: String(localized: "屏幕录制")
+        case .inputMonitoring: String(localized: "输入监控")
+        }
+    }
+
+    /// Onboarding only surfaces core permissions; input monitoring is
+    /// requested on demand when the user starts keyboard cleaning.
+    var isCore: Bool {
+        switch self {
+        case .accessibility, .screenRecording: true
+        case .inputMonitoring: false
         }
     }
 
@@ -21,6 +32,7 @@ enum AppPermission: String, CaseIterable, Identifiable {
         switch self {
         case .accessibility: "Privacy_Accessibility"
         case .screenRecording: "Privacy_ScreenCapture"
+        case .inputMonitoring: "Privacy_ListenEvent"
         }
     }
 }
@@ -30,6 +42,7 @@ enum AppPermission: String, CaseIterable, Identifiable {
 final class PermissionController: ObservableObject {
     @Published private(set) var accessibilityGranted: Bool
     @Published private(set) var screenRecordingGranted: Bool
+    @Published private(set) var inputMonitoringGranted: Bool
     @Published private(set) var settingsOpenFailed = false
     let appURL: URL?
 
@@ -37,6 +50,8 @@ final class PermissionController: ObservableObject {
     private let accessibilityCheck: () -> Bool
     private let accessibilityRequest: () -> Void
     private let screenRecordingRequest: () -> Void
+    private let inputMonitoringCheck: () -> Bool
+    private let inputMonitoringRequest: () -> Void
     private let settingsOpener: (AppPermission) -> Bool
     private var requestedPermissions: Set<AppPermission> = []
     private var subscriptions: Set<AnyCancellable> = []
@@ -47,20 +62,26 @@ final class PermissionController: ObservableObject {
             accessibilityCheck: { AccessibilityPermission.isTrusted },
             accessibilityRequest: AccessibilityPermission.prompt,
             screenRecordingRequest: { thumbnails.requestPermission() },
+            inputMonitoringCheck: { InputMonitoringPermission.isGranted },
+            inputMonitoringRequest: { InputMonitoringPermission.request() },
             settingsOpener: Self.openSystemSettings
         )
     }
 
     init(thumbnails: WindowThumbnailStore, accessibilityCheck: @escaping () -> Bool,
          accessibilityRequest: @escaping () -> Void, screenRecordingRequest: @escaping () -> Void,
+         inputMonitoringCheck: @escaping () -> Bool, inputMonitoringRequest: @escaping () -> Void,
          settingsOpener: @escaping (AppPermission) -> Bool) {
         self.thumbnails = thumbnails
         self.accessibilityCheck = accessibilityCheck
         self.accessibilityRequest = accessibilityRequest
         self.screenRecordingRequest = screenRecordingRequest
+        self.inputMonitoringCheck = inputMonitoringCheck
+        self.inputMonitoringRequest = inputMonitoringRequest
         self.settingsOpener = settingsOpener
         accessibilityGranted = accessibilityCheck()
         screenRecordingGranted = thumbnails.permissionGranted
+        inputMonitoringGranted = inputMonitoringCheck()
         appURL = RunningApplicationBundle.url
 
         // This store is MainActor-isolated; use its existing capture permission state.
@@ -77,11 +98,13 @@ final class PermissionController: ObservableObject {
         switch permission {
         case .accessibility: accessibilityGranted
         case .screenRecording: screenRecordingGranted
+        case .inputMonitoring: inputMonitoringGranted
         }
     }
 
     func refresh() {
         accessibilityGranted = accessibilityCheck()
+        inputMonitoringGranted = inputMonitoringCheck()
         thumbnails.checkPermission()
     }
 
@@ -92,6 +115,7 @@ final class PermissionController: ObservableObject {
             switch permission {
             case .accessibility: accessibilityRequest()
             case .screenRecording: screenRecordingRequest()
+            case .inputMonitoring: inputMonitoringRequest()
             }
         }
         refresh()

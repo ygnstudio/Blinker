@@ -1,17 +1,29 @@
 import AppKit
+import BlinkerCore
 
-/// Full-screen overlays for display and keyboard cleaning. Events land in
-/// our own windows, so no accessibility permission is involved; global
-/// hotkeys (⌘Space and friends) keep working, which settings states.
+/// Full-screen overlays for display and keyboard cleaning. Keyboard locking
+/// uses a system event tap (KeyboardInputLock): window-level capture never
+/// receives keystrokes unless this app is active, which a menu-bar app cannot
+/// guarantee. Global hotkeys keep working in display mode without a tap;
+/// keyboard mode requires Accessibility + Input Monitoring and refuses to
+/// enter a lock it cannot actually enforce.
 @MainActor
 final class CleaningWindowController {
     enum Mode {
         /// Black screens for wiping the display; Esc or a click exits.
         case display
-        /// Locked screen for wiping the keyboard; only the on-screen button
-        /// exits, so stray keystrokes cannot end the session.
+        /// Locked screen for wiping the keyboard; the on-screen button or
+        /// Escape ×3 exits, so stray keystrokes cannot end the session.
         case keyboard
     }
+
+    /// Both permissions the keyboard lock needs; injectable for tests.
+    var keyboardLockGate: () -> Bool = {
+        AccessibilityPermission.isTrusted && InputMonitoringPermission.isGranted
+    }
+    /// Fired when keyboard cleaning cannot start because the gate fails or
+    /// tap creation is denied (stale grant needing a relaunch).
+    var onKeyboardLockPermissionMissing: (() -> Void)?
 
     /// Windows are kept alive for the whole app lifetime and reused. AppKit's
     /// transform animation (`_NSWindowTransformAnimation`) only releases its
@@ -23,11 +35,33 @@ final class CleaningWindowController {
     /// deliberate, tiny leak over a crash.
     private var windows: [NSWindow] = []
     private var retiredWindows: [NSWindow] = []
+    private var inputLock: KeyboardInputLock?
     private(set) var isActive = false
 
     func start(_ mode: Mode) {
         guard !isActive, !NSScreen.screens.isEmpty else { return }
+        if mode == .keyboard, !keyboardLockGate() {
+            onKeyboardLockPermissionMissing?()
+            return
+        }
+        var lock: KeyboardInputLock?
+        if mode == .keyboard || keyboardLockGate() {
+            let candidate = KeyboardInputLock()
+            let lockMode: KeyboardInputLock.Mode = mode == .keyboard ? .keyboard : .display
+            let started = candidate.start(mode: lockMode) { [weak self] in
+                Task { @MainActor in self?.stop() }
+            }
+            if mode == .keyboard, !started {
+                // Gate passed but the tap was denied: the grant predates this
+                // binary and only applies after relaunch (upstream Cleankey
+                // names the same failure).
+                onKeyboardLockPermissionMissing?()
+                return
+            }
+            lock = started ? candidate : nil
+        }
         isActive = true
+        inputLock = lock
         NSApp.activate(ignoringOtherApps: true)
         if reusableWindows(for: mode) {
             windows.forEach { ($0.contentView as? CleaningView)?.resetForReuse() }
@@ -52,6 +86,8 @@ final class CleaningWindowController {
     func stop() {
         guard isActive else { return }
         isActive = false
+        inputLock?.stop()
+        inputLock = nil
         NSCursor.unhide()
         // orderOut only — never close(), never drop the reference. See the
         // comment on `windows` above.
@@ -181,22 +217,28 @@ private final class CleaningView: NSView {
         title.font = .systemFont(ofSize: 20, weight: .medium)
         title.textColor = .white
         let caption = NSTextField(wrappingLabelWithString: String(
-            localized: "除系统全局快捷键外，按键不会传给其他应用",
+            localized: "按键与媒体键已被系统级拦截，Touch ID 与电源键除外",
             comment: "keyboard cleaning scope note"))
         caption.font = .systemFont(ofSize: 12)
         caption.textColor = .secondaryLabelColor
         caption.maximumNumberOfLines = 2
         caption.alignment = .center
+        let escapeHint = NSTextField(wrappingLabelWithString: String(
+            localized: "连按三次 Esc 也可退出",
+            comment: "keyboard cleaning emergency escape hint"))
+        escapeHint.font = .systemFont(ofSize: 12)
+        escapeHint.textColor = .secondaryLabelColor
+        escapeHint.alignment = .center
         let exit = NSButton(title: String(localized: "退出键盘清洁", comment: "exit button"),
                             target: self, action: #selector(exitClicked))
         exit.bezelStyle = .rounded
         exit.controlSize = .large
         exit.keyEquivalent = ""
-        let stack = NSStackView(views: [symbol, title, caption, exit])
+        let stack = NSStackView(views: [symbol, title, caption, escapeHint, exit])
         stack.orientation = .vertical
         stack.alignment = .centerX
         stack.spacing = 14
-        stack.setCustomSpacing(22, after: caption)
+        stack.setCustomSpacing(22, after: escapeHint)
         stack.translatesAutoresizingMaskIntoConstraints = false
         addSubview(stack)
         NSLayoutConstraint.activate([

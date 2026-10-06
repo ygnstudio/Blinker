@@ -63,6 +63,8 @@ struct PermissionRow: View {
             "用于识别红绿灯、切换与管理窗口。未授权时可以先浏览设置。"
         case .screenRecording:
             "可选，用于窗口缩略图和开合盖屏幕特效。画面只在内存中处理，不录音、不保存录像。"
+        case .inputMonitoring:
+            "用于键盘清洁模式：与辅助功能配合，系统级拦截按键与媒体键。只在清洁模式开启期间生效。"
         }
     }
 }
