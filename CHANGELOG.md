@@ -16,6 +16,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
+- New app icon: an amber eclipse — a lit disc caught mid-blink behind a dark occluder — replacing the traffic-light window mark as the app outgrew window management alone. Amber is the name's native color (a turn signal); `Scripts/render-app-icon.py` renders the full iconset from ratio-based geometry as before.
 - The Duo lid effect's opening sweep is slew-limited to at least ~1.5 s at 100% speed: a lid flipped open quickly still plays the full animation instead of tracking the lid 1:1. Closing stays exactly with the lid, and the finish phase plays at half pace (about 1.07 s, capped at 2 s).
 
 ### Fixed
