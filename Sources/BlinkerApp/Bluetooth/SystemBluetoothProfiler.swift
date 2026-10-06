@@ -1,7 +1,7 @@
 // Paired-device reading adapted from Status Trio, Copyright 2026 lingyired.
 // Apache-2.0; upstream d1672377a172ee4cb4af53d5054610c407c0d34f.
 // Modified for Blinker: one folded device model, a bounded subprocess with a
-// last-good cache instead of watchdog queue generations, no HID refinement.
+// last-good cache instead of watchdog queue generations.
 // See ThirdParty/StatusTrio for license and attribution.
 import Foundation
 
@@ -20,10 +20,18 @@ final class SystemBluetoothProfiler: @unchecked Sendable {
     private let timeout: TimeInterval
     /// Event bursts coalesce; the subprocess spawns at most this often.
     private let minimumInterval: TimeInterval
+    /// Injected for tests; production reads the profiler subprocess and the
+    /// I/O Registry (see BluetoothHIDUsageReader).
+    private let outputProvider: (TimeInterval) -> Data?
+    private let hidUsageProvider: () -> [String: [BluetoothHIDUsage]]
 
-    init(timeout: TimeInterval = 4, minimumInterval: TimeInterval = 5) {
+    init(timeout: TimeInterval = 4, minimumInterval: TimeInterval = 5,
+         outputProvider: @escaping (TimeInterval) -> Data? = SystemBluetoothProfiler.readProfilerOutput,
+         hidUsageProvider: @escaping () -> [String: [BluetoothHIDUsage]] = BluetoothHIDUsageReader.read) {
         self.timeout = timeout
         self.minimumInterval = minimumInterval
+        self.outputProvider = outputProvider
+        self.hidUsageProvider = hidUsageProvider
     }
 
     /// The current paired-device list. A read failure keeps the previous list;
@@ -35,12 +43,28 @@ final class SystemBluetoothProfiler: @unchecked Sendable {
             return lastDevices
         }
         lastRead = Date()
-        guard let data = Self.readProfilerOutput(timeout: timeout),
-              let devices = Self.parse(json: data) else {
+        guard let data = outputProvider(timeout),
+              let parsed = Self.parse(json: data) else {
             return lastDevices
         }
+        let devices = refined(parsed)
         lastDevices = devices
         return devices
+    }
+
+    /// Corrects manufacturer-mislabeled kinds (a Logitech keyboard declaring
+    /// `Mouse`) from the HID usages the I/O Registry enumerates. The Registry
+    /// is walked only when a connected device could actually change — the
+    /// same rule that keeps the profiler subprocess from spawning when the
+    /// cache is fresh: a second source is consulted only where the first left
+    /// a question the app can answer. (Upstream gates on kind alone; gating
+    /// on connected too is provably identical because refinement only moves
+    /// connected devices.)
+    private func refined(_ devices: [BluetoothDevice]) -> [BluetoothDevice] {
+        guard devices.contains(where: { $0.isConnected && $0.kind.acceptsHIDRefinement }) else {
+            return devices
+        }
+        return BluetoothDeviceKindRefinement.apply(to: devices, hidUsages: hidUsageProvider())
     }
 
     // MARK: - Subprocess
