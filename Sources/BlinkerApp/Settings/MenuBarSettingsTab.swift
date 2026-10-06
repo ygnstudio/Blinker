@@ -46,7 +46,7 @@ struct MenuBarSettingsTab: View {
                     MenuBarBluetoothSettings(preferences: preferences, monitor: monitor,
                                              scanner: scanner)
                 case .quickActions:
-                    MenuBarQuickActionsSettings(preferences: preferences)
+                    MenuBarQuickActionsSettings(preferences: preferences, monitor: monitor)
                 case .panel: MenuBarPanelSettings(preferences: preferences, audio: audio)
                 case .storage: MenuBarStorageSettings(preferences: preferences)
                 case .performance: MenuBarPerformanceSettings(preferences: preferences)

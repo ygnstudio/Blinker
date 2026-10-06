@@ -18,6 +18,11 @@ final class MenuBarPresentation: NSObject, NSPopoverDelegate, NSWindowDelegate {
     private let scrolling = MenuBarVolumeScroll()
     private let cleaning = CleaningWindowController()
     private let shortcutRunner = ShortcutRunner()
+    /// App-lifetime owners: the panel's hosting controller is recreated on
+    /// every open, so panel-scoped owners would lose a held power assertion
+    /// or show stale Finder state.
+    private let keepAwake = KeepAwakeController()
+    private let finderToggles = FinderTogglesController()
     /// Invoked when keyboard cleaning cannot start without new permissions
     /// (Accessibility / Input Monitoring missing or stale).
     var onKeyboardCleaningPermissionNeeded: (() -> Void)? {
@@ -196,6 +201,7 @@ final class MenuBarPresentation: NSObject, NSPopoverDelegate, NSWindowDelegate {
         scanner.refresh()
         let controller = NSHostingController(rootView: SystemStatusPanel(
             monitor: monitor, audio: audio, scanner: scanner, preferences: preferences,
+            keepAwake: keepAwake, finderToggles: finderToggles,
             cleaning: cleaning, shortcutRunner: shortcutRunner,
             onOpenApplications: { [weak self] in
                 self?.closePanel()

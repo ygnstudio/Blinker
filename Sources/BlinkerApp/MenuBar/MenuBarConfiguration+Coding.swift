@@ -57,6 +57,15 @@ extension MenuBarConfiguration {
         case showsQuickActionDisplayCleaning
         case showsQuickActionKeyboardCleaning
         case showsQuickActionEmptyTrash
+        case showsQuickActionKeepAwake
+        case showsQuickActionDesktopIcons
+        case showsQuickActionHiddenFiles
+        case showsQuickActionScreenSaver
+        case showsQuickActionDisplaySleep
+        case showsQuickActionLockScreen
+        case showsQuickActionBluetoothConnect
+        case quickActionAudioDeviceAddress
+        case quickActionAudioDeviceName
         case shortcutSlots
         case showsInternalStorage
         case showsExternalVolumes
@@ -73,6 +82,7 @@ extension MenuBarConfiguration {
         decodeAppearance(from: values)
         decodeInteraction(from: values)
         decodeBluetooth(from: values)
+        decodeQuickActions(from: values)
         // A save written before the bluetooth section existed carries no trace
         // of it in sectionOrder; enable the section for those users exactly
         // once. Saves written afterwards always list it, enabled or not.
@@ -196,6 +206,48 @@ extension MenuBarConfiguration {
         showsMemoryUsage = values.decode(.showsMemoryUsage, default: showsMemoryUsage)
         showsSwapUsage = values.decode(.showsSwapUsage, default: showsSwapUsage)
         showsUptime = values.decode(.showsUptime, default: showsUptime)
+    }
+
+    /// Quick action row toggles and the Bluetooth connect target. Every key
+    /// keeps its built-in default when absent, so saves written before a row
+    /// existed simply adopt the default for it.
+    private mutating func decodeQuickActions(from values: KeyedDecodingContainer<CodingKeys>) {
+        showsQuickActionKeepAwake = values.decode(
+            .showsQuickActionKeepAwake,
+            default: showsQuickActionKeepAwake
+        )
+        showsQuickActionDesktopIcons = values.decode(
+            .showsQuickActionDesktopIcons,
+            default: showsQuickActionDesktopIcons
+        )
+        showsQuickActionHiddenFiles = values.decode(
+            .showsQuickActionHiddenFiles,
+            default: showsQuickActionHiddenFiles
+        )
+        showsQuickActionScreenSaver = values.decode(
+            .showsQuickActionScreenSaver,
+            default: showsQuickActionScreenSaver
+        )
+        showsQuickActionDisplaySleep = values.decode(
+            .showsQuickActionDisplaySleep,
+            default: showsQuickActionDisplaySleep
+        )
+        showsQuickActionLockScreen = values.decode(
+            .showsQuickActionLockScreen,
+            default: showsQuickActionLockScreen
+        )
+        showsQuickActionBluetoothConnect = values.decode(
+            .showsQuickActionBluetoothConnect,
+            default: showsQuickActionBluetoothConnect
+        )
+        quickActionAudioDeviceAddress = values.decode(
+            .quickActionAudioDeviceAddress,
+            default: quickActionAudioDeviceAddress
+        )
+        quickActionAudioDeviceName = values.decode(
+            .quickActionAudioDeviceName,
+            default: quickActionAudioDeviceName
+        )
     }
 }
 

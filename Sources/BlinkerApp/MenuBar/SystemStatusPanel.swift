@@ -9,6 +9,8 @@ struct SystemStatusPanel: View {
     @ObservedObject var audio: SystemAudioController
     @ObservedObject var scanner: BluetoothLEScanner
     @ObservedObject var preferences: MenuBarPreferences
+    @ObservedObject var keepAwake: KeepAwakeController
+    @ObservedObject var finderToggles: FinderTogglesController
     let cleaning: CleaningWindowController
     let shortcutRunner: ShortcutRunner
     let onOpenApplications: () -> Void

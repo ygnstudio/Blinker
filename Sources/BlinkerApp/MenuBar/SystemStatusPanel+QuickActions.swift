@@ -16,11 +16,20 @@ extension SystemStatusPanel {
             || configuration.showsQuickActionDisplayCleaning
             || configuration.showsQuickActionKeyboardCleaning
             || configuration.showsQuickActionEmptyTrash
+            || configuration.showsQuickActionKeepAwake
+            || configuration.showsQuickActionDesktopIcons
+            || configuration.showsQuickActionHiddenFiles
+            || (configuration.showsQuickActionScreenSaver && SystemScreenActions.isScreenSaverAvailable)
+            || configuration.showsQuickActionDisplaySleep
+            || (configuration.showsQuickActionLockScreen && SystemScreenActions.isLockScreenAvailable)
+            || (configuration.showsQuickActionBluetoothConnect
+                && !configuration.quickActionAudioDeviceAddress.isEmpty)
             || !configuration.shortcutSlots.isEmpty
     }
 
     /// The panel's second page. An entirely unconfigured page still keeps its
-    /// heading gear so the way back to settings stays discoverable.
+    /// heading gear so the way back to settings stays discoverable. Landing
+    /// on the page re-syncs the Finder switches with the preference domain.
     var quickActionsPage: some View {
         VStack(alignment: .leading,
                spacing: preferences.configuration.panelDensity.sectionSpacing) {
@@ -33,6 +42,7 @@ extension SystemStatusPanel {
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
+        .onAppear { finderToggles.refresh() }
     }
 
     @ViewBuilder
@@ -59,6 +69,50 @@ extension SystemStatusPanel {
                 }
                 if configuration.showsQuickActionEmptyTrash {
                     trashRow
+                }
+                if configuration.showsQuickActionKeepAwake {
+                    keepAwakeRow
+                }
+                if configuration.showsQuickActionDesktopIcons {
+                    finderToggleRow(title: "隐藏桌面图标", symbol: "eye.slash",
+                                    isOn: desktopIconsBinding)
+                }
+                if configuration.showsQuickActionHiddenFiles {
+                    finderToggleRow(title: "显示隐藏文件", symbol: "eye",
+                                    isOn: hiddenFilesBinding)
+                }
+                if finderToggles.lastWriteFailed,
+                   configuration.showsQuickActionDesktopIcons
+                    || configuration.showsQuickActionHiddenFiles {
+                    Text("写入失败，请重试。")
+                        .font(.caption).foregroundStyle(.red)
+                }
+                if configuration.showsQuickActionScreenSaver,
+                   SystemScreenActions.isScreenSaverAvailable {
+                    actionRow(title: "屏幕保护", symbol: "photo.on.rectangle",
+                              buttonTitle: "开始",
+                              help: String(localized: "立即启动屏幕保护程序")) {
+                        try? SystemScreenActions.startScreenSaver()
+                    }
+                }
+                if configuration.showsQuickActionDisplaySleep {
+                    actionRow(title: "关闭显示器", symbol: "moon.zzz",
+                              buttonTitle: "关闭",
+                              help: String(localized: "仅关闭所有显示器，Mac 继续运行")) {
+                        try? SystemScreenActions.sleepDisplays()
+                    }
+                }
+                if configuration.showsQuickActionLockScreen,
+                   SystemScreenActions.isLockScreenAvailable {
+                    actionRow(title: "锁定屏幕", symbol: "lock",
+                              buttonTitle: "锁定",
+                              help: String(localized: "返回登录窗口，会话与应用保持运行")) {
+                        SystemScreenActions.lockScreenNow()
+                    }
+                }
+                if configuration.showsQuickActionBluetoothConnect,
+                   !configuration.quickActionAudioDeviceAddress.isEmpty {
+                    bluetoothConnectRow
                 }
                 ForEach(configuration.shortcutSlots, id: \.self, content: shortcutRow)
             }
@@ -88,17 +142,122 @@ extension SystemStatusPanel {
                 set: { audio.setInputMuted($0) })
     }
 
-    private func cleaningRow(title: LocalizedStringKey, symbol: String, help: String,
-                             action: @escaping () -> Void) -> some View {
+    private var keepAwakeRow: some View {
+        HStack(spacing: 6) {
+            Image(systemName: "cup.and.saucer").frame(width: 18)
+                .foregroundStyle(keepAwake.isActive ? Color.orange : Color.primary)
+            Text("保持唤醒")
+            Spacer(minLength: 8)
+            Toggle("保持唤醒", isOn: keepAwakeBinding)
+                .toggleStyle(.switch).labelsHidden()
+        }
+        .font(.callout)
+        .accessibilityElement(children: .combine)
+    }
+
+    private var keepAwakeBinding: Binding<Bool> {
+        Binding(get: { keepAwake.isActive },
+                set: { keepAwake.setActive($0) })
+    }
+
+    /// The two Finder switches share one shape. The desktop-icons row reads
+    /// inverted — ON means "icons are hidden", matching the mic-mute row
+    /// where ON names the active state.
+    private func finderToggleRow(title: LocalizedStringKey, symbol: String,
+                                 isOn: Binding<Bool>) -> some View {
         HStack(spacing: 6) {
             Image(systemName: symbol).frame(width: 18)
             Text(title)
             Spacer(minLength: 8)
-            Button("开始", action: action)
+            Toggle(title, isOn: isOn)
+                .toggleStyle(.switch).labelsHidden()
+        }
+        .font(.callout)
+        .accessibilityElement(children: .combine)
+    }
+
+    private var desktopIconsBinding: Binding<Bool> {
+        Binding(get: { !finderToggles.desktopIconsShown },
+                set: { finderToggles.setDesktopIconsShown(!$0) })
+    }
+
+    private var hiddenFilesBinding: Binding<Bool> {
+        Binding(get: { finderToggles.hiddenFilesShown },
+                set: { finderToggles.setHiddenFilesShown($0) })
+    }
+
+    private func cleaningRow(title: LocalizedStringKey, symbol: String, help: String,
+                             action: @escaping () -> Void) -> some View {
+        actionRow(title: title, symbol: symbol, buttonTitle: "开始", help: help, action: action)
+    }
+
+    /// One-shot actions share the cleaning rows' shape: icon, title, a
+    /// trailing text button. The button carries the verb since these rows
+    /// hold no persistent state.
+    private func actionRow(title: LocalizedStringKey, symbol: String,
+                           buttonTitle: LocalizedStringKey, help: String,
+                           action: @escaping () -> Void) -> some View {
+        HStack(spacing: 6) {
+            Image(systemName: symbol).frame(width: 18)
+            Text(title)
+            Spacer(minLength: 8)
+            Button(buttonTitle, action: action)
                 .buttonStyle(.borderless)
                 .help(help)
         }
         .font(.callout)
+    }
+
+    /// Bluetooth audio reconnect. The row appears once a device is picked
+    /// in settings; the connect call shares the Bluetooth device-control
+    /// grant with codec reading and disconnect, so without the grant the
+    /// row explains instead of acting.
+    private var bluetoothConnectRow: some View {
+        let configuration = preferences.configuration
+        let address = configuration.quickActionAudioDeviceAddress
+        let live = monitor.snapshot.bluetoothDevices?.first { $0.id == address }
+        let name = live?.name ?? (configuration.quickActionAudioDeviceName.isEmpty
+            ? address : configuration.quickActionAudioDeviceName)
+        let canControl = configuration.enablesBluetoothDeviceControl
+            && scanner.authorization == .allowedAlways
+        return VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 6) {
+                Image(systemName: live?.kind.symbolName ?? "headphones").frame(width: 18)
+                Text(name).lineLimit(1)
+                Spacer(minLength: 8)
+                if live?.isConnected == true {
+                    Text("已连接")
+                        .font(.caption).foregroundStyle(.tertiary)
+                } else {
+                    Button("连接") { connectBluetoothDevice(address) }
+                        .buttonStyle(.borderless)
+                        .disabled(!canControl)
+                        .help(String(localized: "重新连接该设备，配对关系保持不变"))
+                }
+            }
+            .font(.callout)
+            if !canControl {
+                Text("需要在蓝牙设置中开启「编解码器与断开操作」并完成蓝牙授权。")
+                    .font(.caption).foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .accessibilityElement(children: .combine)
+    }
+
+    /// Same cadence as disconnect: the profiler cache holds the previous
+    /// list for a few seconds, so refresh quickly and again after it
+    /// expires.
+    private func connectBluetoothDevice(_ address: String) {
+        DispatchQueue.global(qos: .userInitiated).async {
+            _ = BluetoothConnectionDetails.connect(address: address)
+            Task { @MainActor in
+                try? await Task.sleep(nanoseconds: 1_000_000_000)
+                monitor.refresh()
+                try? await Task.sleep(nanoseconds: 5_000_000_000)
+                monitor.refresh()
+            }
+        }
     }
 
     /// Trash row: the snapshot's item count (hidden without Full Disk

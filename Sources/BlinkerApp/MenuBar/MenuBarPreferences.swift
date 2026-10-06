@@ -114,6 +114,29 @@ struct MenuBarConfiguration: Codable, Equatable {
     var showsQuickActionKeyboardCleaning = true
     /// Quick actions section: empty-trash row for the boot volume's trash.
     var showsQuickActionEmptyTrash = true
+    /// Quick actions section: keep-awake toggle holding a power assertion.
+    var showsQuickActionKeepAwake = true
+    /// Quick actions section: Finder desktop-icons toggle; writes restart
+    /// the Finder to apply.
+    var showsQuickActionDesktopIcons = true
+    /// Quick actions section: Finder hidden-files toggle; writes restart
+    /// the Finder to apply.
+    var showsQuickActionHiddenFiles = true
+    /// Quick actions section: start the screen saver on demand.
+    var showsQuickActionScreenSaver = true
+    /// Quick actions section: sleep the displays without sleeping the Mac.
+    var showsQuickActionDisplaySleep = true
+    /// Quick actions section: lock the screen. The row hides itself when
+    /// the system's lock entry point is gone.
+    var showsQuickActionLockScreen = true
+    /// Quick actions section: reconnect a chosen paired Bluetooth audio
+    /// device. The row stays hidden until a device is picked in settings.
+    var showsQuickActionBluetoothConnect = true
+    /// Bluetooth address of the audio device the connect row targets;
+    /// empty when unset. The name is cached so the row still reads well
+    /// when the device is absent from the latest snapshot.
+    var quickActionAudioDeviceAddress = ""
+    var quickActionAudioDeviceName = ""
     /// User-named Shortcut slots run from the panel. Blinker does not know
     /// what a shortcut does; 0...3 names, matched against the Shortcuts app.
     var shortcutSlots: [String] = []
@@ -174,6 +197,13 @@ struct MenuBarConfiguration: Codable, Equatable {
             .map { String($0.trimmingCharacters(in: .whitespacesAndNewlines).prefix(64)) }
             .filter { !$0.isEmpty && slots.insert($0).inserted }
             .prefix(3).map { $0 }
+        value.quickActionAudioDeviceAddress = String(
+            quickActionAudioDeviceAddress.trimmingCharacters(in: .whitespacesAndNewlines).prefix(32))
+        value.quickActionAudioDeviceName = String(
+            quickActionAudioDeviceName.trimmingCharacters(in: .whitespacesAndNewlines).prefix(100))
+        if value.quickActionAudioDeviceAddress.isEmpty {
+            value.quickActionAudioDeviceName = ""
+        }
         return value
     }
 }

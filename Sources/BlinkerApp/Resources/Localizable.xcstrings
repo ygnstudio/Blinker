@@ -12936,6 +12936,358 @@
           }
         }
       }
+    },
+    "保持唤醒": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keep Awake"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "保持唤醒"
+          }
+        }
+      }
+    },
+    "隐藏桌面图标": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hide Desktop Icons"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "隐藏桌面图标"
+          }
+        }
+      }
+    },
+    "显示隐藏文件": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show Hidden Files"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "显示隐藏文件"
+          }
+        }
+      }
+    },
+    "写入失败，请重试。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Write failed. Try again."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "写入失败，请重试。"
+          }
+        }
+      }
+    },
+    "屏幕保护": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Screen Saver"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "屏幕保护"
+          }
+        }
+      }
+    },
+    "立即启动屏幕保护程序": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start the screen saver now"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "立即启动屏幕保护程序"
+          }
+        }
+      }
+    },
+    "关闭显示器": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sleep Displays"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "关闭显示器"
+          }
+        }
+      }
+    },
+    "关闭": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sleep"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "关闭"
+          }
+        }
+      }
+    },
+    "仅关闭所有显示器，Mac 继续运行": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sleep all displays; the Mac keeps running"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "仅关闭所有显示器，Mac 继续运行"
+          }
+        }
+      }
+    },
+    "锁定屏幕": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lock Screen"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "锁定屏幕"
+          }
+        }
+      }
+    },
+    "锁定": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lock"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "锁定"
+          }
+        }
+      }
+    },
+    "返回登录窗口，会话与应用保持运行": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Return to the login window; your session and apps keep running"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "返回登录窗口，会话与应用保持运行"
+          }
+        }
+      }
+    },
+    "已连接": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connected"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已连接"
+          }
+        }
+      }
+    },
+    "连接": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connect"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "连接"
+          }
+        }
+      }
+    },
+    "重新连接该设备，配对关系保持不变": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reconnect the device; the pairing is kept"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "重新连接该设备，配对关系保持不变"
+          }
+        }
+      }
+    },
+    "需要在蓝牙设置中开启「编解码器与断开操作」并完成蓝牙授权。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Requires \"Codec & Disconnect\" in Bluetooth settings and the Bluetooth grant."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "需要在蓝牙设置中开启「编解码器与断开操作」并完成蓝牙授权。"
+          }
+        }
+      }
+    },
+    "连接蓝牙耳机": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connect Bluetooth Headphones"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "连接蓝牙耳机"
+          }
+        }
+      }
+    },
+    "目标设备": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Target Device"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "目标设备"
+          }
+        }
+      }
+    },
+    "未选择": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "None"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未选择"
+          }
+        }
+      }
+    },
+    "蓝牙耳机": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bluetooth Headphones"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "蓝牙耳机"
+          }
+        }
+      }
+    },
+    "保持唤醒仅阻止系统自动睡眠，不影响合盖与电源策略。访达两项开关写入后重启访达生效，桌面会短暂重绘；系统缺少锁屏入口时该行自动隐藏。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keep Awake only prevents automatic system sleep; lid and power policies are unaffected. The two Finder switches restart the Finder to apply, briefly redrawing the desktop; the lock-screen row hides itself when the system offers no lock entry point."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "保持唤醒仅阻止系统自动睡眠，不影响合盖与电源策略。访达两项开关写入后重启访达生效，桌面会短暂重绘；系统缺少锁屏入口时该行自动隐藏。"
+          }
+        }
+      }
+    },
+    "选择已配对的音频设备后，面板出现「连接」行；连接与编解码器、断开共用同一蓝牙授权，未授权时面板会给出指引。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pick a paired audio device and the panel shows a Connect row. Connecting shares the Bluetooth grant with codec reading and disconnect; the panel guides the grant when it is missing."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "选择已配对的音频设备后，面板出现「连接」行；连接与编解码器、断开共用同一蓝牙授权，未授权时面板会给出指引。"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

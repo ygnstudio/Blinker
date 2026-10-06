@@ -38,4 +38,19 @@ final class BluetoothConnectionDetailsTests: XCTestCase {
         let merged = BluetoothConnectionDetails.attachingCodecs(to: devices) { _ in nil }
         XCTAssertEqual(merged, devices)
     }
+
+    func testConnectDelegatesToTheInjectedOpen() {
+        var opened: [String] = []
+        let connected = BluetoothConnectionDetails.connect(address: "AA:BB:CC:DD:EE:09") { address in
+            opened.append(address)
+            return true
+        }
+        XCTAssertTrue(connected)
+        XCTAssertEqual(opened, ["AA:BB:CC:DD:EE:09"])
+    }
+
+    func testConnectReportsTheOpenFailure() {
+        let connected = BluetoothConnectionDetails.connect(address: "AA:BB:CC:DD:EE:09") { _ in false }
+        XCTAssertFalse(connected)
+    }
 }

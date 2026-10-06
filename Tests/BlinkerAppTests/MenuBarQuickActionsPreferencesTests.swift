@@ -75,4 +75,49 @@ final class MenuBarQuickActionsPreferencesTests: XCTestCase {
             XCTAssertEqual(value.shortcutSlots, ["清洁模式", "夜间", String(repeating: "长", count: 64)])
         }
     }
+
+    /// Saves that predate the system switches carry none of their keys;
+    /// every row adopts its default and the Bluetooth target stays unset.
+    func testSystemSwitchDefaultsApplyToOldSaves() throws {
+        try withDefaults { defaults in
+            let saved = Data(("{\"showsQuickActionMicMute\":true,"
+                + "\"showsQuickActionDisplayCleaning\":true,"
+                + "\"showsQuickActionKeyboardCleaning\":true,\"shortcutSlots\":[]}").utf8)
+            defaults.set(saved, forKey: MenuBarPreferences.key)
+            let value = MenuBarPreferences(defaults: defaults).configuration
+            XCTAssertTrue(value.showsQuickActionKeepAwake)
+            XCTAssertTrue(value.showsQuickActionDesktopIcons)
+            XCTAssertTrue(value.showsQuickActionHiddenFiles)
+            XCTAssertTrue(value.showsQuickActionScreenSaver)
+            XCTAssertTrue(value.showsQuickActionDisplaySleep)
+            XCTAssertTrue(value.showsQuickActionLockScreen)
+            XCTAssertTrue(value.showsQuickActionBluetoothConnect)
+            XCTAssertEqual(value.quickActionAudioDeviceAddress, "")
+            XCTAssertEqual(value.quickActionAudioDeviceName, "")
+        }
+    }
+
+    /// The Bluetooth target normalizes like slot names, and a cleared
+    /// address clears the cached name with it.
+    func testBluetoothTargetNormalization() throws {
+        try withDefaults { defaults in
+            let preferences = MenuBarPreferences(defaults: defaults)
+            preferences.update {
+                $0.showsQuickActionKeepAwake = false
+                $0.quickActionAudioDeviceAddress = "  AA:BB:CC:DD:EE:01  "
+                $0.quickActionAudioDeviceName = "  耳机  "
+            }
+            var value = MenuBarPreferences(defaults: defaults).configuration
+            XCTAssertFalse(value.showsQuickActionKeepAwake)
+            XCTAssertEqual(value.quickActionAudioDeviceAddress, "AA:BB:CC:DD:EE:01")
+            XCTAssertEqual(value.quickActionAudioDeviceName, "耳机")
+            preferences.update {
+                $0.quickActionAudioDeviceAddress = "   "
+                $0.quickActionAudioDeviceName = "残留"
+            }
+            value = MenuBarPreferences(defaults: defaults).configuration
+            XCTAssertEqual(value.quickActionAudioDeviceAddress, "")
+            XCTAssertEqual(value.quickActionAudioDeviceName, "")
+        }
+    }
 }

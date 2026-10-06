@@ -65,4 +65,21 @@ enum BluetoothConnectionDetails {
               device.isConnected() else { return false }
         return device.closeConnection() == kIOReturnSuccess
     }
+
+    /// Reconnects a paired device. The open call is injectable so tests
+    /// stay on the delegation surface and never touch IOBluetooth (whose
+    /// privacy gate terminates unentitled processes outright).
+    @discardableResult
+    static func connect(address: String, open: (String) -> Bool = openConnection(address:)) -> Bool {
+        open(address)
+    }
+
+    /// The real IOBluetooth open. An already-connected device reports
+    /// success without re-opening the link, mirroring the disconnect
+    /// guard; unknown addresses report failure.
+    static func openConnection(address: String) -> Bool {
+        guard let device = IOBluetoothDevice(addressString: address) else { return false }
+        if device.isConnected() { return true }
+        return device.openConnection() == kIOReturnSuccess
+    }
 }
