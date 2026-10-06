@@ -152,7 +152,6 @@ extension SystemStatusPanel {
                 .toggleStyle(.switch).labelsHidden()
         }
         .font(.callout)
-        .accessibilityElement(children: .combine)
     }
 
     private var keepAwakeBinding: Binding<Bool> {
@@ -173,7 +172,6 @@ extension SystemStatusPanel {
                 .toggleStyle(.switch).labelsHidden()
         }
         .font(.callout)
-        .accessibilityElement(children: .combine)
     }
 
     private var desktopIconsBinding: Binding<Bool> {
@@ -242,7 +240,6 @@ extension SystemStatusPanel {
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
-        .accessibilityElement(children: .combine)
     }
 
     /// Same cadence as disconnect: the profiler cache holds the previous
