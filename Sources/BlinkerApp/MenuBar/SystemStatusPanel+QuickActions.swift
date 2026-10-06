@@ -81,7 +81,6 @@ extension SystemStatusPanel {
                 .disabled(audio.input?.canMute != true)
         }
         .font(.callout)
-        .accessibilityElement(children: .combine)
     }
 
     private var micMuteBinding: Binding<Bool> {
@@ -144,7 +143,6 @@ extension SystemStatusPanel {
                 EmptyView()
             }
         }
-        .accessibilityElement(children: .combine)
         .confirmationDialog("清空回收站？", isPresented: $confirmingTrashEmpty,
                             titleVisibility: .visible) {
             Button("清空回收站", role: .destructive) {
@@ -177,7 +175,6 @@ extension SystemStatusPanel {
             }
         }
         .font(.callout)
-        .accessibilityElement(children: .combine)
     }
 
     private func runShortcut(_ name: String) {

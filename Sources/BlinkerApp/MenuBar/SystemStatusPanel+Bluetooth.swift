@@ -80,7 +80,6 @@ extension SystemStatusPanel {
         }
         .font(.callout)
         .foregroundStyle(device.isConnected ? .primary : .secondary)
-        .accessibilityElement(children: .combine)
     }
 
     /// Codec requires the device-control opt-in and the Bluetooth grant;
