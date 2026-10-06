@@ -15,10 +15,11 @@ struct MenuBarAudioSettings: View {
                 onSelect: { choice in preferences.update { $0.volumeStyle = choice } }
             )
             Toggle("蓝牙音频使用音量强调色", isOn: binding(\.usesBluetoothVolumeColor))
+            Toggle("输入静音时显示麦克风指示", isOn: binding(\.showsMutedMicInIcon))
         } header: {
             Text("音量图形")
         } footer: {
-            Text("强调色用于音量圆点或圆弧，与中央蓝牙图形分别设置。")
+            Text("强调色用于音量圆点或圆弧，与中央蓝牙图形分别设置。麦克风静音指示为橙色，显示期间音量图形暂时隐藏。")
         }
         Section {
             Toggle("显示声音输入", isOn: binding(\.showsAudioInput))

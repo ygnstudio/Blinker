@@ -54,7 +54,8 @@ enum TrioIconRenderer {
         context.setLineJoin(.round)
         drawBattery(snapshot.battery, configuration: configuration, in: context, foreground: foreground)
         drawCenter(snapshot, configuration: configuration, in: context, foreground: foreground)
-        drawVolume(snapshot.volume, configuration: configuration, in: context, foreground: foreground)
+        drawVolume(snapshot.volume, inputMuted: snapshot.inputMuted,
+                   configuration: configuration, in: context, foreground: foreground)
     }
 
     private static func drawBattery(
@@ -302,9 +303,14 @@ private extension TrioIconRenderer {
     }
 
     static func drawVolume(
-        _ volume: MenuBarSystemSnapshot.Volume?, configuration: MenuBarConfiguration,
+        _ volume: MenuBarSystemSnapshot.Volume?, inputMuted: Bool?,
+        configuration: MenuBarConfiguration,
         in context: CGContext, foreground: CGColor
     ) {
+        if configuration.showsMutedMicInIcon, inputMuted == true {
+            drawMutedMicIndicator(in: context, foreground: foreground)
+            return
+        }
         let activeColor = configuration.usesBluetoothVolumeColor && volume?.isBluetooth == true
             ? bluetoothColor(foreground: foreground) : foreground
         if configuration.volumeStyle == .arc {
@@ -347,6 +353,20 @@ private extension TrioIconRenderer {
         context.setStrokeColor(activeColor)
         context.addPath(TrioIconGeometry.volumeArc(progress: progress))
         context.strokePath()
+    }
+
+    /// Bottom-center mic badge that replaces the volume readout while the
+    /// default input is muted. The battery arc has no bottom gap, so a
+    /// clear-blend knockout cuts one — the image is alpha-composited over
+    /// the menu bar, making the knockout invisible against any wallpaper.
+    static func drawMutedMicIndicator(in context: CGContext, foreground: CGColor) {
+        let center = CGPoint(x: TrioIconGeometry.artworkCenterX, y: 108)
+        context.saveGState()
+        context.setBlendMode(.clear)
+        context.fill(CGRect(x: center.x - 15, y: center.y - 15, width: 30, height: 30))
+        context.restoreGState()
+        let orange = NSColor.systemOrange.usingColorSpace(.deviceRGB)?.cgColor ?? foreground
+        drawSymbol("mic.slash.fill", pointSize: 24, center: center, in: context, foreground: orange)
     }
 }
 

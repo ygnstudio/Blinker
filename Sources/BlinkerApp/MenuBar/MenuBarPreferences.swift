@@ -50,6 +50,9 @@ struct MenuBarConfiguration: Codable, Equatable {
     var showsWiFiForSharing = false
     var showsBatteryInCenter = false
     var volumeStyle: VolumeStyle = .dots
+    /// Status icon: while the default input is muted, the volume readout
+    /// becomes an orange mic-slash badge at the icon's bottom center.
+    var showsMutedMicInIcon = true
     var replacesNetworkWithBluetooth = false
     var usesBluetoothVolumeColor = false
     var prioritizesNetworkErrors = true

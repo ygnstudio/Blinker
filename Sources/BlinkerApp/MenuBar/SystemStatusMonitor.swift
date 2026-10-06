@@ -38,6 +38,9 @@ struct SystemStatusReadOptions: Equatable, Sendable {
     var includePerformance = false
     /// Trash item count for the quick actions page. Cheap local listing.
     var includeTrash = false
+    /// Default input mute for the status icon's mic indicator. Two cheap
+    /// CoreAudio property reads.
+    var includeInputMute = false
 }
 
 @MainActor

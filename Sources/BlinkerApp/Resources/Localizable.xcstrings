@@ -10617,22 +10617,6 @@
         }
       }
     },
-    "强调色用于音量圆点或圆弧，与中央蓝牙图形分别设置。": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "The accent color applies to the volume dots or arc, independently of the center Bluetooth symbol."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "强调色用于音量圆点或圆弧，与中央蓝牙图形分别设置。"
-          }
-        }
-      }
-    },
     "输出设备列表": {
       "localizations": {
         "en": {
@@ -12917,6 +12901,38 @@
           "stringUnit": {
             "state": "translated",
             "value": "清空回收站失败"
+          }
+        }
+      }
+    },
+    "强调色用于音量圆点或圆弧，与中央蓝牙图形分别设置。麦克风静音指示为橙色，显示期间音量图形暂时隐藏。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The accent color applies to the volume dots or arc, independently of the center Bluetooth symbol. The mic-mute badge is orange and hides the volume readout while shown."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "强调色用于音量圆点或圆弧，与中央蓝牙图形分别设置。麦克风静音指示为橙色，显示期间音量图形暂时隐藏。"
+          }
+        }
+      }
+    },
+    "输入静音时显示麦克风指示": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show a mic badge while the input is muted"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "输入静音时显示麦克风指示"
           }
         }
       }

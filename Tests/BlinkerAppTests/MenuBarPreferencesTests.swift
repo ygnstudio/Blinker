@@ -194,6 +194,7 @@ final class MenuBarPreferencesTests: XCTestCase {
                 $0.showsWiFiForSharing = true
                 $0.showsBatteryInCenter = true
                 $0.volumeStyle = .arc
+                $0.showsMutedMicInIcon = false
                 $0.replacesNetworkWithBluetooth = true
                 $0.usesBluetoothVolumeColor = true
                 $0.prioritizesNetworkErrors = false

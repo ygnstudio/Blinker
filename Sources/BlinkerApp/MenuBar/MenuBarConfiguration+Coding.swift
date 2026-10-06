@@ -21,6 +21,7 @@ extension MenuBarConfiguration {
         case showsWiFiForSharing
         case showsBatteryInCenter
         case volumeStyle
+        case showsMutedMicInIcon
         case replacesNetworkWithBluetooth
         case usesBluetoothVolumeColor
         case prioritizesNetworkErrors
@@ -116,6 +117,7 @@ extension MenuBarConfiguration {
         showsWiFiForSharing = values.decode(.showsWiFiForSharing, default: showsWiFiForSharing)
         showsBatteryInCenter = values.decode(.showsBatteryInCenter, default: showsBatteryInCenter)
         volumeStyle = values.decode(.volumeStyle, default: volumeStyle)
+        showsMutedMicInIcon = values.decode(.showsMutedMicInIcon, default: showsMutedMicInIcon)
         replacesNetworkWithBluetooth = values.decode(
             .replacesNetworkWithBluetooth,
             default: replacesNetworkWithBluetooth

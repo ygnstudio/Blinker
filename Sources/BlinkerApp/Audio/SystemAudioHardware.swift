@@ -52,7 +52,7 @@ final class SystemAudioHardware: @unchecked Sendable {
             }
             return $0.name.localizedStandardCompare($1.name) == .orderedAscending
         }
-        let input = readInput()
+        let input = readInput(onChange: onChange)
         guard let current, outputs.contains(where: { $0.id == current }) else {
             return .init(outputs: outputs, input: input)
         }
@@ -68,7 +68,8 @@ final class SystemAudioHardware: @unchecked Sendable {
 
     /// The default input device, or nil when the Mac has none (rare) or it
     /// vanished mid-read. Input controls use the input scope throughout.
-    private func readInput() -> SystemAudioInput? {
+    private func readInput(onChange: @escaping @Sendable () -> Void) -> SystemAudioInput? {
+        reader.reconcileInputListeners(onChange: onChange)
         guard let device = reader.defaultInputDevice(),
               device != kAudioObjectUnknown,
               reader.uint32(object: device, selector: kAudioObjectPropertyClass,

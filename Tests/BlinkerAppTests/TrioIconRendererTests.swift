@@ -314,6 +314,28 @@ extension TrioIconRendererTests {
     }
 
     @MainActor
+    func testMutedInputReplacesVolumeReadoutWithOrangeBadgeAndRespectsToggle() throws {
+        var snapshot = example
+        snapshot.inputMuted = true
+        let baseline = try bitmap(example, appearance: .aqua)
+        let muted = try bitmap(snapshot, appearance: .aqua)
+        XCTAssertNotEqual(muted.tiffRepresentation, baseline.tiffRepresentation)
+        // The badge carries the only tint in an otherwise monochrome icon.
+        XCTAssertGreaterThan(tintedPixelCount(muted), 50)
+        // While the badge shows, volume changes no longer reach the icon.
+        var louder = snapshot
+        louder.volume?.scalar = 0.9
+        XCTAssertEqual(muted.tiffRepresentation,
+                       try bitmap(louder, appearance: .aqua).tiffRepresentation)
+        // Toggle off: a muted input renders exactly like the normal readout.
+        var configuration = MenuBarConfiguration()
+        configuration.showsMutedMicInIcon = false
+        XCTAssertEqual(baseline.tiffRepresentation,
+                       try bitmap(snapshot, appearance: .aqua,
+                                  configuration: configuration).tiffRepresentation)
+    }
+
+    @MainActor
     func testDockBackgroundsKeepTransparentCornersAndRespectForcedPalette() throws {
         let light = try dockBitmap(background: .light, appearance: .darkAqua)
         let dark = try dockBitmap(background: .dark, appearance: .aqua)

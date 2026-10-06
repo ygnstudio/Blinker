@@ -16,6 +16,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Status panel density switches between Comfortable and Compact, and every secondary row (battery details, throughput, IPs, Wi-Fi name, VPN, audio input, signal strength, codec) has its own settings toggle.
 - Status panel gains a storage section: boot-volume capacity with a usage bar in Finder-identical numbers, and every mounted external volume as its own row with an eject button; a failed eject reports its reason inline. Each row family has a toggle in the new Storage settings page; everything is local and needs no permission.
 - Status panel gains a performance section: CPU load averaged over the refresh interval, memory used vs. total approximating Activity Monitor, swap usage, and an uptime row that defaults off. Toggles live in the new Performance settings page; all readings come from local kernel interfaces.
+- The status icon reports a muted default input: the volume readout gives way to an orange mic-slash badge at the icon's bottom edge, cut cleanly out of the ring and resolved against any wallpaper. The badge can be turned off in the volume-style settings, and VoiceOver summaries name the muted microphone. The panel's input level and mute state now also track external changes live — a mute written by another app or a default-input hand-off no longer needs a panel reopen.
 
 ### Changed
 

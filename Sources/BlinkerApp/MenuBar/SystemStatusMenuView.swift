@@ -71,8 +71,12 @@ extension MenuBarSystemSnapshot {
     }
 
     var accessibilitySummary: String {
-        [String(localized: "电池") + ": " + batteryDescription,
-         networkDescription,
-         String(localized: "音量") + ": " + volumeDescription].joined(separator: " · ")
+        var parts = [String(localized: "电池") + ": " + batteryDescription,
+                     networkDescription,
+                     String(localized: "音量") + ": " + volumeDescription]
+        if inputMuted == true {
+            parts.append(String(localized: "麦克风") + ": " + String(localized: "已静音"))
+        }
+        return parts.joined(separator: " · ")
     }
 }

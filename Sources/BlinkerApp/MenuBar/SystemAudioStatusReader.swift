@@ -22,6 +22,9 @@ final class SystemAudioStatusReader: @unchecked Sendable {
     private var deviceListeners: [Registration] = []
     private var device: AudioDeviceID?
     private var listenedChannels: [AudioObjectPropertyElement] = []
+    private var inputSystemListener: Registration?
+    private var inputDeviceListeners: [Registration] = []
+    private var listenedInputDevice: AudioDeviceID?
 
     init(queue: DispatchQueue) {
         self.queue = queue
@@ -87,6 +90,45 @@ final class SystemAudioStatusReader: @unchecked Sendable {
             devicesListener = listen(object: AudioObjectID(kAudioObjectSystemObject), address: address,
                                      queue: queue, onChange: onChange)
         }
+        if inputSystemListener == nil {
+            let address = AudioObjectPropertyAddress(mSelector: kAudioHardwarePropertyDefaultInputDevice,
+                                                     mScope: kAudioObjectPropertyScopeGlobal,
+                                                     mElement: kAudioObjectPropertyElementMain)
+            inputSystemListener = listen(object: AudioObjectID(kAudioObjectSystemObject), address: address,
+                                         queue: queue, onChange: onChange)
+        }
+    }
+
+    /// Mirrors the output reconcile for the default input: external mute or
+    /// level writes (and device hand-offs) must surface without a panel
+    /// reopen. Main element only, matching what the input read consumes.
+    func reconcileInputListeners(onChange: @escaping @Sendable () -> Void) {
+        dispatchPrecondition(condition: .onQueue(queue))
+        installSystemListeners(onChange: onChange)
+        let current = defaultInputDevice().flatMap { candidate -> AudioDeviceID? in
+            guard candidate != kAudioObjectUnknown,
+                  uint32(object: candidate, selector: kAudioObjectPropertyClass,
+                         scope: kAudioObjectPropertyScopeGlobal,
+                         element: kAudioObjectPropertyElementMain) == kAudioDeviceClassID,
+                  uint32(object: candidate, selector: kAudioDevicePropertyDeviceIsAlive,
+                         scope: kAudioObjectPropertyScopeGlobal,
+                         element: kAudioObjectPropertyElementMain) == 1
+            else { return nil }
+            return candidate
+        }
+        guard current != listenedInputDevice else { return }
+        inputDeviceListeners.forEach(remove)
+        inputDeviceListeners.removeAll()
+        listenedInputDevice = current
+        guard let current else { return }
+        for selector in [kAudioDevicePropertyVolumeScalar, kAudioDevicePropertyMute] {
+            let address = AudioObjectPropertyAddress(mSelector: selector,
+                                                     mScope: kAudioObjectPropertyScopeInput,
+                                                     mElement: kAudioObjectPropertyElementMain)
+            if let listener = listen(object: current, address: address, queue: queue, onChange: onChange) {
+                inputDeviceListeners.append(listener)
+            }
+        }
     }
 
     func stop() {
@@ -103,6 +145,13 @@ final class SystemAudioStatusReader: @unchecked Sendable {
         deviceListeners.removeAll()
         device = nil
         listenedChannels = []
+        if let inputSystemListener {
+            remove(inputSystemListener)
+        }
+        inputSystemListener = nil
+        inputDeviceListeners.forEach(remove)
+        inputDeviceListeners.removeAll()
+        listenedInputDevice = nil
     }
 
     func defaultOutputDevice() -> AudioDeviceID? {
@@ -121,6 +170,16 @@ final class SystemAudioStatusReader: @unchecked Sendable {
             scope: kAudioObjectPropertyScopeGlobal,
             element: kAudioObjectPropertyElementMain
         )
+    }
+
+    /// Main-element mute of the default input device; nil when there is no
+    /// such device or the property is unreadable. Two property reads.
+    func inputMuted() -> Bool? {
+        dispatchPrecondition(condition: .onQueue(queue))
+        guard let device = defaultInputDevice(), device != kAudioObjectUnknown else { return nil }
+        return uint32(object: device, selector: kAudioDevicePropertyMute,
+                      scope: kAudioObjectPropertyScopeInput,
+                      element: kAudioObjectPropertyElementMain).map { $0 != 0 }
     }
 
     func isBluetooth(_ device: AudioDeviceID) -> Bool {

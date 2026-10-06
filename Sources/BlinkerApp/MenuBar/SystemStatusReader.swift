@@ -60,6 +60,7 @@ final class SystemStatusReader: SystemStatusReading {
                 publicIP.refreshIfNeeded(onChange: changed)
             }
             let volume = audio.read(onChange: changed)
+            let inputMuted = options.includeInputMute ? audio.inputMuted() : nil
             let wifiName = options.includeWiFiName ? Self.readWiFiName(network: network) : nil
             // A stop during synchronous IPC cannot interrupt the system call.
             // Retire listeners before returning instead of starting another worker.
@@ -76,7 +77,8 @@ final class SystemStatusReader: SystemStatusReading {
                                                publicIPAddress: publicAddress,
                                                storage: additions.storage,
                                                performance: additions.performance,
-                                               trashItemCount: additions.trashItemCount)
+                                               trashItemCount: additions.trashItemCount,
+                                               inputMuted: inputMuted)
             Task { @MainActor in completion(result) }
         }
     }

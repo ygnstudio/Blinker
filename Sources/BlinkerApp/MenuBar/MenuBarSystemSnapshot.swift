@@ -87,6 +87,9 @@ struct MenuBarSystemSnapshot: Equatable, Sendable {
     /// Top-level entries in the user's trash; nil while the quick actions
     /// page or its trash row is hidden.
     var trashItemCount: Int?
+    /// Default input device mute for the status icon's mic indicator; nil
+    /// while the indicator is disabled.
+    var inputMuted: Bool?
 
     static let unknown = Self(battery: nil, network: .unknown, volume: nil)
 
@@ -98,7 +101,7 @@ struct MenuBarSystemSnapshot: Equatable, Sendable {
          localIPAddress: String? = nil, publicIPAddress: String? = nil,
          storage: SystemStorageInfo.Value? = nil,
          performance: SystemPerformance.Value? = nil,
-         trashItemCount: Int? = nil) {
+         trashItemCount: Int? = nil, inputMuted: Bool? = nil) {
         self.battery = battery
         self.network = network
         self.volume = volume
@@ -112,5 +115,6 @@ struct MenuBarSystemSnapshot: Equatable, Sendable {
         self.storage = storage
         self.performance = performance
         self.trashItemCount = trashItemCount
+        self.inputMuted = inputMuted
     }
 }

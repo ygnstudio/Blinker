@@ -54,6 +54,11 @@ final class MenuBarPresentation: NSObject, NSPopoverDelegate, NSWindowDelegate {
                 self?.render(snapshot, configuration: configuration)
             }.store(in: &subscriptions)
         audio.onChange = { [weak monitor] in monitor?.refresh() }
+        // Listener-driven audio refreshes skip onChange, but the icon's mic
+        // badge still needs them: re-read the snapshot on any mute flip.
+        audio.$input.map { $0?.isMuted }.removeDuplicates()
+            .sink { [weak monitor] _ in monitor?.refresh() }
+            .store(in: &subscriptions)
         appearanceObservation = item.button?.observe(\.effectiveAppearance) { [weak self] _, _ in
             DispatchQueue.main.async { self?.renderCurrent() }
         }
@@ -130,7 +135,8 @@ final class MenuBarPresentation: NSObject, NSPopoverDelegate, NSWindowDelegate {
             includeStorage: configuration.enabledSections.contains(.storage),
             includePerformance: configuration.enabledSections.contains(.performance),
             includeTrash: configuration.enabledSections.contains(.quickActions)
-                && configuration.showsQuickActionEmptyTrash
+                && configuration.showsQuickActionEmptyTrash,
+            includeInputMute: configuration.showsMutedMicInIcon
         )
     }
 
