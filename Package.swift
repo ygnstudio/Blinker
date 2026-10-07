@@ -16,9 +16,18 @@ let package = Package(
             path: "Sources/BlinkerCore",
             resources: [.process("Resources")]
         ),
+        .target(
+            name: "BlinkerHelperXPC",
+            path: "Sources/BlinkerHelperXPC"
+        ),
+        .executableTarget(
+            name: "BlinkerLowPowerHelper",
+            dependencies: ["BlinkerHelperXPC"],
+            path: "Sources/BlinkerLowPowerHelper"
+        ),
         .executableTarget(
             name: "BlinkerApp",
-            dependencies: ["BlinkerCore"],
+            dependencies: ["BlinkerCore", "BlinkerHelperXPC"],
             path: "Sources/BlinkerApp",
             resources: [.process("Resources")]
         ),
@@ -29,7 +38,7 @@ let package = Package(
         ),
         .testTarget(
             name: "BlinkerAppTests",
-            dependencies: ["BlinkerApp", "BlinkerCore"],
+            dependencies: ["BlinkerApp", "BlinkerCore", "BlinkerHelperXPC"],
             path: "Tests/BlinkerAppTests"
         ),
     ],

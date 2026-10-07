@@ -60,6 +60,8 @@ extension MenuBarConfiguration {
         case showsQuickActionKeepAwake
         case showsQuickActionDesktopIcons
         case showsQuickActionHiddenFiles
+        case showsQuickActionShowExtensions
+        case showsQuickActionLowPowerMode
         case showsQuickActionScreenSaver
         case showsQuickActionDisplaySleep
         case showsQuickActionLockScreen
@@ -226,6 +228,14 @@ extension MenuBarConfiguration {
             .showsQuickActionHiddenFiles,
             default: showsQuickActionHiddenFiles
         )
+        showsQuickActionShowExtensions = values.decode(
+            .showsQuickActionShowExtensions,
+            default: showsQuickActionShowExtensions
+        )
+        showsQuickActionLowPowerMode = values.decode(
+            .showsQuickActionLowPowerMode,
+            default: showsQuickActionLowPowerMode
+        )
         showsQuickActionScreenSaver = values.decode(
             .showsQuickActionScreenSaver,
             default: showsQuickActionScreenSaver
@@ -246,6 +256,14 @@ extension MenuBarConfiguration {
             .showsQuickActionResolution,
             default: showsQuickActionResolution
         )
+        decodeQuickActionBluetoothTarget(from: values)
+    }
+
+    /// The Bluetooth connect row's target device: visibility flag plus the
+    /// cached address/name pair the panel row reads.
+    private mutating func decodeQuickActionBluetoothTarget(
+        from values: KeyedDecodingContainer<CodingKeys>
+    ) {
         showsQuickActionBluetoothConnect = values.decode(
             .showsQuickActionBluetoothConnect,
             default: showsQuickActionBluetoothConnect

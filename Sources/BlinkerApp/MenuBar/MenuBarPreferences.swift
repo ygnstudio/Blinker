@@ -122,6 +122,12 @@ struct MenuBarConfiguration: Codable, Equatable {
     /// Quick actions section: Finder hidden-files toggle; writes restart
     /// the Finder to apply.
     var showsQuickActionHiddenFiles = true
+    /// Quick actions section: Finder all-extensions toggle; writes restart
+    /// the Finder to apply.
+    var showsQuickActionShowExtensions = true
+    /// Quick actions section: system low power mode. Writes go through the
+    /// privileged helper daemon, which macOS asks to approve once.
+    var showsQuickActionLowPowerMode = true
     /// Quick actions section: start the screen saver on demand.
     var showsQuickActionScreenSaver = true
     /// Quick actions section: sleep the displays without sleeping the Mac.

@@ -19,6 +19,8 @@ extension SystemStatusPanel {
             || configuration.showsQuickActionKeepAwake
             || configuration.showsQuickActionDesktopIcons
             || configuration.showsQuickActionHiddenFiles
+            || configuration.showsQuickActionShowExtensions
+            || configuration.showsQuickActionLowPowerMode
             || (configuration.showsQuickActionScreenSaver && SystemScreenActions.isScreenSaverAvailable)
             || configuration.showsQuickActionDisplaySleep
             || (configuration.showsQuickActionLockScreen && SystemScreenActions.isLockScreenAvailable)
@@ -49,6 +51,7 @@ extension SystemStatusPanel {
             finderToggles.refresh()
             appearanceToggle.refresh()
             displayModes.refresh()
+            lowPower.refresh()
         }
     }
 
@@ -88,9 +91,17 @@ extension SystemStatusPanel {
                     finderToggleRow(title: "显示隐藏文件", symbol: "eye",
                                     isOn: hiddenFilesBinding)
                 }
+                if configuration.showsQuickActionShowExtensions {
+                    finderToggleRow(title: "显示扩展名", symbol: "doc.badge.ellipsis",
+                                    isOn: extensionsBinding)
+                }
+                if configuration.showsQuickActionLowPowerMode {
+                    lowPowerRow
+                }
                 if finderToggles.lastWriteFailed,
                    configuration.showsQuickActionDesktopIcons
-                    || configuration.showsQuickActionHiddenFiles {
+                    || configuration.showsQuickActionHiddenFiles
+                    || configuration.showsQuickActionShowExtensions {
                     Text("写入失败，请重试。")
                         .font(.caption).foregroundStyle(.red)
                 }
@@ -199,6 +210,49 @@ extension SystemStatusPanel {
     private var hiddenFilesBinding: Binding<Bool> {
         Binding(get: { finderToggles.hiddenFilesShown },
                 set: { finderToggles.setHiddenFilesShown($0) })
+    }
+
+    private var extensionsBinding: Binding<Bool> {
+        Binding(get: { finderToggles.extensionsShown },
+                set: { finderToggles.setExtensionsShown($0) })
+    }
+
+    /// Low power mode: a toggle whose write path crosses into the
+    /// privileged helper. The issue surfaces inline, mirroring the dark
+    /// mode row's automation-denied guidance.
+    private var lowPowerRow: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 6) {
+                Image(systemName: lowPower.isOn ? "battery.25" : "battery.100")
+                    .frame(width: 18)
+                Text("低电量模式")
+                Spacer(minLength: 8)
+                Toggle("低电量模式", isOn: lowPowerBinding)
+                    .toggleStyle(.switch).labelsHidden()
+                    .disabled(lowPower.isApplying)
+            }
+            .font(.callout)
+            switch lowPower.issue {
+            case .approvalRequired:
+                Text("需在「系统设置 → 通用 → 登录项与扩展」中允许 Blinker 的后台项目。")
+                    .font(.caption).foregroundStyle(.red)
+                    .fixedSize(horizontal: false, vertical: true)
+            case .helperUnavailable:
+                Text("后台组件未安装；打包后的 Blinker 才提供此开关。")
+                    .font(.caption).foregroundStyle(.red)
+                    .fixedSize(horizontal: false, vertical: true)
+            case .writeFailed:
+                Text("写入失败，请重试。")
+                    .font(.caption).foregroundStyle(.red)
+            case nil:
+                EmptyView()
+            }
+        }
+    }
+
+    private var lowPowerBinding: Binding<Bool> {
+        Binding(get: { lowPower.isOn },
+                set: { lowPower.setLowPowerMode($0) })
     }
 
     /// Dark mode sits with the other system-wide visual switches. Writing

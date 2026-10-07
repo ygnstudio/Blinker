@@ -72,6 +72,41 @@ else
   echo "warning: could not stamp the build sdk (vtool); the app may keep the pre-26 appearance" >&2
 fi
 
+# Privileged low-power helper (SMAppService daemon). The helper binary is
+# expected next to the app binary; its launchd label and Mach service name
+# derive from the app's bundle identifier, so development and release
+# identities register separate daemons.
+HELPER_ID="$BUNDLE_ID.LowPowerHelper"
+HELPER_BINARY="$(dirname "$BINARY_PATH")/BlinkerLowPowerHelper"
+if [[ -x "$HELPER_BINARY" ]]; then
+  mkdir -p "$APP_DIR/Contents/Library/LaunchDaemons"
+  cp "$HELPER_BINARY" "$APP_DIR/Contents/Library/LaunchDaemons/$HELPER_ID"
+  cat > "$APP_DIR/Contents/Library/LaunchDaemons/$HELPER_ID.plist" <<PLIST
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>$HELPER_ID</string>
+    <key>BundleProgram</key>
+    <string>Contents/Library/LaunchDaemons/$HELPER_ID</string>
+    <key>AssociatedBundleIdentifiers</key>
+    <array>
+        <string>$BUNDLE_ID</string>
+    </array>
+    <key>MachServices</key>
+    <dict>
+        <key>$HELPER_ID</key>
+        <true/>
+    </dict>
+</dict>
+</plist>
+PLIST
+  plutil -lint "$APP_DIR/Contents/Library/LaunchDaemons/$HELPER_ID.plist" >/dev/null
+else
+  echo "warning: $HELPER_BINARY missing — low power mode will be unavailable" >&2
+fi
+
 # Bundle icon (rendered by Scripts/render-app-icon.py when present).
 ICON_PLIST_ENTRY=""
 if [[ -f "$ICON_PATH" ]]; then
@@ -166,6 +201,12 @@ fi
 # Once an identity is chosen, a signing failure is fatal: silently changing it
 # would invalidate the existing permission grants while reporting success.
 plutil -lint "$APP_DIR/Contents/Info.plist" >/dev/null
+# Sign the helper inside-out before the bundle seal: SMAppService refuses a
+# daemon whose nested code is unsigned or sealed only by --deep recursion.
+if [[ -f "$APP_DIR/Contents/Library/LaunchDaemons/$HELPER_ID" ]]; then
+  codesign --force --sign "$SIGN_IDENTITY" -i "$HELPER_ID" \
+    "$APP_DIR/Contents/Library/LaunchDaemons/$HELPER_ID"
+fi
 codesign --force --sign "$SIGN_IDENTITY" "$APP_DIR"
 codesign --verify --deep --strict "$APP_DIR"
 

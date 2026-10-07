@@ -92,6 +92,7 @@ final class MenuBarQuickActionsPreferencesTests: XCTestCase {
             XCTAssertTrue(value.showsQuickActionKeepAwake)
             XCTAssertTrue(value.showsQuickActionDesktopIcons)
             XCTAssertTrue(value.showsQuickActionHiddenFiles)
+            XCTAssertTrue(value.showsQuickActionShowExtensions)
             XCTAssertTrue(value.showsQuickActionScreenSaver)
             XCTAssertTrue(value.showsQuickActionDisplaySleep)
             XCTAssertTrue(value.showsQuickActionLockScreen)

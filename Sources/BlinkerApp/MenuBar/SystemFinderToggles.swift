@@ -11,6 +11,7 @@ enum SystemFinderToggles {
     static let finderDomain = "com.apple.finder"
     static let desktopIconsKey = "CreateDesktop"
     static let hiddenFilesKey = "AppleShowAllFiles"
+    static let extensionsKey = "AppleShowAllExtensions"
 
     /// Desktop icons show unless the key exists and says otherwise; the
     /// factory default is the key's absence.
@@ -22,6 +23,12 @@ enum SystemFinderToggles {
     /// an absent key reads as false, which is exactly the default.
     static func hiddenFilesShown(in store: UserDefaults) -> Bool {
         store.bool(forKey: hiddenFilesKey)
+    }
+
+    /// Extensions stay hidden unless the key exists and says otherwise,
+    /// matching hiddenFilesShown semantics: absent key means false.
+    static func extensionsShown(in store: UserDefaults) -> Bool {
+        store.bool(forKey: extensionsKey)
     }
 
     /// Writes one Finder key and restarts Finder so the change applies at
@@ -50,6 +57,7 @@ enum SystemFinderToggles {
 final class FinderTogglesController: ObservableObject {
     @Published private(set) var desktopIconsShown = true
     @Published private(set) var hiddenFilesShown = false
+    @Published private(set) var extensionsShown = false
     @Published private(set) var lastWriteFailed = false
 
     private let store: UserDefaults
@@ -67,6 +75,7 @@ final class FinderTogglesController: ObservableObject {
     func refresh() {
         desktopIconsShown = SystemFinderToggles.desktopIconsShown(in: store)
         hiddenFilesShown = SystemFinderToggles.hiddenFilesShown(in: store)
+        extensionsShown = SystemFinderToggles.extensionsShown(in: store)
     }
 
     func setDesktopIconsShown(_ shown: Bool) {
@@ -75,6 +84,10 @@ final class FinderTogglesController: ObservableObject {
 
     func setHiddenFilesShown(_ shown: Bool) {
         applyValue(shown, for: SystemFinderToggles.hiddenFilesKey)
+    }
+
+    func setExtensionsShown(_ shown: Bool) {
+        applyValue(shown, for: SystemFinderToggles.extensionsKey)
     }
 
     private func applyValue(_ value: Bool, for key: String) {

@@ -13400,6 +13400,70 @@
           }
         }
       }
+    },
+    "显示扩展名": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show File Extensions"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "显示扩展名"
+          }
+        }
+      }
+    },
+    "需在「系统设置 → 通用 → 登录项与扩展」中允许 Blinker 的后台项目。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Allow Blinker's background item under System Settings → General → Login Items & Extensions."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "需在「系统设置 → 通用 → 登录项与扩展」中允许 Blinker 的后台项目。"
+          }
+        }
+      }
+    },
+    "后台组件未安装；打包后的 Blinker 才提供此开关。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The background component isn't installed; this switch requires the packaged Blinker app."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "后台组件未安装；打包后的 Blinker 才提供此开关。"
+          }
+        }
+      }
+    },
+    "低电量模式经系统电源管理写入，首次使用需在登录项中一次性允许后台组件；该组件只执行固定的电源指令，不接收其他命令。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Low Power Mode is written through the system power manager; the first use asks for one-time consent to the background component, which runs only fixed power commands and accepts nothing else."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "低电量模式经系统电源管理写入，首次使用需在登录项中一次性允许后台组件；该组件只执行固定的电源指令，不接收其他命令。"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

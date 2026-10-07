@@ -25,6 +25,7 @@ struct SystemStatusPanel: View {
     @StateObject var trashEmptier = TrashEmptyController()
     @StateObject var appearanceToggle = AppearanceToggleController()
     @StateObject var displayModes = DisplayModesController()
+    @StateObject var lowPower = LowPowerController()
 
     var body: some View {
         let density = preferences.configuration.panelDensity

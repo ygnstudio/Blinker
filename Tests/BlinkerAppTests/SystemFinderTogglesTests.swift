@@ -32,6 +32,21 @@ final class SystemFinderTogglesTests: XCTestCase {
         }
     }
 
+    func testExtensionsDefaultToHiddenAndFollowTheKey() throws {
+        try withStore { store in
+            // A suite's search list falls through to NSGlobalDomain, and
+            // System Settings writes AppleShowAllExtensions to the GLOBAL
+            // domain — so an absent-key assertion would depend on the host
+            // machine. Finder resolves defaults the same way, which is why
+            // the production read stays a plain bool(forKey:). Here we pin
+            // the follow-the-key behavior with explicit values only.
+            store.set(false, forKey: SystemFinderToggles.extensionsKey)
+            XCTAssertFalse(SystemFinderToggles.extensionsShown(in: store))
+            store.set(true, forKey: SystemFinderToggles.extensionsKey)
+            XCTAssertTrue(SystemFinderToggles.extensionsShown(in: store))
+        }
+    }
+
     func testWriteRestartsFinderOnlyAfterASuccessfulWrite() throws {
         var commands: [(String, [String])] = []
         try SystemFinderToggles.setKey(SystemFinderToggles.desktopIconsKey, value: false) { tool, args in
@@ -70,6 +85,8 @@ final class SystemFinderTogglesTests: XCTestCase {
             XCTAssertFalse(controller.lastWriteFailed)
             controller.setHiddenFilesShown(true)
             XCTAssertTrue(controller.hiddenFilesShown)
+            controller.setExtensionsShown(true)
+            XCTAssertTrue(controller.extensionsShown)
         }
     }
 

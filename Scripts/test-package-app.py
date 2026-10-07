@@ -145,6 +145,33 @@ class PackageSafetyTests(unittest.TestCase):
         self.assertFalse(list(self.root.glob(".Blinker-package.*")))
         self.assertIn("packaged:", result.stdout)
 
+    def install_helper_fixture(self):
+        helper = self.root / "BlinkerLowPowerHelper"
+        helper.write_text("#!/bin/sh\nexit 0\n")
+        helper.chmod(0o755)
+        return helper
+
+    def test_helper_is_embedded_with_a_valid_daemon_plist(self):
+        helper = self.install_helper_fixture()
+        result = self.package()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        helper_id = self.bundle_id + ".LowPowerHelper"
+        daemons = self.output / "Contents/Library/LaunchDaemons"
+        self.assertEqual((daemons / helper_id).read_bytes(), helper.read_bytes())
+        plist = plistlib.loads((daemons / (helper_id + ".plist")).read_bytes())
+        self.assertEqual(plist["Label"], helper_id)
+        self.assertEqual(plist["BundleProgram"],
+                         "Contents/Library/LaunchDaemons/" + helper_id)
+        self.assertEqual(plist["MachServices"], {helper_id: True})
+        self.assertEqual(plist["AssociatedBundleIdentifiers"], [self.bundle_id])
+        self.assertNotIn("low power mode will be unavailable", result.stderr)
+
+    def test_missing_helper_warns_but_still_packages(self):
+        result = self.package()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("low power mode will be unavailable", result.stderr)
+        self.assertIn("packaged:", result.stdout)
+
 
 if __name__ == "__main__":
     unittest.main()
