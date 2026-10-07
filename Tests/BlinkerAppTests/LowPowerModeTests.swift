@@ -125,10 +125,14 @@ final class LowPowerModeTests: XCTestCase {
         )
     }
 
-    private func flush() {
-        let expectation = expectation(description: "helper reply delivered")
-        DispatchQueue.main.async { expectation.fulfill() }
-        wait(for: [expectation], timeout: 1)
+    /// Pumps pending MainActor continuations. The repair path hops the
+    /// main queue once per attempt, so tests exercise one bounce per hop.
+    private func flush(times: Int = 1) {
+        for _ in 0..<times {
+            let expectation = expectation(description: "helper reply delivered")
+            DispatchQueue.main.async { expectation.fulfill() }
+            wait(for: [expectation], timeout: 1)
+        }
     }
 
     func testRefreshMirrorsTheSystemState() {
@@ -211,5 +215,111 @@ final class LowPowerModeTests: XCTestCase {
         XCTAssertEqual(calls, 1, "A second toggle lands while the first write is in flight")
         gate.signal()
         flush()
+    }
+
+    // MARK: Registration self-repair
+
+    /// The exact field failure: launchd vends the endpoint but the spawn
+    /// dies before listening, so the write pends until the watchdog. The
+    /// controller rebuilds the registration and the retry lands.
+    func testUnreachableHelperRebuildsRegistrationAndRetries() {
+        var output = " lowpowermode 0\n"
+        var registrations = 0
+        var unregistrations = 0
+        var writes = 0
+        let controller = LowPowerController(
+            appBundleID: "com.example.Blinker.tests",
+            readSystemOutput: { output },
+            registerDaemon: {
+                registrations += 1
+                return .enabled
+            },
+            unregisterDaemon: { unregistrations += 1 },
+            callHelper: { enabled, reply in
+                writes += 1
+                if writes == 1 {
+                    reply(LowPowerHelperRejection.timedOut.rawValue)
+                } else {
+                    output = " lowpowermode \(enabled ? 1 : 0)\n"
+                    reply(0)
+                }
+            },
+            openLoginItemsSettings: {}
+        )
+        controller.refresh()
+        controller.setLowPowerMode(true)
+        flush(times: 2)
+        XCTAssertEqual(writes, 2, "The write is retried after the registration is rebuilt")
+        XCTAssertEqual(unregistrations, 1)
+        XCTAssertEqual(registrations, 2, "Re-registration re-evaluates the daemon status")
+        XCTAssertTrue(controller.isOn)
+        XCTAssertNil(controller.issue)
+        XCTAssertFalse(controller.isApplying)
+    }
+
+    /// Rebuilding the registration can land on a fresh approval request
+    /// (unregister clears the grant): the row explains and opens the pane.
+    func testRepairLandingOnApprovalGuidesTheUser() {
+        var daemon: LowPowerController.DaemonStatus = .enabled
+        var opened = 0
+        let controller = LowPowerController(
+            appBundleID: "com.example.Blinker.tests",
+            readSystemOutput: { " lowpowermode 0\n" },
+            registerDaemon: {
+                defer { daemon = .requiresApproval }
+                return daemon
+            },
+            unregisterDaemon: {},
+            callHelper: { _, reply in reply(LowPowerHelperRejection.launchFailed.rawValue) },
+            openLoginItemsSettings: { opened += 1 }
+        )
+        controller.setLowPowerMode(true)
+        flush(times: 2)
+        XCTAssertEqual(controller.issue, .approvalRequired)
+        XCTAssertEqual(opened, 1)
+        XCTAssertFalse(controller.isApplying)
+    }
+
+    /// The retry budget is exactly one: a helper that stays unreachable
+    /// surfaces writeFailed instead of looping or hanging the switch.
+    func testRepeatedlyUnreachableHelperFlagsWriteFailed() {
+        var unregistrations = 0
+        var writes = 0
+        let controller = LowPowerController(
+            appBundleID: "com.example.Blinker.tests",
+            readSystemOutput: { " lowpowermode 0\n" },
+            registerDaemon: { .enabled },
+            unregisterDaemon: { unregistrations += 1 },
+            callHelper: { _, reply in
+                writes += 1
+                reply(LowPowerHelperRejection.timedOut.rawValue)
+            },
+            openLoginItemsSettings: {}
+        )
+        controller.setLowPowerMode(true)
+        flush(times: 2)
+        XCTAssertEqual(writes, 2)
+        XCTAssertEqual(unregistrations, 1)
+        XCTAssertEqual(controller.issue, .writeFailed)
+        XCTAssertFalse(controller.isApplying)
+    }
+
+    /// A genuine pmset failure (positive exit) proves the helper ran, so
+    /// no repair is attempted — rebuilding a healthy registration would
+    /// only cost the user their approval.
+    func testPmsetFailureDoesNotRebuildRegistration() {
+        var unregistrations = 0
+        let controller = LowPowerController(
+            appBundleID: "com.example.Blinker.tests",
+            readSystemOutput: { " lowpowermode 0\n" },
+            registerDaemon: { .enabled },
+            unregisterDaemon: { unregistrations += 1 },
+            callHelper: { _, reply in reply(1) },
+            openLoginItemsSettings: {}
+        )
+        controller.setLowPowerMode(true)
+        flush()
+        XCTAssertEqual(unregistrations, 0)
+        XCTAssertEqual(controller.issue, .writeFailed)
     }
 }

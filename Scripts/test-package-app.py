@@ -164,6 +164,9 @@ class PackageSafetyTests(unittest.TestCase):
                          "Contents/Library/LaunchDaemons/" + helper_id)
         self.assertEqual(plist["MachServices"], {helper_id: True})
         self.assertEqual(plist["AssociatedBundleIdentifiers"], [self.bundle_id])
+        # The build stamp forces SMAppService to re-submit the registration
+        # after every in-place app swap, refreshing launchd's bundle reference.
+        self.assertEqual(plist["BlinkerParentBundleVersion"], "1")
         self.assertNotIn("low power mode will be unavailable", result.stderr)
 
     def test_missing_helper_warns_but_still_packages(self):

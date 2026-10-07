@@ -99,6 +99,15 @@ if [[ -x "$HELPER_BINARY" ]]; then
         <key>$HELPER_ID</key>
         <true/>
     </dict>
+    <!--
+      launchd resolves BundleProgram against the bundle reference captured
+      at registration; SMAppService.register() is a no-op while the plist
+      is unchanged, so an in-place app swap would strand that reference
+      forever. Stamping the build number makes every package re-submit the
+      registration with the current bundle. launchd ignores unknown keys.
+    -->
+    <key>BlinkerParentBundleVersion</key>
+    <string>$BUNDLE_VERSION</string>
 </dict>
 </plist>
 PLIST

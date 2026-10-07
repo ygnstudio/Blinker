@@ -14,11 +14,17 @@ public protocol LowPowerHelperXPC {
 }
 
 /// Negative reply codes the helper returns before pmset is even launched.
+/// timedOut is synthesized on the app side: launchd keeps a broken
+/// registration's Mach endpoint vended while it throttles respawns, so a
+/// dead helper pends forever without a connection error — the watchdog is
+/// the only guaranteed signal.
 public enum LowPowerHelperRejection: Int {
     /// The command about to run failed the whitelist re-validation.
     case rejectedCommand = -1
     /// pmset could not be launched at all.
     case launchFailed = -2
+    /// No reply and no connection error within the watchdog window.
+    case timedOut = -3
 }
 
 /// The helper's entire command surface: exactly two argument vectors of

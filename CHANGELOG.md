@@ -30,6 +30,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - Exiting display or keyboard cleaning no longer crashes the app: cleaning windows are kept alive for the app's lifetime and reused across sessions — closing or releasing a window left AppKit's transform animation pointing at freed memory, crashing in the CA commit's autorelease drain (SIGSEGV on exit).
 - The Bluetooth device list corrects manufacturer-mislabeled classes from the HID usages the I/O Registry enumerates: a Logitech keyboard that reports itself as a mouse now shows the keyboard it is. Only connected devices are corrected; the system report stays authoritative otherwise.
+- The low-power-mode switch recovers after the app is replaced in place. launchd resolves the helper's bundle-relative program against the bundle reference captured at registration, and SMAppService re-registration is a no-op while the daemon plist is unchanged — so a swapped app bundle left the spawn failing (EX_CONFIG) with the write pending forever, wedging the switch mid-apply. Writes now carry a watchdog, a write that never reaches the daemon rebuilds the registration once and retries once (landing on the approval flow when the grant has to be redone), and the packaged plist is stamped with the build number so every install refreshes the registration outright.
 
 ## [0.7.0] - 2026-10-04
 
