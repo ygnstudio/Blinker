@@ -1,6 +1,9 @@
 import AppKit
 import ApplicationServices
 import CoreGraphics
+import os
+
+private let axQueryLog = Logger(subsystem: "com.ygnstudio.blinker", category: "axquery")
 
 /// Shared low-level AX and `CGWindowList` helpers used by the interceptor and
 /// the hover overlay. All frame values are in AX (top-left origin) global
@@ -129,19 +132,36 @@ enum AXQuery {
     /// Finds a button by subrole among the window's direct children and
     /// performs `AXPress` on it. Returns `false` when the button could not be
     /// found or the press failed, so callers can surface (or log) the miss —
-    /// the click that triggered it has already been swallowed.
+    /// the click that triggered it has already been swallowed. Every failure
+    /// branch logs its AXError: the HUD message is deliberately generic, so
+    /// these logs are the only way to tell a stale window, a restructured
+    /// title bar and a refused press apart.
     @discardableResult
     static func pressButton(subrole: String, in window: AXUIElement) -> Bool {
         var childrenRef: CFTypeRef?
-        guard
-            AXUIElementCopyAttributeValue(window, kAXChildrenAttribute as CFString, &childrenRef) == .success,
-            let children = childrenRef as? [AXUIElement]
-        else { return false }
+        let childrenResult = AXUIElementCopyAttributeValue(
+            window, kAXChildrenAttribute as CFString, &childrenRef
+        )
+        guard childrenResult == .success, let children = childrenRef as? [AXUIElement] else {
+            axQueryLog.error(
+                "pressButton \(subrole, privacy: .public): AXChildren read failed \(childrenResult.rawValue)"
+            )
+            return false
+        }
 
         for child in children {
             guard stringAttribute(child, kAXSubroleAttribute) == subrole else { continue }
-            return AXUIElementPerformAction(child, kAXPressAction as CFString) == .success
+            let press = AXUIElementPerformAction(child, kAXPressAction as CFString)
+            if press != .success {
+                axQueryLog.error(
+                    "pressButton \(subrole, privacy: .public): AXPress failed (\(press.rawValue))"
+                )
+            }
+            return press == .success
         }
+        axQueryLog.error(
+            "pressButton \(subrole, privacy: .public): no matching direct child among \(children.count)"
+        )
         return false
     }
 

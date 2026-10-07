@@ -1,5 +1,8 @@
 import AppKit
 import ApplicationServices
+import os
+
+private let performerLog = Logger(subsystem: "com.ygnstudio.blinker", category: "window-action")
 
 public protocol WindowActionPerforming: AnyObject {
     func perform(_ action: ButtonAction, window: AXUIElement, processIdentifier: pid_t)
@@ -61,6 +64,15 @@ public final class DefaultWindowActionPerformer: WindowActionPerforming {
         let result = lock.withLock {
             operation?(request, window, pid)
                 ?? execute(request, window: window, pid: pid)
+        }
+        if result != .completed {
+            // The HUD only carries the message; the log keeps the context
+            // (which app, which action) needed to diagnose repeat failures.
+            let bundle = NSRunningApplication(processIdentifier: pid)?.bundleIdentifier ?? "?"
+            let actionName = String(describing: request)
+            let resultName = String(describing: result)
+            let message = "\(bundle) [\(pid)]: \(actionName) -> \(resultName)"
+            performerLog.error("\(message, privacy: .public)")
         }
         ActionFeedback.report(result)
     }

@@ -163,7 +163,8 @@ extension HoverOverlayController {
         variant: ClickVariant
     ) {
         let summary = "\(info.axSubrole) as \(String(describing: variant))"
-        logger.info("overlay button activated: \(summary, privacy: .public)")
+        let owner = bundleIdentifier ?? "?"
+        logger.info("overlay button activated: \(summary, privacy: .public) on \(owner, privacy: .public)")
         let action = bundleIdentifier.flatMap {
             ruleEngine.action(forBundleIdentifier: $0, button: info.button, variant: variant)
         }
