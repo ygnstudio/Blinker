@@ -64,6 +64,50 @@ final class LowPowerModeTests: XCTestCase {
                        "com.example.App.LowPowerHelper.plist")
     }
 
+    // MARK: Daemon launch discovery
+
+    /// The label comes from the sibling <executable>.plist; the executable
+    /// path itself must be absolute (the argv[0] failure mode is covered by
+    /// the dyld-based executablePath() contract below).
+    func testServiceNameReadsTheSiblingPlist() throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let executable = directory.appendingPathComponent("com.example.Helper")
+        try Data().write(to: executable)
+        let plist: NSDictionary = ["Label": "com.example.Helper"]
+        XCTAssertTrue(plist.write(to: executable.appendingPathExtension("plist"), atomically: true))
+        XCTAssertEqual(
+            LowPowerHelperLaunch.serviceNameFromSiblingPlist(executablePath: executable.path),
+            "com.example.Helper"
+        )
+    }
+
+    func testServiceNameRejectsMissingOrMalformedPlists() throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let executable = directory.appendingPathComponent("helper")
+        try Data().write(to: executable)
+        XCTAssertNil(LowPowerHelperLaunch.serviceNameFromSiblingPlist(
+            executablePath: executable.path), "No plist next to the binary")
+        let malformed: NSDictionary = ["BundleProgram": "x"]
+        XCTAssertTrue(malformed.write(to: executable.appendingPathExtension("plist"),
+                                      atomically: true))
+        XCTAssertNil(LowPowerHelperLaunch.serviceNameFromSiblingPlist(
+            executablePath: executable.path), "A plist without Label is useless")
+    }
+
+    /// Guards the launchd regression: argv[0] under launchd is the relative
+    /// BundleProgram string with cwd `/`, so the discovery must not consult
+    /// argv[0] — the dyld query always yields an absolute path.
+    func testExecutablePathIsAbsolute() {
+        XCTAssertTrue(LowPowerHelperLaunch.executablePath().hasPrefix("/"),
+                      "The dyld executable path never depends on argv[0] or the cwd")
+    }
+
     // MARK: Controller state machine
 
     private func makeController(

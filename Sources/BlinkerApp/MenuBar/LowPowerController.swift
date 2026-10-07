@@ -1,6 +1,9 @@
 import BlinkerHelperXPC
 import Foundation
+import OSLog
 import ServiceManagement
+
+private let lowPowerLog = OSLog(subsystem: "Blinker", category: "LowPower")
 
 /// Parses `pmset -g`, which needs no privilege. The line we want sits among
 /// the system-wide power settings as `lowpowermode        0`; `pmset -a`
@@ -87,7 +90,10 @@ final class LowPowerController: ObservableObject {
     func setLowPowerMode(_ enabled: Bool) {
         guard !isApplying else { return }
         issue = nil
-        switch registerDaemon() {
+        let daemon = registerDaemon()
+        os_log(.info, log: lowPowerLog, "low power write %{public}@: daemon status %{public}@",
+               enabled ? "on" : "off", String(describing: daemon))
+        switch daemon {
         case .requiresApproval:
             issue = .approvalRequired
             openLoginItemsSettings()
@@ -106,6 +112,7 @@ final class LowPowerController: ObservableObject {
                 guard let self else { return }
                 self.isApplying = false
                 if status != 0 { self.issue = .writeFailed }
+                os_log(.info, log: lowPowerLog, "low power helper replied %d", status)
                 // Whether the write landed or failed, the row mirrors the
                 // system's actual state — never the intent.
                 self.refresh()

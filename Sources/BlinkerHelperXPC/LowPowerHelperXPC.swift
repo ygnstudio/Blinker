@@ -55,3 +55,37 @@ public enum LowPowerHelperNames {
         "\(machServiceName(appBundleID: appBundleID)).plist"
     }
 }
+
+/// How the daemon learns its own Mach service name. launchd starts the
+/// daemon with argv[0] set to the BundleProgram string — a path RELATIVE
+/// to the app bundle — while the daemon's working directory is `/`, so
+/// resolving argv[0] yields /Contents/… and the sibling plist is never
+/// found (the daemon exits before listening). `_NSGetExecutablePath`
+/// returns the real absolute path regardless of argv[0].
+public enum LowPowerHelperLaunch {
+    /// Absolute path of the running helper binary; falls back to argv[0]
+    /// only if the dyld query itself fails.
+    public static func executablePath() -> String {
+        var buffer = [CChar](repeating: 0, count: Int(MAXPATHLEN))
+        var size = UInt32(buffer.count)
+        if _NSGetExecutablePath(&buffer, &size) == 0 {
+            return String(cString: buffer)
+        }
+        return CommandLine.arguments[0]
+    }
+
+    /// Reads the launchd label from the property list placed next to the
+    /// binary: Contents/Library/LaunchDaemons/<label> and <label>.plist.
+    /// Keeping the name in the sibling plist lets one binary serve any app
+    /// identity (development and release produce different labels).
+    public static func serviceNameFromSiblingPlist(
+        executablePath: String,
+        loadPlist: (URL) -> NSDictionary? = { NSDictionary(contentsOf: $0) }
+    ) -> String? {
+        let executableURL = URL(fileURLWithPath: executablePath).resolvingSymlinksInPath()
+        guard let plist = loadPlist(executableURL.appendingPathExtension("plist")),
+              let label = plist["Label"] as? String,
+              !label.isEmpty else { return nil }
+        return label
+    }
+}
