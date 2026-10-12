@@ -3,7 +3,7 @@ import XCTest
 
 @MainActor
 final class MenuBarPreferencesTests: XCTestCase {
-    private final class RecordingDefaults: UserDefaults, @unchecked Sendable {
+    private final class RecordingDefaults: UserDefaults {
         var writes = 0
 
         override func set(_ value: Any?, forKey defaultName: String) {
@@ -62,7 +62,7 @@ final class MenuBarPreferencesTests: XCTestCase {
     func testPreBluetoothSaveMigratesSectionOn() throws {
         try withDefaults { defaults in
             let legacy = Data(("{\"sectionOrder\":[\"battery\",\"network\",\"volume\"],"
-                + "\"enabledSections\":[\"battery\",\"network\",\"volume\"]}").utf8)
+                    + "\"enabledSections\":[\"battery\",\"network\",\"volume\"]}").utf8)
             defaults.set(legacy, forKey: MenuBarPreferences.key)
             let preferences = MenuBarPreferences(defaults: defaults)
             XCTAssertEqual(preferences.configuration.sectionOrder,
@@ -78,7 +78,7 @@ final class MenuBarPreferencesTests: XCTestCase {
     func testBluetoothSectionChoiceIsNotReMigrated() throws {
         try withDefaults { defaults in
             let saved = Data(("{\"sectionOrder\":[\"battery\",\"network\",\"volume\",\"bluetooth\"],"
-                + "\"enabledSections\":[\"battery\",\"network\",\"volume\"]}").utf8)
+                    + "\"enabledSections\":[\"battery\",\"network\",\"volume\"]}").utf8)
             defaults.set(saved, forKey: MenuBarPreferences.key)
             let preferences = MenuBarPreferences(defaults: defaults)
             XCTAssertFalse(preferences.configuration.enabledSections.contains(.bluetooth))
@@ -98,9 +98,9 @@ final class MenuBarPreferencesTests: XCTestCase {
     func testStorageAndPerformanceChoicesAreNotReMigrated() throws {
         try withDefaults { defaults in
             let saved = Data(("{\"sectionOrder\":[\"battery\",\"network\",\"volume\",\"bluetooth\","
-                + "\"storage\",\"performance\"],"
-                + "\"enabledSections\":[\"battery\",\"network\",\"volume\",\"bluetooth\"],"
-                + "\"showsCPULoad\":true}").utf8)
+                    + "\"storage\",\"performance\"],"
+                    + "\"enabledSections\":[\"battery\",\"network\",\"volume\",\"bluetooth\"],"
+                    + "\"showsCPULoad\":true}").utf8)
             defaults.set(saved, forKey: MenuBarPreferences.key)
             let preferences = MenuBarPreferences(defaults: defaults)
             XCTAssertFalse(preferences.configuration.enabledSections.contains(.storage))

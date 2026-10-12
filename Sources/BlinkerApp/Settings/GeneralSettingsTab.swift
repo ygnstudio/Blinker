@@ -9,7 +9,6 @@ struct GeneralTab: View {
     @EnvironmentObject var coordinator: InterceptionCoordinator
     @EnvironmentObject private var permissionAssistant: PermissionAssistantController
     @ObservedObject private var preferences = AppPreferences.shared
-    @ObservedObject private var feedback = ActionFeedbackController.shared
     @State private var loginStatus = SMAppService.mainApp.status
     @State private var loginError = false
 
@@ -40,12 +39,12 @@ struct GeneralTab: View {
             }
 
             Section {
-                Picker("外观", selection: $preferences.appearance) {
+                EclipsePicker("外观", selection: $preferences.appearance) {
                     ForEach(AppAppearance.allCases, id: \.self) { appearance in
                         Text(appearance.menuLabel).tag(appearance)
                     }
                 }
-                Picker("语言", selection: $preferences.language) {
+                EclipsePicker("语言", selection: $preferences.language) {
                     ForEach(AppLanguage.allCases, id: \.self) { language in
                         Text(language.menuLabel).tag(language)
                     }
@@ -79,18 +78,8 @@ struct GeneralTab: View {
                 Button("重新查看引导", action: onShowOnboarding)
                 Button("关于 Blinker", action: onShowAbout)
             }
-
-            if !coordinator.moduleIssues.isEmpty || feedback.latestMessage != nil {
-                Section("诊断") {
-                    ForEach(coordinator.moduleIssues, id: \.self) { Text($0).foregroundStyle(.orange) }
-                    if let message = feedback.latestMessage {
-                        LabeledContent("最近操作反馈", value: message)
-                    }
-                    Button("检查应用兼容性…") { CompatibilityWindowController.shared.show() }
-                }
-            }
         }
-        .formStyle(.grouped)
+        .modifier(NativeFormSurface())
         .onAppear { refreshLoginStatus() }
         .onReceive(NotificationCenter.default.publisher(
             for: NSApplication.didBecomeActiveNotification

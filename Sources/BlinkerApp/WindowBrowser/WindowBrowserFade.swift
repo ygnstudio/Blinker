@@ -1,4 +1,5 @@
 import AppKit
+import BlinkerCore
 
 /// Entry and exit alone animate. A refresh of an already presented browser
 /// leaves the current alpha transition and keyboard response untouched.
@@ -7,8 +8,8 @@ final class WindowBrowserFade {
     private var state = WindowBrowserFadeState()
     private weak var currentWindow: NSWindow?
     private let reduceMotion: () -> Bool
-    private static let appearanceDuration: TimeInterval = 0.12
-    private static let departureDuration: TimeInterval = 0.10
+    private static let appearanceDuration = InterfaceMetrics.Motion.previewArrival
+    private static let departureDuration = InterfaceMetrics.Motion.previewDeparture
 
     init(reduceMotion: @escaping () -> Bool = { NSWorkspace.shared.accessibilityDisplayShouldReduceMotion }) {
         self.reduceMotion = reduceMotion

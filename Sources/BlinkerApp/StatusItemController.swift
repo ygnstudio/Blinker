@@ -11,6 +11,7 @@ final class StatusItemController: NSObject, NSMenuDelegate, NSMenuItemValidation
     private let audio: SystemAudioController
     private let bluetoothScanner: BluetoothLEScanner
     private let preferences: MenuBarPreferences
+    private let desktopActions: DesktopActionsCoordinator?
     private var presentation: MenuBarPresentation?
     /// Invoked for the settings menu entry.
     var onOpenSettings: (() -> Void)?
@@ -30,12 +31,13 @@ final class StatusItemController: NSObject, NSMenuDelegate, NSMenuItemValidation
 
     init(coordinator: InterceptionCoordinator, systemStatus: SystemStatusMonitor,
          audio: SystemAudioController, bluetoothScanner: BluetoothLEScanner,
-         preferences: MenuBarPreferences? = nil) {
+         preferences: MenuBarPreferences? = nil, desktopActions: DesktopActionsCoordinator? = nil) {
         self.coordinator = coordinator
         self.systemStatus = systemStatus
         self.audio = audio
         self.bluetoothScanner = bluetoothScanner
         self.preferences = preferences ?? .shared
+        self.desktopActions = desktopActions
     }
 
     func install() {
@@ -52,8 +54,9 @@ final class StatusItemController: NSObject, NSMenuDelegate, NSMenuItemValidation
             item: item, monitor: systemStatus, audio: audio, scanner: bluetoothScanner,
             preferences: preferences,
             onOpenApplications: { [weak self] in self?.onOpenApplications?() },
-            onOpenSettings: { [weak self] in self?.onOpenMenuBarSettings?() },
-            onOpenMenuBarPage: { [weak self] page in self?.onOpenMenuBarPage?(page) }
+            onOpenSettings: { [weak self] in self?.onOpenSettings?() },
+            onOpenMenuBarPage: { [weak self] page in self?.onOpenMenuBarPage?(page) },
+            desktopActions: desktopActions
         )
         presentation?.onKeyboardCleaningPermissionNeeded = { [weak self] in
             self?.onKeyboardCleaningPermissionNeeded?()

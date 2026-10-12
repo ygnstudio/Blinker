@@ -1710,7 +1710,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "No Apps Added"
+            "value": "No Applications Yet"
           }
         },
         "zh-Hans": {
@@ -1982,7 +1982,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "App"
+            "value": "Application"
           }
         },
         "zh-Hans": {
@@ -3790,7 +3790,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Window"
+            "value": "Windows"
           }
         },
         "zh-Hans": {
@@ -10537,18 +10537,18 @@
         }
       }
     },
-    "点击 Blinker 的 Dock 图标打开状态面板。预览背景不会改变 Dock 图标或系统外观。": {
+    "点击 Blinker 的 Dock 图标唤回当前工作区。预览背景不会改变 Dock 图标或系统外观。": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Click Blinker's Dock icon to open the status panel. The preview background does not change the Dock icon or system appearance."
+            "value": "Click Blinker's Dock icon to return to the current workspace. The preview background does not change the Dock icon or system appearance."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "点击 Blinker 的 Dock 图标打开状态面板。预览背景不会改变 Dock 图标或系统外观。"
+            "value": "点击 Blinker 的 Dock 图标唤回当前工作区。预览背景不会改变 Dock 图标或系统外观。"
           }
         }
       }
@@ -13461,6 +13461,1172 @@
           "stringUnit": {
             "state": "translated",
             "value": "低电量模式经系统电源管理写入，首次使用需在登录项中一次性允许后台组件；该组件只执行固定的电源指令，不接收其他命令。"
+          }
+        }
+      }
+    },
+    "仅悬停按钮": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hover only"
+          }
+        }
+      }
+    },
+    "仅按钮规则": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Buttons only"
+          }
+        }
+      }
+    },
+    "在左侧选择应用，直接编辑按钮动作和悬停设置。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Select an application in the sidebar to edit its button actions and hover settings."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "在左侧选择应用，直接编辑按钮动作和悬停设置。"
+          }
+        }
+      }
+    },
+    "在独立窗口编辑": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Edit in Separate Window"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "在独立窗口编辑"
+          }
+        }
+      }
+    },
+    "声音与电源": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sound & Power"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "声音与电源"
+          }
+        }
+      }
+    },
+    "屏幕": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Display"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "屏幕"
+          }
+        }
+      }
+    },
+    "开启显示并拖动排序。隐藏区块不影响状态图标。隐藏音量区块也会停用面板滚轮调音量；全部隐藏后，仍可进入应用规则和设置。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enable sections and drag to reorder. Hiding sections does not affect the status icon. Hiding Volume also disables scroll-to-adjust volume. Rules and settings remain accessible when all sections are hidden."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "开启显示并拖动排序。隐藏区块不影响状态图标。隐藏音量区块也会停用面板滚轮调音量；全部隐藏后，仍可进入应用规则和设置。"
+          }
+        }
+      }
+    },
+    "按钮与悬停关闭": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Buttons & hover off"
+          }
+        }
+      }
+    },
+    "按钮与悬停开启": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Buttons & hover on"
+          }
+        }
+      }
+    },
+    "显示与锁屏": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Display & Lock"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "显示与锁屏"
+          }
+        }
+      }
+    },
+    "显示选项通过重启访达生效，桌面会短暂重绘。清空回收站始终需要再次确认。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Display options restart Finder and briefly redraw the desktop. Emptying Trash always asks for confirmation."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "显示选项通过重启访达生效，桌面会短暂重绘。清空回收站始终需要再次确认。"
+          }
+        }
+      }
+    },
+    "正在应用": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Applying"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在应用"
+          }
+        }
+      }
+    },
+    "深色模式需允许控制系统事件。分辨率按显示器分别选择，立即生效。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dark Mode requires permission to control System Events. Resolution changes apply immediately to the selected display."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "深色模式需允许控制系统事件。分辨率按显示器分别选择，立即生效。"
+          }
+        }
+      }
+    },
+    "状态与快速操作": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Status & Quick Actions"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "状态与快速操作"
+          }
+        }
+      }
+    },
+    "自定义…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Customize…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "自定义…"
+          }
+        }
+      }
+    },
+    "设备清洁": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Device Cleaning"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "设备清洁"
+          }
+        }
+      }
+    },
+    "访达与文件": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Finder & Files"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "访达与文件"
+          }
+        }
+      }
+    },
+    "选择在快速操作页显示的项目。低电量模式首次使用需允许后台组件；保持唤醒不影响合盖。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose which controls appear in Quick Actions. Low Power Mode requires background helper approval; Keep Awake does not change lid behavior."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "选择在快速操作页显示的项目。低电量模式首次使用需允许后台组件；保持唤醒不影响合盖。"
+          }
+        }
+      }
+    },
+    "键盘清洁需要辅助功能与输入监控权限。点击退出按钮或连按三次 Esc 结束。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keyboard Cleaning requires Accessibility and Input Monitoring. Click Exit or press Esc three times to finish."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "键盘清洁需要辅助功能与输入监控权限。点击退出按钮或连按三次 Esc 结束。"
+          }
+        }
+      }
+    },
+    "自定义快速操作": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Customize Quick Actions"
+          }
+        }
+      }
+    },
+    "这里只选择面板中显示的操作，不会改变系统状态。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose which actions appear in the panel. This does not change system settings."
+          }
+        }
+      }
+    },
+    "前往快速操作面板执行这些操作。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Run these actions from the Quick Actions panel."
+          }
+        }
+      }
+    },
+    "这些开关只控制入口是否显示。清空回收站仍需在面板中确认。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "These switches only show or hide actions. Emptying Trash still requires confirmation in the panel."
+          }
+        }
+      }
+    },
+    "开启后显示清洁入口，使用时会检查所需权限。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show cleaning actions in the panel. Required permissions are checked when used."
+          }
+        }
+      }
+    },
+    "名称需与「快捷指令」App 中的一致。输入自动保存，留空不显示。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Use the exact name from Shortcuts. Changes save automatically; leave blank to hide."
+          }
+        }
+      }
+    },
+    "恢复本页默认设置…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Restore Page Defaults…"
+          }
+        }
+      }
+    },
+    "恢复本页默认设置？": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Restore Page Defaults?"
+          }
+        }
+      }
+    },
+    "将恢复「%@」中的设置，其他页面保持不变。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Restore settings in “%@”. Other pages will stay unchanged."
+          }
+        }
+      }
+    },
+    "滚轮仅在音量滑块区域调节音量，其余区域正常滚动。音量区块关闭时停用此功能。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Scroll over the volume slider to adjust volume. Other areas scroll normally. Requires the volume section."
+          }
+        }
+      }
+    },
+    "显示「麦克风静音」": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show “Microphone Mute”"
+          }
+        }
+      }
+    },
+    "显示「保持唤醒」": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show “Keep Awake”"
+          }
+        }
+      }
+    },
+    "显示「低电量模式」": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show “Low Power Mode”"
+          }
+        }
+      }
+    },
+    "显示「连接蓝牙耳机」": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show “Connect Bluetooth Headphones”"
+          }
+        }
+      }
+    },
+    "显示「深色模式」": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show “Dark Mode”"
+          }
+        }
+      }
+    },
+    "显示「分辨率」": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show “Resolution”"
+          }
+        }
+      }
+    },
+    "显示「屏幕保护」": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show “Screen Saver”"
+          }
+        }
+      }
+    },
+    "显示「关闭显示器」": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show “Sleep Displays”"
+          }
+        }
+      }
+    },
+    "显示「锁定屏幕」": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show “Lock Screen”"
+          }
+        }
+      }
+    },
+    "显示「隐藏桌面图标」": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show “Hide Desktop Icons”"
+          }
+        }
+      }
+    },
+    "显示「显示隐藏文件」": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show “Show Hidden Files”"
+          }
+        }
+      }
+    },
+    "显示「显示扩展名」": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show “Show File Extensions”"
+          }
+        }
+      }
+    },
+    "显示「清空回收站」": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show “Empty Trash”"
+          }
+        }
+      }
+    },
+    "显示「显示器清洁模式」": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show “Display Cleaning Mode”"
+          }
+        }
+      }
+    },
+    "显示「键盘清洁模式」": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show “Keyboard Cleaning Mode”"
+          }
+        }
+      }
+    },
+    "正在执行…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Working…"
+          }
+        }
+      }
+    },
+    "未能启动屏幕保护，请重试。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Could not start the screen saver. Please retry."
+          }
+        }
+      }
+    },
+    "未能关闭显示器，请重试。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Could not turn off the displays. Please retry."
+          }
+        }
+      }
+    },
+    "已发送请求": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Request sent"
+          }
+        }
+      }
+    },
+    "滚轮仅在音量滑块区域调节音量，其余区域正常滚动。音量区块关闭时停用此功能。若与 MOS、Scroll Reverser、LinearMouse 等滚动增强工具冲突，请在其设置中将 Blinker 设为不处理（白名单）。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Scrolling adjusts volume only over the volume slider; elsewhere it scrolls normally. Disabled when the volume section is hidden. If scrolling tools such as MOS, Scroll Reverser, or LinearMouse conflict, exclude Blinker in their settings."
+          }
+        }
+      }
+    },
+    "快速操作独立为面板的第二页；页内项目在「自定义快速操作」设置中配置。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quick Actions is a separate panel page. Choose its items in Customize Quick Actions settings."
+          }
+        }
+      }
+    },
+    "权限与诊断": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Permissions & Diagnostics"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "权限与诊断"
+          }
+        }
+      }
+    },
+    "布局与桌面": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Layout & Desktop"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "布局与桌面"
+          }
+        }
+      }
+    },
+    "状态与操作": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Status & Actions"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "状态与操作"
+          }
+        }
+      }
+    },
+    "运行诊断": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Runtime Diagnostics"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "运行诊断"
+          }
+        }
+      }
+    },
+    "应用兼容性": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "App Compatibility"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "应用兼容性"
+          }
+        }
+      }
+    },
+    "菜单栏图标": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Menu Bar Icon"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "菜单栏图标"
+          }
+        }
+      }
+    },
+    "面板布局": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Panel Layout"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "面板布局"
+          }
+        }
+      }
+    },
+    "声音": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sound"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "声音"
+          }
+        }
+      }
+    },
+    "打开系统电池设置…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open System Battery Settings…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "打开系统电池设置…"
+          }
+        }
+      }
+    },
+    "打开系统网络设置…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open System Network Settings…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "打开系统网络设置…"
+          }
+        }
+      }
+    },
+    "打开系统声音设置…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open System Sound Settings…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "打开系统声音设置…"
+          }
+        }
+      }
+    },
+    "配置此模块…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Configure This Module…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "配置此模块…"
+          }
+        }
+      }
+    },
+    "配置": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Configure "
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "配置"
+          }
+        }
+      }
+    },
+    "显示「显示桌面 / 恢复窗口」": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show “Show Desktop / Restore Windows”"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "显示「显示桌面 / 恢复窗口」"
+          }
+        }
+      }
+    },
+    "桌面窗口": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Desktop Windows"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "桌面窗口"
+          }
+        }
+      }
+    },
+    "窗口增强已暂停，请先恢复运行。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Window enhancements are paused. Resume them to continue."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "窗口增强已暂停，请先恢复运行。"
+          }
+        }
+      }
+    },
+    "在快速操作中使用「显示桌面 / 恢复窗口」，或配置桌面快捷键。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Use Show Desktop / Restore Windows in Quick Actions, or configure a desktop shortcut."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "在快速操作中使用「显示桌面 / 恢复窗口」，或配置桌面快捷键。"
+          }
+        }
+      }
+    },
+    "所有状态区块均已隐藏，可在面板布局中重新开启。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All status sections are hidden. Enable them in Panel Layout."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "所有状态区块均已隐藏，可在面板布局中重新开启。"
+          }
+        }
+      }
+    },
+    "请先启动要检查的应用：%@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open the app before inspecting it: %@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请先启动要检查的应用：%@"
+          }
+        }
+      }
+    },
+    "切换功能侧栏": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Toggle Navigation Sidebar"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "切换功能侧栏"
+          }
+        }
+      }
+    },
+    "显示或隐藏功能导航": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show or hide feature navigation"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "显示或隐藏功能导航"
+          }
+        }
+      }
+    },
+    "打开系统蓝牙设置…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open System Bluetooth Settings…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "打开系统蓝牙设置…"
+          }
+        }
+      }
+    },
+    "打开系统储存空间设置…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open System Storage Settings…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "打开系统储存空间设置…"
+          }
+        }
+      }
+    },
+    "导航": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Navigation"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "导航"
+          }
+        }
+      }
+    },
+    "连接详情": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connection Details"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "连接详情"
+          }
+        }
+      }
+    },
+    "详细信息": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Details"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "详细信息"
+          }
+        }
+      }
+    },
+    "输出设备": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Output Device"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "输出设备"
+          }
+        }
+      }
+    },
+    "打开状态面板": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open Status Panel"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "打开状态面板"
+          }
+        }
+      }
+    },
+    "Blinker 常驻菜单栏，应用规则和设置在同一窗口中切换。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Blinker lives in the menu bar. Switch between application rules and settings in the same window."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Blinker 常驻菜单栏，应用规则和设置在同一窗口中切换。"
+          }
+        }
+      }
+    },
+    "配置%@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Configure %@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "配置%@"
+          }
+        }
+      }
+    },
+    "显示模式": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Display Mode"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "显示模式"
+          }
+        }
+      }
+    },
+    "选择显示器": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose Display"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "选择显示器"
+          }
+        }
+      }
+    },
+    "显示「显示模式」": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show Display Mode"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "显示「显示模式」"
+          }
+        }
+      }
+    },
+    "管理面板": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Manage Panel"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "管理面板"
+          }
+        }
+      }
+    },
+    "设备详情": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Device Details"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "设备详情"
+          }
+        }
+      }
+    },
+    "没有已连接的设备": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No connected devices"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "没有已连接的设备"
           }
         }
       }

@@ -1,46 +1,60 @@
-/// Resolves which action a traffic button click should perform for a given app.
-///
-/// The engine is a pure lookup: applications without a matching enabled rule
-/// fall through to the system default behavior.
+/// Resolves stored bindings against one atomic configuration snapshot per lookup.
 public struct RuleEngine: Sendable {
     private let isAppPaused: @Sendable (String) -> Bool
-    private let rulesProvider: @Sendable () -> [AppRule]
+    private let configurationProvider: @Sendable () -> RuleConfiguration
 
-    /// - Parameter rulesProvider: Supplies the current rule list on demand,
-    ///   so the engine always sees the latest configuration without caching.
+    /// Compatibility entry point: an old array provider has system-only global defaults.
     public init(
         isAppPaused: @escaping @Sendable (String) -> Bool = { _ in false },
         rulesProvider: @escaping @Sendable () -> [AppRule]
     ) {
+        self.init(isAppPaused: isAppPaused, configurationProvider: {
+            RuleConfiguration(rules: rulesProvider())
+        })
+    }
+
+    public init(
+        isAppPaused: @escaping @Sendable (String) -> Bool = { _ in false },
+        configurationProvider: @escaping @Sendable () -> RuleConfiguration
+    ) {
         self.isAppPaused = isAppPaused
-        self.rulesProvider = rulesProvider
+        self.configurationProvider = configurationProvider
     }
 
-    /// Cheap check used to discard clicks from apps without any enabled rule.
+    /// Includes unlisted applications only when a global action actually requires interception.
     public func hasRule(forBundleIdentifier bundleIdentifier: String) -> Bool {
-        !isAppPaused(bundleIdentifier) && rulesProvider()
-            .contains { $0.bundleIdentifier == bundleIdentifier && $0.isEnabled }
+        guard !isAppPaused(bundleIdentifier) else { return false }
+        let configuration = configurationProvider()
+        if let rule = configuration.rules.first(where: { $0.bundleIdentifier == bundleIdentifier }) {
+            return rule.isEnabled
+        }
+        return configuration.globalDefaults.hasConfiguredActions
     }
 
+    /// Global button defaults never widen the configured application's hover scope.
     public func allowsHover(for bundleIdentifier: String, allWindows: Bool) -> Bool {
         guard !isAppPaused(bundleIdentifier) else { return false }
-        let rule = rulesProvider().first { $0.bundleIdentifier == bundleIdentifier }
+        let rule = configurationProvider().rules.first { $0.bundleIdentifier == bundleIdentifier }
         return (rule?.isHoverEnabled ?? true) && (allWindows || rule != nil)
     }
 
-    /// Returns the remapped action for a button click of the given variant,
-    /// or `nil` to pass the click through to the system.
+    /// nil passes through; ButtonAction.none is a configured intercepted no-op.
     public func action(
         forBundleIdentifier bundleIdentifier: String,
         button: TrafficButton,
         variant: ClickVariant = .left
     ) -> ButtonAction? {
-        guard !isAppPaused(bundleIdentifier),
-              let rule = rulesProvider().first(where: {
-                  $0.bundleIdentifier == bundleIdentifier && $0.isEnabled
-              })
-        else { return nil }
-
-        return rule.action(for: button, variant: variant)
+        guard !isAppPaused(bundleIdentifier) else { return nil }
+        let configuration = configurationProvider()
+        guard let rule = configuration.rules.first(where: { $0.bundleIdentifier == bundleIdentifier }) else {
+            return configuration.globalDefaults.action(for: button, variant: variant)
+        }
+        // A disabled exception suppresses defaults too, rather than falling through to a global action.
+        guard rule.isEnabled else { return nil }
+        switch rule.binding(for: button, variant: variant) {
+        case .inherit: return configuration.globalDefaults.action(for: button, variant: variant)
+        case .system: return nil
+        case let .action(action): return action
+        }
     }
 }

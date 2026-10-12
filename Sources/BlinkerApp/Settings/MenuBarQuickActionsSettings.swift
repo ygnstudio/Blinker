@@ -11,40 +11,62 @@ struct MenuBarQuickActionsSettings: View {
 
     var body: some View {
         Section {
-            Toggle("麦克风静音", isOn: binding(\.showsQuickActionMicMute))
-            Toggle("显示器清洁模式", isOn: binding(\.showsQuickActionDisplayCleaning))
-            Toggle("键盘清洁模式", isOn: binding(\.showsQuickActionKeyboardCleaning))
-            Toggle("清空回收站", isOn: binding(\.showsQuickActionEmptyTrash))
-            Toggle("保持唤醒", isOn: binding(\.showsQuickActionKeepAwake))
-            Toggle("隐藏桌面图标", isOn: binding(\.showsQuickActionDesktopIcons))
-            Toggle("显示隐藏文件", isOn: binding(\.showsQuickActionHiddenFiles))
-            Toggle("显示扩展名", isOn: binding(\.showsQuickActionShowExtensions))
-            Toggle("低电量模式", isOn: binding(\.showsQuickActionLowPowerMode))
-            Toggle("屏幕保护", isOn: binding(\.showsQuickActionScreenSaver))
-            Toggle("关闭显示器", isOn: binding(\.showsQuickActionDisplaySleep))
-            Toggle("锁定屏幕", isOn: binding(\.showsQuickActionLockScreen))
-            Toggle("深色模式", isOn: binding(\.showsQuickActionDarkMode))
-            Toggle("分辨率", isOn: binding(\.showsQuickActionResolution))
-            Toggle("连接蓝牙耳机", isOn: binding(\.showsQuickActionBluetoothConnect))
+            Toggle("显示「麦克风静音」", isOn: binding(\.showsQuickActionMicMute))
+            Toggle("显示「保持唤醒」", isOn: binding(\.showsQuickActionKeepAwake))
+            Toggle("显示「低电量模式」", isOn: binding(\.showsQuickActionLowPowerMode))
+            Toggle("显示「连接蓝牙耳机」", isOn: binding(\.showsQuickActionBluetoothConnect))
         } header: {
-            Text("面板显示")
+            Text("声音与电源")
         } footer: {
-            Text("显示器清洁以全屏黑窗覆盖所有屏幕，无需权限。键盘清洁通过系统级事件拦截锁定键盘与媒体键，需辅助功能与输入监控权限；权限不足时会先引导授权。")
-            Text("清空回收站经访达进行，删除前需二次确认；首次使用需允许 Blinker 控制访达。")
-            Text("保持唤醒仅阻止系统自动睡眠，不影响合盖与电源策略。访达三项开关写入后重启访达生效，桌面会短暂重绘；系统缺少锁屏入口时该行自动隐藏。")
-            Text("低电量模式经系统电源管理写入，首次使用需在登录项中一次性允许后台组件；该组件只执行固定的电源指令，不接收其他命令。")
-            Text("深色模式经系统事件写入，首次使用需允许 Blinker 控制系统事件。分辨率为每台已接显示器各出一行，选择立即生效；镜像输出只显示主屏一行。")
+            Text("这里只选择面板中显示的操作，不会改变系统状态。")
+        }
+        Section {
+            Toggle("显示「深色模式」", isOn: binding(\.showsQuickActionDarkMode))
+            Toggle("显示「显示模式」", isOn: binding(\.showsQuickActionResolution))
+            Toggle("显示「屏幕保护」", isOn: binding(\.showsQuickActionScreenSaver))
+            Toggle("显示「关闭显示器」", isOn: binding(\.showsQuickActionDisplaySleep))
+            Toggle("显示「锁定屏幕」", isOn: binding(\.showsQuickActionLockScreen))
+        } header: {
+            Text("显示与锁屏")
+        } footer: {
+            Text("前往快速操作面板执行这些操作。")
+        }
+        Section {
+            Toggle("显示「显示桌面 / 恢复窗口」", isOn: binding(\.showsQuickActionShowDesktop))
+            Toggle("显示「隐藏桌面图标」", isOn: binding(\.showsQuickActionDesktopIcons))
+            Toggle("显示「显示隐藏文件」", isOn: binding(\.showsQuickActionHiddenFiles))
+            Toggle("显示「显示扩展名」", isOn: binding(\.showsQuickActionShowExtensions))
+            Toggle("显示「清空回收站」", isOn: binding(\.showsQuickActionEmptyTrash))
+        } header: {
+            Text("访达与文件")
+        } footer: {
+            Text("这些开关只控制入口是否显示。清空回收站仍需在面板中确认。")
+        }
+        Section {
+            Toggle("显示「显示器清洁模式」", isOn: binding(\.showsQuickActionDisplayCleaning))
+            Toggle("显示「键盘清洁模式」", isOn: binding(\.showsQuickActionKeyboardCleaning))
+        } header: {
+            Text("设备清洁")
+        } footer: {
+            Text("开启后显示清洁入口，使用时会检查所需权限。")
         }
         bluetoothDeviceSection
         Section {
             ForEach(0 ..< 3, id: \.self) { index in
-                TextField("快捷指令 \(index + 1)", text: slotBinding(index))
-                    .onSubmit(commitSlots)
+                LabeledContent {
+                    TextField("快捷指令 \(index + 1)", text: slotBinding(index))
+                        .textFieldStyle(.roundedBorder)
+                        .labelsHidden()
+                        .frame(maxWidth: 260)
+                        .onSubmit(commitSlots)
+                } label: {
+                    Text("快捷指令 \(index + 1)")
+                }
             }
         } header: {
             Text("快捷指令")
         } footer: {
-            Text("名称需与「快捷指令」App 中的一致；留空的槽位不出现在面板。回车保存。")
+            Text("名称需与「快捷指令」App 中的一致。输入自动保存，留空不显示。")
         }
         .onAppear(perform: seedDrafts)
     }
@@ -57,7 +79,7 @@ struct MenuBarQuickActionsSettings: View {
         let devices = (monitor.snapshot.bluetoothDevices ?? [])
             .filter { $0.kind == .audio && !$0.isUnpairedGhost }
         Section {
-            Picker("目标设备", selection: deviceAddressBinding) {
+            EclipsePicker("目标设备", selection: deviceAddressBinding) {
                 Text("未选择").tag("")
                 ForEach(devices) { device in
                     Text(device.name).tag(device.id)
@@ -103,7 +125,10 @@ struct MenuBarQuickActionsSettings: View {
 
     private func slotBinding(_ index: Int) -> Binding<String> {
         Binding(get: { slotDrafts[index] },
-                set: { slotDrafts[index] = $0 })
+                set: {
+                    slotDrafts[index] = $0
+                    commitSlots()
+                })
     }
 
     private func commitSlots() {

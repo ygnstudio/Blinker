@@ -1,0 +1,286 @@
+<div id="blinker-prototype" aria-label="Blinker 从零重构方案原型">
+  <style>
+    #blinker-prototype{--b-bg:light-dark(#f6f6f7,#242426);--b-side:light-dark(#ededf0,#2c2c2f);--b-form:light-dark(#fff,#333336);--b-text:light-dark(#242427,#f2f2f5);--b-secondary:light-dark(#62626b,#b7b7bf);--b-line:light-dark(#d9d9df,#4b4b51);--b-blue:light-dark(#0868d8,#69aaff);--b-select:light-dark(#dbeaff,#334c6d);--b-hover:light-dark(#e5e5e9,#3b3b40);--b-green:light-dark(#247541,#8edca5);--b-warn:light-dark(#935800,#ffd18a);color:var(--b-text);font:13px/1.5 -apple-system,BlinkMacSystemFont,"SF Pro Text","PingFang SC",sans-serif;width:100%;color-scheme:light dark}
+    #blinker-prototype *{box-sizing:border-box}
+    #blinker-prototype [hidden]{display:none!important}
+    #blinker-prototype button,#blinker-prototype input,#blinker-prototype select{font:inherit;color:inherit}
+    #blinker-prototype button{border:1px solid var(--b-line);border-radius:6px;background:var(--b-form);padding:4px 11px;min-height:28px}
+    #blinker-prototype button:hover{background:var(--b-hover)}
+    #blinker-prototype button:disabled{opacity:.45}
+    #blinker-prototype button.primary{background:var(--b-blue);color:light-dark(#fff,#162437);border-color:transparent}
+    #blinker-prototype input[type=checkbox]{accent-color:var(--b-blue);width:16px;height:16px;flex-shrink:0}
+    #blinker-prototype input[type=range]{accent-color:var(--b-blue);max-width:150px;width:100%}
+    #blinker-prototype select{background:var(--b-form);border:1px solid var(--b-line);padding:3px 22px 3px 8px;border-radius:6px;max-width:100%;min-height:28px}
+    #blinker-prototype .review-nav{display:flex;gap:6px;flex-wrap:wrap;margin:0 100px 14px 0;align-items:center}
+    #blinker-prototype .review-nav button{background:transparent;border-color:transparent}
+    #blinker-prototype .review-nav button[aria-pressed=true]{background:var(--b-select);color:var(--b-blue)}
+    #blinker-prototype .window{background:var(--b-bg);border:1px solid var(--b-line);border-radius:14px;overflow:hidden;position:relative;min-height:600px;box-shadow:0 8px 25px #00000012}
+    #blinker-prototype .titlebar{height:58px;display:flex;align-items:center;gap:15px;padding:0 18px;border-bottom:1px solid var(--b-line)}
+    #blinker-prototype .lights{display:flex;gap:7px;min-width:65px}
+    #blinker-prototype .lights span{width:12px;height:12px;border-radius:50%;background:#ff6058}
+    #blinker-prototype .lights span:nth-child(2){background:#febc2e}#blinker-prototype .lights span:nth-child(3){background:#28c840}
+    #blinker-prototype .titlebar strong{font-weight:600;flex:1;font-size:14px}
+    #blinker-prototype .titlebar .toolbar{display:flex;gap:7px;align-items:center}
+    #blinker-prototype .toolbar button{display:flex;align-items:center;gap:5px}
+    #blinker-prototype .body{display:grid;grid-template-columns:205px minmax(0,1fr);min-height:540px}
+    #blinker-prototype .sidebar{background:var(--b-side);padding:15px 10px;border-right:1px solid var(--b-line);display:flex;flex-direction:column;gap:4px}
+    #blinker-prototype .search{border:1px solid var(--b-line);background:var(--b-form);border-radius:7px;padding:6px 9px;width:100%;margin-bottom:13px;min-width:0}
+    #blinker-prototype .sidebar button{text-align:left;display:flex;align-items:center;gap:9px;border-color:transparent;background:transparent;min-height:34px;padding:7px 10px}
+    #blinker-prototype .sidebar button[aria-pressed=true]{background:var(--b-select);color:var(--b-blue)}
+    #blinker-prototype .sidebar button:hover{background:var(--b-hover)}
+    #blinker-prototype .sidebar .group-label{padding:10px 10px 3px;color:var(--b-secondary);font-size:11px;font-weight:600}
+    #blinker-prototype .sidebar .side-bottom{margin-top:auto;padding:20px 10px 4px;color:var(--b-secondary);font-size:11px}
+    #blinker-prototype .app-icon{display:inline-grid;place-items:center;width:23px;height:23px;border-radius:6px;background:var(--b-form);border:1px solid var(--b-line);font-size:12px;flex-shrink:0;color:var(--b-blue)}
+    #blinker-prototype .content{padding:25px 28px 20px;min-width:0}
+    #blinker-prototype h2{font-size:20px;line-height:1.3;margin:0 0 6px;font-weight:600}
+    #blinker-prototype h3{font-size:13px;font-weight:600;margin:22px 0 8px}
+    #blinker-prototype p{margin:5px 0 12px}
+    #blinker-prototype .secondary{color:var(--b-secondary);font-size:12px}
+    #blinker-prototype .app-heading{display:flex;align-items:center;gap:12px;margin-bottom:18px}
+    #blinker-prototype .app-heading .app-icon{width:40px;height:40px;font-size:20px;border-radius:10px}
+    #blinker-prototype .app-heading p{margin:0}
+    #blinker-prototype .form{background:var(--b-form);border:1px solid var(--b-line);border-radius:9px;padding:0 13px;margin-bottom:8px}
+    #blinker-prototype .row{display:flex;align-items:center;justify-content:space-between;gap:18px;min-height:43px;padding:9px 0;border-bottom:1px solid var(--b-line)}
+    #blinker-prototype .row:last-child{border-bottom:0}
+    #blinker-prototype .row>span:first-child,#blinker-prototype .row>div:first-child{flex:1;min-width:0}
+    #blinker-prototype .row label{display:flex;align-items:center;gap:9px}
+    #blinker-prototype .row p{margin:2px 0 0}
+    #blinker-prototype .row button{white-space:nowrap}
+    #blinker-prototype .dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:8px;background:#ff6058}
+    #blinker-prototype .dot.yellow{background:#e6ac20}#blinker-prototype .dot.green{background:#28ad4c}
+    #blinker-prototype details{margin-top:18px}
+    #blinker-prototype summary{color:var(--b-secondary);padding:4px 0;cursor:default}
+    #blinker-prototype .footer{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:20px;color:var(--b-secondary);font-size:11px}
+    #blinker-prototype .ok{color:var(--b-green)}#blinker-prototype .warning{color:var(--b-warn)}
+    #blinker-prototype .note{border-left:3px solid var(--b-blue);padding:6px 11px;margin:14px 0;color:var(--b-secondary);font-size:12px}
+    #blinker-prototype .sheet-layer{position:absolute;inset:0;background:#00000025;z-index:5;padding:72px 20px 20px;display:flex;align-items:flex-start;justify-content:center}
+    #blinker-prototype .sheet{background:var(--b-bg);border:1px solid var(--b-line);border-radius:12px;box-shadow:0 15px 45px #00000030;padding:22px;width:430px;max-width:100%}
+    #blinker-prototype .sheet h2{font-size:17px;margin-bottom:16px}
+    #blinker-prototype .sheet-list{padding:4px;background:var(--b-form);border:1px solid var(--b-line);border-radius:7px;min-height:180px}
+    #blinker-prototype .sheet-list button{width:100%;display:flex;gap:9px;align-items:center;background:transparent;border:0;text-align:left;padding:8px}
+    #blinker-prototype .sheet-list button[aria-pressed=true]{background:var(--b-select)}
+    #blinker-prototype .sheet-list small{margin-left:auto;color:var(--b-secondary)}
+    #blinker-prototype .sheet-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:18px}
+    #blinker-prototype .empty{display:flex;align-items:center;justify-content:center;flex-direction:column;min-height:390px;text-align:center}
+    #blinker-prototype .status-stage{padding:20px 16px;display:flex;justify-content:center;min-height:598px;background:var(--b-side);border-radius:14px;border:1px solid var(--b-line)}
+    #blinker-prototype .popover{width:370px;max-width:100%;border:1px solid var(--b-line);border-radius:15px;background:var(--b-bg);padding:17px;align-self:flex-start;box-shadow:0 10px 30px #00000015}
+    #blinker-prototype .panel-heading{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+    #blinker-prototype .segmented{display:flex;padding:2px;background:var(--b-side);border-radius:7px;margin-bottom:14px}
+    #blinker-prototype .segmented button{flex:1;background:transparent;border-color:transparent;padding:3px 8px}
+    #blinker-prototype .segmented button[aria-pressed=true]{background:var(--b-form);border-color:var(--b-line)}
+    #blinker-prototype .popover .form{padding:0 11px}
+    #blinker-prototype .popover .row{gap:10px}
+    #blinker-prototype .popover h3{margin-top:16px}
+    #blinker-prototype .big-value{font-size:20px;font-weight:500}
+    #blinker-prototype .switcher-stage{background:var(--b-side);border:1px solid var(--b-line);border-radius:14px;min-height:598px;display:flex;align-items:center;justify-content:center;padding:24px}
+    #blinker-prototype .switcher{width:100%;background:var(--b-bg);border:1px solid var(--b-line);border-radius:14px;padding:20px}
+    #blinker-prototype .window-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin:18px 0}
+    #blinker-prototype .window-grid button{padding:7px;text-align:left;min-width:0;border-radius:9px;border:2px solid transparent;background:transparent}
+    #blinker-prototype .window-grid button[aria-pressed=true]{border-color:var(--b-blue);background:var(--b-select)}
+    #blinker-prototype .thumb{background:var(--b-form);border:1px solid var(--b-line);border-radius:5px;height:130px;padding:12px;display:flex;gap:10px;margin-bottom:9px;overflow:hidden}
+    #blinker-prototype .thumb .rail{width:25%;background:var(--b-side);border-radius:3px}
+    #blinker-prototype .thumb .paper{flex:1;padding-top:9px}
+    #blinker-prototype .thumb .paper div{height:5px;background:var(--b-line);border-radius:3px;margin:8px 0}
+    #blinker-prototype .thumb .paper div:nth-child(2){width:67%}
+    #blinker-prototype .thumb.no-preview{align-items:center;justify-content:center;flex-direction:column;color:var(--b-secondary);font-size:12px}
+    #blinker-prototype .window-label{display:flex;align-items:center;gap:7px;margin-top:4px}
+    #blinker-prototype .window-label span:last-child{overflow-wrap:anywhere}
+    #blinker-prototype .toast{margin-top:12px;min-height:20px;font-size:12px;color:var(--b-secondary)}
+    #blinker-prototype kbd{font:12px -apple-system,BlinkMacSystemFont,sans-serif;padding:2px 5px;background:var(--b-side);border:1px solid var(--b-line);border-radius:4px}
+    @media(max-width:750px){#blinker-prototype .body{grid-template-columns:165px minmax(0,1fr)}#blinker-prototype .content{padding:22px 18px}#blinker-prototype .titlebar{padding:0 13px;gap:10px}#blinker-prototype .row{gap:10px}#blinker-prototype .toolbar .toolbar-label{display:none}}
+    @media(max-width:560px){#blinker-prototype .review-nav{margin-right:0}#blinker-prototype .body{display:block}#blinker-prototype .sidebar{border-right:0;border-bottom:1px solid var(--b-line);display:grid;grid-template-columns:repeat(2,minmax(0,1fr));padding:10px;gap:3px}#blinker-prototype .sidebar .search,#blinker-prototype .group-label{grid-column:1/-1}#blinker-prototype .sidebar .side-bottom{display:none}#blinker-prototype .content{padding:20px 15px}#blinker-prototype .lights{min-width:48px;gap:5px}#blinker-prototype .lights span{width:10px;height:10px}#blinker-prototype .titlebar{height:auto;min-height:58px;flex-wrap:wrap;padding:12px}#blinker-prototype .titlebar .toolbar{margin-left:auto}#blinker-prototype .row{flex-wrap:wrap}#blinker-prototype .window-grid{grid-template-columns:1fr}#blinker-prototype .thumb{height:100px}#blinker-prototype .switcher-stage{padding:14px}#blinker-prototype .footer{flex-wrap:wrap}#blinker-prototype .sheet-layer{padding:62px 10px 20px}}
+    @media(pointer:coarse){#blinker-prototype button,#blinker-prototype .sidebar button,#blinker-prototype select{min-height:44px}#blinker-prototype input[type=search]{font-size:16px;min-height:44px}}
+  </style>
+  <p class="secondary">从零重构 · 窗口工具方案 · 示例数据 · 顶部切换评审画面</p>
+  <nav class="review-nav" aria-label="原型画面">
+    <button type="button" data-scene="rules" aria-pressed="true">窗口行为</button>
+    <button type="button" data-scene="hover" aria-pressed="false">悬停按钮</button>
+    <button type="button" data-scene="settings" aria-pressed="false">设置</button>
+    <button type="button" data-scene="permissions" aria-pressed="false">权限与降级</button>
+    <button type="button" data-scene="panel" aria-pressed="false">菜单栏</button>
+    <button type="button" data-scene="switcher" aria-pressed="false">窗口切换</button>
+  </nav>
+  <div class="window" id="b-main-window">
+    <header class="titlebar">
+      <div class="lights" aria-hidden="true"><span></span><span></span><span></span></div>
+      <strong id="b-window-title">窗口行为</strong>
+      <div class="toolbar" id="b-rules-toolbar">
+        <button type="button" id="b-add"><i data-lucide="plus" aria-hidden="true"></i><span>添加应用</span></button>
+        <button type="button" id="b-diagnose" aria-label="检查所选应用的兼容性"><i data-lucide="shield-check" aria-hidden="true"></i></button>
+        <button type="button" data-scene="settings" aria-label="打开设置"><i data-lucide="settings-2" aria-hidden="true"></i></button>
+      </div>
+      <div class="toolbar" id="b-settings-toolbar" hidden><button type="button" data-scene="panel"><i data-lucide="panel-top" aria-hidden="true"></i><span class="toolbar-label">菜单栏</span></button></div>
+    </header>
+    <div class="body" id="b-rules-body">
+      <aside class="sidebar" aria-label="应用规则列表">
+        <input type="search" class="search" id="b-rule-search" placeholder="搜索应用" aria-label="搜索应用规则">
+        <button type="button" data-app="Default" aria-pressed="false"><span class="app-icon">◎</span>默认行为</button>
+        <div class="group-label">按应用自定义</div>
+        <button type="button" data-app="Safari" aria-pressed="true"><span class="app-icon">S</span>Safari</button>
+        <button type="button" data-app="Finder" aria-pressed="false"><span class="app-icon">F</span>访达</button>
+        <button type="button" data-app="Notes" aria-pressed="false"><span class="app-icon">N</span>备忘录</button>
+        <button type="button" data-app="Xcode" aria-pressed="false" hidden><span class="app-icon">X</span>Xcode</button>
+        <span id="b-no-results" class="secondary" hidden>没有匹配的应用</span>
+        <div class="side-bottom">没有自定义的应用使用默认行为</div>
+      </aside>
+      <main class="content" id="b-rule-detail">
+        <div class="app-heading"><span class="app-icon" id="b-app-icon">S</span><div><h2 id="b-app-name">Safari</h2><p class="secondary" id="b-app-id">com.apple.Safari</p></div></div>
+        <div class="form">
+          <div class="row"><span id="b-rule-mode-label">使用此应用的自定义动作</span><input type="checkbox" checked aria-label="使用自定义动作" id="b-custom-rule"></div>
+          <div class="row"><span id="b-hover-rule-label">为此应用显示悬停按钮</span><input type="checkbox" checked aria-label="显示悬停放大按钮"></div>
+        </div>
+        <h3>单击按钮时</h3>
+        <div class="form">
+          <label class="row"><span><span class="dot"></span>关闭按钮</span><select aria-label="关闭按钮动作"><option>保留系统行为</option><option>隐藏应用</option><option>最小化窗口</option><option>退出应用</option></select></label>
+          <label class="row"><span><span class="dot yellow"></span>最小化按钮</span><select aria-label="最小化按钮动作"><option>保留系统行为</option><option>隐藏应用</option><option>最大化窗口</option></select></label>
+          <label class="row"><span><span class="dot green"></span>缩放按钮</span><select aria-label="缩放按钮动作"><option>最大化窗口</option><option>保留系统行为</option><option>左半屏</option><option>右半屏</option></select></label>
+        </div>
+        <p class="secondary">未配置的修饰键点击交由系统处理；长按可选择跟随普通单击。</p>
+        <details id="b-advanced"><summary>更多点击方式与例外</summary><div class="form"><label class="row"><span>⌥ 单击关闭按钮</span><select aria-label="Option 单击关闭按钮"><option>隐藏应用</option><option>保留系统行为</option></select></label><label class="row"><span>长按缩放按钮</span><select aria-label="长按缩放按钮"><option>跟随普通单击</option><option>居中窗口</option></select></label><div class="row"><span>全屏窗口</span><span class="secondary">保留系统行为</span></div></div></details>
+        <div class="footer"><span id="b-rule-saved" aria-live="polite">本次原型内保存 · 可撤销</span><span><button type="button" id="b-reset-rule">恢复继承</button> <button type="button" id="b-undo" disabled>撤销修改</button></span></div>
+      </main>
+    </div>
+    <div class="body" id="b-settings-body" hidden>
+      <aside class="sidebar" aria-label="设置分类">
+        <div class="group-label">运行偏好</div>
+        <button type="button" data-page="general" aria-pressed="false"><i data-lucide="settings" aria-hidden="true"></i>通用</button>
+        <button type="button" data-page="windows" aria-pressed="false"><i data-lucide="panels-top-left" aria-hidden="true"></i>标题栏与布局</button>
+        <button type="button" data-page="preview" aria-pressed="true"><i data-lucide="gallery-horizontal-end" aria-hidden="true"></i>预览与切换</button>
+        <button type="button" data-page="shortcuts" aria-pressed="false"><i data-lucide="keyboard" aria-hidden="true"></i>快捷键</button>
+        <button type="button" data-page="permissions" aria-pressed="false"><i data-lucide="hand" aria-hidden="true"></i>权限与诊断</button>
+        <div class="side-bottom">设置独立窗口 · ⌘,</div>
+      </aside>
+      <main class="content" id="b-settings-content"></main>
+    </div>
+    <div class="sheet-layer" id="b-add-sheet" hidden>
+      <section class="sheet" role="dialog" aria-modal="true" aria-labelledby="b-add-title">
+        <h2 id="b-add-title">添加应用</h2>
+        <input type="search" class="search" id="b-app-search" placeholder="搜索名称" aria-label="搜索可添加的应用">
+        <div class="sheet-list" id="b-sheet-list">
+          <button type="button" data-candidate="Xcode" aria-pressed="true"><span class="app-icon">X</span>Xcode</button>
+          <button type="button" data-candidate="Safari" aria-pressed="false"><span class="app-icon">S</span>Safari<small>已添加</small></button>
+          <button type="button" data-candidate="Finder" aria-pressed="false"><span class="app-icon">F</span>访达<small>已添加</small></button>
+          <button type="button" data-candidate="Notes" aria-pressed="false"><span class="app-icon">N</span>备忘录<small>已添加</small></button>
+          <p id="b-candidate-empty" class="secondary" hidden>没有匹配的应用</p>
+        </div>
+        <div class="sheet-actions"><button type="button" id="b-cancel-add">取消</button><button type="button" class="primary" id="b-confirm-add">添加</button></div>
+      </section>
+    </div>
+  </div>
+  <section class="status-stage" id="b-panel-stage" hidden aria-label="菜单栏操作菜单">
+    <div class="popover">
+      <div class="panel-heading"><strong>Blinker</strong><span class="ok" id="b-panel-state">运行中</span></div>
+      <div class="form">
+        <div class="row"><span>窗口行为…</span><button type="button" data-scene="rules">⌘1</button></div>
+        <div class="row"><span>设置…</span><button type="button" data-scene="settings">⌘,</button></div>
+      </div>
+      <div class="form">
+        <div class="row"><span>显示桌面</span><button type="button" data-sim="已演示显示桌面；再次执行只恢复本次收起的窗口">⌃⌥D</button></div>
+        <div class="row"><span>暂停增强</span><button type="button" id="b-pause">暂停 15 分钟</button></div>
+      </div>
+      <div class="form">
+        <div class="row"><span>权限与诊断…</span><button type="button" data-scene="permissions">打开</button></div>
+        <div class="row"><span>退出 Blinker</span><button type="button" data-sim="正式应用退出时释放输入监听和浮层；此处不退出软件">⌘Q</button></div>
+      </div>
+      <div class="toast" id="b-panel-feedback" aria-live="polite">原生实施使用 NSMenu · 示例操作 · 不读取或改变系统状态</div>
+    </div>
+  </section>
+  <section class="status-stage" id="b-hover-stage" hidden aria-label="标题栏悬停按钮原型">
+    <div style="width:100%;max-width:680px">
+      <div class="panel-heading"><strong>标题栏悬停</strong><label class="secondary"><input type="checkbox" id="b-hover-ready"> 演示点击保护已结束</label></div>
+      <div class="window" style="min-height:345px">
+        <header class="titlebar"><div class="lights" aria-hidden="true"><span></span><span></span><span></span></div><strong>项目文档 — Safari</strong></header>
+        <div style="padding:18px">
+          <div class="popover" style="width:fit-content;padding:9px;display:flex;gap:7px;margin-bottom:25px" aria-label="不激活目标窗口的悬停操作">
+            <button type="button" data-hover-action="关闭窗口" disabled><span class="dot"></span>关闭</button>
+            <button type="button" data-hover-action="最小化窗口" disabled><span class="dot yellow"></span>最小化</button>
+            <button type="button" data-hover-action="最大化窗口" disabled><span class="dot green"></span>最大化</button>
+          </div>
+          <div class="secondary" id="b-hover-feedback" aria-live="polite">正在保护点击 · 不接收误触</div>
+          <div style="padding:40px 15px;color:var(--b-secondary)">目标应用内容</div>
+        </div>
+      </div>
+      <p class="secondary" style="margin-top:16px">固定锚定原窗口红绿灯 · 移出取消 · 不抢键盘焦点</p>
+    </div>
+  </section>
+  <section class="switcher-stage" id="b-switcher-stage" hidden aria-label="窗口切换预览">
+    <div class="switcher">
+      <div class="panel-heading"><strong>所有窗口</strong><label class="secondary"><input type="checkbox" id="b-thumbnail-permission" checked> 演示缩略图可用</label></div>
+      <div class="window-grid" id="b-window-grid">
+        <button type="button" data-window="Safari · 项目文档" aria-pressed="true"><div class="thumb"><div class="rail"></div><div class="paper"><div></div><div></div><div></div><div></div></div></div><div class="window-label"><span class="app-icon">S</span><span>Safari · 项目文档</span></div></button>
+        <button type="button" data-window="访达 · 项目文件" aria-pressed="false"><div class="thumb"><div class="rail"></div><div class="paper"><div></div><div></div><div></div></div></div><div class="window-label"><span class="app-icon">F</span><span>访达 · 项目文件</span></div></button>
+        <button type="button" data-window="备忘录 · 本周计划" aria-pressed="false"><div class="thumb"><div class="rail"></div><div class="paper"><div></div><div></div><div></div><div></div></div></div><div class="window-label"><span class="app-icon">N</span><span>备忘录 · 本周计划</span></div></button>
+      </div>
+      <div class="footer"><span><kbd>←</kbd> <kbd>→</kbd> 选择　<kbd>Return</kbd> 切换　<kbd>Esc</kbd> 取消</span><span id="b-window-count">1 / 3</span></div>
+      <div class="toast" id="b-switcher-feedback" aria-live="polite">示意缩略图 · 原生实现保持目标应用焦点，松开 Option 完成切换</div>
+    </div>
+  </section>
+  <script>
+    (() => {
+      const root=document.getElementById('blinker-prototype');
+      const q=s=>root.querySelector(s), qa=s=>[...root.querySelectorAll(s)];
+      const appNames={Default:'默认行为',Safari:'Safari',Finder:'访达',Notes:'备忘录',Xcode:'Xcode'};
+      const appIDs={Default:'适用于没有自定义规则的应用',Safari:'com.apple.Safari',Finder:'com.apple.finder',Notes:'com.apple.Notes',Xcode:'com.apple.dt.Xcode'};
+      let scene='rules',page='preview',selected='Default',candidate='Xcode',added=false,windowIndex=0,lastFocus=null;
+      const settingValues={};
+      const pageNames={general:'通用',windows:'标题栏与布局',preview:'预览与切换',shortcuts:'快捷键',status:'状态与菜单栏',actions:'快速操作',effects:'屏幕效果',permissions:'权限与诊断'};
+      const icons=()=>{if(globalThis.lucide)lucide.createIcons({attrs:{width:16,height:16}})};
+      function remember(){if(window.openai?.setWidgetState)window.openai.setWidgetState({modelContent:{prototype:'Blinker 重构',scene,page,selectedApp:selected},privateContent:{added}}).catch(()=>{});}
+      const row=(label,control,help='')=>`<div class="row"><div>${label}${help?`<p class="secondary">${help}</p>`:''}</div>${control}</div>`;
+      const toggle=(label,on=true)=>`<input type="checkbox" ${on?'checked':''} aria-label="${label}">`;
+      const select=(label,values)=>`<select aria-label="${label}">${values.map(v=>`<option>${v}</option>`).join('')}</select>`;
+      const group=rows=>`<div class="form">${rows}</div>`;
+      const sub=(name,key)=>`<button type="button" data-sub="${key}">${name} ›</button>`;
+      function renderPage(){
+        let html='';
+        if(page==='general')html=`<h2>通用</h2><h3>运行</h3>${group(row('窗口增强',toggle('窗口增强'),'按钮规则、窗口切换、布局与快捷键')+row('当前状态','<span class="ok">运行中</span>'))}<p class="secondary">暂停时，标题栏、Dock 与快捷键交回系统；规则保持不变。</p><h3>外观与启动</h3>${group(row('外观',select('外观',['跟随系统','浅色','深色']))+row('语言',select('语言',['跟随系统','简体中文','English']))+row('登录时启动',toggle('登录时启动',false)))}<h3>帮助</h3>${group(row('使用指南','<button type="button" data-sim="演示入口：正式应用在浏览器打开使用指南">打开…</button>')+row('版本','<span class="secondary">重构规划预览</span>'))}`;
+        if(page==='preview')html=`<h2>预览与切换</h2><p class="secondary">更快找到窗口，保留熟悉的键盘操作。</p><h3>切换方式</h3>${group(row('Option–Tab 切换窗口',toggle('Option–Tab 切换窗口'))+row('悬停 Dock 时预览',toggle('悬停 Dock 时预览',false))+row('Dock 预览延迟',select('Dock 预览延迟',['0.3 秒','0.5 秒','0.8 秒'])))}<h3>显示内容</h3>${group(row('窗口范围',select('窗口范围',['所有显示器','当前显示器']))+row('显示最小化窗口',toggle('显示最小化窗口'))+row('列出支持的标签页',toggle('列出支持的标签页',false)))}<h3>缩略图</h3>${group(row('预览大小',select('预览大小',['标准','小','大']),'只调整缩略图尺寸，文字和按钮保持系统大小。')+row('屏幕录制权限','<span class="ok">已允许（演示）</span>'))}<div class="footer"><span>辅助功能已允许时，缺少录屏不影响标题切换。</span><button type="button" data-scene="switcher">预览效果</button></div>`;
+        if(page==='windows')html=`<h2>标题栏与布局</h2><h3>悬停按钮</h3>${group(row('放大红绿灯按钮',toggle('放大红绿灯按钮'))+row('按钮大小',select('按钮大小',['标准','大','特大']))+row('出现延迟',select('出现延迟',['0.2 秒','0.4 秒','0.6 秒']))+row('点击保护',toggle('点击保护')))}<h3>布局与桌面</h3>${group(row('边缘平铺','<span class="secondary">由 macOS 管理</span>')+row('再次点按前台应用 Dock 图标',select('Dock 点击动作',['保留系统行为','收起或恢复窗口'])))}<div class="footer"><span>按钮动作在应用规则中设置。</span><button type="button" data-scene="hover">预览悬停按钮…</button></div>`;
+        if(page==='shortcuts')html=`<h2>快捷键</h2><p class="secondary">在一个位置录制、检查冲突和恢复快捷键。</p><h3>桌面与窗口</h3>${group(row('显示桌面','<button type="button" data-record>⌃ ⌥ D</button>')+row('左半屏','<button type="button" data-record>⌃ ⌥ ←</button>')+row('右半屏','<button type="button" data-record>⌃ ⌥ →</button>')+row('居中窗口','<button type="button" data-record>录制…</button>'))}<h3>窗口切换</h3>${group(row('Option–Tab','<button type="button" data-page-link="preview">前往预览与切换…</button>','由切换方式统一管理。'))}<div class="note">录制时显示冲突原因；取消保留原绑定。此原型仅展示录制状态。</div>`;
+        if(page==='permissions')html=`<h2>权限与诊断</h2><p class="secondary">按需要授权。拒绝可选权限仍能使用其他功能。</p><h3>窗口操作</h3>${group(row('辅助功能','<span class="ok">已允许（演示）</span>','窗口操作可用')+row('屏幕录制','<button type="button" data-sim="原生应用会打开屏幕录制设置；此处只演示入口">授权…</button>','未允许 · 窗口切换显示图标与标题'))}<div class="note">仅缺少屏幕录制时，仍可按图标和标题切换。辅助功能未允许时暂停窗口增强，并保持系统输入可用。</div><h3>应用兼容性</h3>${group(row(appNames[selected],'<button type="button" data-sim="检查结果示例：自绘按钮不受支持，保持原应用行为">检查…</button>','只检查所选应用的窗口能力。'))}<div class="footer"><span>诊断默认不包含窗口标题或屏幕内容。</span><button type="button" data-sim="诊断导出预览：版本、权限状态、错误原因；确认后才导出">导出诊断…</button></div>`;
+        q('#b-settings-content').innerHTML=html+'<div class="toast" id="b-settings-feedback" aria-live="polite"></div>';q('#b-window-title').textContent=pageNames[page];
+        qa('#b-settings-content input,#b-settings-content select').forEach(c=>{const key=page+':'+c.getAttribute('aria-label');if(key in settingValues){if(c.type==='checkbox')c.checked=settingValues[key];else c.value=settingValues[key];}});qa('[data-page]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.page===page));icons();
+      }
+      function showScene(next){scene=next;q('#b-main-window').hidden=!['rules','settings','permissions'].includes(scene);q('#b-panel-stage').hidden=scene!=='panel';q('#b-hover-stage').hidden=scene!=='hover';q('#b-switcher-stage').hidden=scene!=='switcher';const rule=scene==='rules';q('#b-rules-body').hidden=!rule;q('#b-rules-toolbar').hidden=!rule;q('#b-settings-body').hidden=rule;q('#b-settings-toolbar').hidden=rule;qa('.review-nav button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.scene===scene));if(rule)q('#b-window-title').textContent='窗口行为';else if(scene==='settings'||scene==='permissions'){if(scene==='permissions')page='permissions';renderPage();}remember();}
+      function selectApp(key){selected=key;qa('[data-app]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.app===key));q('#b-app-name').textContent=appNames[key];q('#b-app-id').textContent=appIDs[key];q('#b-app-icon').textContent=key==='Default'?'◎':key[0];q('#b-rule-mode-label').textContent=key==='Default'?'启用默认按钮动作':'使用此应用的自定义动作';q('#b-hover-rule-label').textContent=key==='Default'?'默认显示悬停按钮':'为此应用显示悬停按钮';loadRule();remember();}
+      function closeSheet(){q('#b-add-sheet').hidden=true;if(lastFocus)lastFocus.focus();}
+      function filterRules(){const term=q('#b-rule-search').value.toLowerCase();let count=0;qa('[data-app]').forEach(b=>{const available=b.dataset.app!=='Xcode'||added;b.hidden=!available||!`${b.dataset.app} ${appNames[b.dataset.app]}`.toLowerCase().includes(term);if(!b.hidden)count++;});q('#b-no-results').hidden=count>0;}
+      function selectWindow(i){windowIndex=(i+3)%3;qa('[data-window]').forEach((b,n)=>b.setAttribute('aria-pressed',n===windowIndex));q('#b-window-count').textContent=`${windowIndex+1} / 3`;}
+      function feedback(message){const target=scene==='panel'?q('#b-panel-feedback'):q('#b-settings-feedback');if(target)target.textContent=message;}
+      root.addEventListener('change',e=>{const c=e.target;if(c.closest('#b-settings-content')&&c.matches('input,select'))settingValues[page+':'+c.getAttribute('aria-label')]=c.type==='checkbox'?c.checked:c.value;});
+      root.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
+        if(b.dataset.scene){showScene(b.dataset.scene);return;}if(b.dataset.hoverAction){q('#b-hover-feedback').textContent='演示：'+b.dataset.hoverAction+'，仅在目标窗口身份仍有效时执行';return;}if(b.dataset.app){selectApp(b.dataset.app);return;}
+        if(b.dataset.page||b.dataset.pageLink){page=b.dataset.page||b.dataset.pageLink;showScene('settings');return;}
+        if(b.dataset.candidate){candidate=b.dataset.candidate;qa('[data-candidate]').forEach(x=>x.setAttribute('aria-pressed',x===b));q('#b-confirm-add').textContent=candidate==='Xcode'&&!added?'添加':'打开现有规则';return;}
+        if(b.id==='b-add'){lastFocus=b;q('#b-add-sheet').hidden=false;q('#b-app-search').focus();return;}
+        if(b.id==='b-cancel-add'){closeSheet();return;}
+        if(b.id==='b-confirm-add'){if(candidate==='Xcode')added=true;filterRules();selectApp(candidate);closeSheet();return;}
+        if(b.id==='b-diagnose'){showScene('permissions');return;}
+                        if(b.id==='b-pause'){const paused=b.textContent==='暂停 15 分钟';b.textContent=paused?'恢复窗口增强':'暂停 15 分钟';q('#b-panel-state').textContent=paused?'窗口增强已暂停 · 15 分钟后恢复':'窗口增强已开启';return;}
+        if(b.dataset.window){selectWindow(qa('[data-window]').indexOf(b));return;}
+        if(b.dataset.sim){feedback(b.dataset.sim);return;}
+        if(b.hasAttribute('data-record')){if(!b.dataset.beforeRecord)b.dataset.beforeRecord=b.textContent;b.textContent='按下快捷键…';feedback('录制状态示意；Esc 取消，不注册全局快捷键。');return;}
+        if(b.dataset.sub){const labels={battery:'电池',network:'网络',audio:'声音',bluetooth:'蓝牙',storage:'存储',performance:'性能',icon:'图标外观',workspace:'工作区（实验）'};const title=labels[b.dataset.sub];q('#b-window-title').textContent=title;q('#b-settings-content').innerHTML=`<button type="button" data-page-link="${b.dataset.sub==='workspace'?'windows':'status'}">‹ 返回</button><h2 style="margin-top:20px">${title}</h2>`+(b.dataset.sub==='workspace'?`<p class="secondary">匹配已有窗口，不恢复文稿或会话。</p>${group(row('启用实验工作区',toggle('启用实验工作区',false)))}<div class="empty" style="min-height:210px"><p>尚未保存工作区</p><button type="button" data-sim="保存流程：命名 → 预览已识别窗口 → 确认保存">保存当前布局…</button></div>`:group(row('在面板中显示',toggle('在面板中显示',b.dataset.sub!=='performance'))+row('更多显示选项',select('显示选项',['默认','自定义'])))+(b.dataset.sub==='network'?'<div class="note">公网 IP 查询默认关闭；开启前展示查询端点。</div>':''))+'<div class="toast" id="b-settings-feedback" aria-live="polite"></div>';return;}
+      });
+      const ruleControls=qa('#b-rule-detail select,#b-rule-detail input');
+      const readRule=()=>ruleControls.map(c=>c.type==='checkbox'?c.checked:c.value);
+      const initialRule=readRule();const rules=Object.fromEntries(Object.keys(appNames).map(k=>[k,{values:[...initialRule],undo:[]}]));
+      rules.Default.values[4]='保留系统行为';rules.Default.values[5]='保留系统行为';for(const key of ['Finder','Notes','Xcode'])for(let i=2;i<ruleControls.length;i++)rules[key].values[i]='继承默认';rules.Safari.values[2]='继承默认';rules.Safari.values[3]='继承默认';
+      function loadRule(){const r=rules[selected];ruleControls.forEach((c,i)=>{if(c.type==='checkbox'){c.checked=r.values[i];return;}const inherited=[...c.options].find(o=>o.value==='继承默认');if(selected!=='Default'&&!inherited)c.insertAdjacentHTML('afterbegin','<option>继承默认</option>');if(selected==='Default'&&inherited)inherited.remove();c.value=r.values[i];c.disabled=!r.values[0];});q('#b-undo').disabled=!r.undo.length;q('#b-reset-rule').textContent=selected==='Default'?'恢复系统默认':'恢复继承';q('#b-rule-saved').textContent=r.values[0]?'本次原型内保存 · 可撤销':selected==='Default'?'默认改写已关闭 · 使用系统动作':'此应用的自定义已关闭 · 使用默认行为';}
+
+      ruleControls.forEach(c=>c.addEventListener('change',()=>{const r=rules[selected];r.undo.push([...r.values]);r.values=readRule();loadRule();q('#b-undo').disabled=false;q('#b-rule-saved').textContent='已保存在本次原型中 · 可撤销';}));
+      q('#b-reset-rule').addEventListener('click',()=>{const r=rules[selected];r.undo.push([...r.values]);for(let i=2;i<ruleControls.length;i++)r.values[i]=selected==='Default'?(i===6?'跟随普通单击':'保留系统行为'):'继承默认';loadRule();q('#b-rule-saved').textContent='已恢复 · 可撤销（演示）';});
+      q('#b-undo').addEventListener('click',()=>{const r=rules[selected];if(r.undo.length)r.values=r.undo.pop();loadRule();q('#b-rule-saved').textContent='已撤销此应用的上次修改（演示）';});
+      q('#b-rule-search').addEventListener('input',filterRules);
+      q('#b-app-search').addEventListener('input',()=>{const value=q('#b-app-search').value.toLowerCase();const options=qa('[data-candidate]');options.forEach(b=>b.hidden=!b.textContent.toLowerCase().includes(value));const shown=options.filter(b=>!b.hidden);q('#b-candidate-empty').hidden=shown.length>0;q('#b-confirm-add').disabled=!shown.length;if(shown.length){candidate=shown[0].dataset.candidate;options.forEach(b=>b.setAttribute('aria-pressed',b===shown[0]));q('#b-confirm-add').textContent=candidate==='Xcode'&&!added?'添加':'打开现有规则';}});
+      q('#b-hover-ready').addEventListener('change',e=>{qa('[data-hover-action]').forEach(b=>b.disabled=!e.target.checked);q('#b-hover-feedback').textContent=e.target.checked?'可以点击 · 操作仍需验证目标窗口':'正在保护点击 · 不接收误触';});
+      q('#b-thumbnail-permission').addEventListener('change',e=>{qa('.thumb').forEach(t=>{t.classList.toggle('no-preview',!e.target.checked);t.innerHTML=e.target.checked?'<div class="rail"></div><div class="paper"><div></div><div></div><div></div></div>':'<span>窗口</span><span>未开启屏幕录制</span>';});q('#b-switcher-feedback').textContent=e.target.checked?'示意缩略图 · 原生实现保持目标应用焦点，松开 Option 完成切换':'辅助功能已允许时，仍可按图标和标题切换，不自动请求录屏。';});
+      root.addEventListener('keydown',e=>{if(!q('#b-add-sheet').hidden){if(e.key==='Escape'){e.preventDefault();closeSheet();}if(e.key==='Enter'&&!q('#b-confirm-add').disabled){e.preventDefault();q('#b-confirm-add').click();}if(e.key==='Tab'){const focusables=[...q('#b-add-sheet').querySelectorAll('button:not(:disabled),input')].filter(x=>!x.hidden);const first=focusables[0],last=focusables[focusables.length-1];if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus();}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus();}}return;}if(e.key==='Escape'&&q('[data-record]')){qa('[data-record]').forEach(b=>{if(b.textContent==='按下快捷键…'){b.textContent=b.dataset.beforeRecord||'录制…';delete b.dataset.beforeRecord;}});feedback('已取消录制（演示）');}if(scene==='switcher'){if(e.key==='ArrowRight'||e.key==='ArrowLeft'){e.preventDefault();selectWindow(windowIndex+(e.key==='ArrowRight'?1:-1));}if(e.key==='Enter')q('#b-switcher-feedback').textContent='已选中 '+qa('[data-window]')[windowIndex].dataset.window+'（演示）';if(e.key==='Escape')showScene('settings');}});
+      const applySaved=s=>{if(!s)return;const m=s.modelContent||{},p=s.privateContent||{};if(appNames[m.selectedApp])selectApp(m.selectedApp);if(pageNames[m.page])page=m.page;added=!!p.added;filterRules();if(['rules','settings','permissions','panel','switcher','hover'].includes(m.scene))showScene(m.scene);};
+      let restoring=true;const originalRemember=remember;remember=function(){if(!restoring)originalRemember();};selectApp(selected);applySaved(window.openai?.widgetState);restoring=false;
+      window.addEventListener('openai:set_globals',e=>{restoring=true;applySaved(e.detail?.globals?.widgetState);restoring=false;});
+      if(globalThis.Tweak){const design={advanced:false};const tweak=new Tweak({container:root,onChange:()=>{q('#b-advanced').open=design.advanced;}});tweak.addToggle(design,'advanced',{label:'展开高级规则'});}
+      icons();
+    })();
+  </script>
+</div>

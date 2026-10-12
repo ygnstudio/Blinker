@@ -1,4 +1,5 @@
 import AppKit
+import BlinkerCore
 import SwiftUI
 
 /// Uses the production renderers; only the selected scenario and backdrop are simulated.
@@ -6,45 +7,50 @@ struct MenuBarIconPreview: View {
     let configuration: MenuBarConfiguration
     let snapshot: MenuBarSystemSnapshot
     @State private var scenario = MenuBarPreviewScenario.live
-    @State private var darkBackground = false
+    @Environment(\.colorScheme) private var colorScheme
+    @State private var backgroundOverride: Bool?
+
+    private var darkBackground: Bool { backgroundOverride ?? (colorScheme == .dark) }
+    private var backgroundSelection: Binding<Bool> {
+        Binding(get: { darkBackground }, set: { backgroundOverride = $0 })
+    }
 
     var body: some View {
-        GroupBox {
-            VStack(alignment: .leading, spacing: 10) {
-                HStack {
-                    Text("图标预览").font(.headline)
-                    Spacer()
-                    Picker("预览状态", selection: $scenario) {
-                        ForEach(MenuBarPreviewScenario.allCases, id: \.self) { scenario in
-                            Text(scenario.title).tag(scenario)
-                        }
-                    }
-                    .labelsHidden()
-                    .frame(maxWidth: 250)
-                }
-                HStack(spacing: 16) {
-                    sample(title: String(localized: "实际尺寸")) { animatedIcon(size: actualIconSize) }
-                    sample(title: String(localized: "放大示意（仅预览）")) { animatedIcon(size: 72) }
-                    sample(title: String(localized: "Dock 预览")) {
-                        Image(nsImage: DockIconRenderer.image(snapshot: displayedSnapshot,
-                                                              configuration: configuration,
-                                                              appearance: appearance))
-                            .resizable().interpolation(.high).frame(width: 72, height: 72)
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Text("图标预览").font(.headline)
+                Spacer()
+                Picker("预览状态", selection: $scenario) {
+                    ForEach(MenuBarPreviewScenario.allCases, id: \.self) { scenario in
+                        Text(scenario.title).tag(scenario)
                     }
                 }
-                .padding(10)
-                .background(darkBackground ? Color(white: 0.16) : Color.white)
-                .clipShape(RoundedRectangle(cornerRadius: 8))
-                HStack {
-                    Toggle("深色预览背景", isOn: $darkBackground).toggleStyle(.checkbox)
-                    Spacer()
-                    Text(scenario == .live ? String(localized: "使用当前状态")
-                        : String(localized: "模拟数据，仅用于预览"))
-                        .font(.caption).foregroundStyle(.secondary)
+                .labelsHidden()
+                .frame(maxWidth: 250)
+            }
+            HStack(spacing: 16) {
+                sample(title: String(localized: "实际尺寸")) { animatedIcon(size: actualIconSize) }
+                sample(title: String(localized: "放大示意（仅预览）")) { animatedIcon(size: 72) }
+                sample(title: String(localized: "Dock 预览")) {
+                    Image(nsImage: DockIconRenderer.image(snapshot: displayedSnapshot,
+                                                          configuration: configuration,
+                                                          appearance: appearance))
+                        .resizable().interpolation(.high).frame(width: 72, height: 72)
                 }
             }
-            .padding(4)
+            .padding(10)
+            .background(darkBackground ? Color(white: 0.16) : Color.white)
+            .clipShape(RoundedRectangle(cornerRadius: InterfaceMetrics.Radius.control))
+            HStack {
+                Toggle("深色预览背景", isOn: backgroundSelection).toggleStyle(.switch)
+                    .controlSize(.regular)
+                Spacer()
+                Text(scenario == .live ? String(localized: "使用当前状态")
+                    : String(localized: "模拟数据，仅用于预览"))
+                    .font(.caption).foregroundStyle(.secondary)
+            }
         }
+        .padding(4)
     }
 
     private var displayedSnapshot: MenuBarSystemSnapshot {

@@ -1,4 +1,5 @@
 import AppKit
+import BlinkerCore
 import CoreImage
 import CoreText
 import SwiftUI
@@ -21,7 +22,7 @@ struct LidEffectPreview: View {
                     Image(decorative: image, scale: 2)
                         .resizable().scaledToFit()
                         .frame(maxWidth: .infinity, maxHeight: 130)
-                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                        .clipShape(RoundedRectangle(cornerRadius: InterfaceMetrics.Radius.control))
                 } else if !model.unavailable {
                     ProgressView().frame(maxWidth: .infinity, minHeight: 130)
                 }

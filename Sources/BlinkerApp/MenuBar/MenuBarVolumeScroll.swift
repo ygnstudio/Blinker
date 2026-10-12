@@ -26,14 +26,7 @@ final class MenuBarVolumeScroll {
               audio.canSetVolume, let current = audio.volume,
               event.momentumPhase.isEmpty, event.scrollingDeltaY.isFinite else { return event }
         let config = preferences.configuration
-        if config.scrollScope == .volumeControl,
-           !Self.isOverVolumeControl(event.locationInWindow, in: window) {
-            return event
-        }
-        // Scrolling device lists remains scrolling, including under the panel-wide option.
-        if Self.isOverDeviceList(event.locationInWindow, in: window) {
-            return event
-        }
+        guard Self.acceptsScroll(at: event.locationInWindow, in: window) else { return event }
         if event.timestamp - previousTime > 0.3 || targetDevice != audio.currentDeviceID {
             accumulated = 0
             targetVolume = current
@@ -68,6 +61,10 @@ final class MenuBarVolumeScroll {
         targetDevice = nil
     }
 
+    static func acceptsScroll(at point: NSPoint, in window: NSWindow) -> Bool {
+        isOverVolumeControl(point, in: window) && !isOverDeviceList(point, in: window)
+    }
+
     private static func isOverVolumeControl(_ point: NSPoint, in window: NSWindow) -> Bool {
         contains(marker: "BlinkerVolumeControl", point: point, root: window.contentView)
     }
@@ -78,8 +75,11 @@ final class MenuBarVolumeScroll {
 
     private static func contains(marker: String, point: NSPoint, root: NSView?) -> Bool {
         guard let root, !root.isHiddenOrHasHiddenAncestor else { return false }
+        // Non-clipping NSViews can report a visibleRect larger than their
+        // bounds. Require both so a slider marker cannot cover the panel.
+        let localPoint = root.convert(point, from: nil)
         if root.identifier?.rawValue == marker,
-           root.visibleRect.contains(root.convert(point, from: nil)) {
+           root.bounds.contains(localPoint), root.visibleRect.contains(localPoint) {
             return true
         }
         return root.subviews.contains { contains(marker: marker, point: point, root: $0) }

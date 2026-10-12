@@ -4,28 +4,14 @@ import SwiftUI
 
 final class CompatibilityWindowController: NSObject, NSWindowDelegate {
     static let shared = CompatibilityWindowController()
-    private var window: NSWindow?
+    var onShowDiagnostics: ((String?) -> Void)?
     private var testWindow: NSWindow?
 
     func show(bundleID: String? = nil) {
-        let content = NSHostingController(rootView: CompatibilityView(initialBundleID: bundleID))
-        let window = window ?? NSWindow(contentViewController: content)
-        window.contentViewController = content
-        window.title = String(localized: "兼容性检查")
-        window.setContentSize(NSSize(width: 480, height: 370))
-        window.isReleasedWhenClosed = false
-        window.delegate = self
-        self.window = window
-        window.center()
-        NSApp.activate(ignoringOtherApps: true)
-        window.makeKeyAndOrderFront(nil)
+        onShowDiagnostics?(bundleID)
     }
 
     func windowWillClose(_ notification: Notification) {
-        if let closing = notification.object as? NSWindow, closing === window {
-            // Retained AppKit windows do not invoke SwiftUI onDisappear when merely closed.
-            closing.contentViewController = nil
-        }
         if let window = notification.object as? NSWindow, window === testWindow {
             HoverTestWindow.register(windowID: nil)
         }
@@ -52,7 +38,7 @@ final class CompatibilityWindowController: NSObject, NSWindowDelegate {
         testWindow = window
         window.delegate = self
         window.center()
-        NSApp.activate(ignoringOtherApps: true)
+        NSApp.activate()
         if window.isMiniaturized {
             window.deminiaturize(nil)
         }
@@ -61,7 +47,7 @@ final class CompatibilityWindowController: NSObject, NSWindowDelegate {
     }
 }
 
-private struct CompatibilityView: View {
+struct CompatibilitySection: View {
     let initialBundleID: String?
     @State private var bundleID = ""
     @State private var apps: [NSRunningApplication] = []
@@ -70,7 +56,7 @@ private struct CompatibilityView: View {
     @State private var inspectionID: UUID?
 
     var body: some View {
-        Form {
+        Section("应用兼容性") {
             Picker("应用", selection: $bundleID) {
                 Text("选择正在运行的应用").tag("")
                 ForEach(apps, id: \.processIdentifier) { app in
@@ -78,6 +64,10 @@ private struct CompatibilityView: View {
                 }
             }
             .disabled(checking)
+            if let initialBundleID, !apps.contains(where: { $0.bundleIdentifier == initialBundleID }) {
+                Text("请先启动要检查的应用：\(initialBundleID)")
+                    .foregroundStyle(.secondary)
+            }
             HStack {
                 Button("检查当前窗口", action: inspect).disabled(checking || bundleID.isEmpty)
                 Spacer()
@@ -97,7 +87,6 @@ private struct CompatibilityView: View {
                     .font(.caption).foregroundStyle(.secondary)
             }
         }
-        .formStyle(.grouped)
         .onAppear {
             apps = NSWorkspace.shared.runningApplications.filter {
                 $0.activationPolicy == .regular && $0.bundleIdentifier != nil

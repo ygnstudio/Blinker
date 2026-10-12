@@ -24,7 +24,7 @@ extension SystemStatusPanel {
                     externalVolumeRow(volume)
                 }
             }
-            settingsLink("储存空间设置…", destination: "com.apple.settings.Storage")
+            settingsLink("打开系统储存空间设置…", destination: "com.apple.settings.Storage")
         }
     }
 

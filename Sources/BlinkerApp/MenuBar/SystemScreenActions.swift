@@ -1,17 +1,11 @@
-import Foundation
+import AppKit
 
-/// One-shot screen actions for the quick actions block: start the screen
-/// saver, sleep the displays, lock the screen. The first two shell out to
-/// system tools; locking resolves SACLockScreenImmediate from the private
-/// login framework at runtime — the same dlopen bridge SkyLightSpaces
-/// uses. When a macOS release drops the symbol, `isLockScreenAvailable`
-/// reports false and the panel hides the row instead of offering a button
-/// that does nothing. (Probed on macOS 26: ScreenSaverEngine.app lives
-/// on, the CGSession menu-extra helper is gone, SACLockScreenImmediate
-/// still resolves.)
+/// Launch Services starts the screen saver; pmset sleeps displays. Locking is
+/// an isolated private capability until a public equivalent is available.
 enum SystemScreenActions {
     static let screenSaverAppURL = URL(
-        fileURLWithPath: "/System/Library/CoreServices/ScreenSaverEngine.app")
+        fileURLWithPath: "/System/Library/CoreServices/ScreenSaverEngine.app"
+    )
 
     static var isScreenSaverAvailable: Bool {
         FileManager.default.fileExists(atPath: screenSaverAppURL.path)
@@ -21,12 +15,15 @@ enum SystemScreenActions {
         lockScreen != nil
     }
 
-    /// Starts the screen saver for the current session. `open` returns as
-    /// soon as the launch is handed off, so the panel never stalls.
+    /// Launch Services returns completion/error without spawning an `open` process.
+    @MainActor
     static func startScreenSaver(
-        run: (String, [String]) throws -> Void = SystemFinderToggles.runCommand
-    ) throws {
-        try run("/usr/bin/open", [screenSaverAppURL.path])
+        open: (URL) async throws -> Void = { url in
+            let configuration = NSWorkspace.OpenConfiguration()
+            _ = try await NSWorkspace.shared.openApplication(at: url, configuration: configuration)
+        }
+    ) async throws {
+        try await open(screenSaverAppURL)
     }
 
     /// Sleeps every display immediately; the Mac itself keeps running.

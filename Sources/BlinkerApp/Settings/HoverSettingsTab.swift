@@ -50,7 +50,7 @@ struct HoverSettingsTab: View {
                 Button("配置悬停快捷键…", action: onOpenShortcuts)
             }
         }
-        .formStyle(.grouped)
+        .modifier(NativeFormSurface())
     }
 
     /// Every action except `none` — a chip that does nothing is pointless.
@@ -81,7 +81,7 @@ struct HoverSettingsTab: View {
     }
 
     private var scopePicker: some View {
-        Picker("作用范围", selection: appliesToAllWindowsBinding) {
+        EclipsePicker("作用范围", selection: appliesToAllWindowsBinding) {
             Text("全部窗口").tag(true)
             Text("仅规则应用").tag(false)
         }

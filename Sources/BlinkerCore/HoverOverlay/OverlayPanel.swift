@@ -38,71 +38,24 @@ public class OverlayPanel: NSPanel {
     }
 }
 
-/// The glass backdrop shared by the tray, the management HUD and the settings
-/// preview card: native `NSGlassEffectView` on macOS 26+, with a masked
-/// `NSVisualEffectView` fallback below.
+/// Shared system glass for contextual controls and floating feedback.
 public enum GlassBackdrop {
-    /// Glass density, decoupled from the macOS-26-only `NSGlassEffectView.
-    /// Style` so the parameter can live in an always-available signature.
-    public enum GlassStyle {
-        /// Dense frosted plate (the system default).
-        case regular
-        /// Neutral, see-through glass.
-        case clear
-    }
-
-    /// Builds the backdrop view for the given size and corner radius. The
-    /// caller owns layout: position the returned view in its container (or
-    /// pass `autoresizingMask` so it follows container resizes).
-    ///
-    /// `style` maps to `NSGlassEffectView.style` on macOS 26+; the pre-26
-    /// `NSVisualEffectView` fallback ignores it — its closest material is
-    /// already fairly clear.
+    /// The caller owns layout; content belongs in the returned glass contentView.
     public static func makeView(
         size: NSSize,
         cornerRadius: CGFloat,
-        style: GlassStyle = .regular,
+        style: NSGlassEffectView.Style = .regular,
         autoresizingMask: NSView.AutoresizingMask = []
-    ) -> NSView {
-        let frame = NSRect(origin: .zero, size: size)
-        if #available(macOS 26.0, *) {
-            let glass = NSGlassEffectView(frame: frame)
-            glass.cornerRadius = cornerRadius
-            glass.style = style == .clear ? .clear : .regular
-            #if compiler(>=6.4)
-                if #available(macOS 27.0, *) {
-                    glass.effectIsInteractive = true
-                }
-            #endif
-            glass.autoresizingMask = autoresizingMask
-            return glass
-        }
-        let backdrop = NSVisualEffectView(frame: frame)
-        backdrop.material = .underWindowBackground
-        backdrop.blendingMode = .behindWindow
-        backdrop.state = .active
-        backdrop.maskImage = roundedMaskImage(size: size, radius: cornerRadius)
-        backdrop.autoresizingMask = autoresizingMask
-        return backdrop
-    }
-
-    /// The system guarantees material ordering for contentView. Keep all
-    /// controls in that hierarchy instead of overlaying sibling windows.
-    public static func host(_ content: NSView, in backdrop: NSView) {
-        if #available(macOS 26.0, *), let glass = backdrop as? NSGlassEffectView {
-            glass.contentView = content
-        } else {
-            backdrop.addSubview(content)
-        }
-    }
-
-    /// White rounded-rect mask for `NSVisualEffectView.maskImage`, shared by
-    /// every pre-26 glass fallback.
-    public static func roundedMaskImage(size: NSSize, radius: CGFloat) -> NSImage {
-        NSImage(size: size, flipped: false) { rect in
-            NSColor.white.setFill()
-            NSBezierPath(roundedRect: rect, xRadius: radius, yRadius: radius).fill()
-            return true
-        }
+    ) -> NSGlassEffectView {
+        let glass = NSGlassEffectView(frame: NSRect(origin: .zero, size: size))
+        glass.cornerRadius = cornerRadius
+        glass.style = style
+        #if compiler(>=6.4)
+            if #available(macOS 27.0, *) {
+                glass.effectIsInteractive = true
+            }
+        #endif
+        glass.autoresizingMask = autoresizingMask
+        return glass
     }
 }

@@ -192,7 +192,9 @@ public final class TrafficLightInterceptor {
         }
 
         let location = event.location
-        guard let window = AXQuery.windowUnderPoint(location) else { return Unmanaged.passUnretained(event) }
+        guard let window = Self.interceptableWindow(at: location) else {
+            return Unmanaged.passUnretained(event)
+        }
         guard
             let decision = resolveDecision(
                 location: location,
@@ -219,6 +221,21 @@ public final class TrafficLightInterceptor {
             }
         }
         return nil
+    }
+
+    /// Native clicks on Blinker windows always pass through, even when global
+    /// defaults match every application. Resolve z-order before excluding self
+    /// so our foreground window cannot redirect the click to a window behind it.
+    /// The registered test-window exception belongs only to hover previews.
+    static func interceptableWindow(
+        at location: CGPoint,
+        windowList: AXQuery.WindowListProvider = AXQuery.copyWindowList
+    ) -> AXQuery.WindowHit? {
+        AXQuery.windowUnderPoint(
+            location,
+            excludingProcessIdentifier: ProcessInfo.processInfo.processIdentifier,
+            windowList: windowList
+        )
     }
 
     // MARK: - Long-press scheduling

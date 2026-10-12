@@ -14,13 +14,6 @@ extension SystemStatusPanel {
         if configuration.showsVPNStatus, let vpn = monitor.snapshot.vpn {
             vpnRow(vpn)
         }
-        if configuration.showsNetworkActivity, let activity = monitor.snapshot.networkActivity {
-            Label("↓ \(SystemNetworkActivity.formatRate(activity.downBytesPerSecond))"
-                + " ↑ \(SystemNetworkActivity.formatRate(activity.upBytesPerSecond))",
-                systemImage: "arrow.up.arrow.down")
-                .font(.callout).foregroundStyle(.secondary).monospacedDigit()
-                .accessibilityLabel(String(localized: "实时上下行速率"))
-        }
         if configuration.showsLocalIPAddress, let address = monitor.snapshot.localIPAddress {
             Label(String(localized: "本机 IP \(address)"), systemImage: "house")
                 .font(.callout).foregroundStyle(.secondary).monospacedDigit().lineLimit(2)
@@ -33,6 +26,22 @@ extension SystemStatusPanel {
                 Label("公网 IP 读取中…", systemImage: "globe")
                     .font(.callout).foregroundStyle(.secondary).lineLimit(2)
             }
+        }
+    }
+
+    @ViewBuilder
+    var networkActivityRow: some View {
+        if preferences.configuration.showsNetworkActivity, let activity = monitor.snapshot.networkActivity {
+            HStack(spacing: 16) {
+                Label(SystemNetworkActivity.formatRate(activity.downBytesPerSecond),
+                      systemImage: "arrow.down")
+                Label(SystemNetworkActivity.formatRate(activity.upBytesPerSecond), systemImage: "arrow.up")
+            }
+            .font(.callout).foregroundStyle(.secondary).monospacedDigit()
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel("实时上下行速率")
+            .accessibilityValue("↓ \(SystemNetworkActivity.formatRate(activity.downBytesPerSecond))"
+                + " ↑ \(SystemNetworkActivity.formatRate(activity.upBytesPerSecond))")
         }
     }
 

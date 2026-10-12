@@ -146,11 +146,10 @@ struct HoverOverlayHUDContent: View {
 /// Borderless, non-activating panel hosting the window-management HUD. It
 /// floats below the enlarged traffic-light group and stays alive while the
 /// cursor remains inside it. The backdrop uses the same glass material as
-/// the hover tray (`NSGlassEffectView` on macOS 26+, a masked
-/// `NSVisualEffectView` before), so the two surfaces read as one family.
+/// the hover tray (NSGlassEffectView), so both surfaces read as one family.
 final class HoverOverlayHUDPanel: OverlayPanel {
     /// Corner radius matching the SwiftUI content's tile rounding.
-    static let cornerRadius: CGFloat = 14
+    static let cornerRadius = InterfaceMetrics.Radius.floating
 
     /// The panel's current frame in AX (top-left origin) coordinates —
     /// measured from the hosted content, then repositioned via `setAXFrame`.
@@ -195,7 +194,7 @@ final class HoverOverlayHUDPanel: OverlayPanel {
         )
         hostingView.frame = NSRect(origin: .zero, size: size)
         hostingView.autoresizingMask = [.width, .height]
-        GlassBackdrop.host(hostingView, in: backdrop)
+        backdrop.contentView = hostingView
         contentView = backdrop
         hasShadow = true
 

@@ -74,7 +74,7 @@ struct HotkeyRowView: View {
                 WarningLine(text: registrationWarning)
                 Spacer(minLength: 8)
                 Button("重试注册", action: onRetry)
-                    .controlSize(.small)
+                    .controlSize(.regular)
                     .accessibilityLabel(Text("重新注册「\(label)」"))
             }
         }

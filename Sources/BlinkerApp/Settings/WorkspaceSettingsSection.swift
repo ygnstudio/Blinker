@@ -1,7 +1,7 @@
 import BlinkerCore
 import SwiftUI
 
-/// Embeds in the window-management Form without creating another scroll container.
+/// Embeds in the workspaces Form without creating another scroll container.
 struct WorkspaceSettingsSection: View {
     @EnvironmentObject var workspaceStore: WorkspaceStore
     @EnvironmentObject private var permissions: PermissionController
@@ -39,17 +39,14 @@ struct WorkspaceSettingsSection: View {
             // not a sibling setting of the toggle above — drop the divider
             // that separated them.
             .listRowSeparator(.hidden, edges: .top)
-            Group {
-                if let operation = workspaceStore.operation {
-                    OperationProgress(message: operation == .saving || isUpdating(operation)
-                        ? String(localized: "正在读取窗口布局…") : String(localized: "正在恢复窗口布局…"))
-                } else {
-                    Text(resultMessage ?? " ").font(.caption).foregroundStyle(.secondary)
-                        .accessibilityHidden(resultMessage == nil)
-                }
+            if let operation = workspaceStore.operation {
+                OperationProgress(message: operation == .saving || isUpdating(operation)
+                    ? String(localized: "正在读取窗口布局…") : String(localized: "正在恢复窗口布局…"))
+                    .listRowSeparator(.hidden)
+            } else if let resultMessage {
+                Text(resultMessage).font(.caption).foregroundStyle(.secondary)
+                    .listRowSeparator(.hidden)
             }
-            .frame(minHeight: 18, alignment: .leading)
-            .listRowSeparator(.hidden)
         } header: {
             Text("工作区（实验）")
         } footer: {
@@ -191,7 +188,7 @@ private struct WorkspaceRowView: View {
             Spacer()
             Button("恢复", action: onRestore)
                 .buttonStyle(.bordered)
-                .controlSize(.small)
+                .controlSize(.regular)
             Menu {
                 Button(
                     "用当前布局覆盖",
@@ -206,7 +203,7 @@ private struct WorkspaceRowView: View {
             } label: {
                 Image(systemName: "ellipsis.circle")
             }
-            .controlSize(.small)
+            .controlSize(.regular)
             .menuIndicator(.hidden)
             .fixedSize()
             .help("更多操作")

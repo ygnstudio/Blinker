@@ -35,9 +35,7 @@ public enum HoverControlAppearance {
         let surface = GlassBackdrop.makeView(
             size: button.frame.size, cornerRadius: button.frame.height / 2
         )
-        if #available(macOS 26.0, *), let glass = surface as? NSGlassEffectView {
-            glass.tintColor = button.bezelColor
-        }
+        surface.tintColor = button.bezelColor
         // Keep the semantic face opaque so dark backdrops cannot muddy its color.
         // The inset leaves the native glass rim exposed, including in inactive panels.
         let face = SemanticGlassFace(frame: bounds.insetBy(dx: 2, dy: 2), color: button.bezelColor ?? .clear)
@@ -61,7 +59,7 @@ public enum HoverControlAppearance {
         button.frame.origin = .zero
         button.autoresizingMask = [.width, .height]
         content.addSubview(button)
-        GlassBackdrop.host(content, in: surface)
+        surface.contentView = content
         return surface
     }
 
@@ -69,24 +67,18 @@ public enum HoverControlAppearance {
     /// tray. A separate continuous capsule underneath gives the whole palette
     /// a visible base, including the gaps and outer padding.
     public static func makeGroup(content: NSView, size: NSSize) -> NSView {
-        let controls: NSView
-        if #available(macOS 26.0, *) {
-            let group = NSGlassEffectContainerView(frame: NSRect(origin: .zero, size: size))
-            group.wantsLayer = true
-            group.spacing = 2
-            group.contentView = content
-            controls = group
-        } else {
-            controls = content
-        }
-        return GlassTrayGroupView(controls: controls, size: size)
+        let group = NSGlassEffectContainerView(frame: NSRect(origin: .zero, size: size))
+        group.wantsLayer = true
+        group.spacing = 2
+        group.contentView = content
+        return GlassTrayGroupView(controls: group, size: size)
     }
 }
 
 /// Keep the continuous tray and button glass as siblings in one window so the
 /// tray is not nested around the button materials. Both share the same bounds.
 private final class GlassTrayGroupView: NSView {
-    private let backdrop: NSView
+    private let backdrop: NSGlassEffectView
     private let controls: NSView
 
     init(controls: NSView, size: NSSize) {
@@ -114,11 +106,7 @@ private final class GlassTrayGroupView: NSView {
     private func resizeContents() {
         backdrop.frame = bounds
         controls.frame = bounds
-        if #available(macOS 26.0, *), let glass = backdrop as? NSGlassEffectView {
-            glass.cornerRadius = bounds.height / 2
-        } else if let effect = backdrop as? NSVisualEffectView {
-            effect.maskImage = GlassBackdrop.roundedMaskImage(size: bounds.size, radius: bounds.height / 2)
-        }
+        backdrop.cornerRadius = bounds.height / 2
     }
 }
 

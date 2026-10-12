@@ -79,11 +79,21 @@ extension MenuBarConfiguration.PanelDensity {
 /// Status-panel metrics per density: compact trades whitespace for rows so
 /// long device lists fit without scrolling.
 extension MenuBarConfiguration.PanelDensity {
-    var sectionSpacing: CGFloat { self == .compact ? 10 : 18 }
-    var rowSpacing: CGFloat { self == .compact ? 6 : 8 }
-    var horizontalPadding: CGFloat { self == .compact ? 12 : 16 }
-    var headerPadding: CGFloat { self == .compact ? 12 : 16 }
-    var footerPadding: CGFloat { self == .compact ? 10 : 14 }
+    var sectionSpacing: CGFloat {
+        self == .compact ? 8 : 12
+    }
+
+    var rowSpacing: CGFloat {
+        self == .compact ? 4 : 6
+    }
+
+    var horizontalPadding: CGFloat {
+        self == .compact ? 12 : 16
+    }
+
+    var headerPadding: CGFloat {
+        self == .compact ? 8 : 10
+    }
 }
 
 extension MenuBarConfiguration.Section {

@@ -23,7 +23,7 @@ brew upgrade --cask ygnstudio/ygn/blinker
 
 [项目 tap](https://github.com/ygnstudio/homebrew-ygn) 会定期校验并同步正式版，发布后可能稍有延迟。应用内没有自动更新器。也可从 [Releases](https://github.com/ygnstudio/Blinker/releases) 下载 DMG，将 `Blinker.app` 拖入“应用程序”，后续手动替换更新。
 
-目标系统为 **macOS 15 或更新版本**，发行构建包含 Apple Silicon 与 Intel。最低系统、Intel 实机兼容性及完整性能验收仍待完成，已验证范围见各版发行说明。
+支持目标为 **macOS 26–27**，最低版本为 26.0。发行构建继续包含 Apple Silicon 与 Intel；macOS 27、Intel 实机及完整性能验收的已验证范围见各版发行说明。
 
 发行包采用 **ad-hoc 签名，未使用 Developer ID，也未经过 Apple 公证**。首次打开如被系统拦截，确认下载来源后，在“系统设置 → 隐私与安全性”中选择“仍要打开”。Homebrew 安装也可能需要这一步，详见 [Apple 说明](https://support.apple.com/zh-cn/102445)。
 
@@ -74,7 +74,7 @@ brew upgrade --cask ygnstudio/ygn/blinker
 
 ## 从源码构建
 
-需要 Swift 6 工具链和包含 macOS 26 SDK 的 Xcode。以下命令用于 Apple Silicon：
+需要 Swift 6 工具链和包含 macOS 26 或更新 SDK 的 Xcode；编译 macOS 27 专用页签需要 Xcode 27（Swift 6.4）。以下命令用于 Apple Silicon：
 
 ```bash
 git clone https://github.com/ygnstudio/Blinker.git

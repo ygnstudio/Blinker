@@ -10,6 +10,7 @@ final class MenuBarPresentation: NSObject, NSPopoverDelegate, NSWindowDelegate {
     private let audio: SystemAudioController
     private let scanner: BluetoothLEScanner
     private let preferences: MenuBarPreferences
+    private let desktopActions: DesktopActionsCoordinator?
     private let onOpenApplications: () -> Void
     private let onOpenSettings: () -> Void
     private let onOpenMenuBarPage: (MenuBarSettingsPage) -> Void
@@ -20,14 +21,20 @@ final class MenuBarPresentation: NSObject, NSPopoverDelegate, NSWindowDelegate {
     private let shortcutRunner = ShortcutRunner()
     /// App-lifetime owners: the panel's hosting controller is recreated on
     /// every open, so panel-scoped owners would lose a held power assertion
-    /// or show stale Finder state.
+    /// or show stale Finder state. Low-power recovery must also survive
+    /// closing the panel and stay serialized when it is reopened.
     private let keepAwake = KeepAwakeController()
     private let finderToggles = FinderTogglesController()
+    private let lowPower: LowPowerController
+    private let appearanceToggle = AppearanceToggleController()
+    private let displayModes = DisplayModesController()
+    private let screenActions = ScreenActionController()
     /// Invoked when keyboard cleaning cannot start without new permissions
     /// (Accessibility / Input Monitoring missing or stale).
     var onKeyboardCleaningPermissionNeeded: (() -> Void)? {
         didSet { cleaning.onKeyboardLockPermissionMissing = onKeyboardCleaningPermissionNeeded }
     }
+
     private var dockWindow: NSWindow?
     private var subscriptions = Set<AnyCancellable>()
     private var appearanceObservation: NSKeyValueObservation?
@@ -39,15 +46,18 @@ final class MenuBarPresentation: NSObject, NSPopoverDelegate, NSWindowDelegate {
          scanner: BluetoothLEScanner,
          preferences: MenuBarPreferences, onOpenApplications: @escaping () -> Void,
          onOpenSettings: @escaping () -> Void,
-         onOpenMenuBarPage: @escaping (MenuBarSettingsPage) -> Void) {
+         onOpenMenuBarPage: @escaping (MenuBarSettingsPage) -> Void,
+         lowPower: LowPowerController? = nil, desktopActions: DesktopActionsCoordinator? = nil) {
         self.item = item
         self.monitor = monitor
         self.audio = audio
         self.scanner = scanner
         self.preferences = preferences
+        self.desktopActions = desktopActions
         self.onOpenApplications = onOpenApplications
         self.onOpenSettings = onOpenSettings
         self.onOpenMenuBarPage = onOpenMenuBarPage
+        self.lowPower = lowPower ?? LowPowerController()
         super.init()
         popover.behavior = .transient
         popover.delegate = self
@@ -191,18 +201,12 @@ final class MenuBarPresentation: NSObject, NSPopoverDelegate, NSWindowDelegate {
         }
     }
 
-    func showPanel() {
-        if popover.isShown || dockWindow?.isVisible == true {
-            closePanel()
-            return
-        }
-        monitor.refresh()
-        audio.refresh()
-        scanner.refresh()
-        let controller = NSHostingController(rootView: SystemStatusPanel(
+    func makePanel(usesWindowToolbar: Bool = false) -> SystemStatusPanel {
+        SystemStatusPanel(
             monitor: monitor, audio: audio, scanner: scanner, preferences: preferences,
-            keepAwake: keepAwake, finderToggles: finderToggles,
+            keepAwake: keepAwake, finderToggles: finderToggles, lowPower: lowPower,
             cleaning: cleaning, shortcutRunner: shortcutRunner,
+            appearanceToggle: appearanceToggle, displayModes: displayModes, screenActions: screenActions,
             onOpenApplications: { [weak self] in
                 self?.closePanel()
                 self?.onOpenApplications()
@@ -212,10 +216,23 @@ final class MenuBarPresentation: NSObject, NSPopoverDelegate, NSWindowDelegate {
             }, onOpenMenuBarPage: { [weak self] page in
                 self?.closePanel()
                 self?.onOpenMenuBarPage(page)
-            }
-        ))
+            }, desktopActions: desktopActions, usesWindowToolbar: usesWindowToolbar
+        )
+    }
+
+    func showPanel() {
+        if popover.isShown || dockWindow?.isVisible == true {
+            closePanel()
+            return
+        }
+        monitor.refresh()
+        audio.refresh()
+        scanner.refresh()
+        let usesWindowToolbar = !preferences.configuration.showsMenuBar
+        let controller = NSHostingController(rootView: makePanel(usesWindowToolbar: usesWindowToolbar))
         controller.sizingOptions = [.preferredContentSize]
         if preferences.configuration.showsMenuBar, let button = item.button {
+            popover.appearance = AppPreferences.shared.appearance.nsAppearance
             popover.contentViewController = controller
             popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
             if let window = controller.view.window {
@@ -224,7 +241,12 @@ final class MenuBarPresentation: NSObject, NSPopoverDelegate, NSWindowDelegate {
         } else {
             let window = NSWindow(contentViewController: controller)
             window.title = String(localized: "系统状态")
-            window.styleMask = [.titled, .closable]
+            window.appearance = AppPreferences.shared.appearance.nsAppearance
+            window.styleMask = [.titled, .closable, .fullSizeContentView]
+            window.titleVisibility = .hidden
+            window.isOpaque = false
+            window.backgroundColor = .clear
+            window.toolbarStyle = .unifiedCompact
             window.isReleasedWhenClosed = false
             window.delegate = self
             window.setContentSize(controller.preferredContentSize)

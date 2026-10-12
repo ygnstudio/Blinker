@@ -43,7 +43,7 @@ struct ShortcutsSettingsTab: View {
                           .moveToNextDisplay, .restorePreviousFrame]
             )
         }
-        .formStyle(.grouped)
+        .modifier(NativeFormSurface())
         .onDisappear { hotkeyManager.endRecording() }
     }
 

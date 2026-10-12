@@ -9,9 +9,10 @@ struct RuleToolsMenu: View {
     var body: some View {
         Menu {
             Button("撤销规则修改") { store.undo() }
-                .keyboardShortcut("z", modifiers: .command).disabled(!store.canUndo)
+                .keyboardShortcut("z", modifiers: .command).disabled(store.isReadOnly || !store.canUndo)
             Button("重做规则修改") { store.redo() }
-                .keyboardShortcut("z", modifiers: [.command, .shift]).disabled(!store.canRedo)
+                .keyboardShortcut("z", modifiers: [.command, .shift])
+                .disabled(store.isReadOnly || !store.canRedo)
             if let ruleID, let target = store.rules.first(where: { $0.id == ruleID }) {
                 Divider()
                 Menu("从其他应用复制规则") {
@@ -21,10 +22,11 @@ struct RuleToolsMenu: View {
                         Button(source.displayName) { store.upsert(RuleTransfer.copying(source, to: target)) }
                     }
                 }
-                .disabled(store.rules.count < 2)
-                Button("恢复此应用的默认设置") { store.reset(bundleIdentifier: ruleID) }
+                .disabled(store.isReadOnly || store.rules.count < 2)
+                Button("恢复此应用的系统按钮行为") { store.reset(bundleIdentifier: ruleID) }
+                    .disabled(store.isReadOnly)
             }
-            if ruleID == nil, let files {
+            if let files {
                 Divider()
                 RuleFileMenuActions(store: store, files: files)
             }
@@ -39,8 +41,9 @@ private struct RuleFileMenuActions: View {
     @ObservedObject var files: RuleFileActions
 
     var body: some View {
-        Button("导入规则…") { files.importRules(into: store) }.disabled(files.isBusy)
-        Button("导出全部规则…") { files.exportRules(from: store) }
-            .disabled(store.rules.isEmpty || files.isBusy)
+        Button("导入规则配置…") { files.importRules(into: store) }
+            .disabled(store.isReadOnly || files.isBusy)
+        Button("导出全部规则配置…") { files.exportRules(from: store) }
+            .disabled(files.isBusy)
     }
 }

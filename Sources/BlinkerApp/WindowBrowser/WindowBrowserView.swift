@@ -175,34 +175,33 @@ private struct WindowPreviewTile: View {
     let onActivate: () -> Void
 
     var body: some View {
-        Button(action: onActivate) {
-            VStack(alignment: .leading, spacing: 8) {
-                if !compact {
-                    thumbnail
-                }
-                caption
-            }
-            .padding(8)
-            .background(selected ? Color.accentColor.opacity(0.2) : Color.clear,
-                        in: RoundedRectangle(cornerRadius: 14))
-            .overlay(RoundedRectangle(cornerRadius: 14)
-                .strokeBorder(selected ? Color.accentColor : Color.clear, lineWidth: 2))
-            .contentShape(RoundedRectangle(cornerRadius: 14))
-        }
-        .buttonStyle(WindowPreviewButtonStyle())
-        .onHover {
-            if $0 {
-                onSelect()
+        Group {
+            if selected {
+                activationButton.buttonStyle(.borderedProminent)
+            } else {
+                activationButton.buttonStyle(.bordered)
             }
         }
+        .controlSize(.regular)
+        .onHover { if $0 { onSelect() } }
         .help(window.appName + " — " + window.title)
         .accessibilityLabel(window.appName + " — " + window.title)
         .accessibilityAddTraits(selected ? .isSelected : [])
     }
 
+    private var activationButton: some View {
+        Button(action: onActivate) {
+            VStack(alignment: .leading, spacing: 8) {
+                if !compact { thumbnail }
+                caption
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
     private var thumbnail: some View {
         ZStack {
-            RoundedRectangle(cornerRadius: 10).fill(.black.opacity(0.12))
+            RoundedRectangle(cornerRadius: InterfaceMetrics.Radius.control).fill(.black.opacity(0.12))
             if let image {
                 Image(nsImage: image).resizable().scaledToFit().padding(3)
             } else {
@@ -239,21 +238,5 @@ private struct WindowPreviewTile: View {
     private var icon: NSImage {
         NSRunningApplication(processIdentifier: window.pid)?.icon
             ?? NSImage(systemSymbolName: "macwindow", accessibilityDescription: nil)!
-    }
-}
-
-/// Press feedback acknowledges the pointer immediately; it never delays activation or animates selection.
-private struct WindowPreviewButtonStyle: ButtonStyle {
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-
-    private static let pressFeedback = Animation.easeOut(duration: 0.12)
-
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .transaction { $0.animation = nil }
-            .opacity(configuration.isPressed ? 0.8 : 1)
-            .scaleEffect(configuration.isPressed && !reduceMotion ? 0.985 : 1)
-            .animation(reduceMotion || configuration.isPressed ? nil : Self.pressFeedback,
-                       value: configuration.isPressed)
     }
 }

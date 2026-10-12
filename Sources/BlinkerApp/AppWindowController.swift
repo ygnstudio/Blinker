@@ -1,7 +1,7 @@
 import AppKit
 import Combine
 
-/// Shared lifecycle for the settings, rules and per-application editor windows.
+/// Managed lifecycle for the main window and legitimate auxiliary windows.
 final class AppWindowController: NSObject, NSWindowDelegate {
     private var window: NSWindow?
     private var appearanceSubscription: AnyCancellable?
@@ -31,9 +31,6 @@ final class AppWindowController: NSObject, NSWindowDelegate {
             let window = NSWindow(contentViewController: makeContentController())
             window.title = title
             window.titleVisibility = .visible
-            if #unavailable(macOS 26.0) {
-                window.titlebarAppearsTransparent = true
-            }
             window.styleMask.formUnion([.fullSizeContentView, .miniaturizable])
             window.toolbarStyle = .unified
             window.setContentSize(contentSize)
@@ -48,11 +45,23 @@ final class AppWindowController: NSObject, NSWindowDelegate {
                 .receive(on: DispatchQueue.main)
                 .sink { [weak window] appearance in window?.appearance = appearance.nsAppearance }
         }
-        NSApp.activate(ignoringOtherApps: true)
+        NSApp.activate()
         if window?.isMiniaturized == true {
             window?.deminiaturize(nil)
         }
         window?.makeKeyAndOrderFront(nil)
+    }
+
+    /// Native zoom uses a useful reading size rather than filling a large display.
+    func windowWillUseStandardFrame(_ window: NSWindow, defaultFrame: NSRect) -> NSRect {
+        let size = window.frameRect(forContentRect: NSRect(origin: .zero, size: contentSize)).size
+        let width = min(size.width, defaultFrame.width)
+        let height = min(size.height, defaultFrame.height)
+        return NSRect(
+            x: max(defaultFrame.minX, min(window.frame.minX, defaultFrame.maxX - width)),
+            y: max(defaultFrame.minY, min(window.frame.maxY, defaultFrame.maxY) - height),
+            width: width, height: height
+        )
     }
 
     func close() {

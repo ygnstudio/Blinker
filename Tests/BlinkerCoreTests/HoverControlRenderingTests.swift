@@ -5,7 +5,6 @@ import XCTest
 @MainActor
 final class HoverControlRenderingTests: XCTestCase {
     func testLiveButtonKeepsNativeLayerRenderingInNonactivatingPanel() throws {
-        guard #available(macOS 26.0, *) else { throw XCTSkip("Liquid Glass requires macOS 26") }
         _ = NSApplication.shared
         let frame = CGRect(x: 100, y: 100, width: 48, height: 48)
         let button = HoverOverlayButtonView(
@@ -178,7 +177,6 @@ final class HoverControlRenderingTests: XCTestCase {
     }
 
     func testContinuousGlassTrayCoversGapsAndResizesWithPalette() throws {
-        guard #available(macOS 26.0, *) else { throw XCTSkip("Liquid Glass requires macOS 26") }
         _ = NSApplication.shared
         let frames = [CGRect(x: 100, y: 100, width: 28, height: 28),
                       CGRect(x: 132, y: 100, width: 28, height: 28)]
@@ -210,7 +208,6 @@ final class HoverControlRenderingTests: XCTestCase {
     }
 
     func testSemanticColorsStayOpaqueInInactiveGlassInBothAppearances() throws {
-        guard #available(macOS 26.0, *) else { throw XCTSkip("Liquid Glass requires macOS 26") }
         _ = NSApplication.shared
         let colors = TrafficButton.allCases.map(OverlayChipDrawing.vividColor) + [.controlAccentColor]
         for appearance in [NSAppearance.Name.aqua, .darkAqua] {

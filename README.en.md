@@ -23,7 +23,7 @@ brew upgrade --cask ygnstudio/ygn/blinker
 
 The [project tap](https://github.com/ygnstudio/homebrew-ygn) periodically verifies and adopts stable releases, so an update may take time to appear. Blinker has no built-in updater. Alternatively, download a DMG from [Releases](https://github.com/ygnstudio/Blinker/releases), drag `Blinker.app` into Applications, and replace it manually for future updates.
 
-Targets **macOS 15 or later**, with Apple Silicon and Intel architectures in release builds. Minimum-OS and Intel runtime compatibility, along with complete performance acceptance, remain unverified. Each release's notes describe its tested scope.
+Targets **macOS 26–27**, with a minimum deployment version of 26.0. Release builds continue to include Apple Silicon and Intel. Each release's notes describe verification on macOS 27, Intel hardware, and performance acceptance.
 
 Releases use **ad-hoc signing, without Developer ID signing or Apple notarization**. If macOS blocks the first launch, verify the download source and choose **System Settings → Privacy & Security → Open Anyway**. Homebrew installations may need this too; see [Apple's instructions](https://support.apple.com/en-us/102445).
 
@@ -74,7 +74,7 @@ Custom tab bars, windows on other Spaces and minimized-window previews depend on
 
 ## Build from source
 
-Use a Swift 6 toolchain and Xcode with the macOS 26 SDK. These commands target Apple Silicon:
+Use a Swift 6 toolchain and Xcode with the macOS 26 SDK or later. The dedicated macOS 27 tab style requires Xcode 27 (Swift 6.4). These commands target Apple Silicon:
 
 ```bash
 git clone https://github.com/ygnstudio/Blinker.git

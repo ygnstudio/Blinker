@@ -5,30 +5,9 @@ import ServiceManagement
 
 private let lowPowerLog = OSLog(subsystem: "Blinker", category: "LowPower")
 
-/// Parses `pmset -g`, which needs no privilege. The line we want sits among
-/// the system-wide power settings as `lowpowermode        0`; `pmset -a`
-/// writes every power-source section, so the first match is authoritative.
-enum LowPowerStatusParser {
-    static func parse(_ output: String) -> Bool? {
-        for line in output.split(separator: "\n") {
-            let trimmed = line.trimmingCharacters(in: .whitespaces)
-            guard trimmed.hasPrefix("lowpowermode") else { continue }
-            let value = trimmed.dropFirst("lowpowermode".count)
-                .trimmingCharacters(in: .whitespaces)
-            if value.hasPrefix("1") { return true }
-            if value.hasPrefix("0") { return false }
-        }
-        return nil
-    }
-}
-
-/// Panel-facing state for the low-power-mode switch. Reads are free
-/// (`pmset -g`); writes go through the privileged helper daemon, which
-/// macOS asks the user to approve once under Login Items. A write that
-/// never reaches the daemon rebuilds the registration once before giving
-/// up, since replacing the app in place strands launchd's bundle reference.
-/// Every system boundary is injectable so the state machine is testable
-/// end to end.
+/// The app owns this state beyond the transient status panel. Reads use
+/// the native ProcessInfo API, so opening the page never waits for pmset.
+/// Privileged writes retain their approval and bounded recovery flow.
 @MainActor
 final class LowPowerController: ObservableObject {
     enum HelperIssue: Equatable {
@@ -53,29 +32,31 @@ final class LowPowerController: ObservableObject {
     @Published private(set) var issue: HelperIssue?
     @Published private(set) var isApplying = false
 
+    private var powerStateObserver: NSObjectProtocol?
     private let appBundleID: String
-    private let readSystemOutput: () throws -> String
+    private let readSystemState: () -> Bool
     private let registerDaemon: () -> DaemonStatus
-    private let unregisterDaemon: () -> Void
+    private let unregisterDaemon: (@escaping (Error?) -> Void) -> Void
     private let callHelper: (Bool, @escaping (Int) -> Void) -> Void
     private let openLoginItemsSettings: () -> Void
 
     init(appBundleID: String = Bundle.main.bundleIdentifier ?? "",
-         readSystemOutput: (() throws -> String)? = nil,
+         readSystemState: (() -> Bool)? = nil,
          registerDaemon: (() -> DaemonStatus)? = nil,
-         unregisterDaemon: (() -> Void)? = nil,
+         unregisterDaemon: ((@escaping (Error?) -> Void) -> Void)? = nil,
          callHelper: ((Bool, @escaping (Int) -> Void) -> Void)? = nil,
          openLoginItemsSettings: (() -> Void)? = nil) {
         self.appBundleID = appBundleID
-        self.readSystemOutput = readSystemOutput ?? LowPowerController.readPMSetG
+        self.readSystemState = readSystemState ?? { ProcessInfo.processInfo.isLowPowerModeEnabled }
         self.registerDaemon = registerDaemon ?? {
             LowPowerController.registerDaemon(
                 plistName: LowPowerHelperNames.plistName(appBundleID: appBundleID)
             )
         }
-        self.unregisterDaemon = unregisterDaemon ?? {
+        self.unregisterDaemon = unregisterDaemon ?? { completion in
             LowPowerController.unregisterDaemon(
-                plistName: LowPowerHelperNames.plistName(appBundleID: appBundleID)
+                plistName: LowPowerHelperNames.plistName(appBundleID: appBundleID),
+                completion: completion
             )
         }
         self.callHelper = callHelper ?? { enabled, reply in
@@ -87,14 +68,22 @@ final class LowPowerController: ObservableObject {
         self.openLoginItemsSettings = openLoginItemsSettings ?? {
             SMAppService.openSystemSettingsLoginItems()
         }
+        powerStateObserver = NotificationCenter.default.addObserver(
+            forName: .NSProcessInfoPowerStateDidChange, object: nil, queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor in self?.refresh() }
+        }
     }
 
-    /// Re-reads the system state. A silent failure keeps the last known
-    /// value: the switch is a convenience, never a source of truth.
+    deinit {
+        if let powerStateObserver {
+            NotificationCenter.default.removeObserver(powerStateObserver)
+        }
+    }
+
+    /// Reads the effective system state without launching a subprocess.
     func refresh() {
-        guard let output = try? readSystemOutput(),
-              let enabled = LowPowerStatusParser.parse(output) else { return }
-        isOn = enabled
+        isOn = readSystemState()
     }
 
     func setLowPowerMode(_ enabled: Bool) {
@@ -132,17 +121,18 @@ final class LowPowerController: ObservableObject {
             Task { @MainActor in
                 guard let self else { return }
                 os_log(.info, log: lowPowerLog, "low power helper replied %d", status)
-                let unreachable = status == LowPowerHelperRejection.launchFailed.rawValue
+                let unreachable = status == LowPowerHelperRejection.connectionFailed.rawValue
                     || status == LowPowerHelperRejection.timedOut.rawValue
-                if unreachable && allowRepair {
+                if unreachable, allowRepair {
                     os_log(.info, log: lowPowerLog,
                            "helper unreachable; rebuilding the daemon registration")
-                    self.unregisterDaemon()
-                    self.runWrite(enabled, allowRepair: false)
+                    self.repairRegistrationThenWrite(enabled)
                     return
                 }
                 self.isApplying = false
-                if status != 0 { self.issue = .writeFailed }
+                if status != 0 {
+                    self.issue = .writeFailed
+                }
                 // Whether the write landed or failed, the row mirrors the
                 // system's actual state — never the intent.
                 self.refresh()
@@ -150,18 +140,27 @@ final class LowPowerController: ObservableObject {
         }
     }
 
-    // MARK: - System boundaries
-
-    static func readPMSetG() throws -> String {
-        let process = Process()
-        let pipe = Pipe()
-        process.executableURL = URL(fileURLWithPath: "/usr/bin/pmset")
-        process.arguments = ["-g"]
-        process.standardOutput = pipe
-        try process.run()
-        process.waitUntilExit()
-        return String(data: pipe.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
+    /// SMAppService only guarantees that re-registration is safe after
+    /// the asynchronous unregister completion. Keep the switch busy until
+    /// that result arrives, and never retry after failed cleanup.
+    private func repairRegistrationThenWrite(_ enabled: Bool) {
+        unregisterDaemon { [weak self] error in
+            Task { @MainActor in
+                guard let self else { return }
+                guard error == nil else {
+                    os_log(.error, log: lowPowerLog, "daemon unregistration failed: %{public}@",
+                           String(describing: error))
+                    self.isApplying = false
+                    self.issue = .writeFailed
+                    self.refresh()
+                    return
+                }
+                self.runWrite(enabled, allowRepair: false)
+            }
+        }
     }
+
+    // MARK: - System boundaries
 
     static func registerDaemon(plistName: String) -> DaemonStatus {
         let service = SMAppService.daemon(plistName: plistName)
@@ -176,8 +175,8 @@ final class LowPowerController: ObservableObject {
         }
     }
 
-    static func unregisterDaemon(plistName: String) {
-        SMAppService.daemon(plistName: plistName).unregister { _ in }
+    static func unregisterDaemon(plistName: String, completion: @escaping (Error?) -> Void) {
+        SMAppService.daemon(plistName: plistName).unregister(completionHandler: completion)
     }
 
     /// One connection per write, invalidated after the reply: the daemon is
@@ -198,10 +197,10 @@ final class LowPowerController: ObservableObject {
             connection.invalidate()
         }
         let proxy = connection.remoteObjectProxyWithErrorHandler { _ in
-            once.deliver(LowPowerHelperRejection.launchFailed.rawValue)
+            once.deliver(LowPowerHelperRejection.connectionFailed.rawValue)
         } as? LowPowerHelperXPC
         guard let proxy else {
-            once.deliver(LowPowerHelperRejection.launchFailed.rawValue)
+            once.deliver(LowPowerHelperRejection.connectionFailed.rawValue)
             return
         }
         DispatchQueue.global().asyncAfter(deadline: .now() + timeout) {

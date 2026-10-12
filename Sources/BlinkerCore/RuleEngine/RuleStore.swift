@@ -1,30 +1,40 @@
 import Combine
 import Foundation
 
-/// Persists app rules in `UserDefaults` and publishes changes to the UI.
-///
-/// Thread safety: mutations are expected on the main thread (settings UI);
-/// `snapshot` is guarded by a lock because the interceptor reads it from the
-/// event tap thread. The lock only guards the internal `storage` array —
-/// the `@Published` property is assigned *outside* the lock, so Combine
-/// subscribers reading `rules` synchronously can never deadlock on it.
+/// Main-thread mutations publish and persist one complete configuration transaction.
+/// The event thread obtains that same rules/defaults pair under one lock.
 public final class RuleStore: ObservableObject {
+    public enum WriteIssue: LocalizedError, Equatable {
+        case unsupportedVersion(Int)
+        case invalidConfiguration
+        case encodingFailed
+
+        public var errorDescription: String? {
+            switch self {
+            case .unsupportedVersion:
+                String(localized: "规则由更新版本保存，当前只读；请使用兼容版本，原文件不会被覆盖。", bundle: .module)
+            case .invalidConfiguration:
+                String(localized: "规则配置无效，原配置未更改。", bundle: .module)
+            case .encodingFailed:
+                String(localized: "无法保存规则配置，原配置未更改。", bundle: .module)
+            }
+        }
+    }
+
     private let defaults: UserDefaults
     private let storageKey: String
-    /// Archive key written by the (since removed) profile-era build; read
-    /// once for migration.
-    private let profileArchiveKey: String
     private let lock = NSLock()
-
-    /// Internal source of truth; every access is guarded by `lock`.
-    private var storage: [AppRule] = []
-    private var undoHistory: [[AppRule]] = []
-    private var redoHistory: [[AppRule]] = []
+    private var storage: RuleConfiguration
+    private var undoHistory: [RuleConfiguration] = []
+    private var redoHistory: [RuleConfiguration] = []
+    @Published public private(set) var configuration: RuleConfiguration
     @Published public private(set) var canUndo = false
     @Published public private(set) var canRedo = false
+    @Published public private(set) var isReadOnly: Bool
+    @Published public private(set) var writeIssue: WriteIssue?
 
-    /// Published for SwiftUI observation; read on the main thread only.
-    @Published public private(set) var rules: [AppRule] = []
+    public var rules: [AppRule] { configuration.rules }
+    public var globalDefaults: GlobalButtonRules { configuration.globalDefaults }
 
     public init(
         defaults: UserDefaults = .standard,
@@ -33,32 +43,36 @@ public final class RuleStore: ObservableObject {
     ) {
         self.defaults = defaults
         self.storageKey = storageKey
-        self.profileArchiveKey = profileArchiveKey
-        storage = Self.load(
-            defaults: defaults,
-            key: storageKey,
-            profileArchiveKey: profileArchiveKey
-        )
-        rules = storage
+        let loaded = RuleStorePersistence.load(defaults: defaults, key: storageKey,
+                                               profileArchiveKey: profileArchiveKey)
+        storage = loaded.configuration
+        configuration = loaded.configuration
+        isReadOnly = loaded.futureVersion != nil
+        writeIssue = loaded.futureVersion.map(WriteIssue.unsupportedVersion)
     }
 
-    /// Thread-safe copy of the current rules for the rule engine.
-    public var snapshot: [AppRule] {
+    public var configurationSnapshot: RuleConfiguration {
         lock.withLock { storage }
     }
 
+    /// Compatibility accessor. New engines/exporters must use configurationSnapshot.
+    public var snapshot: [AppRule] { configurationSnapshot.rules }
+
     public func upsert(_ rule: AppRule) {
-        var updated = snapshot
-        if let index = updated.firstIndex(where: { $0.id == rule.id }) {
-            updated[index] = rule
+        var updated = configurationSnapshot
+        if let index = updated.rules.firstIndex(where: { $0.id == rule.id }) {
+            updated.rules[index] = rule
         } else {
-            updated.append(rule)
+            updated.rules.append(rule)
         }
         commit(updated)
     }
 
+    /// Removing an exception returns this application to the global button defaults.
     public func remove(bundleIdentifier: String) {
-        commit(snapshot.filter { $0.id != bundleIdentifier })
+        var updated = configurationSnapshot
+        updated.rules.removeAll { $0.id == bundleIdentifier }
+        commit(updated)
     }
 
     public func setEnabled(_ isEnabled: Bool, bundleIdentifier: String) {
@@ -67,94 +81,131 @@ public final class RuleStore: ObservableObject {
         upsert(rule)
     }
 
-    /// Import merges by application ID; the entire import is one undoable edit.
-    public func merge(_ imported: [AppRule]) {
-        var updated = snapshot
-        var indices = Dictionary(uniqueKeysWithValues: updated.enumerated().map {
-            ($0.element.id, $0.offset)
-        })
-        for rule in imported {
-            if let index = indices[rule.id] {
-                updated[index] = rule
-            } else {
-                indices[rule.id] = updated.count
-                updated.append(rule)
-            }
-        }
-        commit(updated)
+    @discardableResult
+    public func updateGlobalDefaults(_ globalDefaults: GlobalButtonRules) -> Bool {
+        var updated = configurationSnapshot
+        updated.globalDefaults = globalDefaults
+        return commit(updated)
     }
 
+    /// Existing reset deliberately means explicit system actions, never implicit inheritance.
     public func reset(bundleIdentifier: String) {
         guard let rule = snapshot.first(where: { $0.id == bundleIdentifier }) else { return }
-        upsert(AppRule(bundleIdentifier: rule.id, displayName: rule.displayName))
+        var reset = AppRule(bundleIdentifier: rule.id, displayName: rule.displayName)
+        reset.isHoverEnabled = rule.isHoverEnabled
+        upsert(reset)
+    }
+
+    public func merge(_ imported: [AppRule]) {
+        merge(RuleTransfer.Document(rules: imported))
+    }
+
+    /// Rules plus any supplied global defaults are a single undoable import.
+    @discardableResult
+    public func merge(_ imported: RuleTransfer.Document) -> Bool {
+        guard RuleTransfer.validRules(imported.rules) else {
+            writeIssue = .invalidConfiguration
+            return false
+        }
+        var updated = configurationSnapshot
+        var indices = Dictionary(uniqueKeysWithValues: updated.rules.enumerated().map {
+            ($0.element.id, $0.offset)
+        })
+        for rule in imported.rules {
+            if let index = indices[rule.id] {
+                updated.rules[index] = rule
+            } else {
+                indices[rule.id] = updated.rules.count
+                updated.rules.append(rule)
+            }
+        }
+        if let globalDefaults = imported.globalDefaults { updated.globalDefaults = globalDefaults }
+        return commit(updated)
+    }
+
+    @discardableResult
+    public func replaceConfiguration(_ configuration: RuleConfiguration) -> Bool {
+        commit(configuration)
     }
 
     public func undo() {
         assert(Thread.isMainThread)
-        guard let previous = undoHistory.popLast() else { return }
-        redoHistory.append(snapshot)
+        guard let previous = undoHistory.last, preparePersistence(previous) else { return }
+        undoHistory.removeLast()
+        redoHistory.append(configurationSnapshot)
         publish(previous)
     }
 
     public func redo() {
         assert(Thread.isMainThread)
-        guard let next = redoHistory.popLast() else { return }
-        undoHistory.append(snapshot)
+        guard let next = redoHistory.last, preparePersistence(next) else { return }
+        redoHistory.removeLast()
+        undoHistory.append(configurationSnapshot)
         publish(next)
     }
 
-    private func commit(_ updated: [AppRule]) {
+    @discardableResult
+    private func commit(_ updated: RuleConfiguration) -> Bool {
         assert(Thread.isMainThread)
-        guard updated != snapshot else { return }
-        undoHistory.append(snapshot)
+        guard writable() else { return false }
+        guard RuleTransfer.validRules(updated.rules) else {
+            writeIssue = .invalidConfiguration
+            return false
+        }
+        guard updated != configurationSnapshot else {
+            writeIssue = nil
+            return false
+        }
+        guard preparePersistence(updated) else { return false }
+        undoHistory.append(configurationSnapshot)
         undoHistory = Array(undoHistory.suffix(50))
         redoHistory = []
         publish(updated)
+        return true
     }
 
-    private func publish(_ updated: [AppRule]) {
+    /// Encode before committing memory/history. UserDefaults receives a single versioned value.
+    private func preparePersistence(_ updated: RuleConfiguration) -> Bool {
+        guard writable() else { return false }
+        do {
+            let data = try JSONEncoder().encode(RuleConfigurationArchive(updated))
+            defaults.set(data, forKey: storageKey)
+            return true
+        } catch {
+            writeIssue = .encodingFailed
+            return false
+        }
+    }
+
+    /// Re-check before exporting so an externally written future version is
+    /// never replaced by an export of this process's older in-memory snapshot.
+    /// This only refreshes protection state; it does not modify persisted data.
+    public func refreshPersistenceStatus() {
+        assert(Thread.isMainThread)
+        _ = writable()
+    }
+
+    private func writable() -> Bool {
+        if let data = defaults.data(forKey: storageKey),
+           let version = RuleStorePersistence.futureVersion(in: data) {
+            isReadOnly = true
+            canUndo = false
+            canRedo = false
+            writeIssue = .unsupportedVersion(version)
+        }
+        return !isReadOnly
+    }
+
+    private func publish(_ updated: RuleConfiguration) {
         lock.withLock { storage = updated }
-        rules = updated
+        configuration = updated
         canUndo = !undoHistory.isEmpty
         canRedo = !redoHistory.isEmpty
-        persist(updated)
-    }
-
-    private func persist(_ current: [AppRule]) {
-        storeEncoded(current, forKey: storageKey, in: defaults, category: "rules")
-    }
-
-    /// Loads the flat rule table. A build briefly stored rules as named
-    /// profiles; unwrap that archive's active profile so no configuration
-    /// was lost, then fall back to the plain blob. An undecodable blob is
-    /// quarantined under a backup key before starting empty, so the next
-    /// save cannot silently erase the remains.
-    private static func load(
-        defaults: UserDefaults,
-        key: String,
-        profileArchiveKey: String
-    ) -> [AppRule] {
-        let data = defaults.data(forKey: key)
-        if let data,
-           let rules = try? JSONDecoder().decode([AppRule].self, from: data),
-           RuleTransfer.validRules(rules) {
-            return rules
-        }
-        let archiveData = defaults.data(forKey: profileArchiveKey)
-        let archive = archiveData.flatMap { try? JSONDecoder().decode(ProfileArchive.self, from: $0) }
-        if let active = archive?.profiles.first(where: { $0.id == archive?.activeProfileID }),
-           RuleTransfer.validRules(active.rules) {
-            return active.rules
-        }
-        if let data {
-            quarantineCorruptBlob(data, forKey: key, in: defaults, category: "rules")
-        }
-        return []
+        writeIssue = nil
     }
 }
 
-/// The persisted archive format of the removed profile-era RuleStore: every
-/// named profile plus which one was active. Kept only as a migration source.
+/// Legacy profile format remains a migration source, never a new persistence target.
 struct ProfileArchive: Codable, Equatable, Sendable {
     var profiles: [RuleProfile]
     var activeProfileID: UUID

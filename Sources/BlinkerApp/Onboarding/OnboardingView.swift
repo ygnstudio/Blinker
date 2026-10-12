@@ -51,7 +51,7 @@ struct OnboardingView: View {
     private var welcome: some View {
         VStack(alignment: .leading, spacing: 20) {
             Text("让窗口操作更顺手").font(.title.bold())
-            Text("Blinker 常驻菜单栏，应用规则和设置使用独立窗口。")
+            Text("Blinker 常驻菜单栏，应用规则和设置在同一窗口中切换。")
                 .foregroundStyle(.secondary)
             feature("应用规则", symbol: "macwindow.on.rectangle",
                     detail: "按应用设置红、黄、绿按钮的动作；没有规则时保留系统行为。")

@@ -34,7 +34,7 @@ private struct WindowBrowserSettingsContent: View {
             contentSection
             appearanceSection
         }
-        .formStyle(.grouped)
+        .modifier(NativeFormSurface())
         .onAppear { permissions.refresh() }
     }
 
@@ -63,7 +63,6 @@ private struct WindowBrowserSettingsContent: View {
                                  readout: "\(Int(preferences.dockDismissalMilliseconds)) ms",
                                  value: $preferences.dockDismissalMilliseconds, range: 100 ... 1000, step: 50)
             }
-            .padding(.leading, 16)
             .disabled(!preferences.dockEnabled)
         } header: {
             Text("Dock 悬停预览")
@@ -96,7 +95,6 @@ private struct WindowBrowserSettingsContent: View {
                         .font(.caption).foregroundStyle(.secondary)
                     Button("授权窗口缩略图…") { permissionAssistant.show(for: .screenRecording) }
                 }
-                .padding(.leading, 16)
             }
             Button("打开窗口面板…") { browser.show() }
         } header: {

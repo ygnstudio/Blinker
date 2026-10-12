@@ -58,6 +58,7 @@ extension MenuBarConfiguration {
         case showsQuickActionKeyboardCleaning
         case showsQuickActionEmptyTrash
         case showsQuickActionKeepAwake
+        case showsQuickActionShowDesktop
         case showsQuickActionDesktopIcons
         case showsQuickActionHiddenFiles
         case showsQuickActionShowExtensions
@@ -220,6 +221,8 @@ extension MenuBarConfiguration {
             .showsQuickActionKeepAwake,
             default: showsQuickActionKeepAwake
         )
+        showsQuickActionShowDesktop = values.decode(.showsQuickActionShowDesktop,
+                                                    default: showsQuickActionShowDesktop)
         showsQuickActionDesktopIcons = values.decode(
             .showsQuickActionDesktopIcons,
             default: showsQuickActionDesktopIcons

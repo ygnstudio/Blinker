@@ -8,6 +8,7 @@ struct MenuBarSettingsTab: View {
     @ObservedObject var scanner: BluetoothLEScanner
     @ObservedObject var navigation: SettingsNavigation
     @State private var confirmingReset = false
+    @State private var resetGeneration = 0
 
     init(preferences: MenuBarPreferences? = nil, monitor: SystemStatusMonitor,
          audio: SystemAudioController, scanner: BluetoothLEScanner,
@@ -21,49 +22,45 @@ struct MenuBarSettingsTab: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            if navigation.menuBarPage != .panel {
-                MenuBarIconPreview(configuration: configuration, snapshot: monitor.snapshot)
-                    .padding(.horizontal, 20)
-                    .padding(.top, 12)
-            }
-            Picker("状态图标设置分类", selection: $navigation.menuBarPage) {
-                ForEach(MenuBarSettingsPage.allCases, id: \.self) { page in
-                    Text(page.title).tag(page)
-                }
-            }
-            .pickerStyle(.segmented)
-            .labelsHidden()
-            .padding(.horizontal, 20)
-            .padding(.top, 12)
             Form {
+                if navigation.menuBarPage == .icon {
+                    Section {
+                        MenuBarIconPreview(configuration: configuration, snapshot: monitor.snapshot)
+                    }
+                }
                 switch navigation.menuBarPage {
                 case .icon: iconSettings
                 case .battery: batterySettings
-                case .networkAndVolume:
-                    networkSettings
-                    MenuBarAudioSettings(preferences: preferences)
+                case .network: networkSettings
+                case .audio:
+                    MenuBarAudioSettings(preferences: preferences, audio: audio)
                 case .bluetooth:
                     MenuBarBluetoothSettings(preferences: preferences, monitor: monitor,
                                              scanner: scanner)
                 case .quickActions:
                     MenuBarQuickActionsSettings(preferences: preferences, monitor: monitor)
-                case .panel: MenuBarPanelSettings(preferences: preferences, audio: audio)
+                case .panel: MenuBarPanelSettings(preferences: preferences)
                 case .storage: MenuBarStorageSettings(preferences: preferences)
                 case .performance: MenuBarPerformanceSettings(preferences: preferences)
                 }
                 Section {
-                    Button("恢复状态图标默认设置…") { confirmingReset = true }
-                        .disabled(configuration == MenuBarConfiguration())
+                    Button("恢复本页默认设置…") { confirmingReset = true }
+                        .disabled(configuration.resetting(navigation.menuBarPage) == configuration)
                 }
             }
-            .formStyle(.grouped)
+            .modifier(NativeFormSurface())
+            .id(navigation.menuBarPage)
+            .id(resetGeneration)
         }
-        .confirmationDialog("恢复状态图标默认设置？", isPresented: $confirmingReset,
+        .confirmationDialog("恢复本页默认设置？", isPresented: $confirmingReset,
                             titleVisibility: .visible) {
-            Button("恢复默认设置", role: .destructive) { preferences.reset() }
+            Button("恢复默认设置", role: .destructive) {
+                preferences.update { $0 = $0.resetting(navigation.menuBarPage) }
+                resetGeneration += 1
+            }
             Button("取消", role: .cancel) {}
         } message: {
-            Text("将重置显示位置、图标、状态面板和音量交互的自定义设置。")
+            Text("将恢复「\(navigation.menuBarPage.title)」中的设置，其他页面保持不变。")
         }
     }
 
@@ -79,22 +76,16 @@ struct MenuBarSettingsTab: View {
     @ViewBuilder
     private var iconSettings: some View {
         Section {
-            MenuBarOptionCardGroup(
-                label: String(localized: "显示位置"),
-                options: MenuBarConfiguration.Placement.allCases,
-                selection: configuration.placement,
-                title: { $0.title },
-                image: placementImage,
-                onSelect: { choice in preferences.update { $0.placement = choice } }
-            )
-            MenuBarOptionCardGroup(
-                label: String(localized: "线条粗细"),
-                options: MenuBarConfiguration.Stroke.allCases,
-                selection: configuration.stroke,
-                title: { $0.title },
-                image: strokeImage,
-                onSelect: { choice in preferences.update { $0.stroke = choice } }
-            )
+            EclipsePicker("显示位置", selection: binding(\.placement)) {
+                ForEach(MenuBarConfiguration.Placement.allCases, id: \.self) {
+                    Text($0.title).tag($0)
+                }
+            }
+            EclipsePicker("线条粗细", selection: binding(\.stroke)) {
+                ForEach(MenuBarConfiguration.Stroke.allCases, id: \.self) {
+                    Text($0.title).tag($0)
+                }
+            }
         } header: {
             Text("图标外观")
         }
@@ -103,7 +94,7 @@ struct MenuBarSettingsTab: View {
                              readout: "\(Int(configuration.iconSize)) pt",
                              value: binding(\.iconSize), range: 16 ... 36, step: 1)
                 .disabled(!configuration.showsMenuBar)
-            Picker("菜单栏单击", selection: binding(\.leftClick)) {
+            EclipsePicker("菜单栏单击", selection: binding(\.leftClick)) {
                 ForEach(MenuBarConfiguration.ClickAction.allCases, id: \.self) {
                     Text($0.title).tag($0)
                 }
@@ -115,19 +106,16 @@ struct MenuBarSettingsTab: View {
             Text("图标大小受系统菜单栏高度限制。右键打开应用规则、设置和暂停菜单。")
         }
         Section {
-            MenuBarOptionCardGroup(
-                label: String(localized: "Dock 图标背景"),
-                options: MenuBarConfiguration.DockBackground.allCases,
-                selection: configuration.dockBackground,
-                title: { $0.title },
-                image: dockBackgroundImage,
-                onSelect: { choice in preferences.update { $0.dockBackground = choice } }
-            )
+            EclipsePicker("Dock 图标背景", selection: binding(\.dockBackground)) {
+                ForEach(MenuBarConfiguration.DockBackground.allCases, id: \.self) {
+                    Text($0.title).tag($0)
+                }
+            }
             .disabled(!configuration.showsDock)
         } header: {
             Text("Dock")
         } footer: {
-            Text("点击 Blinker 的 Dock 图标打开状态面板。预览背景不会改变 Dock 图标或系统外观。")
+            Text("点击 Blinker 的 Dock 图标唤回当前工作区。预览背景不会改变 Dock 图标或系统外观。")
         }
         Section {
             SliderReadoutRow(label: String(localized: "状态刷新间隔"),
@@ -137,6 +125,23 @@ struct MenuBarSettingsTab: View {
             Text("状态刷新")
         } footer: {
             Text("状态变化会自动刷新，此间隔用于定期补充检查。")
+        }
+        iconPrioritySettings
+    }
+
+    private var iconPrioritySettings: some View {
+        Section {
+            Toggle("蓝牙音频替代网络图形", isOn: binding(\.replacesNetworkWithBluetooth))
+            Toggle("优先显示网络异常", isOn: binding(\.prioritizesNetworkErrors))
+                .disabled(!configuration.replacesNetworkWithBluetooth)
+            SliderReadoutRow(label: String(localized: "蓝牙图形大小"),
+                             readout: percent(configuration.bluetoothSymbolScale),
+                             value: binding(\.bluetoothSymbolScale), range: 1 ... 1.8, step: 0.05)
+                .disabled(!configuration.replacesNetworkWithBluetooth)
+        } header: {
+            Text("蓝牙音频图形")
+        } footer: {
+            Text("当前音频输出为蓝牙设备时，在图标中央显示设备图形。")
         }
     }
 
@@ -198,19 +203,6 @@ struct MenuBarSettingsTab: View {
             Text("开启替换后，对应连接类型显示普通 Wi-Fi 图形而非专用标记。中央电量显示开启且电量可用时，电量数字会替代网络或蓝牙图形。")
         }
         Section {
-            Toggle("蓝牙音频替代网络图形", isOn: binding(\.replacesNetworkWithBluetooth))
-            Toggle("优先显示网络异常", isOn: binding(\.prioritizesNetworkErrors))
-                .disabled(!configuration.replacesNetworkWithBluetooth)
-            SliderReadoutRow(label: String(localized: "蓝牙图形大小"),
-                             readout: percent(configuration.bluetoothSymbolScale),
-                             value: binding(\.bluetoothSymbolScale), range: 1 ... 1.8, step: 0.05)
-                .disabled(!configuration.replacesNetworkWithBluetooth)
-        } header: {
-            Text("蓝牙音频图形")
-        } footer: {
-            Text("当前音频输出为蓝牙设备时，在图标中央显示设备图形。")
-        }
-        Section {
             Toggle("显示 VPN 状态", isOn: binding(\.showsVPNStatus))
             Toggle("显示 Wi-Fi 名称", isOn: wiFiNameBinding)
             Toggle("显示实时上下行速率", isOn: binding(\.showsNetworkActivity))
@@ -220,7 +212,7 @@ struct MenuBarSettingsTab: View {
             Text("面板网络区块")
         } footer: {
             Text("Wi-Fi 名称需要定位权限来解除系统对网络名称的隐藏；Blinker 不读取位置本身。VPN 行在检测到隧道或系统代理时显示。"
-                 + "速率为两次刷新间的平均值；公网 IP 通过 api.ipify.org 查询，仅在开启时发起请求。")
+                + "速率为两次刷新间的平均值；公网 IP 通过 api.ipify.org 查询，仅在开启时发起请求。")
         }
     }
 
@@ -236,56 +228,46 @@ struct MenuBarSettingsTab: View {
         })
     }
 
-    private func glyphImage(_ change: (inout MenuBarConfiguration) -> Void) -> NSImage {
-        var value = configuration
-        change(&value)
-        return TrioIconRenderer.image(snapshot: .optionCardPreview, size: 44,
-                                      appearance: nil, configuration: value)
-    }
-
-    private func placementImage(_ placement: MenuBarConfiguration.Placement) -> NSImage {
-        switch placement {
-        case .menuBar:
-            return glyphImage { _ in }
-        case .dock:
-            return DockIconRenderer.image(snapshot: .optionCardPreview, configuration: configuration)
-        case .both:
-            let menuBar = glyphImage { _ in }
-            let dock = DockIconRenderer.image(snapshot: .optionCardPreview, configuration: configuration)
-            return NSImage(size: NSSize(width: 96, height: 44), flipped: false) { _ in
-                menuBar.draw(in: CGRect(x: 0, y: 0, width: 44, height: 44))
-                dock.draw(in: CGRect(x: 52, y: 0, width: 44, height: 44))
-                return true
-            }
-        }
-    }
-
-    private func strokeImage(_ stroke: MenuBarConfiguration.Stroke) -> NSImage {
-        glyphImage { $0.stroke = stroke }
-    }
-
-    private func dockBackgroundImage(_ background: MenuBarConfiguration.DockBackground) -> NSImage {
-        var value = configuration
-        value.dockBackground = background
-        return DockIconRenderer.image(snapshot: .optionCardPreview, configuration: value)
-    }
-
     private func percent(_ value: Double) -> String {
         "\(Int((value * 100).rounded()))%"
     }
 }
 
-enum MenuBarSettingsPage: CaseIterable, Hashable {
-    case icon, battery, networkAndVolume, bluetooth, quickActions, panel, storage, performance
+enum MenuBarSettingsPage: String, CaseIterable, Hashable {
+    case icon, battery, network, audio, bluetooth, quickActions, panel, storage, performance
+
+    /// Legacy context-free links land on Network; audio links use .audio.
+    static var networkAndVolume: Self {
+        .network
+    }
+
+    static let sidebarOrder: [Self] = [
+        .panel, .quickActions, .icon, .battery, .network, .audio, .bluetooth, .storage, .performance,
+    ]
+
+    var symbol: String {
+        switch self {
+        case .icon: "menubar.rectangle"
+        case .panel: "rectangle.topthird.inset.filled"
+        case .quickActions: "bolt.circle"
+        case .battery: "battery.100percent"
+        case .network: "network"
+        case .audio: "speaker.wave.2"
+        case .bluetooth: "headphones"
+        case .storage: "externaldrive"
+        case .performance: "gauge.with.dots.needle.50percent"
+        }
+    }
 
     var title: String {
         switch self {
-        case .icon: String(localized: "图标")
+        case .icon: String(localized: "菜单栏图标")
         case .battery: String(localized: "电池")
-        case .networkAndVolume: String(localized: "网络与音量")
+        case .network: String(localized: "网络")
+        case .audio: String(localized: "声音")
         case .bluetooth: String(localized: "蓝牙")
-        case .quickActions: String(localized: "快速操作")
-        case .panel: String(localized: "状态面板")
+        case .quickActions: String(localized: "自定义快速操作")
+        case .panel: String(localized: "面板布局")
         case .storage: String(localized: "存储")
         case .performance: String(localized: "性能")
         }

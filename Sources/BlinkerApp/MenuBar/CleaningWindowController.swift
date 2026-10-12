@@ -21,6 +21,7 @@ final class CleaningWindowController {
     var keyboardLockGate: () -> Bool = {
         AccessibilityPermission.isTrusted && InputMonitoringPermission.isGranted
     }
+
     /// Fired when keyboard cleaning cannot start because the gate fails or
     /// tap creation is denied (stale grant needing a relaunch).
     var onKeyboardLockPermissionMissing: (() -> Void)?
@@ -62,7 +63,7 @@ final class CleaningWindowController {
         }
         isActive = true
         inputLock = lock
-        NSApp.activate(ignoringOtherApps: true)
+        NSApp.activate()
         if reusableWindows(for: mode) {
             windows.forEach { ($0.contentView as? CleaningView)?.resetForReuse() }
         } else {
@@ -134,8 +135,13 @@ private final class CleaningWindow: NSWindow {
                                    mode: mode, onExit: onExit)
     }
 
-    override var canBecomeKey: Bool { true }
-    override var canBecomeMain: Bool { true }
+    override var canBecomeKey: Bool {
+        true
+    }
+
+    override var canBecomeMain: Bool {
+        true
+    }
 
     /// Swallows every chord before the main menu can match it (⌘Q included).
     override func performKeyEquivalent(with event: NSEvent) -> Bool {
@@ -179,11 +185,13 @@ private final class CleaningView: NSView {
     }
 
     @available(*, unavailable)
-    required init?(coder: NSCoder) {
+    required init?(coder _: NSCoder) {
         fatalError("init(coder:) is not supported")
     }
 
-    override var acceptsFirstResponder: Bool { true }
+    override var acceptsFirstResponder: Bool {
+        true
+    }
 
     override func keyDown(with event: NSEvent) {
         if mode == .display, event.keyCode == 53, !event.isARepeat {
@@ -199,7 +207,7 @@ private final class CleaningView: NSView {
         return true
     }
 
-    override func mouseUp(with event: NSEvent) {
+    override func mouseUp(with _: NSEvent) {
         if mode == .display {
             onExit()
         }
@@ -213,19 +221,22 @@ private final class CleaningView: NSView {
         symbol.symbolConfiguration = .init(pointSize: 40, weight: .regular)
         symbol.contentTintColor = .secondaryLabelColor
         let title = NSTextField(labelWithString: String(
-            localized: "键盘已锁定", comment: "keyboard cleaning lock title"))
+            localized: "键盘已锁定", comment: "keyboard cleaning lock title"
+        ))
         title.font = .systemFont(ofSize: 20, weight: .medium)
         title.textColor = .white
         let caption = NSTextField(wrappingLabelWithString: String(
             localized: "按键与媒体键已被系统级拦截，Touch ID 与电源键除外",
-            comment: "keyboard cleaning scope note"))
+            comment: "keyboard cleaning scope note"
+        ))
         caption.font = .systemFont(ofSize: 12)
         caption.textColor = .secondaryLabelColor
         caption.maximumNumberOfLines = 2
         caption.alignment = .center
         let escapeHint = NSTextField(wrappingLabelWithString: String(
             localized: "连按三次 Esc 也可退出",
-            comment: "keyboard cleaning emergency escape hint"))
+            comment: "keyboard cleaning emergency escape hint"
+        ))
         escapeHint.font = .systemFont(ofSize: 12)
         escapeHint.textColor = .secondaryLabelColor
         escapeHint.alignment = .center
@@ -260,7 +271,8 @@ private final class CleaningView: NSView {
     /// A faint exit hint that fades out so the black screen stays clean.
     private func buildFadingHint() {
         let hint = NSTextField(labelWithString: String(
-            localized: "按 Esc 或点击退出", comment: "display cleaning exit hint"))
+            localized: "按 Esc 或点击退出", comment: "display cleaning exit hint"
+        ))
         hint.font = .systemFont(ofSize: 13)
         hint.textColor = NSColor.white.withAlphaComponent(0.55)
         hint.translatesAutoresizingMaskIntoConstraints = false

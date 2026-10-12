@@ -146,7 +146,9 @@ final class InterceptionCoordinator: ObservableObject {
         moduleIssues = []
         let engine = RuleEngine(
             isAppPaused: { [sessionPause] in sessionPause.contains($0) },
-            rulesProvider: { [weak ruleStore] in ruleStore?.snapshot ?? [] }
+            configurationProvider: { [weak ruleStore] in
+                ruleStore?.configurationSnapshot ?? RuleConfiguration()
+            }
         )
         let performer = DefaultWindowActionPerformer.shared
         let interceptor = TrafficLightInterceptor(ruleEngine: engine, actionPerformer: performer)

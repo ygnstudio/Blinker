@@ -46,6 +46,9 @@ enum SystemFinderToggles {
         process.arguments = arguments
         try process.run()
         process.waitUntilExit()
+        guard process.terminationStatus == 0 else {
+            throw NSError(domain: "Blinker.FinderCommand", code: Int(process.terminationStatus))
+        }
     }
 }
 
@@ -59,6 +62,7 @@ final class FinderTogglesController: ObservableObject {
     @Published private(set) var hiddenFilesShown = false
     @Published private(set) var extensionsShown = false
     @Published private(set) var lastWriteFailed = false
+    @Published private(set) var isApplying = false
 
     private let store: UserDefaults
     private let apply: (String, Bool) throws -> Void
@@ -73,6 +77,7 @@ final class FinderTogglesController: ObservableObject {
 
     /// Re-reads the preference domain.
     func refresh() {
+        guard !isApplying else { return }
         desktopIconsShown = SystemFinderToggles.desktopIconsShown(in: store)
         hiddenFilesShown = SystemFinderToggles.hiddenFilesShown(in: store)
         extensionsShown = SystemFinderToggles.extensionsShown(in: store)
@@ -91,14 +96,30 @@ final class FinderTogglesController: ObservableObject {
     }
 
     private func applyValue(_ value: Bool, for key: String) {
+        guard !isApplying else { return }
         lastWriteFailed = false
-        do {
-            try apply(key, value)
-        } catch {
-            lastWriteFailed = true
+        isApplying = true
+        switch key {
+        case SystemFinderToggles.desktopIconsKey: desktopIconsShown = value
+        case SystemFinderToggles.hiddenFilesKey: hiddenFilesShown = value
+        case SystemFinderToggles.extensionsKey: extensionsShown = value
+        default: break
         }
-        // Whether the write landed or failed, the rows mirror the domain —
-        // cfprefsd has settled by the time the CLI exits.
-        refresh()
+        let apply = apply
+        Task.detached(priority: .userInitiated) {
+            let failed: Bool
+            do {
+                try apply(key, value)
+                failed = false
+            } catch {
+                failed = true
+            }
+            await MainActor.run { [weak self] in
+                guard let self else { return }
+                self.lastWriteFailed = failed
+                self.isApplying = false
+                self.refresh()
+            }
+        }
     }
 }

@@ -32,14 +32,16 @@ final class ActionFeedbackController: ObservableObject {
         panel.level = .floating
         panel.ignoresMouseEvents = true
         panel.hidesOnDeactivate = false
-        let background = NSVisualEffectView(frame: panel.contentView?.bounds ?? .zero)
-        background.material = .hudWindow
-        background.state = .active
-        background.wantsLayer = true
-        background.layer?.cornerRadius = 14
+        let background = GlassBackdrop.makeView(
+            size: panel.contentView?.bounds.size ?? NSSize(width: 340, height: 72),
+            cornerRadius: InterfaceMetrics.Radius.floating
+        )
+        let content = NSView(frame: background.bounds)
+        content.autoresizingMask = [.width, .height]
         let label = NSTextField(wrappingLabelWithString: message)
         label.frame = NSRect(x: 16, y: 12, width: 308, height: 48)
-        background.addSubview(label)
+        content.addSubview(label)
+        background.contentView = content
         panel.contentView = background
         if let screen = NSScreen.screens
             .first(where: { $0.frame.contains(NSEvent.mouseLocation) }) ?? NSScreen.main {

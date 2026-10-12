@@ -2,58 +2,41 @@
 import BlinkerHelperXPC
 import XCTest
 
-/// Low power mode: pmset -g parsing, the whitelist contract shared with
+/// Low power mode: native state reads, the allowlist contract shared with
 /// the daemon, and the controller's register → write → mirror state
 /// machine. Every system boundary (SMAppService, XPC, pmset) is injected.
 @MainActor
 final class LowPowerModeTests: XCTestCase {
-
-    // MARK: Status parsing
-
-    func testParserReadsTheSystemWideLine() {
-        let output = """
-        System-wide power settings:
-        Currently in use:
-         standby              1
-         lowpowermode         1
-         displaysleep         10
-        """
-        XCTAssertEqual(LowPowerStatusParser.parse(output), true)
-    }
-
-    func testParserReadsZeroAsOff() {
-        XCTAssertEqual(LowPowerStatusParser.parse(" lowpowermode         0\n"), false)
-    }
-
-    func testParserReturnsNilWithoutTheKey() {
-        XCTAssertNil(LowPowerStatusParser.parse(" standby              1\n"))
-        XCTAssertNil(LowPowerStatusParser.parse(""))
-    }
-
     // MARK: Allowlist contract
 
     func testAllowlistPermitsExactlyTheTwoVectors() {
         XCTAssertTrue(LowPowerCommand.isAllowed(
             executable: "/usr/bin/pmset",
-            arguments: ["-a", "lowpowermode", "1"]))
+            arguments: ["-a", "lowpowermode", "1"]
+        ))
         XCTAssertTrue(LowPowerCommand.isAllowed(
             executable: "/usr/bin/pmset",
-            arguments: ["-a", "lowpowermode", "0"]))
+            arguments: ["-a", "lowpowermode", "0"]
+        ))
     }
 
     func testAllowlistRejectsEverythingElse() {
         XCTAssertFalse(LowPowerCommand.isAllowed(
             executable: "/usr/bin/pmset",
-            arguments: ["-a", "lowpowermode", "2"]))
+            arguments: ["-a", "lowpowermode", "2"]
+        ))
         XCTAssertFalse(LowPowerCommand.isAllowed(
             executable: "/usr/bin/pmset",
-            arguments: ["-b", "lowpowermode", "1"]))
+            arguments: ["-b", "lowpowermode", "1"]
+        ))
         XCTAssertFalse(LowPowerCommand.isAllowed(
             executable: "/bin/sh",
-            arguments: ["-a", "lowpowermode", "1"]))
+            arguments: ["-a", "lowpowermode", "1"]
+        ))
         XCTAssertFalse(LowPowerCommand.isAllowed(
             executable: "/usr/bin/pmset",
-            arguments: ["-a", "lowpowermode", "1", ";", "rm", "-rf", "/"]))
+            arguments: ["-a", "lowpowermode", "1", ";", "rm", "-rf", "/"]
+        ))
         XCTAssertFalse(LowPowerCommand.isAllowed(executable: "/usr/bin/pmset", arguments: []))
     }
 
@@ -92,12 +75,14 @@ final class LowPowerModeTests: XCTestCase {
         let executable = directory.appendingPathComponent("helper")
         try Data().write(to: executable)
         XCTAssertNil(LowPowerHelperLaunch.serviceNameFromSiblingPlist(
-            executablePath: executable.path), "No plist next to the binary")
+            executablePath: executable.path
+        ), "No plist next to the binary")
         let malformed: NSDictionary = ["BundleProgram": "x"]
         XCTAssertTrue(malformed.write(to: executable.appendingPathExtension("plist"),
                                       atomically: true))
         XCTAssertNil(LowPowerHelperLaunch.serviceNameFromSiblingPlist(
-            executablePath: executable.path), "A plist without Label is useless")
+            executablePath: executable.path
+        ), "A plist without Label is useless")
     }
 
     /// Guards the launchd regression: argv[0] under launchd is the relative
@@ -111,14 +96,14 @@ final class LowPowerModeTests: XCTestCase {
     // MARK: Controller state machine
 
     private func makeController(
-        pmset: String = " lowpowermode 0\n",
+        systemState: Bool = false,
         daemon: LowPowerController.DaemonStatus = .enabled,
         helperStatus: Int = 0,
         openSettings: @escaping () -> Void = {}
     ) -> LowPowerController {
         LowPowerController(
             appBundleID: "com.example.Blinker.tests",
-            readSystemOutput: { pmset },
+            readSystemState: { systemState },
             registerDaemon: { daemon },
             callHelper: { _, reply in reply(helperStatus) },
             openLoginItemsSettings: openSettings
@@ -128,7 +113,7 @@ final class LowPowerModeTests: XCTestCase {
     /// Pumps pending MainActor continuations. The repair path hops the
     /// main queue once per attempt, so tests exercise one bounce per hop.
     private func flush(times: Int = 1) {
-        for _ in 0..<times {
+        for _ in 0 ..< times {
             let expectation = expectation(description: "helper reply delivered")
             DispatchQueue.main.async { expectation.fulfill() }
             wait(for: [expectation], timeout: 1)
@@ -136,22 +121,22 @@ final class LowPowerModeTests: XCTestCase {
     }
 
     func testRefreshMirrorsTheSystemState() {
-        let controller = makeController(pmset: " lowpowermode 1\n")
+        let controller = makeController(systemState: true)
         controller.refresh()
         XCTAssertTrue(controller.isOn)
         XCTAssertNil(controller.issue)
     }
 
     func testToggleWritesAndMirrorsTheNewState() {
-        var output = " lowpowermode 0\n"
+        var output = false
         var requested: [Bool] = []
         let controller = LowPowerController(
             appBundleID: "com.example.Blinker.tests",
-            readSystemOutput: { output },
+            readSystemState: { output },
             registerDaemon: { .enabled },
             callHelper: { enabled, reply in
                 requested.append(enabled)
-                output = " lowpowermode \(enabled ? 1 : 0)\n"
+                output = enabled
                 reply(0)
             },
             openLoginItemsSettings: {}
@@ -184,7 +169,7 @@ final class LowPowerModeTests: XCTestCase {
     }
 
     func testFailedWriteFlagsAndSnapsBack() {
-        let controller = makeController(pmset: " lowpowermode 0\n",
+        let controller = makeController(systemState: false,
                                         daemon: .enabled, helperStatus: 1)
         controller.refresh()
         controller.setLowPowerMode(true)
@@ -199,7 +184,7 @@ final class LowPowerModeTests: XCTestCase {
         var calls = 0
         let controller = LowPowerController(
             appBundleID: "com.example.Blinker.tests",
-            readSystemOutput: { " lowpowermode 0\n" },
+            readSystemState: { false },
             registerDaemon: { .enabled },
             callHelper: { _, reply in
                 calls += 1
@@ -223,24 +208,27 @@ final class LowPowerModeTests: XCTestCase {
     /// dies before listening, so the write pends until the watchdog. The
     /// controller rebuilds the registration and the retry lands.
     func testUnreachableHelperRebuildsRegistrationAndRetries() {
-        var output = " lowpowermode 0\n"
+        var output = false
         var registrations = 0
         var unregistrations = 0
         var writes = 0
         let controller = LowPowerController(
             appBundleID: "com.example.Blinker.tests",
-            readSystemOutput: { output },
+            readSystemState: { output },
             registerDaemon: {
                 registrations += 1
                 return .enabled
             },
-            unregisterDaemon: { unregistrations += 1 },
+            unregisterDaemon: { completion in
+                unregistrations += 1
+                completion(nil)
+            },
             callHelper: { enabled, reply in
                 writes += 1
                 if writes == 1 {
                     reply(LowPowerHelperRejection.timedOut.rawValue)
                 } else {
-                    output = " lowpowermode \(enabled ? 1 : 0)\n"
+                    output = enabled
                     reply(0)
                 }
             },
@@ -248,7 +236,7 @@ final class LowPowerModeTests: XCTestCase {
         )
         controller.refresh()
         controller.setLowPowerMode(true)
-        flush(times: 2)
+        flush(times: 3)
         XCTAssertEqual(writes, 2, "The write is retried after the registration is rebuilt")
         XCTAssertEqual(unregistrations, 1)
         XCTAssertEqual(registrations, 2, "Re-registration re-evaluates the daemon status")
@@ -264,17 +252,17 @@ final class LowPowerModeTests: XCTestCase {
         var opened = 0
         let controller = LowPowerController(
             appBundleID: "com.example.Blinker.tests",
-            readSystemOutput: { " lowpowermode 0\n" },
+            readSystemState: { false },
             registerDaemon: {
                 defer { daemon = .requiresApproval }
                 return daemon
             },
-            unregisterDaemon: {},
-            callHelper: { _, reply in reply(LowPowerHelperRejection.launchFailed.rawValue) },
+            unregisterDaemon: { $0(nil) },
+            callHelper: { _, reply in reply(LowPowerHelperRejection.connectionFailed.rawValue) },
             openLoginItemsSettings: { opened += 1 }
         )
         controller.setLowPowerMode(true)
-        flush(times: 2)
+        flush(times: 3)
         XCTAssertEqual(controller.issue, .approvalRequired)
         XCTAssertEqual(opened, 1)
         XCTAssertFalse(controller.isApplying)
@@ -287,9 +275,12 @@ final class LowPowerModeTests: XCTestCase {
         var writes = 0
         let controller = LowPowerController(
             appBundleID: "com.example.Blinker.tests",
-            readSystemOutput: { " lowpowermode 0\n" },
+            readSystemState: { false },
             registerDaemon: { .enabled },
-            unregisterDaemon: { unregistrations += 1 },
+            unregisterDaemon: { completion in
+                unregistrations += 1
+                completion(nil)
+            },
             callHelper: { _, reply in
                 writes += 1
                 reply(LowPowerHelperRejection.timedOut.rawValue)
@@ -297,7 +288,7 @@ final class LowPowerModeTests: XCTestCase {
             openLoginItemsSettings: {}
         )
         controller.setLowPowerMode(true)
-        flush(times: 2)
+        flush(times: 3)
         XCTAssertEqual(writes, 2)
         XCTAssertEqual(unregistrations, 1)
         XCTAssertEqual(controller.issue, .writeFailed)
@@ -311,9 +302,12 @@ final class LowPowerModeTests: XCTestCase {
         var unregistrations = 0
         let controller = LowPowerController(
             appBundleID: "com.example.Blinker.tests",
-            readSystemOutput: { " lowpowermode 0\n" },
+            readSystemState: { false },
             registerDaemon: { .enabled },
-            unregisterDaemon: { unregistrations += 1 },
+            unregisterDaemon: { completion in
+                unregistrations += 1
+                completion(nil)
+            },
             callHelper: { _, reply in reply(1) },
             openLoginItemsSettings: {}
         )

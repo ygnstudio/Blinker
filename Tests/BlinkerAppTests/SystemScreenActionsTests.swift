@@ -1,18 +1,23 @@
 @testable import BlinkerApp
 import XCTest
 
-/// Screen actions are one-shot command lines; the injected runner records
-/// what would have run. Availability probes depend on the host macOS and
-/// stay out of scope here.
+/// Inject launches so tests never activate a screen saver or sleep the display.
 final class SystemScreenActionsTests: XCTestCase {
-    func testScreenSaverLaunchesTheEngineApp() throws {
-        var recorded: [(String, [String])] = []
-        try SystemScreenActions.startScreenSaver { tool, args in
-            recorded.append((tool, args))
+    @MainActor
+    func testScreenSaverLaunchesTheEngineApp() async throws {
+        var recorded: [URL] = []
+        try await SystemScreenActions.startScreenSaver { recorded.append($0) }
+        XCTAssertEqual(recorded, [SystemScreenActions.screenSaverAppURL])
+    }
+
+    @MainActor
+    func testScreenSaverLaunchFailureIsReportedToCaller() async {
+        do {
+            try await SystemScreenActions.startScreenSaver { _ in throw CocoaError(.fileNoSuchFile) }
+            XCTFail("Expected the Launch Services error to propagate")
+        } catch {
+            XCTAssertEqual((error as? CocoaError)?.code, .fileNoSuchFile)
         }
-        XCTAssertEqual(recorded.count, 1)
-        XCTAssertEqual(recorded.first?.0, "/usr/bin/open")
-        XCTAssertEqual(recorded.first?.1, [SystemScreenActions.screenSaverAppURL.path])
     }
 
     func testDisplaySleepUsesPmsetWithoutSleepingTheMac() throws {

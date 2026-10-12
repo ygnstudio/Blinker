@@ -3,11 +3,11 @@ import SwiftUI
 
 struct MenuBarAudioSettings: View {
     @ObservedObject var preferences: MenuBarPreferences
+    @ObservedObject var audio: SystemAudioController
 
     var body: some View {
         Section {
             MenuBarOptionCardGroup(
-                label: String(localized: "音量图形"),
                 options: MenuBarConfiguration.VolumeStyle.allCases,
                 selection: preferences.configuration.volumeStyle,
                 title: { $0.title },
@@ -28,6 +28,29 @@ struct MenuBarAudioSettings: View {
         } footer: {
             Text("在状态面板显示默认输入设备的音量与静音；设备被占用时标记“使用中”。")
         }
+        MenuBarOutputDeviceSettings(preferences: preferences, audio: audio)
+            .disabled(!isVolumeSectionEnabled)
+        Section {
+            Toggle("滚动调节音量", isOn: binding(\.scrollAdjustsVolume))
+                .disabled(!isVolumeSectionEnabled)
+            EclipsePicker("增大音量的方向", selection: binding(\.scrollDirection)) {
+                ForEach(MenuBarConfiguration.ScrollDirection.allCases, id: \.self) {
+                    Text($0.title).tag($0)
+                }
+            }
+            .disabled(!isVolumeSectionEnabled || !preferences.configuration.scrollAdjustsVolume)
+            Toggle("跟随系统自然滚动", isOn: binding(\.naturalScrolling))
+                .disabled(!isVolumeSectionEnabled || !preferences.configuration.scrollAdjustsVolume)
+        } header: {
+            Text("面板音量操作")
+        } footer: {
+            Text("滚轮仅在音量滑块区域调节音量，其余区域正常滚动。音量区块关闭时停用此功能。"
+                + "若与 MOS、Scroll Reverser、LinearMouse 等滚动增强工具冲突，请在其设置中将 Blinker 设为不处理（白名单）。")
+        }
+    }
+
+    private var isVolumeSectionEnabled: Bool {
+        preferences.configuration.enabledSections.contains(.volume)
     }
 
     private func volumeStyleImage(_ style: MenuBarConfiguration.VolumeStyle) -> NSImage {
@@ -75,20 +98,35 @@ struct MenuBarOutputDeviceSettings: View {
                     Text("暂无可用的输出设备").foregroundStyle(.secondary)
                 }
             } else {
-                ForEach(ordered) { device in
-                    HStack {
-                        Text(device.name).lineLimit(2)
-                        if device.id == audio.currentDeviceID {
-                            Text("当前设备").font(.caption).foregroundStyle(.secondary)
+                List {
+                    ForEach(ordered) { device in
+                        HStack(spacing: 12) {
+                            Text(device.name).lineLimit(2)
+                            if device.id == audio.currentDeviceID {
+                                Text("当前设备").font(.caption).foregroundStyle(.secondary)
+                            }
+                            Spacer(minLength: 8)
+                            EclipseReorderControls(
+                                title: device.name,
+                                canMoveUp: ordered.first?.uid != device.uid,
+                                canMoveDown: ordered.last?.uid != device.uid,
+                                moveUp: { moveOutput(device.uid, by: -1) },
+                                moveDown: { moveOutput(device.uid, by: 1) }
+                            )
                         }
-                        Spacer()
+                        .listRowSeparator(.hidden)
+                        .listRowBackground(Color.clear)
+                    }
+                    .onMove { offsets, destination in
+                        var uids = ordered.map(\.uid)
+                        uids.move(fromOffsets: offsets, toOffset: destination)
+                        preferences.update { $0.outputDeviceOrder = uids }
                     }
                 }
-                .onMove { offsets, destination in
-                    var uids = ordered.map(\.uid)
-                    uids.move(fromOffsets: offsets, toOffset: destination)
-                    preferences.update { $0.outputDeviceOrder = uids }
-                }
+                .listStyle(.plain)
+                .scrollContentBackground(.hidden)
+                .frame(height: min(272, max(96, CGFloat(ordered.count) * 44 + 8)))
+                .accessibilityLabel("输出设备顺序")
             }
             Button("恢复默认设备顺序") {
                 preferences.update { $0.outputDeviceOrder = [] }
@@ -97,8 +135,15 @@ struct MenuBarOutputDeviceSettings: View {
         } header: {
             Text("输出设备顺序")
         } footer: {
-            Text("拖动调整状态面板中的设备顺序，不会切换当前输出设备。")
+            Text("拖动或使用上下箭头调整状态面板中的设备顺序，不会切换当前输出设备。")
         }
+    }
+
+    private func moveOutput(_ uid: String, by offset: Int) {
+        var uids = orderedOutputs.map(\.uid)
+        guard let index = uids.firstIndex(of: uid), uids.indices.contains(index + offset) else { return }
+        uids.swapAt(index, index + offset)
+        preferences.update { $0.outputDeviceOrder = uids }
     }
 
     private var orderedOutputs: [SystemAudioOutput] {

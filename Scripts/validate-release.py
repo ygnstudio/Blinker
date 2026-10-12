@@ -58,7 +58,7 @@ def verify_app(app, tag, build, source_root=ROOT, run=run_command):
         raise ValidationError("Info.plist must be a dictionary")
     expected = {"CFBundleIdentifier": "com.ygnstudio.Blinker", "CFBundleExecutable": "Blinker",
                 "CFBundleShortVersionString": version["app_version"], "CFBundleVersion": build,
-                "CFBundlePackageType": "APPL", "LSMinimumSystemVersion": "15.0"}
+                "CFBundlePackageType": "APPL", "LSMinimumSystemVersion": "26.0"}
     for key, value in expected.items():
         if info.get(key) != value:
             raise ValidationError(f"{key}: expected {value!r}, got {info.get(key)!r}")

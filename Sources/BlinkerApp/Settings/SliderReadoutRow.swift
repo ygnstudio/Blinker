@@ -12,16 +12,17 @@ struct SliderReadoutRow: View {
         LabeledContent(label) {
             HStack(spacing: 8) {
                 Slider(value: $value, in: range, step: step)
-                    .frame(width: 200)
+                    .frame(width: 180)
                     .accessibilityLabel(label)
                     .accessibilityValue(readout)
                 Text(readout)
                     .monospacedDigit()
                     .foregroundStyle(.secondary)
-                    .frame(width: 56, alignment: .trailing)
+                    .frame(width: 72, alignment: .trailing)
                     .accessibilityHidden(true)
             }
         }
+        .labeledContentStyle(EclipseLabeledContentStyle())
         // Keep adjacent Form rows separate instead of merging their labels into static text.
         .accessibilityElement(children: .contain)
     }

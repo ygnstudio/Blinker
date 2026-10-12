@@ -1,11 +1,17 @@
 import SwiftUI
 
 struct PermissionsSettingsTab: View {
+    @ObservedObject var navigation: SettingsNavigation
+    @EnvironmentObject private var coordinator: InterceptionCoordinator
+    @ObservedObject private var feedback = ActionFeedbackController.shared
     @EnvironmentObject private var permissions: PermissionController
     @EnvironmentObject private var assistant: PermissionAssistantController
 
     var body: some View {
         Form {
+            if navigation.diagnosticBundleID != nil {
+                compatibility
+            }
             Section {
                 ForEach(AppPermission.allCases) { permission in
                     PermissionRow(permission: permission)
@@ -35,11 +41,26 @@ struct PermissionsSettingsTab: View {
                 }
             }
 
+            if navigation.diagnosticBundleID == nil {
+                compatibility
+            }
+            Section("运行诊断") {
+                LabeledContent("窗口增强", value: coordinator.status.localizedLabel)
+                ForEach(coordinator.moduleIssues, id: \.self) { Text($0).foregroundStyle(.orange) }
+                if let message = feedback.latestMessage {
+                    LabeledContent("最近操作反馈", value: message)
+                }
+            }
             Section("本机数据") {
                 Text("规则与窗口内容在本机处理，不上传数据，不收集使用统计。")
             }
         }
-        .formStyle(.grouped)
+        .modifier(NativeFormSurface())
         .onAppear { permissions.refresh() }
+    }
+
+    private var compatibility: some View {
+        CompatibilitySection(initialBundleID: navigation.diagnosticBundleID)
+            .id(navigation.diagnosticRequest)
     }
 }

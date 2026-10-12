@@ -1,103 +1,121 @@
 import BlinkerCore
 import SwiftUI
 
-enum SettingsDestination: String, CaseIterable, Identifiable {
-    case general, menuBar, effects, hover, browser, windows, shortcuts, permissions
-
-    var id: Self {
-        self
-    }
-
-    var title: String {
-        switch self {
-        case .general: String(localized: "通用")
-        case .menuBar: String(localized: "状态图标")
-        case .effects: String(localized: "屏幕特效")
-        case .permissions: String(localized: "隐私与权限")
-        case .hover: String(localized: "悬停按钮")
-        case .browser: String(localized: "预览与切换")
-        case .windows: String(localized: "窗口管理")
-        case .shortcuts: String(localized: "快捷键")
-        }
-    }
-
-    var symbol: String {
-        switch self {
-        case .general: "gearshape"
-        case .menuBar: "menubar.rectangle"
-        case .effects: "macbook"
-        case .permissions: "hand.raised"
-        case .hover: "arrow.up.left.and.arrow.down.right"
-        case .browser: "macwindow.on.rectangle"
-        case .windows: "rectangle.split.2x2"
-        case .shortcuts: "keyboard"
-        }
-    }
-}
-
-/// Shared routing lets About and contextual links reveal the same settings window.
-final class SettingsNavigation: ObservableObject {
-    @Published var selection: SettingsDestination? = .general
-    /// Sub-page within the status-icon tab, e.g. deep links from the status panel.
-    @Published var menuBarPage: MenuBarSettingsPage = .icon
-}
-
-/// Preferences only. App rules are managed in their own window.
+/// Existing settings pages embedded in the shared workbench window.
 struct SettingsView: View {
     @EnvironmentObject private var menuBarStatus: SystemStatusMonitor
     @EnvironmentObject private var systemAudio: SystemAudioController
     @EnvironmentObject private var bluetoothScanner: BluetoothLEScanner
     @EnvironmentObject private var screenEffects: ScreenEffectController
+    @EnvironmentObject private var workbench: WorkbenchNavigation
+    @Environment(\.eclipsePalette) private var palette
     @EnvironmentObject var hotkeyManager: HotkeyManager
     let onApplyHoverSettings: (HoverOverlaySettings) -> Void
     let onSnapEnabledChange: (Bool) -> Void
-    let onOpenApplications: () -> Void
     let onShowOnboarding: () -> Void
     let onShowAbout: () -> Void
+    let onShowStatusPanel: () -> Void
+    let onOpenApplications: () -> Void
     @ObservedObject var navigation: SettingsNavigation
     @ObservedObject private var preferences = AppPreferences.shared
 
     var body: some View {
-        NavigationSplitView {
-            List(selection: $navigation.selection) {
-                Section {
-                    destinations([.general, .permissions])
-                }
-                Section("窗口操作") {
-                    destinations([.hover, .browser, .windows, .shortcuts])
-                }
-                Section("外观与特效") {
-                    destinations([.menuBar, .effects])
-                }
-            }
-            .listStyle(.sidebar)
-            .navigationSplitViewColumnWidth(min: 170, ideal: 190, max: 230)
-        } detail: {
-            detail
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .navigationTitle((navigation.selection ?? .general).title)
-                .toolbar {
-                    ToolbarItem {
-                        Button("应用规则", systemImage: "macwindow.on.rectangle", action: onOpenApplications)
-                            .labelStyle(.titleAndIcon)
+        settingsLayout
+            .preferredColorScheme(preferences.appearance.resolvedScheme)
+            .sheet(isPresented: $navigation.showsOnboarding) {
+                OnboardingView { openRules in
+                    navigation.showsOnboarding = false
+                    if openRules {
+                        onOpenApplications()
                     }
                 }
-        }
-        .preferredColorScheme(preferences.appearance.resolvedScheme)
-        .onDisappear { hotkeyManager.endRecording() }
-        .onChange(of: navigation.selection) { _, _ in hotkeyManager.endRecording() }
+                .frame(width: 600, height: 580)
+            }
+            .onChange(of: workbench.section, initial: true) { _, _ in
+                alignSelectionWithSection()
+                hotkeyManager.endRecording()
+            }
+            .onDisappear { hotkeyManager.endRecording() }
+            .onChange(of: navigation.selection) { _, _ in hotkeyManager.endRecording() }
     }
 
-    private func destinations(_ destinations: [SettingsDestination]) -> some View {
-        ForEach(destinations) { destination in
+    private var settingsLayout: some View {
+        HStack(alignment: .top, spacing: 12) {
+            if pages.count > 1 {
+                pageList
+                    .frame(width: 168)
+            }
+            VStack(alignment: .leading, spacing: 0) {
+                HStack(spacing: 12) {
+                    Text(navigation.title)
+                        .font(.title2.weight(.semibold))
+                        .foregroundStyle(palette.text)
+                    Spacer(minLength: 0)
+                    if workbench.section == .devices || workbench.section == .system {
+                        Button("状态面板", systemImage: "menubar.rectangle", action: onShowStatusPanel)
+                    }
+                }
+                .padding(.horizontal, 20)
+                .padding(.top, 18)
+                .padding(.bottom, 8)
+
+                detail
+                    .frame(minWidth: 0, maxWidth: .infinity, minHeight: 0, maxHeight: .infinity)
+                    .toggleStyle(EclipseToggleStyle())
+                    .controlSize(.regular)
+            }
+        }
+        .tint(palette.accent)
+    }
+
+    private var pageList: some View {
+        EclipseSelectionList(pages, id: \.self, selection: $navigation.sidebarSelection) { page, _ in
             Label {
-                Text(destination.title)
+                Text(title(for: page))
                     .lineLimit(2)
                     .fixedSize(horizontal: false, vertical: true)
             } icon: {
-                Image(systemName: destination.symbol)
+                Image(systemName: symbol(for: page))
             }
-            .tag(destination)
+        }
+        .accessibilityLabel("当前分区页面")
+    }
+
+    private var pages: [SettingsSidebarSelection] {
+        switch workbench.section {
+        case .windows:
+            [.hover, .browser, .windows, .shortcuts].map(SettingsSidebarSelection.destination)
+        case .devices:
+            [.icon, .battery, .network, .audio, .bluetooth, .storage, .performance]
+                .map(SettingsSidebarSelection.menuBar)
+        case .system:
+            [.menuBar(.panel), .menuBar(.quickActions), .destination(.effects)]
+        case .scenes:
+            [.destination(.workspaces)]
+        case .settings:
+            [.destination(.general), .destination(.permissions)]
+        case .apps, .library, .tools:
+            []
+        }
+    }
+
+    private func alignSelectionWithSection() {
+        guard let first = pages.first,
+              !pages.contains(where: { $0 == navigation.sidebarSelection }) else { return }
+        navigation.sidebarSelection = first
+    }
+
+    private func title(for page: SettingsSidebarSelection) -> String {
+        switch page {
+        case let .destination(destination): destination.title
+        case let .menuBar(page): page.title
+        }
+    }
+
+    private func symbol(for page: SettingsSidebarSelection) -> String {
+        switch page {
+        case let .destination(destination): destination.symbol
+        case let .menuBar(page): page.symbol
         }
     }
 
@@ -106,9 +124,12 @@ struct SettingsView: View {
         switch navigation.selection ?? .general {
         case .general: GeneralTab(onShowOnboarding: onShowOnboarding, onShowAbout: onShowAbout)
         case .menuBar: MenuBarSettingsTab(monitor: menuBarStatus, audio: systemAudio,
-                                         scanner: bluetoothScanner, navigation: navigation)
+                                          scanner: bluetoothScanner, navigation: navigation)
         case .effects: ScreenEffectsSettingsTab(controller: screenEffects)
-        case .permissions: PermissionsSettingsTab()
+        case .permissions: PermissionsSettingsTab(navigation: navigation)
+        case .workspaces:
+            Form { WorkspaceSettingsSection() }
+                .modifier(NativeFormSurface())
         case .hover: HoverSettingsTab(onApply: onApplyHoverSettings,
                                       onOpenShortcuts: { navigation.selection = .shortcuts })
         case .browser: WindowBrowserSettingsTab()

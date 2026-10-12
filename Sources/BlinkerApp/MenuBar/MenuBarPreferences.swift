@@ -62,7 +62,7 @@ struct MenuBarConfiguration: Codable, Equatable {
     var sectionOrder: [Section] = statusSections
     var enabledSections: Set<Section> = Set(Section.allCases)
     var scrollAdjustsVolume = true
-    var scrollScope: ScrollScope = .panel
+    var scrollScope: ScrollScope = .volumeControl
     var scrollDirection: ScrollDirection = .upward
     var naturalScrolling = false
     var outputDeviceLimit = 5
@@ -118,6 +118,7 @@ struct MenuBarConfiguration: Codable, Equatable {
     var showsQuickActionKeepAwake = true
     /// Quick actions section: Finder desktop-icons toggle; writes restart
     /// the Finder to apply.
+    var showsQuickActionShowDesktop = true
     var showsQuickActionDesktopIcons = true
     /// Quick actions section: Finder hidden-files toggle; writes restart
     /// the Finder to apply.
@@ -181,6 +182,7 @@ struct MenuBarConfiguration: Codable, Equatable {
 
     func normalized() -> Self {
         var value = self
+        value.scrollScope = .volumeControl
         func clamp(_ input: Double, _ range: ClosedRange<Double>, fallback: Double) -> Double {
             input.isFinite ? min(range.upperBound, max(range.lowerBound, input)) : fallback
         }
@@ -210,9 +212,11 @@ struct MenuBarConfiguration: Codable, Equatable {
             .filter { !$0.isEmpty && slots.insert($0).inserted }
             .prefix(3).map { $0 }
         value.quickActionAudioDeviceAddress = String(
-            quickActionAudioDeviceAddress.trimmingCharacters(in: .whitespacesAndNewlines).prefix(32))
+            quickActionAudioDeviceAddress.trimmingCharacters(in: .whitespacesAndNewlines).prefix(32)
+        )
         value.quickActionAudioDeviceName = String(
-            quickActionAudioDeviceName.trimmingCharacters(in: .whitespacesAndNewlines).prefix(100))
+            quickActionAudioDeviceName.trimmingCharacters(in: .whitespacesAndNewlines).prefix(100)
+        )
         if value.quickActionAudioDeviceAddress.isEmpty {
             value.quickActionAudioDeviceName = ""
         }

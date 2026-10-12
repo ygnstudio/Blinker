@@ -28,6 +28,8 @@ public struct AppRule: Identifiable, Codable, Hashable, Sendable {
     public var isEnabled: Bool
     /// Hover is independent of button remapping.
     public var isHoverEnabled: Bool
+    /// Only explicitly listed slots inherit. Legacy missing fields decode to an empty set.
+    public var inheritedSlots: Set<RuleActionSlot>
 
     public init(
         bundleIdentifier: String,
@@ -37,7 +39,8 @@ public struct AppRule: Identifiable, Codable, Hashable, Sendable {
         zoomAction: ButtonAction? = nil,
         extraVariantActions: [TrafficButton: [ClickVariant: ButtonAction?]] = [:],
         isEnabled: Bool = true,
-        isHoverEnabled: Bool = true
+        isHoverEnabled: Bool = true,
+        inheritedSlots: Set<RuleActionSlot> = []
     ) {
         self.bundleIdentifier = bundleIdentifier
         self.displayName = displayName
@@ -47,6 +50,32 @@ public struct AppRule: Identifiable, Codable, Hashable, Sendable {
         self.extraVariantActions = extraVariantActions
         self.isEnabled = isEnabled
         self.isHoverEnabled = isHoverEnabled
+        self.inheritedSlots = inheritedSlots
+    }
+
+    /// Use for newly created exceptions. The ordinary initializer preserves legacy system semantics.
+    public static func inheritingDefaults(bundleIdentifier: String, displayName: String) -> Self {
+        Self(bundleIdentifier: bundleIdentifier, displayName: displayName, inheritedSlots: RuleActionSlot.all)
+    }
+
+    public func binding(for button: TrafficButton, variant: ClickVariant = .left) -> RuleActionBinding {
+        if inheritedSlots.contains(RuleActionSlot(button: button, variant: variant)) {
+            return .inherit
+        }
+        return action(for: button, variant: variant).map(RuleActionBinding.action) ?? .system
+    }
+
+    public mutating func setBinding(_ binding: RuleActionBinding, button: TrafficButton,
+                                    variant: ClickVariant = .left) {
+        switch binding {
+        case .inherit:
+            setAction(nil, button: button, variant: variant)
+            inheritedSlots.insert(RuleActionSlot(button: button, variant: variant))
+        case .system:
+            setAction(nil, button: button, variant: variant)
+        case let .action(action):
+            setAction(action, button: button, variant: variant)
+        }
     }
 
     // MARK: - Lookup
@@ -72,6 +101,7 @@ public struct AppRule: Identifiable, Codable, Hashable, Sendable {
         button: TrafficButton,
         variant: ClickVariant
     ) {
+        inheritedSlots.remove(RuleActionSlot(button: button, variant: variant))
         if variant == .left {
             switch button {
             case .close: closeAction = action
@@ -98,7 +128,7 @@ public struct AppRule: Identifiable, Codable, Hashable, Sendable {
     private enum CodingKeys: String, CodingKey {
         case bundleIdentifier, displayName
         case closeAction, minimizeAction, zoomAction
-        case extraVariantActions, isEnabled, isHoverEnabled
+        case extraVariantActions, isEnabled, isHoverEnabled, inheritedSlots
     }
 
     /// Custom decoding so rules persisted by versions without
@@ -117,5 +147,23 @@ public struct AppRule: Identifiable, Codable, Hashable, Sendable {
             ) ?? [:]
         isEnabled = try container.decodeIfPresent(Bool.self, forKey: .isEnabled) ?? true
         isHoverEnabled = try container.decodeIfPresent(Bool.self, forKey: .isHoverEnabled) ?? true
+        inheritedSlots = try container
+            .decodeIfPresent(Set<RuleActionSlot>.self, forKey: .inheritedSlots) ?? []
     }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(bundleIdentifier, forKey: .bundleIdentifier)
+        try container.encode(displayName, forKey: .displayName)
+        try container.encodeIfPresent(closeAction, forKey: .closeAction)
+        try container.encodeIfPresent(minimizeAction, forKey: .minimizeAction)
+        try container.encodeIfPresent(zoomAction, forKey: .zoomAction)
+        try container.encode(extraVariantActions, forKey: .extraVariantActions)
+        try container.encode(isEnabled, forKey: .isEnabled)
+        try container.encode(isHoverEnabled, forKey: .isHoverEnabled)
+        if !inheritedSlots.isEmpty {
+            try container.encode(inheritedSlots, forKey: .inheritedSlots)
+        }
+    }
+
 }

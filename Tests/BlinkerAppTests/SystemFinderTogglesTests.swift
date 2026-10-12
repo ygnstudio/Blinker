@@ -1,4 +1,5 @@
 @testable import BlinkerApp
+import Combine
 import XCTest
 
 /// Finder switches: domain semantics for absent keys, the write-then-
@@ -81,11 +82,14 @@ final class SystemFinderTogglesTests: XCTestCase {
             XCTAssertTrue(controller.desktopIconsShown)
             XCTAssertFalse(controller.hiddenFilesShown)
             controller.setDesktopIconsShown(false)
+            waitForWrite(controller)
             XCTAssertFalse(controller.desktopIconsShown)
             XCTAssertFalse(controller.lastWriteFailed)
             controller.setHiddenFilesShown(true)
+            waitForWrite(controller)
             XCTAssertTrue(controller.hiddenFilesShown)
             controller.setExtensionsShown(true)
+            waitForWrite(controller)
             XCTAssertTrue(controller.extensionsShown)
         }
     }
@@ -96,9 +100,38 @@ final class SystemFinderTogglesTests: XCTestCase {
             let controller = FinderTogglesController(store: store) { _, _ in throw Probe() }
             controller.refresh()
             controller.setDesktopIconsShown(false)
+            waitForWrite(controller)
             XCTAssertTrue(controller.lastWriteFailed)
             XCTAssertTrue(controller.desktopIconsShown,
                           "A failed write snaps the toggle back to what the domain says")
         }
+    }
+
+    func testSlowFinderWriteDoesNotBlockTheMainActor() throws {
+        try withStore { store in
+            let applied = expectation(description: "worker applied preference")
+            var ranOnMainThread = true
+            let controller = FinderTogglesController(store: store) { _, _ in
+                ranOnMainThread = Thread.isMainThread
+                Thread.sleep(forTimeInterval: 0.1)
+                applied.fulfill()
+            }
+            let started = Date()
+            controller.setHiddenFilesShown(true)
+            let elapsed = Date().timeIntervalSince(started)
+            XCTAssertLessThan(elapsed, 0.05, "A slow CLI must not hold the click handler")
+            wait(for: [applied], timeout: 2)
+            XCTAssertFalse(ranOnMainThread)
+            waitForWrite(controller)
+        }
+    }
+
+    private func waitForWrite(_ controller: FinderTogglesController) {
+        guard controller.isApplying else { return }
+        let settled = expectation(description: "preference write settled")
+        let subscription = controller.$isApplying.filter { !$0 }.prefix(1)
+            .sink { _ in settled.fulfill() }
+        defer { subscription.cancel() }
+        wait(for: [settled], timeout: 2)
     }
 }

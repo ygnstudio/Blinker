@@ -1,170 +1,233 @@
 import BlinkerCore
 import SwiftUI
 
-/// An ordinary list window, with each rule opening in a separate editor.
+/// One work surface: choosing an application never navigates away from its editor.
 struct ApplicationRulesView: View {
-    @EnvironmentObject var ruleStore: RuleStore
-    let onEdit: (AppRule) -> Void
+    @EnvironmentObject private var ruleStore: RuleStore
+    @EnvironmentObject private var navigation: WorkbenchNavigation
+    @Environment(\.eclipsePalette) private var palette
+    @Binding var selection: AppRule.ID?
+    @Binding var showsDefaults: Bool
+    @Binding var searchText: String
+    let onInspect: (String) -> Void
     let onOpenSettings: () -> Void
-    @AppStorage("appAppearance") private var appearance = AppAppearance.system
-    @State private var searchText = ""
-    @State private var selection: AppRule.ID?
-    @State private var showingAppLibrary = false
+    @Binding var showingAppLibrary: Bool
+    @State private var installedApps: [InstalledApp] = []
+    @State private var isScanning = true
+    @AppStorage("eclipse.rules.onlyConfigured") private var onlyConfigured = false
     @State private var ruleToDelete: AppRule?
-    @State private var visibleRules: [AppRule] = []
-    @State private var pendingEditor: AppRule?
     @StateObject private var files = RuleFileActions()
+    @FocusState private var searchFocused: Bool
+
+    private var applications: [RuleWorkspaceApplication] {
+        RuleWorkspaceCatalog.applications(installed: installedApps, rules: ruleStore.rules)
+    }
+
+    private var filtered: [RuleWorkspaceApplication] {
+        RuleWorkspaceCatalog.filtered(applications, query: searchText,
+                                      onlyConfigured: onlyConfigured && !ruleStore.isReadOnly)
+    }
+
+    private var selectedApp: RuleWorkspaceApplication? {
+        applications.first { $0.id == selection }
+    }
 
     private var selectedRule: AppRule? {
-        visibleRules.first { $0.id == selection }
+        guard let selectedApp else { return nil }
+        return ruleStore.rules.first { $0.id == selectedApp.id }
+            ?? AppRule.inheritingDefaults(bundleIdentifier: selectedApp.id, displayName: selectedApp.name)
     }
 
     var body: some View {
-        NavigationStack {
-            Group {
-                if ruleStore.rules.isEmpty {
+        HStack(alignment: .top, spacing: 20) {
+            sidebar.frame(width: 200)
+            VStack(spacing: 0) {
+                if ruleStore.isReadOnly {
                     ContentUnavailableView {
-                        Label("为应用自定义红绿灯", systemImage: "macwindow")
+                        Label("配置预览不可用", systemImage: "doc.badge.ellipsis")
                     } description: {
-                        Text("添加一个应用，为它选择关闭、最小化和缩放按钮的动作。")
-                    } actions: {
-                        Button("添加应用", systemImage: "plus") { showingAppLibrary = true }
-                            .disabled(files.isBusy)
+                        Text("当前版本无法读取已保存的规则。请使用兼容版本；原配置仍保留。")
                     }
-                } else if visibleRules.isEmpty {
-                    ContentUnavailableView.search(text: searchText)
+                } else if showsDefaults {
+                    GlobalRulesView()
+                } else if let rule = selectedRule {
+                    RuleInspectorView(rule: rule, onUpdate: { ruleStore.upsert($0) },
+                                      onInspect: { onInspect(rule.id) },
+                                      isFilteredOut: !filtered.contains { $0.id == rule.id })
                 } else {
-                    ruleList
+                    ContentUnavailableView {
+                        Label("选择应用", systemImage: "app.dashed")
+                    } description: {
+                        Text(isScanning ? "正在读取已安装应用。" : "从应用列表选择，或添加其他位置的应用。")
+                    } actions: {
+                        Button("添加应用…") { showingAppLibrary = true }
+                    }
                 }
+                if files.state != .idle { RuleFileStatus(files: files) }
             }
-            .navigationTitle("应用规则")
-            .searchable(text: $searchText, prompt: "搜索应用")
-            .toolbar {
-                ToolbarItem {
-                    Button("添加应用", systemImage: "plus") { showingAppLibrary = true }
-                        .keyboardShortcut("n", modifiers: .command)
-                        .disabled(files.isBusy)
-                }
-                ToolbarItem {
-                    Button("编辑规则", systemImage: "slider.horizontal.3") { editSelection() }
-                        .disabled(selectedRule == nil)
-                }
-                ToolbarItem {
-                    RuleToolsMenu(store: ruleStore, files: files)
-                }
-                ToolbarItem {
-                    Button("设置…", systemImage: "gearshape", action: onOpenSettings)
-                        .keyboardShortcut(",", modifiers: .command)
-                }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        }
+        .padding(.horizontal, 16).padding(.bottom, 12)
+        .foregroundStyle(palette.text)
+        .safeAreaInset(edge: .top) {
+            if let issue = ruleStore.writeIssue {
+                Label(issue.localizedDescription, systemImage: "exclamationmark.triangle")
+                    .font(.callout).textSelection(.enabled)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(12).background(palette.surface)
             }
         }
-        .safeAreaInset(edge: .bottom, spacing: 0) { RuleFileStatus(files: files) }
-        .preferredColorScheme(appearance.resolvedScheme)
-        .onChange(of: ruleStore.rules, initial: true) { rebuildList() }
-        .onChange(of: searchText) { rebuildList() }
-        .onDisappear {
-            files.cancel()
-            pendingEditor = nil
+        .onAppear {
+            ruleStore.refreshPersistenceStatus()
+            focusRequestedSearch()
         }
-        .sheet(isPresented: $showingAppLibrary, onDismiss: openPendingEditor) {
+        .onChange(of: navigation.applicationSearchRequest) { _, _ in focusRequestedSearch() }
+        .onChange(of: ruleStore.rules) { _, _ in validateSelection() }
+        .onDisappear { files.cancel() }
+        .task { await scanApplications() }
+        .sheet(isPresented: $showingAppLibrary) {
             AppLibraryPicker { app in
-                let rule = ruleStore.rules.first { $0.id == app.bundleIdentifier }
-                    ?? AppRule(bundleIdentifier: app.bundleIdentifier, displayName: app.name)
-                ruleStore.upsert(rule)
+                if !installedApps.contains(where: { $0.id == app.id }) { installedApps.append(app) }
                 searchText = ""
-                selection = rule.id
-                pendingEditor = rule
+                onlyConfigured = false
+                selection = app.id
+                showsDefaults = false
             }
         }
-        .alert("删除规则？", isPresented: Binding(
-            get: { ruleToDelete != nil },
-            set: {
-                if !$0 {
-                    ruleToDelete = nil
-                }
-            }
+        .alert("删除应用规则？", isPresented: Binding(
+            get: { ruleToDelete != nil }, set: { if !$0 { ruleToDelete = nil } }
         )) {
             Button("取消", role: .cancel) { ruleToDelete = nil }
             Button("删除", role: .destructive) {
-                if let rule = ruleToDelete {
-                    ruleStore.remove(bundleIdentifier: rule.id)
-                }
+                if let ruleToDelete { ruleStore.remove(bundleIdentifier: ruleToDelete.id) }
                 ruleToDelete = nil
             }
         } message: {
-            Text("删除后，此应用的按钮恢复系统默认行为，悬停放大跟随全局作用范围。")
+            Text("此应用的按钮将沿用默认行为，悬停跟随全局设置。删除后可以撤销。")
         }
     }
 
-    private var ruleList: some View {
-        List(visibleRules, selection: $selection) { rule in
-            ApplicationRuleRow(rule: rule)
-                .tag(rule.id)
-                .contextMenu {
-                    Button("编辑规则") { onEdit(rule) }
-                    Button("删除规则…", role: .destructive) { ruleToDelete = rule }
+    private var sidebar: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text("应用规则").font(.system(size: 13, weight: .semibold))
+                Spacer()
+                Button { showingAppLibrary = true } label: { Image(systemName: "plus") }
+                    .buttonStyle(.plain).foregroundStyle(palette.secondary)
+                    .help("添加其他位置的应用").accessibilityLabel("添加应用")
+                    .keyboardShortcut("n", modifiers: .command).disabled(files.isBusy)
+            }
+            Button { showsDefaults = true } label: {
+                Label("默认行为", systemImage: "macwindow")
+                    .font(.callout.weight(.medium))
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(10)
+                    .background(showsDefaults ? palette.selection : .clear,
+                                in: RoundedRectangle(cornerRadius: 8))
+                    .contentShape(RoundedRectangle(cornerRadius: 8))
+            }
+            .buttonStyle(.plain)
+            .accessibilityIdentifier("workbench.globalDefaults")
+            .accessibilityValue(showsDefaults ? "当前页面" : "")
+            HStack(spacing: 6) {
+                Image(systemName: "magnifyingglass").foregroundStyle(palette.secondary)
+                TextField("搜索应用或标识", text: $searchText)
+                    .textFieldStyle(.plain).focused($searchFocused)
+                    .accessibilityIdentifier("workbench.appSearch")
+            }
+            .padding(8).background(palette.hover, in: RoundedRectangle(cornerRadius: 8))
+            HStack(spacing: 4) {
+                filterButton("全部", configured: false)
+                filterButton("已配置", configured: true)
+            }
+            .accessibilityElement(children: .contain).accessibilityLabel("应用筛选")
+            .disabled(ruleStore.isReadOnly)
+            if isScanning && applications.isEmpty {
+                ProgressView("读取应用…").controlSize(.small).padding(.top, 12)
+            }
+            EclipseSelectionList(filtered, id: \.id, selection: Binding(
+                get: { showsDefaults ? nil : selection },
+                set: { selected in
+                    guard let selected else { return }
+                    selection = selected
+                    showsDefaults = false
                 }
+            )) { app, _ in
+                appRow(app)
+            } contextMenu: { app in
+                Button("检查兼容性") { onInspect(app.id) }
+                Button("删除应用规则…", role: .destructive) {
+                    ruleToDelete = ruleStore.rules.first { $0.id == app.id }
+                }.disabled(!app.hasRule || ruleStore.isReadOnly)
+            }
+            .overlay {
+                if !isScanning && filtered.isEmpty {
+                    VStack(spacing: 8) {
+                        Text("没有匹配的应用").font(.callout)
+                        Button("清除筛选") { searchText = ""; onlyConfigured = false }
+                    }.foregroundStyle(palette.secondary)
+                }
+            }
+            HStack {
+                Text("\(filtered.count) 个应用").font(.caption).foregroundStyle(palette.secondary)
+                Spacer()
+                RuleToolsMenu(store: ruleStore, ruleID: showsDefaults ? nil : selectedRule?.id, files: files)
+                    .menuStyle(.borderlessButton).fixedSize().help("导入、导出与规则操作")
+            }
+            Text(ruleStore.isReadOnly ? "规则状态无法读取。" : "未配置的应用沿用默认行为。")
+                .font(.caption).foregroundStyle(palette.secondary)
         }
-        .listStyle(.inset)
-        .contextMenu(forSelectionType: AppRule.ID.self) { _ in } primaryAction: { ids in
-            if let rule = visibleRules.first(where: { ids.contains($0.id) }) {
-                onEdit(rule)
+        .padding(12).background(palette.surface, in: RoundedRectangle(cornerRadius: 12))
+    }
+
+    private func filterButton(_ title: String, configured: Bool) -> some View {
+        Button { onlyConfigured = configured } label: {
+            Text(title).font(.system(size: 11, weight: .medium))
+                .foregroundStyle(onlyConfigured == configured ? palette.text : palette.secondary)
+                .frame(maxWidth: .infinity).padding(.vertical, 6)
+                .background(onlyConfigured == configured ? palette.hover : .clear,
+                            in: RoundedRectangle(cornerRadius: 6))
+                .contentShape(RoundedRectangle(cornerRadius: 6))
+        }
+        .buttonStyle(.plain)
+        .accessibilityAddTraits(onlyConfigured == configured ? .isSelected : [])
+        .accessibilityValue(onlyConfigured == configured ? "已选中" : "")
+    }
+
+    private func appRow(_ app: RuleWorkspaceApplication) -> some View {
+        HStack(spacing: 9) {
+            Image(nsImage: AppIconStore.icon(forBundleIdentifier: app.id, path: app.path))
+                .resizable().frame(width: 25, height: 25).accessibilityHidden(true)
+            Text(app.name).font(.system(size: 12)).lineLimit(1).help(app.id)
+            Spacer(minLength: 2)
+            if app.hasRule && !ruleStore.isReadOnly {
+                Image(systemName: "circle.fill").font(.system(size: 5))
+                    .foregroundStyle(palette.accent).accessibilityLabel("已配置")
             }
         }
-        .onDeleteCommand { ruleToDelete = selectedRule }
-        .onKeyPress(.return) {
-            editSelection()
-            return .handled
+        .accessibilityElement(children: .combine)
+        .accessibilityIdentifier("workbench.app.\(app.id)")
+    }
+
+    private func focusRequestedSearch() {
+        guard let request = navigation.applicationSearchRequest else { return }
+        // Let the field attach to the window before transferring keyboard focus.
+        DispatchQueue.main.async {
+            guard navigation.consumeApplicationSearchRequest(request) else { return }
+            searchFocused = true
         }
     }
 
-    private func rebuildList() {
-        let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
-        visibleRules = ruleStore.rules.filter {
-            query.isEmpty || $0.displayName.localizedCaseInsensitiveContains(query)
-                || $0.bundleIdentifier.localizedCaseInsensitiveContains(query)
-        }.sorted { $0.displayName.localizedStandardCompare($1.displayName) == .orderedAscending }
-        if !visibleRules.contains(where: { $0.id == selection }) {
-            selection = nil
-        }
+    private func validateSelection() {
+        selection = RuleWorkspaceCatalog.selection(selection, in: applications)
     }
 
-    private func editSelection() {
-        if let rule = selectedRule {
-            onEdit(rule)
-        }
-    }
-
-    private func openPendingEditor() {
-        guard let rule = pendingEditor else { return }
-        pendingEditor = nil
-        onEdit(rule)
-    }
-}
-
-private struct ApplicationRuleRow: View {
-    let rule: AppRule
-
-    var body: some View {
-        HStack(spacing: 12) {
-            Image(nsImage: AppIconStore.icon(forBundleIdentifier: rule.id))
-                .resizable().frame(width: 32, height: 32)
-                .accessibilityHidden(true)
-            VStack(alignment: .leading, spacing: 3) {
-                Text(rule.displayName).lineLimit(1).help(rule.bundleIdentifier)
-                Text(stateSummary).font(.caption).foregroundStyle(.secondary)
-            }
-            Spacer()
-        }
-        .padding(.vertical, 6)
-    }
-
-    private var stateSummary: String {
-        switch (rule.isEnabled, rule.isHoverEnabled) {
-        case (true, true): String(localized: "按钮规则开启，允许悬停")
-        case (true, false): String(localized: "仅开启按钮规则")
-        case (false, true): String(localized: "仅允许悬停")
-        case (false, false): String(localized: "按钮规则与悬停均关闭")
-        }
+    private func scanApplications() async {
+        let worker = Task.detached(priority: .userInitiated) { ApplicationLibrary.installedApps() }
+        let apps = await withTaskCancellationHandler { await worker.value } onCancel: { worker.cancel() }
+        guard !Task.isCancelled else { return }
+        installedApps = apps
+        isScanning = false
+        validateSelection()
     }
 }

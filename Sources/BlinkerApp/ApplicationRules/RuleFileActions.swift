@@ -8,7 +8,7 @@ import UniformTypeIdentifiers
 final class RuleFileActions: ObservableObject {
     enum State: Equatable {
         case idle, choosingImport, choosingExport, importing, exporting, unchanged
-        case imported(Int), exported(Int), failed(String)
+        case imported(Int, includesDefaults: Bool), exported(Int), failed(String)
 
         var isBusy: Bool {
             switch self {
@@ -29,15 +29,20 @@ final class RuleFileActions: ObservableObject {
             case .importing: String(localized: "正在读取并验证规则…")
             case .exporting: String(localized: "正在导出规则…")
             case .unchanged: String(localized: "规则没有变化。")
-            case let .imported(count): String(localized: "已导入 \(count) 条规则，可撤销。")
-            case let .exported(count): String(localized: "已导出 \(count) 条规则。")
+            case let .imported(count, includesDefaults):
+                if includesDefaults {
+                    String(localized: "已导入全局默认与 \(count) 条应用规则，可撤销。")
+                } else {
+                    String(localized: "已导入 \(count) 条应用规则，全局默认保持不变，可撤销。")
+                }
+            case let .exported(count): String(localized: "已导出全局默认与 \(count) 条应用规则。")
             case let .failed(message): message
             }
         }
     }
 
-    typealias Reader = @Sendable (URL) async throws -> [AppRule]
-    typealias Writer = @Sendable ([AppRule], URL) async throws -> Void
+    typealias Reader = @Sendable (URL) async throws -> RuleTransfer.Document
+    typealias Writer = @Sendable (RuleConfiguration, URL) async throws -> Void
 
     @Published private(set) var state = State.idle
     var isBusy: Bool {
@@ -59,12 +64,13 @@ final class RuleFileActions: ObservableObject {
     }
 
     func importRules(into store: RuleStore) {
+        guard !isBusy, !rejectReadOnlyStore(store) else { return }
         guard let request = begin(.choosingImport, owner: NSApp.keyWindow) else { return }
         let panel = NSOpenPanel()
         panel.allowedContentTypes = [.json]
         panel.allowsMultipleSelection = false
         panel.canChooseDirectories = false
-        panel.message = String(localized: "同一应用的规则会被替换，其他规则保留。导入后可撤销。")
+        panel.message = String(localized: "同一应用的规则会被替换，其他规则保留。文件包含全局默认时会一并更新；旧版文件保留当前全局默认。导入后可一次撤销。")
         self.panel = panel
         panel.begin { [weak self, weak panel] response in
             guard let self, self.requestID == request else { return }
@@ -75,6 +81,7 @@ final class RuleFileActions: ObservableObject {
     }
 
     func exportRules(from store: RuleStore) {
+        guard !isBusy, !rejectReadOnlyStore(store, exporting: true) else { return }
         guard let request = begin(.choosingExport, owner: NSApp.keyWindow) else { return }
         let panel = NSSavePanel()
         panel.allowedContentTypes = [.json]
@@ -84,21 +91,29 @@ final class RuleFileActions: ObservableObject {
             guard let self, self.requestID == request else { return }
             guard response == .OK, let url = panel?.url else { self.cancel(); return }
             self.panel = nil
-            self.runExport(store.snapshot, to: url, request: request)
+            guard !self.rejectReadOnlyStore(store, exporting: true) else { return }
+            self.runExport(store.configurationSnapshot, to: url, request: request)
         }
     }
 
     /// Direct URL entry points share the same single-operation gate as the file panels.
     @discardableResult
     func importRules(from url: URL, into store: RuleStore) -> Task<Void, Never>? {
+        guard !isBusy, !rejectReadOnlyStore(store) else { return nil }
         guard let request = begin(.importing) else { return nil }
         return runImport(from: url, into: store, request: request)
     }
 
     @discardableResult
-    func exportRules(_ rules: [AppRule], to url: URL) -> Task<Void, Never>? {
+    func exportRules(from store: RuleStore, to url: URL) -> Task<Void, Never>? {
+        guard !isBusy, !rejectReadOnlyStore(store, exporting: true) else { return nil }
+        return exportRules(store.configurationSnapshot, to: url)
+    }
+
+    @discardableResult
+    func exportRules(_ configuration: RuleConfiguration, to url: URL) -> Task<Void, Never>? {
         guard let request = begin(.exporting) else { return nil }
-        return runExport(rules, to: url, request: request)
+        return runExport(configuration, to: url, request: request)
     }
 
     func cancel() {
@@ -132,17 +147,32 @@ final class RuleFileActions: ObservableObject {
         return request
     }
 
+    private func rejectReadOnlyStore(_ store: RuleStore, exporting: Bool = false) -> Bool {
+        store.refreshPersistenceStatus()
+        guard store.isReadOnly else { return false }
+        let reason = store.writeIssue?.localizedDescription ?? String(localized: "当前规则配置为只读。")
+        finish(.failed(exporting ? String(localized: "无法完整导出当前配置：\(reason)")
+            : String(localized: "无法导入配置：\(reason)")))
+        return true
+    }
+
     @discardableResult
     private func runImport(from url: URL, into store: RuleStore, request: UUID) -> Task<Void, Never> {
         state = .importing
         let read = read
         let task = Task { [weak self, weak store] in
             do {
-                let rules = try await read(url)
+                let document = try await read(url)
                 guard !Task.isCancelled, let self, self.requestID == request, let store else { return }
-                let previous = store.snapshot
-                store.merge(rules)
-                self.finish(store.snapshot == previous ? .unchanged : .imported(rules.count))
+                guard !self.rejectReadOnlyStore(store) else { return }
+                let previous = store.configurationSnapshot
+                store.merge(document)
+                if let issue = store.writeIssue {
+                    self.finish(.failed(issue.localizedDescription))
+                } else {
+                    self.finish(store.configurationSnapshot == previous ? .unchanged
+                        : .imported(document.rules.count, includesDefaults: document.globalDefaults != nil))
+                }
             } catch {
                 guard !Task.isCancelled, let self, self.requestID == request else { return }
                 self.finish(.failed(error.localizedDescription))
@@ -153,15 +183,16 @@ final class RuleFileActions: ObservableObject {
     }
 
     @discardableResult
-    private func runExport(_ rules: [AppRule], to url: URL, request: UUID) -> Task<Void, Never> {
+    private func runExport(_ configuration: RuleConfiguration, to url: URL,
+                           request: UUID) -> Task<Void, Never> {
         exportID = request
         state = .exporting
         let write = write
         let task = Task { [weak self] in
             let result: State
             do {
-                try await write(rules, url)
-                result = .exported(rules.count)
+                try await write(configuration, url)
+                result = .exported(configuration.rules.count)
             } catch {
                 result = .failed(error.localizedDescription)
             }
@@ -187,13 +218,13 @@ final class RuleFileActions: ObservableObject {
         closeObserver = nil
     }
 
-    private nonisolated static func readFile(_ url: URL) async throws -> [AppRule] {
-        try await fileWork(at: url) { try RuleTransfer.read(from: url) }
+    private nonisolated static func readFile(_ url: URL) async throws -> RuleTransfer.Document {
+        try await fileWork(at: url) { try RuleTransfer.readConfiguration(from: url) }
     }
 
-    private nonisolated static func writeFile(_ rules: [AppRule], _ url: URL) async throws {
+    private nonisolated static func writeFile(_ configuration: RuleConfiguration, _ url: URL) async throws {
         try await fileWork(at: url) {
-            let data = try RuleTransfer.encode(rules)
+            let data = try RuleTransfer.encode(configuration)
             try Task.checkCancellation()
             try data.write(to: url, options: .atomic)
         }

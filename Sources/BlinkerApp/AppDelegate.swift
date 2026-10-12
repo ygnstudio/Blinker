@@ -13,6 +13,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
     private let feedback = ActionFeedbackController.shared
     private let windowBrowser = WindowBrowserController()
     private let settingsNavigation = SettingsNavigation()
+    private let rulesNavigation = RulesNavigation()
+    private let workbenchNavigation = WorkbenchNavigation()
+    private lazy var applicationMenu = ApplicationMenu(delegate: self)
     private var appearanceSubscription: AnyCancellable?
     private lazy var permissions = PermissionController(thumbnails: windowBrowser.thumbnails)
     private lazy var permissionAssistant = PermissionAssistantController(permissions: permissions)
@@ -49,7 +52,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
             coordinator: interception,
             systemStatus: menuBarStatus,
             audio: systemAudio,
-            bluetoothScanner: bluetoothScanner
+            bluetoothScanner: bluetoothScanner, desktopActions: desktopActions
         )
         controller.onOpenSettings = { [weak self] in self?.openSettings() }
         controller.onPauseAll = { [weak self] minutes in self?.interception.pause(minutes: minutes) }
@@ -57,12 +60,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
         controller.onOpenApplications = { [weak self] in self?.openApplications() }
         controller.onOpenMenuBarSettings = { [weak self] in
             self?.settingsNavigation.selection = .menuBar
-            self?.openSettings()
+            self?.applicationWindows.showSettings()
         }
         controller.onOpenMenuBarPage = { [weak self] page in
             self?.settingsNavigation.selection = .menuBar
             self?.settingsNavigation.menuBarPage = page
-            self?.openSettings()
+            self?.applicationWindows.showSettings()
         }
         controller.screenEffectsState = { [weak self] in
             (self?.screenEffects.preferences.configuration.isEnabled == true,
@@ -93,37 +96,50 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
         return controller
     }()
 
-    private lazy var settingsWindowController =
-        AppWindowController(title: String(localized: "通用")) { [weak self] in
-            guard let self else {
-                fatalError("AppDelegate deallocated before the settings window was created")
-            }
-            // The single injection point for the settings tree: the stores flow
-            // down to the tabs through the environment, while the two behavior
-            // callbacks stay explicit.
-            return NSHostingController(
-                rootView: SettingsView(
-                    onApplyHoverSettings: applyHoverOverlaySettings,
-                    onSnapEnabledChange: applySnapEnabled,
-                    onOpenApplications: openApplications,
-                    onShowOnboarding: replayOnboarding,
-                    onShowAbout: openAbout,
-                    navigation: settingsNavigation
-                )
-                .environmentObject(hoverOverlaySettingsStore)
-                .environmentObject(hotkeyManager)
-                .environmentObject(workspaceStore)
-                .environmentObject(interception)
-                .environmentObject(windowBrowser)
-                .environmentObject(permissions)
-                .environmentObject(permissionAssistant)
-                .environmentObject(menuBarStatus)
-                .environmentObject(systemAudio)
-                .environmentObject(bluetoothScanner)
-                .environmentObject(screenEffects)
-                .environmentObject(desktopActions)
-            )
-        }
+    private lazy var applicationWindows = NativeApplicationWindows(
+        settings: AnyView(makeSettingsContent()), rules: AnyView(makeRulesContent()),
+        navigation: workbenchNavigation, settingsNavigation: settingsNavigation,
+        onShowStatusPanel: { [weak self] in self?.statusItemController.showSystemPanel() }
+    )
+
+    private func makeSettingsContent() -> some View {
+        SettingsView(
+            onApplyHoverSettings: applyHoverOverlaySettings,
+            onSnapEnabledChange: applySnapEnabled,
+            onShowOnboarding: replayOnboarding,
+            onShowAbout: openAbout,
+            onShowStatusPanel: { [weak self] in self?.statusItemController.showSystemPanel() },
+            onOpenApplications: openApplications,
+            navigation: settingsNavigation
+        )
+        .environmentObject(ruleStore)
+        .environmentObject(hoverOverlaySettingsStore)
+        .environmentObject(hotkeyManager)
+        .environmentObject(workspaceStore)
+        .environmentObject(interception)
+        .environmentObject(windowBrowser)
+        .environmentObject(permissions)
+        .environmentObject(permissionAssistant)
+        .environmentObject(menuBarStatus)
+        .environmentObject(systemAudio)
+        .environmentObject(bluetoothScanner)
+        .environmentObject(screenEffects)
+        .environmentObject(desktopActions)
+    }
+
+    private func makeRulesContent() -> some View {
+        RulesWindowContent(
+            navigation: rulesNavigation,
+            onInspect: { [weak self] appID in
+                self?.settingsNavigation.openDiagnostics(appID)
+                self?.applicationWindows.showSettings()
+            },
+            onOpenSettings: openSettings
+        )
+        .environmentObject(ruleStore)
+        .environmentObject(permissions)
+        .environmentObject(interception)
+    }
 
     private lazy var aboutWindowController = AppWindowController(
         title: String(localized: "关于 Blinker"), autosaveName: "BlinkerAbout",
@@ -131,27 +147,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
     ) { [weak self] in
         NSHostingController(rootView: AboutView(onOpenPermissions: { [weak self] in
             self?.settingsNavigation.selection = .permissions
-            self?.openSettings()
+            self?.applicationWindows.showSettings()
         }))
-    }
-
-    private lazy var applicationsWindowController = AppWindowController(
-        title: String(localized: "应用规则"),
-        autosaveName: "BlinkerApplications",
-        contentSize: NSSize(width: 600, height: 480),
-        minimumSize: NSSize(width: 480, height: 360)
-    ) { [unowned self] in
-        NSHostingController(rootView: ApplicationRulesView(
-            onEdit: openRule,
-            onOpenSettings: openSettings
-        ).environmentObject(ruleStore))
     }
 
     private var onboardingWindowController: AppWindowController?
 
     func replayOnboarding() {
-        onboardingWindowController?.close()
-        showOnboarding()
+        settingsNavigation.showsOnboarding = true
+        applicationWindows.showSettings()
     }
 
     func showOnboarding() {
@@ -181,30 +185,36 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
         onboardingWindowController?.show()
     }
 
-    private var ruleWindows: [AppRule.ID: AppWindowController] = [:]
-
     func openApplications() {
-        applicationsWindowController.show()
+        applicationWindows.showRules()
     }
 
-    private func openRule(_ rule: AppRule) {
-        if ruleWindows[rule.id] == nil {
-            ruleWindows[rule.id] = AppWindowController(
-                title: rule.displayName,
-                autosaveName: "BlinkerRule-" + rule.id,
-                contentSize: NSSize(width: 500, height: 600),
-                minimumSize: NSSize(width: 420, height: 440)
-            ) { [ruleStore] in
-                NSHostingController(rootView: ApplicationRuleEditor(ruleStore: ruleStore, ruleID: rule.id))
-            }
-            ruleWindows[rule.id]?.onClose = { [weak self] in self?.ruleWindows[rule.id] = nil }
-        }
-        ruleWindows[rule.id]?.show()
+    func addApplication() {
+        openApplications()
+        rulesNavigation.showsAppLibrary = true
+    }
+
+    func openDiagnostics() {
+        settingsNavigation.openDiagnostics()
+        applicationWindows.showSettings()
+    }
+
+    func applicationWillFinishLaunching(_: Notification) {
+        applicationWindows.install()
     }
 
     func applicationDidFinishLaunching(_: Notification) {
+        let launchDestination = LaunchPresentationPolicy.currentDestination(
+            hasSeenOnboarding: AppPreferences.shared.hasSeenOnboarding
+        )
+        applicationMenu.install()
         observeAppearance()
-        // Menu bar app: no Dock icon, no main window.
+        CompatibilityWindowController.shared.onShowDiagnostics = { [weak self] appID in
+            self?.settingsNavigation.openDiagnostics(appID)
+            self?.applicationWindows.showSettings()
+        }
+        // Background services keep their existing menu-bar/Dock placement preference.
+        // Present the workspace only for a user-initiated launch after setup.
         NSApp.setActivationPolicy(.accessory)
         statusItemController.install()
         screenEffects.start()
@@ -219,8 +229,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
         interception.start()
         wireHoverToggleHotkey()
         windowBrowser.start()
-        if !AppPreferences.shared.hasSeenOnboarding {
+        switch launchDestination {
+        case .onboarding:
             showOnboarding()
+        case .workbench:
+            applicationWindows.showRules()
+        case .background:
+            break
         }
     }
 
@@ -236,11 +251,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
     }
 
     func applicationShouldHandleReopen(_: NSApplication, hasVisibleWindows _: Bool) -> Bool {
-        if MenuBarPreferences.shared.configuration.showsDock {
-            statusItemController.showSystemPanel()
-        } else {
-            openSettings()
-        }
+        applicationWindows.showCurrent()
         return false
     }
 
@@ -274,7 +285,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
     // MARK: - Forwarding (settings UI + menu bar)
 
     func openSettings() {
-        settingsWindowController.show()
+        applicationWindows.showSettings()
     }
 
     func openAbout() {

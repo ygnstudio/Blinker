@@ -1,3 +1,5 @@
+> 2026-10-07：应用壳已重构为 AppKit 生命周期、独立规则/设置窗口与系统导航。当前窗口/API 边界以 [原生重构](native-rebuild.md) 为准。下文服务、线程与数据约束继续有效，旧窗口 UI 描述为历史信息。
+
 # Architecture
 
 Blinker has two production Swift Package targets: `BlinkerCore` owns rules and native window behavior; `BlinkerApp` owns application lifecycle, preferences and presentation. Core does not depend on the app target. It includes AppKit panels where native tracking, focus and glass composition are part of the behavior.
@@ -23,9 +25,9 @@ Blinker has two production Swift Package targets: `BlinkerCore` owns rules and n
 | `BlinkerApp/AppWindowController` | Shared lifecycle for native settings, About, rule-list and per-app editor windows |
 | Other `BlinkerApp` controllers | Menu bar, interception coordination and failure feedback |
 
-Rules answer “what should happen for this app?” Settings answer “how should Blinker behave globally?” The rule list owns global import/export; each app editor owns actions, independent enable flags, copy and reset. About is a separate window for product identity, version, project links and licensing. Help commands open the guide, onboarding and diagnostic tools.
+Rules answer “what should happen for this app?” Settings answer “how should Blinker behave globally?” The application window uses a searchable sidebar and an inline rule inspector; selecting an app edits it directly. Its tools include global import/export and the selected app's copy/reset actions. A separate editor remains optional. About is a separate window for product identity, version, project links and licensing. Help commands open the guide, onboarding and diagnostic tools.
 
-Settings has eight destinations: General, Menu Bar, Screen Effects, Hover Buttons, Previews & Switching, Window Management, Shortcuts, and Privacy and Permissions. Each preference has one editor. Contextual links may reveal its owner or the shared permission assistant. Workspace controls stay inside Window Management behind their experimental enable flag; About and diagnostics are not settings categories. `SettingsNavigation` routes every settings entry point to the same window. Keep persisted preference keys, rule identities and migration readers independent of navigation labels.
+Settings groups general preferences, window operations, status and quick actions, and screen effects in one sidebar. Status icon, panel, quick actions, battery, network/audio, Bluetooth, storage and performance each have a direct sidebar entry; contextual links select the same entry. Each preference has one editor. Contextual links may reveal its owner or the shared permission assistant. Workspace controls stay inside Window Management behind their experimental enable flag; About and diagnostics are not settings categories. `SettingsNavigation` routes every settings entry point to the same window. Keep persisted preference keys, rule identities and migration readers independent of navigation labels.
 
 ## Execution boundaries
 
@@ -42,6 +44,10 @@ Settings has eight destinations: General, Menu Bar, Screen Effects, Hover Button
 Click hit testing is partly synchronous because the original event must be passed through or consumed before the callback returns. Do not describe the tap as AX-free. Actions execute on a worker queue; the shared performer serializes mutations. An AX timeout limits an individual call, not the sum of every call in a traversal.
 
 Hover movement is coalesced to at most 60 detection passes per second. Discovery uses a serial worker; AppKit mutations return to the main thread. `OverlayPresentationState` protects pending/displayed state with a lock and invalidates stale detections with a revision. Appearance delay (`OverlayWakeGate`) and click protection (`OverlayClickGate`/dwell controls) remain separate policies.
+
+Finder preference writes run on a worker with an optimistic switch, a busy guard and a refresh after completion. Low-power reads use ProcessInfo and power-state notifications. Appearance and display controllers also survive panel recreation.
+
+Low-power writes belong to the app-lifetime `MenuBarPresentation` owner, not the transient status panel. Closing and reopening the panel must retain the same operation and busy state. Only XPC connection failure or timeout may trigger the single registration repair; a helper-reported `pmset` failure does not invalidate its registration. Repair waits for `SMAppService.unregister` completion before re-registering, and a cleanup error ends the attempt without another write.
 
 ## Input to action
 
@@ -67,7 +73,7 @@ Individual window-action entry points use `DefaultWindowActionPerformer.shared`.
 
 ## Presentation and layout
 
-One nonactivating `NSPanel` hosts the hover controls. A continuous capsule tray fills gaps and outer padding; the glass effect container groups button materials and does not replace that tray. macOS 26+ uses `NSGlassEffectView` and `NSGlassEffectContainerView`; older systems use `NSVisualEffectView`. Native buttons retain tracking and accessibility behavior. Reduced transparency/high contrast use the supported opaque fallback.
+One nonactivating `NSPanel` hosts the hover controls. A continuous capsule tray fills gaps and outer padding; the glass effect container groups button materials and does not replace that tray. The minimum OS is macOS 26; all supported systems use `NSGlassEffectView` and `NSGlassEffectContainerView`. Pre-26 material and mask fallbacks have been removed. Native buttons retain tracking and accessibility behavior. Reduced transparency/high contrast use the supported opaque fallback.
 
 Hover geometry uses AX/CG coordinates with a top-left origin and converts using `AXQuery.coordinatePivotY`. The full tray is constrained to the intersection of its owner window and screen; the settings preview shares the geometry policy. Screens are read on the main thread. Window placement validates writes and keeps constrained or restored windows reachable.
 

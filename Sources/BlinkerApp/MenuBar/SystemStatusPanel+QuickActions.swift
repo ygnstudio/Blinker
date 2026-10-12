@@ -17,6 +17,7 @@ extension SystemStatusPanel {
             || configuration.showsQuickActionKeyboardCleaning
             || configuration.showsQuickActionEmptyTrash
             || configuration.showsQuickActionKeepAwake
+            || (configuration.showsQuickActionShowDesktop && desktopActions != nil)
             || configuration.showsQuickActionDesktopIcons
             || configuration.showsQuickActionHiddenFiles
             || configuration.showsQuickActionShowExtensions
@@ -32,7 +33,7 @@ extension SystemStatusPanel {
     }
 
     /// The panel's second page. An entirely unconfigured page still keeps its
-    /// heading gear so the way back to settings stays discoverable. Landing
+    /// management menu so the way back to settings stays discoverable. Landing
     /// on the page re-syncs the Finder switches, the dark-mode switch and the
     /// display list with the system.
     var quickActionsPage: some View {
@@ -41,7 +42,6 @@ extension SystemStatusPanel {
             if quickActionsHasRows {
                 quickActionsSection
             } else {
-                heading("快速操作", symbol: "bolt.circle", page: .quickActions)
                 Text("没有已开启的操作，可在快速操作设置中开启。")
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -55,99 +55,21 @@ extension SystemStatusPanel {
         }
     }
 
-    @ViewBuilder
     var quickActionsSection: some View {
-        let configuration = preferences.configuration
-        if quickActionsHasRows {
-            VStack(alignment: .leading,
-                   spacing: configuration.panelDensity.rowSpacing) {
-                heading("快速操作", symbol: "bolt.circle", page: .quickActions)
-                if configuration.showsQuickActionMicMute {
-                    micMuteRow
+        VStack(alignment: .leading, spacing: preferences.configuration.panelDensity.sectionSpacing) {
+            soundAndPowerActions
+            displayActions
+            finderActions
+            cleaningActions
+            if !preferences.configuration.shortcutSlots.isEmpty {
+                actionGroup("快捷指令") {
+                    ForEach(preferences.configuration.shortcutSlots, id: \.self, content: shortcutRow)
                 }
-                if configuration.showsQuickActionDisplayCleaning {
-                    cleaningRow(title: LocalizedStringKey("显示器清洁模式"), symbol: "display",
-                                help: String(localized: "全屏黑屏并锁定键盘；按 Esc 或点击退出")) {
-                        cleaning.start(.display)
-                    }
-                }
-                if configuration.showsQuickActionKeyboardCleaning {
-                    cleaningRow(title: LocalizedStringKey("键盘清洁模式"), symbol: "keyboard",
-                                help: String(localized: "系统级锁定键盘输入；点击退出按钮或连按三次 Esc 结束")) {
-                        cleaning.start(.keyboard)
-                    }
-                }
-                if configuration.showsQuickActionEmptyTrash {
-                    trashRow
-                }
-                if configuration.showsQuickActionKeepAwake {
-                    keepAwakeRow
-                }
-                if configuration.showsQuickActionDesktopIcons {
-                    finderToggleRow(title: "隐藏桌面图标", symbol: "eye.slash",
-                                    isOn: desktopIconsBinding)
-                }
-                if configuration.showsQuickActionHiddenFiles {
-                    finderToggleRow(title: "显示隐藏文件", symbol: "eye",
-                                    isOn: hiddenFilesBinding)
-                }
-                if configuration.showsQuickActionShowExtensions {
-                    finderToggleRow(title: "显示扩展名", symbol: "doc.badge.ellipsis",
-                                    isOn: extensionsBinding)
-                }
-                if configuration.showsQuickActionLowPowerMode {
-                    lowPowerRow
-                }
-                if finderToggles.lastWriteFailed,
-                   configuration.showsQuickActionDesktopIcons
-                    || configuration.showsQuickActionHiddenFiles
-                    || configuration.showsQuickActionShowExtensions {
-                    Text("写入失败，请重试。")
-                        .font(.caption).foregroundStyle(.red)
-                }
-                if configuration.showsQuickActionDarkMode {
-                    darkModeRow
-                }
-                if configuration.showsQuickActionScreenSaver,
-                   SystemScreenActions.isScreenSaverAvailable {
-                    actionRow(title: "屏幕保护", symbol: "photo.on.rectangle",
-                              buttonTitle: "开始",
-                              help: String(localized: "立即启动屏幕保护程序")) {
-                        try? SystemScreenActions.startScreenSaver()
-                    }
-                }
-                if configuration.showsQuickActionDisplaySleep {
-                    actionRow(title: "关闭显示器", symbol: "moon.zzz",
-                              buttonTitle: "关闭",
-                              help: String(localized: "仅关闭所有显示器，Mac 继续运行")) {
-                        try? SystemScreenActions.sleepDisplays()
-                    }
-                }
-                if configuration.showsQuickActionLockScreen,
-                   SystemScreenActions.isLockScreenAvailable {
-                    actionRow(title: "锁定屏幕", symbol: "lock",
-                              buttonTitle: "锁定",
-                              help: String(localized: "返回登录窗口，会话与应用保持运行")) {
-                        SystemScreenActions.lockScreenNow()
-                    }
-                }
-                if configuration.showsQuickActionResolution {
-                    ForEach(displayModes.displays, content: resolutionRow)
-                    if displayModes.applyFailed {
-                        Text("分辨率切换失败，显示器可能不支持该模式。")
-                            .font(.caption).foregroundStyle(.red)
-                    }
-                }
-                if configuration.showsQuickActionBluetoothConnect,
-                   !configuration.quickActionAudioDeviceAddress.isEmpty {
-                    bluetoothConnectRow
-                }
-                ForEach(configuration.shortcutSlots, id: \.self, content: shortcutRow)
             }
         }
     }
 
-    private var micMuteRow: some View {
+    var micMuteRow: some View {
         HStack(spacing: 6) {
             Image(systemName: audio.input?.isMuted == true ? "mic.slash.fill" : "mic.fill")
                 .frame(width: 18)
@@ -162,15 +84,15 @@ extension SystemStatusPanel {
                 .toggleStyle(.switch).labelsHidden()
                 .disabled(audio.input?.canMute != true)
         }
-        .font(.callout)
+        .font(.body).frame(minHeight: 28)
     }
 
-    private var micMuteBinding: Binding<Bool> {
+    var micMuteBinding: Binding<Bool> {
         Binding(get: { audio.input?.isMuted == true },
                 set: { audio.setInputMuted($0) })
     }
 
-    private var keepAwakeRow: some View {
+    var keepAwakeRow: some View {
         HStack(spacing: 6) {
             Image(systemName: "cup.and.saucer").frame(width: 18)
                 .foregroundStyle(keepAwake.isActive ? Color.orange : Color.primary)
@@ -179,10 +101,10 @@ extension SystemStatusPanel {
             Toggle("保持唤醒", isOn: keepAwakeBinding)
                 .toggleStyle(.switch).labelsHidden()
         }
-        .font(.callout)
+        .font(.body).frame(minHeight: 28)
     }
 
-    private var keepAwakeBinding: Binding<Bool> {
+    var keepAwakeBinding: Binding<Bool> {
         Binding(get: { keepAwake.isActive },
                 set: { keepAwake.setActive($0) })
     }
@@ -190,29 +112,30 @@ extension SystemStatusPanel {
     /// The two Finder switches share one shape. The desktop-icons row reads
     /// inverted — ON means "icons are hidden", matching the mic-mute row
     /// where ON names the active state.
-    private func finderToggleRow(title: LocalizedStringKey, symbol: String,
-                                 isOn: Binding<Bool>) -> some View {
+    func finderToggleRow(title: LocalizedStringKey, symbol: String,
+                         isOn: Binding<Bool>) -> some View {
         HStack(spacing: 6) {
             Image(systemName: symbol).frame(width: 18)
             Text(title)
             Spacer(minLength: 8)
             Toggle(title, isOn: isOn)
                 .toggleStyle(.switch).labelsHidden()
+                .disabled(finderToggles.isApplying)
         }
-        .font(.callout)
+        .font(.body).frame(minHeight: 28)
     }
 
-    private var desktopIconsBinding: Binding<Bool> {
+    var desktopIconsBinding: Binding<Bool> {
         Binding(get: { !finderToggles.desktopIconsShown },
                 set: { finderToggles.setDesktopIconsShown(!$0) })
     }
 
-    private var hiddenFilesBinding: Binding<Bool> {
+    var hiddenFilesBinding: Binding<Bool> {
         Binding(get: { finderToggles.hiddenFilesShown },
                 set: { finderToggles.setHiddenFilesShown($0) })
     }
 
-    private var extensionsBinding: Binding<Bool> {
+    var extensionsBinding: Binding<Bool> {
         Binding(get: { finderToggles.extensionsShown },
                 set: { finderToggles.setExtensionsShown($0) })
     }
@@ -220,18 +143,21 @@ extension SystemStatusPanel {
     /// Low power mode: a toggle whose write path crosses into the
     /// privileged helper. The issue surfaces inline, mirroring the dark
     /// mode row's automation-denied guidance.
-    private var lowPowerRow: some View {
+    var lowPowerRow: some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack(spacing: 6) {
                 Image(systemName: lowPower.isOn ? "battery.25" : "battery.100")
                     .frame(width: 18)
                 Text("低电量模式")
                 Spacer(minLength: 8)
+                if lowPower.isApplying {
+                    ProgressView().controlSize(.mini).accessibilityLabel("正在应用")
+                }
                 Toggle("低电量模式", isOn: lowPowerBinding)
                     .toggleStyle(.switch).labelsHidden()
                     .disabled(lowPower.isApplying)
             }
-            .font(.callout)
+            .font(.body).frame(minHeight: 28)
             switch lowPower.issue {
             case .approvalRequired:
                 Text("需在「系统设置 → 通用 → 登录项与扩展」中允许 Blinker 的后台项目。")
@@ -250,7 +176,7 @@ extension SystemStatusPanel {
         }
     }
 
-    private var lowPowerBinding: Binding<Bool> {
+    var lowPowerBinding: Binding<Bool> {
         Binding(get: { lowPower.isOn },
                 set: { lowPower.setLowPowerMode($0) })
     }
@@ -258,18 +184,21 @@ extension SystemStatusPanel {
     /// Dark mode sits with the other system-wide visual switches. Writing
     /// runs through System Events, so a missing Automation consent explains
     /// itself inline the same way the trash row does.
-    private var darkModeRow: some View {
+    var darkModeRow: some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack(spacing: 6) {
                 Image(systemName: appearanceToggle.isDarkMode ? "moon.fill" : "moon")
                     .frame(width: 18)
                 Text("深色模式")
                 Spacer(minLength: 8)
+                if appearanceToggle.isApplying {
+                    ProgressView().controlSize(.mini).accessibilityLabel("正在应用")
+                }
                 Toggle("深色模式", isOn: darkModeBinding)
                     .toggleStyle(.switch).labelsHidden()
                     .disabled(appearanceToggle.isApplying)
             }
-            .font(.callout)
+            .font(.body).frame(minHeight: 28)
             switch appearanceToggle.failure {
             case .automationDenied:
                 Text("需要允许 Blinker 控制系统事件。")
@@ -278,7 +207,7 @@ extension SystemStatusPanel {
                 settingsLink("打开自动化设置…",
                              destination: "com.apple.preference.security?Privacy_Automation")
                     .font(.caption)
-            case .failed(let message):
+            case let .failed(message):
                 Text(message)
                     .font(.caption).foregroundStyle(.red)
                     .fixedSize(horizontal: false, vertical: true)
@@ -288,67 +217,85 @@ extension SystemStatusPanel {
         }
     }
 
-    private var darkModeBinding: Binding<Bool> {
+    var darkModeBinding: Binding<Bool> {
         Binding(get: { appearanceToggle.isDarkMode },
                 set: { appearanceToggle.setDarkMode($0) })
     }
 
-    /// One picker per active display. The menu leads with the current mode;
-    /// applying re-reads the list so the checkmark follows what the display
-    /// actually did.
-    private func resolutionRow(_ display: DisplayEntry) -> some View {
+    /// Keep display details inside the menu so this action shares the other rows' geometry.
+    var resolutionRow: some View {
         HStack(spacing: 6) {
-            Image(systemName: "rectangle.resize").frame(width: 18)
-            Text(display.name).lineLimit(1)
+            Image(systemName: "display").frame(width: 18)
+            Text("显示模式")
             Spacer(minLength: 8)
             Menu {
-                ForEach(display.modes) { mode in
-                    Button {
-                        displayModes.setMode(mode, for: display)
-                    } label: {
-                        if mode.isCurrent {
-                            Label(mode.title, systemImage: "checkmark")
-                        } else {
-                            Text(mode.title)
-                        }
+                ForEach(displayModes.displays) { display in
+                    if displayModes.displays.count == 1 {
+                        Section(display.name) { displayModeOptions(display) }
+                    } else {
+                        Menu(display.name) { displayModeOptions(display) }
                     }
                 }
             } label: {
-                Text(display.modes.first(where: \.isCurrent)?.title ?? "—")
+                if displayModes.displays.count == 1,
+                   let mode = displayModes.displays.first?.modes.first(where: \.isCurrent) {
+                    Text(verbatim: "\(mode.width) × \(mode.height)")
+                        .monospacedDigit()
+                } else {
+                    Text("选择显示器")
+                }
             }
-            .menuStyle(.borderlessButton)
+            .menuStyle(.borderedButton)
             .fixedSize()
+            .accessibilityLabel("显示模式")
+            .accessibilityValue(displayModes.displays.count == 1
+                ? displayModes.displays.first?.modes.first(where: \.isCurrent)?.title ?? ""
+                : "")
         }
-        .font(.callout)
+        .font(.body).frame(minHeight: 28)
     }
 
-    private func cleaningRow(title: LocalizedStringKey, symbol: String, help: String,
-                             action: @escaping () -> Void) -> some View {
+    private func displayModeOptions(_ display: DisplayEntry) -> some View {
+        ForEach(display.modes) { mode in
+            Button {
+                displayModes.setMode(mode, for: display)
+            } label: {
+                if mode.isCurrent {
+                    Label(mode.title, systemImage: "checkmark")
+                } else {
+                    Text(mode.title)
+                }
+            }
+        }
+    }
+
+    func cleaningRow(title: LocalizedStringKey, symbol: String, help: String,
+                     action: @escaping () -> Void) -> some View {
         actionRow(title: title, symbol: symbol, buttonTitle: "开始", help: help, action: action)
     }
 
     /// One-shot actions share the cleaning rows' shape: icon, title, a
     /// trailing text button. The button carries the verb since these rows
     /// hold no persistent state.
-    private func actionRow(title: LocalizedStringKey, symbol: String,
-                           buttonTitle: LocalizedStringKey, help: String,
-                           action: @escaping () -> Void) -> some View {
+    func actionRow(title: LocalizedStringKey, symbol: String,
+                   buttonTitle: LocalizedStringKey, help: String,
+                   action: @escaping () -> Void) -> some View {
         HStack(spacing: 6) {
             Image(systemName: symbol).frame(width: 18)
             Text(title)
             Spacer(minLength: 8)
             Button(buttonTitle, action: action)
-                .buttonStyle(.borderless)
+                .buttonStyle(.bordered)
                 .help(help)
         }
-        .font(.callout)
+        .font(.body).frame(minHeight: 28)
     }
 
     /// Bluetooth audio reconnect. The row appears once a device is picked
     /// in settings; the connect call shares the Bluetooth device-control
     /// grant with codec reading and disconnect, so without the grant the
     /// row explains instead of acting.
-    private var bluetoothConnectRow: some View {
+    var bluetoothConnectRow: some View {
         let configuration = preferences.configuration
         let address = configuration.quickActionAudioDeviceAddress
         let live = monitor.snapshot.bluetoothDevices?.first { $0.id == address }
@@ -366,12 +313,12 @@ extension SystemStatusPanel {
                         .font(.caption).foregroundStyle(.tertiary)
                 } else {
                     Button("连接") { connectBluetoothDevice(address) }
-                        .buttonStyle(.borderless)
+                        .buttonStyle(.bordered)
                         .disabled(!canControl)
                         .help(String(localized: "重新连接该设备，配对关系保持不变"))
                 }
             }
-            .font(.callout)
+            .font(.body).frame(minHeight: 28)
             if !canControl {
                 Text("需要在蓝牙设置中开启「编解码器与断开操作」并完成蓝牙授权。")
                     .font(.caption).foregroundStyle(.secondary)
@@ -383,7 +330,7 @@ extension SystemStatusPanel {
     /// Same cadence as disconnect: the profiler cache holds the previous
     /// list for a few seconds, so refresh quickly and again after it
     /// expires.
-    private func connectBluetoothDevice(_ address: String) {
+    func connectBluetoothDevice(_ address: String) {
         DispatchQueue.global(qos: .userInitiated).async {
             _ = BluetoothConnectionDetails.connect(address: address)
             Task { @MainActor in
@@ -400,7 +347,7 @@ extension SystemStatusPanel {
     /// Finder refuses. Emptying is destructive, so the button never acts
     /// directly; it runs through the Finder, which asks for Automation
     /// consent once and needs no other grant.
-    private var trashRow: some View {
+    var trashRow: some View {
         let count = monitor.snapshot.trashItemCount
         return VStack(alignment: .leading, spacing: 4) {
             HStack(spacing: 6) {
@@ -415,12 +362,12 @@ extension SystemStatusPanel {
                     ProgressView().controlSize(.small)
                 } else {
                     Button("清空") { confirmingTrashEmpty = true }
-                        .buttonStyle(.borderless)
+                        .buttonStyle(.bordered)
                         .disabled(count == 0)
                         .help(String(localized: "清空回收站"))
                 }
             }
-            .font(.callout)
+            .font(.body).frame(minHeight: 28)
             switch trashEmptier.failure {
             case .automationDenied:
                 Text("需要允许 Blinker 控制访达。")
@@ -429,7 +376,7 @@ extension SystemStatusPanel {
                 settingsLink("打开自动化设置…",
                              destination: "com.apple.preference.security?Privacy_Automation")
                     .font(.caption)
-            case .failed(let message):
+            case let .failed(message):
                 Text(message)
                     .font(.caption).foregroundStyle(.red)
                     .fixedSize(horizontal: false, vertical: true)
@@ -448,13 +395,13 @@ extension SystemStatusPanel {
         }
     }
 
-    private func shortcutRow(_ name: String) -> some View {
+    func shortcutRow(_ name: String) -> some View {
         let state = shortcutSlotStates[name] ?? .idle
         return HStack(spacing: 6) {
             Image(systemName: "command").frame(width: 18)
             VStack(alignment: .leading, spacing: 1) {
                 Text(name).lineLimit(1)
-                if case .failed(let failure) = state {
+                if case let .failed(failure) = state {
                     Text(failureMessage(failure))
                         .font(.caption).foregroundStyle(.red)
                         .lineLimit(2).fixedSize(horizontal: false, vertical: true)
@@ -465,13 +412,13 @@ extension SystemStatusPanel {
                 ProgressView().controlSize(.small)
             } else {
                 Button("运行") { runShortcut(name) }
-                    .buttonStyle(.borderless)
+                    .buttonStyle(.bordered)
             }
         }
-        .font(.callout)
+        .font(.body).frame(minHeight: 28)
     }
 
-    private func runShortcut(_ name: String) {
+    func runShortcut(_ name: String) {
         guard shortcutSlotStates[name] != .running else { return }
         shortcutSlotStates[name] = .running
         shortcutRunner.run(name) { result in
@@ -479,20 +426,20 @@ extension SystemStatusPanel {
                 switch result {
                 case .success:
                     shortcutSlotStates[name] = .idle
-                case .failure(let failure):
+                case let .failure(failure):
                     shortcutSlotStates[name] = .failed(failure)
                 }
             }
         }
     }
 
-    private func failureMessage(_ failure: ShortcutRunner.Failure) -> String {
+    func failureMessage(_ failure: ShortcutRunner.Failure) -> String {
         switch failure {
         case .notFound:
             String(localized: "未找到同名快捷指令")
         case .timedOut:
             String(localized: "运行超时")
-        case .failed(let message):
+        case let .failed(message):
             String(localized: "运行失败：\(message)")
         }
     }

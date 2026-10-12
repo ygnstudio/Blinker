@@ -72,6 +72,7 @@ class PackageSafetyTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         info = plistlib.loads((self.output / "Contents/Info.plist").read_bytes())
         self.assertEqual(info["CFBundleIdentifier"], "com.ygnstudio.Blinker")
+        self.assertEqual(info["LSMinimumSystemVersion"], "26.0")
         self.assertEqual((self.output / "Contents/MacOS/Blinker").read_bytes(), self.binary.read_bytes())
         self.assertFalse((self.output / "Contents/old-copy").exists())
         self.assertIn("packaged:", result.stdout)

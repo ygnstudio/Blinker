@@ -21,15 +21,21 @@ enum ApplicationLibrary {
     ]
 
     static func installedApps() -> [InstalledApp] {
+        installedApps(in: directories.map { URL(fileURLWithPath: $0, isDirectory: true) })
+    }
+
+    static func installedApps(in directories: [URL]) -> [InstalledApp] {
         var apps: [String: InstalledApp] = [:]
-        for directory in directories {
+        for root in directories {
             guard !Task.isCancelled else { return [] }
-            let root = URL(fileURLWithPath: directory, isDirectory: true)
+            // Safari's /Applications link carries the Finder hidden flag.
+            // Keep these application entries; only omit dot-prefixed metadata.
             guard let urls = try? FileManager.default.contentsOfDirectory(
-                at: root, includingPropertiesForKeys: nil, options: .skipsHiddenFiles
+                at: root, includingPropertiesForKeys: nil, options: []
             ) else { continue }
             for url in urls.sorted(by: { $0.path < $1.path }) {
                 guard !Task.isCancelled else { return [] }
+                guard !url.lastPathComponent.hasPrefix(".") else { continue }
                 if let app = application(at: url), apps[app.id] == nil {
                     apps[app.id] = app
                 }
@@ -39,13 +45,15 @@ enum ApplicationLibrary {
     }
 
     static func application(at url: URL) -> InstalledApp? {
-        guard url.pathExtension.lowercased() == "app", let bundle = Bundle(url: url),
+        guard url.pathExtension.lowercased() == "app" else { return nil }
+        let resolved = url.resolvingSymlinksInPath()
+        guard let bundle = Bundle(url: resolved),
               let identifier = bundle.bundleIdentifier, !identifier.isEmpty,
               identifier != Bundle.main.bundleIdentifier else { return nil }
         let name = (bundle.localizedInfoDictionary?["CFBundleDisplayName"] as? String)
             ?? (bundle.infoDictionary?["CFBundleDisplayName"] as? String)
             ?? (bundle.infoDictionary?["CFBundleName"] as? String)
-            ?? url.deletingPathExtension().lastPathComponent
-        return InstalledApp(bundleIdentifier: identifier, name: name, path: url.path)
+            ?? resolved.deletingPathExtension().lastPathComponent
+        return InstalledApp(bundleIdentifier: identifier, name: name, path: resolved.path)
     }
 }

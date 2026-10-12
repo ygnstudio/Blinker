@@ -67,7 +67,7 @@ class ArtifactTests(unittest.TestCase):
             self.file(self.resources / name, (self.source / name).read_bytes())
         self.info = {"CFBundleIdentifier": "com.ygnstudio.Blinker", "CFBundleExecutable": "Blinker",
                      "CFBundleShortVersionString": "0.4.0-beta.1", "CFBundleVersion": "7",
-                     "CFBundlePackageType": "APPL", "LSMinimumSystemVersion": "15.0"}
+                     "CFBundlePackageType": "APPL", "LSMinimumSystemVersion": "26.0"}
         self.write_info()
         self.file(self.contents / "MacOS/Blinker", b"test executable")
         (self.contents / "MacOS/Blinker").chmod(0o755)
@@ -120,7 +120,7 @@ class ArtifactTests(unittest.TestCase):
     def test_version_identity_and_minimum_os_must_match(self):
         for key, value in (("CFBundleIdentifier", "com.ygnstudio.Blinker.dev"),
                            ("CFBundleShortVersionString", "0.4.0"), ("CFBundleVersion", "8"),
-                           ("LSMinimumSystemVersion", "26.0"), ("CFBundleExecutable", "Other")):
+                           ("LSMinimumSystemVersion", "15.0"), ("CFBundleExecutable", "Other")):
             with self.subTest(key=key):
                 original = self.info[key]
                 self.info[key] = value

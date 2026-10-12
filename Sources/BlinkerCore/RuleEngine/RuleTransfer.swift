@@ -5,9 +5,15 @@ public enum RuleTransfer {
     static let maximumBytes = 1_048_576
     static let maximumRules = 1000
 
-    private struct Archive: Codable {
-        let version: Int
-        let rules: [AppRule]
+    /// A legacy import leaves existing global defaults untouched; v2 carries an explicit replacement.
+    public struct Document: Equatable, Sendable {
+        public var rules: [AppRule]
+        public var globalDefaults: GlobalButtonRules?
+
+        public init(rules: [AppRule], globalDefaults: GlobalButtonRules? = nil) {
+            self.rules = rules
+            self.globalDefaults = globalDefaults
+        }
     }
 
     public enum ImportError: LocalizedError {
@@ -34,20 +40,36 @@ public enum RuleTransfer {
         }
     }
 
-    /// Return only archives accepted by the importer, before a caller replaces a backup.
+    /// Legacy API cannot discard an inheritance dependency or the defaults used to resolve it.
     public static func encode(_ rules: [AppRule]) throws -> Data {
-        guard rules.count <= maximumRules else { throw ExportError.tooManyRules }
-        guard validRules(rules) else { throw ExportError.invalidRules }
+        guard rules.allSatisfy({ $0.inheritedSlots.isEmpty }) else { throw ExportError.invalidRules }
+        return try encodeArchive(RuleConfigurationArchive(legacyRules: rules))
+    }
+
+    public static func encode(_ configuration: RuleConfiguration) throws -> Data {
+        try encodeArchive(RuleConfigurationArchive(configuration))
+    }
+
+    private static func encodeArchive(_ archive: RuleConfigurationArchive) throws -> Data {
+        guard archive.rules.count <= maximumRules else { throw ExportError.tooManyRules }
+        guard validRules(archive.rules) else { throw ExportError.invalidRules }
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.sortedKeys]
-        let data = try encoder.encode(Archive(version: 1, rules: rules))
+        let data = try encoder.encode(archive)
         guard data.count <= maximumBytes else { throw ExportError.archiveTooLarge }
         return data
     }
 
-    /// Open once, reject special files, and bound the actual read as well as the
-    /// recorded size. A file changing after fstat cannot force an unbounded load.
     public static func read(from url: URL) throws -> [AppRule] {
+        try decode(readData(from: url))
+    }
+
+    public static func readConfiguration(from url: URL) throws -> Document {
+        try decodeConfiguration(readData(from: url))
+    }
+
+    /// Open once, reject special files, and bound both the recorded size and the actual read.
+    private static func readData(from url: URL) throws -> Data {
         guard url.isFileURL else { throw ImportError.invalidArchive }
         let descriptor = open(url.path, O_RDONLY | O_NONBLOCK | O_CLOEXEC)
         guard descriptor >= 0 else { throw ImportError.invalidArchive }
@@ -59,34 +81,56 @@ public enum RuleTransfer {
         var data = Data()
         while data.count <= maximumBytes {
             let chunk = try handle.read(upToCount: min(65536, maximumBytes + 1 - data.count)) ?? Data()
-            if chunk.isEmpty {
-                break
-            }
+            if chunk.isEmpty { break }
             data.append(chunk)
         }
-        return try decode(data)
+        return data
     }
 
+    /// Kept for old callers. v2 must use the complete-document API, never silently lose defaults.
     public static func decode(_ data: Data) throws -> [AppRule] {
-        guard data.count <= maximumBytes,
-              let archive = try? JSONDecoder().decode(Archive.self, from: data),
-              archive.version == 1, archive.rules.count <= maximumRules, validRules(archive.rules)
-        else { throw ImportError.invalidArchive }
-        return archive.rules
+        let document = try decodeConfiguration(data)
+        guard document.globalDefaults == nil else { throw ImportError.invalidArchive }
+        return document.rules
+    }
+
+    public static func decodeConfiguration(_ data: Data) throws -> Document {
+        guard data.count <= maximumBytes else { throw ImportError.invalidArchive }
+        let document = try decodeStoredConfiguration(data)
+        guard document.rules.count <= maximumRules else { throw ImportError.invalidArchive }
+        return document
+    }
+
+    /// Persistence retains historically valid large stores; the smaller bounds apply to file transfer.
+    static func decodeStoredConfiguration(_ data: Data) throws -> Document {
+        guard let archive = try? JSONDecoder().decode(RuleConfigurationArchive.self, from: data),
+              validRules(archive.rules) else { throw ImportError.invalidArchive }
+        switch archive.version {
+        case 1:
+            guard archive.globalDefaults == nil,
+                  archive.rules.allSatisfy({ $0.inheritedSlots.isEmpty }) else {
+                throw ImportError.invalidArchive
+            }
+        case RuleConfigurationArchive.currentVersion:
+            guard archive.globalDefaults != nil else { throw ImportError.invalidArchive }
+        default: throw ImportError.invalidArchive
+        }
+        return Document(rules: archive.rules, globalDefaults: archive.globalDefaults)
     }
 
     static func validRules(_ rules: [AppRule]) -> Bool {
-        Set(rules.map(\.id)).count == rules.count
-            && rules.allSatisfy {
-                !$0.id.isEmpty && $0.id == $0.id.trimmingCharacters(in: .whitespacesAndNewlines)
-                    && $0.extraVariantActions.values.allSatisfy { !$0.keys.contains(.left) }
-            }
+        Set(rules.map(\.id)).count == rules.count && rules.allSatisfy { rule in
+            !rule.id.isEmpty && rule.id == rule.id.trimmingCharacters(in: .whitespacesAndNewlines)
+                && rule.extraVariantActions.values.allSatisfy { !$0.keys.contains(.left) }
+                && rule.inheritedSlots.allSatisfy { rule.action(for: $0.button, variant: $0.variant) == nil }
+        }
     }
 
     public static func copying(_ source: AppRule, to target: AppRule) -> AppRule {
         AppRule(bundleIdentifier: target.bundleIdentifier, displayName: target.displayName,
                 closeAction: source.closeAction, minimizeAction: source.minimizeAction,
                 zoomAction: source.zoomAction, extraVariantActions: source.extraVariantActions,
-                isEnabled: source.isEnabled, isHoverEnabled: source.isHoverEnabled)
+                isEnabled: source.isEnabled, isHoverEnabled: source.isHoverEnabled,
+                inheritedSlots: source.inheritedSlots)
     }
 }

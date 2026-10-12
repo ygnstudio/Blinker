@@ -9,47 +9,56 @@ extension SystemStatusPanel {
                spacing: preferences.configuration.panelDensity.rowSpacing) {
             heading("蓝牙", symbol: "antenna.radiowaves.left.and.right", page: .bluetooth)
             bluetoothContent
-            if preferences.configuration.scansNearbyBluetoothDevices {
-                nearbyContent
+            DisclosureGroup("设备详情", isExpanded: $expandedBluetoothDevices) {
+                VStack(alignment: .leading, spacing: 8) {
+                    if !preferences.configuration.alwaysShowsAllBluetoothDevices {
+                        ForEach(remainingBluetoothDevices) { bluetoothRow($0) }
+                    }
+                    if preferences.configuration.scansNearbyBluetoothDevices {
+                        nearbyContent
+                    }
+                    settingsLink("打开系统蓝牙设置…", destination: "com.apple.Bluetooth-Settings.extension")
+                }
+                .padding(.top, 8)
             }
-            settingsLink("蓝牙设置…", destination: "com.apple.Bluetooth-Settings.extension")
+            .font(.callout)
         }
+    }
+
+    private var listedBluetoothDevices: [BluetoothDevice] {
+        let configuration = preferences.configuration
+        let merged = BluetoothNearbyMerge.merged(
+            devices: monitor.snapshot.bluetoothDevices ?? [],
+            nearby: configuration.scansNearbyBluetoothDevices ? scanner.nearbyDevices : []
+        )
+        return BluetoothDeviceOrdering.ordered(merged.devices, order: configuration.bluetoothDeviceOrder)
+            .filter { !configuration.hiddenBluetoothDevices.contains($0.id) }
+            .filter { !configuration.hidesUnpairedBluetoothDevices || !$0.isUnpairedGhost }
+    }
+
+    private var summaryBluetoothDevices: [BluetoothDevice] {
+        let configuration = preferences.configuration
+        if configuration.alwaysShowsAllBluetoothDevices { return listedBluetoothDevices }
+        return Array(listedBluetoothDevices.filter(\.isConnected).prefix(configuration.bluetoothDeviceLimit))
+    }
+
+    private var remainingBluetoothDevices: [BluetoothDevice] {
+        let shown = Set(summaryBluetoothDevices.map(\.id))
+        return listedBluetoothDevices.filter { !shown.contains($0.id) }
     }
 
     @ViewBuilder
     private var bluetoothContent: some View {
-        let configuration = preferences.configuration
-        if let devices = monitor.snapshot.bluetoothDevices {
-            let merged = BluetoothNearbyMerge.merged(
-                devices: devices,
-                nearby: configuration.scansNearbyBluetoothDevices ? scanner.nearbyDevices : []
-            )
-            let listed = BluetoothDeviceOrdering
-                .ordered(merged.devices, order: configuration.bluetoothDeviceOrder)
-                .filter { !configuration.hiddenBluetoothDevices.contains($0.id) }
-                .filter { !configuration.hidesUnpairedBluetoothDevices || !$0.isUnpairedGhost }
-            if listed.isEmpty, merged.remainingNearby.isEmpty {
-                Text("没有已配对的蓝牙设备。")
-                    .font(.callout).foregroundStyle(.secondary)
-            } else {
-                let limit = expandedBluetoothDevices || configuration.alwaysShowsAllBluetoothDevices
-                    ? listed.count : configuration.bluetoothDeviceLimit
-                VStack(alignment: .leading, spacing: 4) {
-                    ForEach(Array(listed.prefix(limit))) { device in
-                        bluetoothRow(device)
-                    }
-                    if listed.count > configuration.bluetoothDeviceLimit,
-                       !configuration.alwaysShowsAllBluetoothDevices {
-                        Button(expandedBluetoothDevices
-                            ? String(localized: "收起设备") : String(localized: "显示全部设备")) {
-                            expandedBluetoothDevices.toggle()
-                        }.buttonStyle(.borderless)
-                    }
-                }
-            }
+        if monitor.snapshot.bluetoothDevices == nil {
+            Text("正在读取…").font(.callout).foregroundStyle(.secondary)
+        } else if listedBluetoothDevices.isEmpty {
+            Text("没有已配对的蓝牙设备。").font(.callout).foregroundStyle(.secondary)
+        } else if summaryBluetoothDevices.isEmpty {
+            Text("没有已连接的设备").font(.callout).foregroundStyle(.secondary)
         } else {
-            Text("正在读取…")
-                .font(.callout).foregroundStyle(.secondary)
+            VStack(alignment: .leading, spacing: 8) {
+                ForEach(summaryBluetoothDevices) { bluetoothRow($0) }
+            }
         }
     }
 
@@ -58,15 +67,16 @@ extension SystemStatusPanel {
             Image(systemName: device.kind.symbolName).frame(width: 18)
             VStack(alignment: .leading, spacing: 1) {
                 Text(device.name).lineLimit(2).fixedSize(horizontal: false, vertical: true)
+                if let battery = device.battery {
+                    bluetoothBatteryView(battery)
+                }
                 if let subtitle = bluetoothSubtitle(device) {
                     Text(subtitle)
                         .font(.caption).foregroundStyle(.tertiary)
                 }
             }
             Spacer(minLength: 8)
-            if let battery = device.battery {
-                bluetoothBatteryView(battery)
-            } else if !device.isConnected {
+            if !device.isConnected {
                 Text("未连接")
                     .font(.caption).foregroundStyle(.tertiary)
             }

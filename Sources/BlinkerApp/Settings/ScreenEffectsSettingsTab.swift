@@ -38,7 +38,7 @@ struct ScreenEffectsSettingsTab: View {
                         .disabled(configuration == LidEffectConfiguration())
                 }
             }
-            .formStyle(.grouped)
+            .modifier(NativeFormSurface())
         }
         .onAppear {
             permissions.refresh()

@@ -138,9 +138,12 @@ final class RuleTransferTests: XCTestCase {
         XCTAssertEqual(store.rules, [modified, extra])
         store.reset(bundleIdentifier: "one")
         XCTAssertNil(store.rules[0].closeAction)
-        XCTAssertTrue(store.rules[0].isHoverEnabled)
+        // Reset affects button mappings; the independent hover opt-out survives.
+        XCTAssertFalse(store.rules[0].isHoverEnabled)
+        XCTAssertEqual(RuleStore(defaults: defaults).rules, store.rules)
         store.undo()
         XCTAssertEqual(store.rules, [modified, extra])
+        XCTAssertEqual(RuleStore(defaults: defaults).rules, [modified, extra])
         store.remove(bundleIdentifier: "two")
         XCTAssertFalse(store.canRedo)
     }

@@ -20,9 +20,10 @@ final class WindowBrowserPresentation {
             ))
             host.frame = CGRect(origin: .zero, size: frame.size)
             host.autoresizingMask = [.width, .height]
-            let backdrop = GlassBackdrop.makeView(size: frame.size, cornerRadius: 24 * scale,
+            let backdrop = GlassBackdrop.makeView(size: frame.size,
+                                                  cornerRadius: InterfaceMetrics.Radius.glassShell * scale,
                                                   autoresizingMask: [.width, .height])
-            GlassBackdrop.host(host, in: backdrop)
+            backdrop.contentView = host
             let surface = NSView(frame: CGRect(origin: .zero, size: frame.size))
             surface.wantsLayer = true
             surface.layer?.masksToBounds = true
@@ -76,11 +77,7 @@ final class WindowBrowserPresentation {
 
     func updateCornerRadius(scale: CGFloat) {
         guard let surface = panel?.contentView, let backdrop = surface.subviews.first else { return }
-        surface.layer?.cornerRadius = 24 * scale
-        if #available(macOS 26.0, *), let glass = backdrop as? NSGlassEffectView {
-            glass.cornerRadius = 24 * scale
-        } else if let visual = backdrop as? NSVisualEffectView {
-            visual.maskImage = GlassBackdrop.roundedMaskImage(size: surface.bounds.size, radius: 24 * scale)
-        }
+        surface.layer?.cornerRadius = InterfaceMetrics.Radius.glassShell * scale
+        (backdrop as? NSGlassEffectView)?.cornerRadius = InterfaceMetrics.Radius.glassShell * scale
     }
 }

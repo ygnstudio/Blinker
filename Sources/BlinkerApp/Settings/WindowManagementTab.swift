@@ -28,9 +28,8 @@ struct WindowManagementTab: View {
             } footer: {
                 Text("默认关闭。启用前请确认不会与系统或其他窗口管理工具的拖拽贴靠重复。")
             }
-            WorkspaceSettingsSection()
         }
-        .formStyle(.grouped)
+        .modifier(NativeFormSurface())
     }
 
     private var dockSection: some View {
@@ -58,19 +57,8 @@ struct WindowManagementTab: View {
 
     private var desktopSection: some View {
         Section {
-            HStack {
-                Button(desktopActions.desktop.isDesktopShown ? String(localized: "恢复窗口")
-                    : String(localized: "显示桌面")) { desktopActions.toggleDesktop() }
-                    .disabled(desktopActions.isPaused || desktopActions.desktop.isBusy)
-                if desktopActions.desktop.isBusy {
-                    OperationProgress(message: String(localized: "正在调整窗口…"))
-                }
-                Spacer()
-            }
-            if desktopActions.desktop.lastFailureCount > 0 {
-                Text("有 \(desktopActions.desktop.lastFailureCount) 个窗口未能完成操作。")
-                    .font(.callout).foregroundStyle(.secondary)
-            }
+            Text("在快速操作中使用「显示桌面 / 恢复窗口」，或配置桌面快捷键。")
+                .foregroundStyle(.secondary)
         } header: {
             Text("显示桌面与恢复")
         } footer: {

@@ -13,8 +13,8 @@ public protocol LowPowerHelperXPC {
     func setLowPowerMode(_ enabled: Bool, withReply reply: @escaping (NSNumber) -> Void)
 }
 
-/// Negative reply codes the helper returns before pmset is even launched.
-/// timedOut is synthesized on the app side: launchd keeps a broken
+/// Negative results from the helper or the app's XPC transport.
+/// connectionFailed and timedOut are synthesized on the app side: launchd keeps a broken
 /// registration's Mach endpoint vended while it throttles respawns, so a
 /// dead helper pends forever without a connection error — the watchdog is
 /// the only guaranteed signal.
@@ -25,6 +25,8 @@ public enum LowPowerHelperRejection: Int {
     case launchFailed = -2
     /// No reply and no connection error within the watchdog window.
     case timedOut = -3
+    /// XPC could not reach the helper; distinct from a helper-reported pmset failure.
+    case connectionFailed = -4
 }
 
 /// The helper's entire command surface: exactly two argument vectors of

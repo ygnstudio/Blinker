@@ -2,35 +2,50 @@ import SwiftUI
 
 struct MenuBarPanelSettings: View {
     @ObservedObject var preferences: MenuBarPreferences
-    @ObservedObject var audio: SystemAudioController
 
     var body: some View {
         Section {
-            ForEach(preferences.configuration.sectionOrder, id: \.self) { section in
-                Toggle(section.title, isOn: visibility(for: section))
-                    .toggleStyle(.checkbox)
-            }
-            .onMove { offsets, destination in
-                preferences.update {
-                    $0.sectionOrder.move(fromOffsets: offsets, toOffset: destination)
+            List {
+                ForEach(preferences.configuration.sectionOrder, id: \.self) { section in
+                    HStack(spacing: 12) {
+                        Toggle(section.title, isOn: visibility(for: section))
+                            .toggleStyle(EclipseToggleStyle())
+                        EclipseReorderControls(
+                            title: section.title,
+                            canMoveUp: preferences.configuration.sectionOrder.first != section,
+                            canMoveDown: preferences.configuration.sectionOrder.last != section,
+                            moveUp: { moveSection(section, by: -1) },
+                            moveDown: { moveSection(section, by: 1) }
+                        )
+                    }
+                    .listRowSeparator(.hidden)
+                    .listRowBackground(Color.clear)
+                }
+                .onMove { offsets, destination in
+                    preferences.update {
+                        $0.sectionOrder.move(fromOffsets: offsets, toOffset: destination)
+                    }
                 }
             }
+            .listStyle(.plain)
+            .scrollContentBackground(.hidden)
+            .frame(height: min(272, max(96, CGFloat(preferences.configuration.sectionOrder.count) * 44 + 8)))
+            .accessibilityLabel("面板区块顺序")
         } header: {
             Text("面板区块与顺序")
         } footer: {
-            Text("勾选显示并拖动排序。隐藏区块不影响状态图标。隐藏音量区块也会停用面板滚轮调音量；全部隐藏后，仍可进入应用规则和设置。")
+            Text("开启显示后，可拖动或使用上下箭头排序。隐藏区块不影响状态图标。"
+                + "隐藏音量区块也会停用面板滚轮调音量；全部隐藏后，仍可进入应用规则和设置。")
         }
         Section {
             Toggle("显示快速操作页", isOn: visibility(for: .quickActions))
         } header: {
             Text("快速操作页")
         } footer: {
-            Text("快速操作独立为面板的第二页；页内项目在「快速操作」设置中配置。")
+            Text("快速操作独立为面板的第二页；页内项目在「自定义快速操作」设置中配置。")
         }
-        MenuBarOutputDeviceSettings(preferences: preferences, audio: audio)
-            .disabled(!isVolumeSectionEnabled)
         Section {
-            Picker("面板密度", selection: binding(\.panelDensity)) {
+            EclipsePicker("面板密度", selection: binding(\.panelDensity)) {
                 ForEach(MenuBarConfiguration.PanelDensity.allCases, id: \.self) {
                     Text($0.title).tag($0)
                 }
@@ -40,33 +55,13 @@ struct MenuBarPanelSettings: View {
         } footer: {
             Text("紧凑密度缩小区块间距与边距，设备较多时可在一屏内查看。")
         }
-        Section {
-            Toggle("滚动调节音量", isOn: binding(\.scrollAdjustsVolume))
-                .disabled(!isVolumeSectionEnabled)
-            Picker("响应范围", selection: binding(\.scrollScope)) {
-                ForEach(MenuBarConfiguration.ScrollScope.allCases, id: \.self) {
-                    Text($0.title).tag($0)
-                }
-            }
-            .disabled(!isVolumeSectionEnabled || !preferences.configuration.scrollAdjustsVolume)
-            Picker("增大音量的方向", selection: binding(\.scrollDirection)) {
-                ForEach(MenuBarConfiguration.ScrollDirection.allCases, id: \.self) {
-                    Text($0.title).tag($0)
-                }
-            }
-            .disabled(!isVolumeSectionEnabled || !preferences.configuration.scrollAdjustsVolume)
-            Toggle("跟随系统自然滚动", isOn: binding(\.naturalScrolling))
-                .disabled(!isVolumeSectionEnabled || !preferences.configuration.scrollAdjustsVolume)
-        } header: {
-            Text("面板音量操作")
-        } footer: {
-            Text("启用音量区块后，滚轮可在所选范围内调节当前输出设备音量。关闭滚轮操作后，仍可使用音量滑块；各项偏好会保留。"
-                 + "若与 MOS、Scroll Reverser、LinearMouse 等滚动增强工具冲突，请在其设置中将 Blinker 设为不处理（白名单）。")
-        }
     }
 
-    private var isVolumeSectionEnabled: Bool {
-        preferences.configuration.enabledSections.contains(.volume)
+    private func moveSection(_ section: MenuBarConfiguration.Section, by offset: Int) {
+        let order = preferences.configuration.sectionOrder
+        guard let index = order.firstIndex(of: section),
+              order.indices.contains(index + offset) else { return }
+        preferences.update { $0.sectionOrder.swapAt(index, index + offset) }
     }
 
     private func binding<Value>(_ keyPath: WritableKeyPath<MenuBarConfiguration, Value>) -> Binding<Value> {

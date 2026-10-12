@@ -3,7 +3,7 @@ import SwiftUI
 
 struct SystemStatusPanel: View {
     /// The two panel pages; quick actions lives apart from the status blocks.
-    enum PanelPage { case status, quickActions }
+    enum PanelPage: Hashable { case status, quickActions }
 
     @ObservedObject var monitor: SystemStatusMonitor
     @ObservedObject var audio: SystemAudioController
@@ -11,72 +11,77 @@ struct SystemStatusPanel: View {
     @ObservedObject var preferences: MenuBarPreferences
     @ObservedObject var keepAwake: KeepAwakeController
     @ObservedObject var finderToggles: FinderTogglesController
+    @ObservedObject var lowPower: LowPowerController
     let cleaning: CleaningWindowController
     let shortcutRunner: ShortcutRunner
+    @ObservedObject var appearanceToggle: AppearanceToggleController
+    @ObservedObject var displayModes: DisplayModesController
+    @ObservedObject var screenActions: ScreenActionController
     let onOpenApplications: () -> Void
     let onOpenSettings: () -> Void
     let onOpenMenuBarPage: (MenuBarSettingsPage) -> Void
+    var desktopActions: DesktopActionsCoordinator?
+    var usesWindowToolbar = false
+    @ObservedObject private var appPreferences = AppPreferences.shared
     @State private var expandedDevices = false
+    @State private var expandedAudio = false
     @State private var page = PanelPage.status
+    @State private var statusScroll = ScrollPosition(edge: .top)
+    @State private var actionsScroll = ScrollPosition(edge: .top)
     @State var expandedBluetoothDevices = false
     @State var shortcutSlotStates: [String: ShortcutSlotState] = [:]
     @State var confirmingTrashEmpty = false
     @StateObject var ejector = VolumeEjectController()
     @StateObject var trashEmptier = TrashEmptyController()
-    @StateObject var appearanceToggle = AppearanceToggleController()
-    @StateObject var displayModes = DisplayModesController()
-    @StateObject var lowPower = LowPowerController()
 
     var body: some View {
         let density = preferences.configuration.panelDensity
         let showsQuickActions = preferences.configuration.enabledSections.contains(.quickActions)
         let activePage = showsQuickActions ? page : .status
-        VStack(spacing: 0) {
-            HStack {
-                Text(activePage == .status ? "系统状态" : "快速操作").font(.headline)
-                Spacer()
-                if audio.isBusy {
-                    ProgressView().controlSize(.small)
+        ScrollView {
+            Group {
+                if activePage == .status {
+                    statusPage(density: density)
+                } else {
+                    quickActionsPage
                 }
-                Button("刷新", systemImage: "arrow.clockwise") {
-                    monitor.refresh()
-                    audio.refresh()
-                }
-                .labelStyle(.iconOnly).buttonStyle(.borderless)
             }
-            .padding(density.headerPadding)
-            if showsQuickActions {
-                Picker("", selection: $page) {
-                    Text("状态").tag(PanelPage.status)
-                    Text("快速操作").tag(PanelPage.quickActions)
-                }
-                .pickerStyle(.segmented)
-                .labelsHidden()
-                .padding(.horizontal, density.horizontalPadding)
-                .padding(.bottom, 8)
-            }
-            ScrollView {
-                Group {
-                    if activePage == .status {
-                        statusPage(density: density)
-                    } else {
-                        quickActionsPage
-                    }
-                }
-                .padding(.horizontal, density.horizontalPadding)
-                .padding(.bottom, density.horizontalPadding)
-            }
-            .scrollBounceBehavior(.basedOnSize)
-            .frame(maxHeight: 460)
-            Divider()
-            HStack {
-                Button("应用规则", action: onOpenApplications)
-                Spacer()
-                Button("状态图标设置…", action: onOpenSettings)
-            }
-            .buttonStyle(.borderless).padding(density.footerPadding)
+            .padding(density.horizontalPadding)
         }
-        .frame(width: 340)
+        .id(activePage)
+        .scrollPosition(activePage == .status ? $statusScroll : $actionsScroll)
+        .scrollBounceBehavior(.basedOnSize)
+        .frame(maxHeight: 460)
+        .safeAreaInset(edge: .top, spacing: 0) {
+            if !usesWindowToolbar {
+                HStack(spacing: 12) {
+                    pageNavigation
+                    Spacer(minLength: 0)
+                    managementMenu
+                        .controlSize(.regular)
+                        .buttonStyle(.glass)
+                        .buttonBorderShape(.circle)
+                }
+                .padding(.horizontal, density.horizontalPadding)
+                .padding(.vertical, density.headerPadding)
+            }
+        }
+        .toolbar {
+            if usesWindowToolbar {
+                ToolbarItem(placement: .principal) {
+                    pageNavigation
+                }
+                .sharedBackgroundVisibility(.hidden)
+                ToolbarItem(placement: .primaryAction) {
+                    managementMenu
+                }
+            }
+        }
+        .background { PanelSurface(usesWindowToolbar: usesWindowToolbar) }
+        .preferredColorScheme(appPreferences.appearance.resolvedScheme)
+        .frame(width: 360)
+        .controlSize(.regular)
+        .toggleStyle(.switch)
         .fixedSize(horizontal: false, vertical: true)
         .onChange(of: monitor.snapshot.storage) { _, newValue in
             ejector.prune(keeping: newValue?.external ?? [])
@@ -86,19 +91,21 @@ struct SystemStatusPanel: View {
     private func statusPage(density: MenuBarConfiguration.PanelDensity) -> some View {
         VStack(alignment: .leading, spacing: density.sectionSpacing) {
             ForEach(preferences.configuration.visibleSections, id: \.self) { section in
-                switch section {
-                case .battery: batterySection
-                case .network: networkSection
-                case .volume: volumeSection
-                case .bluetooth: bluetoothSection
-                case .storage: storageSection
-                case .performance: performanceSection
-                // Unreachable: visibleSections lists status blocks only.
-                case .quickActions: EmptyView()
+                Group {
+                    switch section {
+                    case .battery: batterySection
+                    case .network: networkSection
+                    case .volume: volumeSection
+                    case .bluetooth: bluetoothSection
+                    case .storage: storageSection
+                    case .performance: performanceSection
+                    case .quickActions: EmptyView()
+                    }
                 }
+                .modifier(StatusPanelGroup())
             }
             if preferences.configuration.visibleSections.isEmpty {
-                Text("所有状态区块均已隐藏，可在状态图标设置中重新开启。")
+                Text("所有状态区块均已隐藏，可在面板布局中重新开启。")
                     .foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             }
             if let error = audio.errorMessage {
@@ -109,21 +116,28 @@ struct SystemStatusPanel: View {
     }
 
     private var batterySection: some View {
-        VStack(alignment: .leading,
-               spacing: preferences.configuration.panelDensity.rowSpacing) {
-            heading("电池", symbol: "battery.100percent", page: .battery)
-            Text(monitor.snapshot.batteryDescription).font(.title3).monospacedDigit()
+        VStack(alignment: .leading, spacing: 8) {
+            DisclosureGroup {
+                VStack(alignment: .leading, spacing: 8) {
+                    if preferences.configuration.showsBatteryDetails,
+                       let details = monitor.snapshot.batteryDetails {
+                        batteryDetailsRows(details)
+                            .font(.caption).foregroundStyle(.secondary).monospacedDigit()
+                    }
+                    settingsLink("打开系统电池设置…", destination: "com.apple.Battery-Settings.extension")
+                }
+                .padding(.top, 8)
+            } label: {
+                VStack(alignment: .leading, spacing: 4) {
+                    heading("电池", symbol: "battery.100percent", page: .battery)
+                    Text(monitor.snapshot.batteryDescription)
+                        .font(.title3.weight(.medium)).monospacedDigit()
+                }
+            }
             if let value = monitor.snapshot.battery?.percentage {
                 ProgressView(value: Double(value), total: 100).tint(batteryColor)
                     .accessibilityLabel("电量").accessibilityValue("\(value)%")
             }
-            if preferences.configuration.showsBatteryDetails,
-               let details = monitor.snapshot.batteryDetails {
-                batteryDetailsRows(details)
-                    .font(.caption).foregroundStyle(.secondary)
-                    .monospacedDigit()
-            }
-            settingsLink("电池设置…", destination: "com.apple.Battery-Settings.extension")
         }
     }
 
@@ -140,29 +154,33 @@ struct SystemStatusPanel: View {
     }
 
     private var networkSection: some View {
-        VStack(alignment: .leading,
-               spacing: preferences.configuration.panelDensity.rowSpacing) {
-            heading("网络", symbol: "network", page: .networkAndVolume)
-            Text(monitor.snapshot.networkDescription)
-            if case let .wifi(strength) = monitor.snapshot.network {
-                Label(strength == 3 ? String(localized: "信号强")
-                    : strength == 2 ? String(localized: "信号中等") : String(localized: "信号弱"),
-                    systemImage: "wifi")
-                    .foregroundStyle(.secondary).font(.callout)
+        VStack(alignment: .leading, spacing: 8) {
+            DisclosureGroup {
+                VStack(alignment: .leading, spacing: 8) {
+                    if case let .wifi(strength) = monitor.snapshot.network {
+                        Label(strength == 3 ? String(localized: "信号强")
+                            : strength == 2 ? String(localized: "信号中等") : String(localized: "信号弱"),
+                            systemImage: "wifi")
+                            .foregroundStyle(.secondary).font(.callout)
+                    }
+                    networkDetailRows
+                    settingsLink("打开系统网络设置…", destination: "com.apple.Network-Settings.extension")
+                }
+                .padding(.top, 8)
+            } label: {
+                VStack(alignment: .leading, spacing: 4) {
+                    heading("网络", symbol: "wifi", page: .network)
+                    Text(monitor.snapshot.networkDescription).font(.callout).foregroundStyle(.secondary)
+                }
             }
-            networkDetailRows
-            settingsLink("网络设置…", destination: "com.apple.Network-Settings.extension")
+            networkActivityRow
         }
     }
 
     private var volumeSection: some View {
         VStack(alignment: .leading,
                spacing: preferences.configuration.panelDensity.rowSpacing) {
-            heading("音量", symbol: "speaker.wave.2", page: .panel)
-            if let device = audio.outputs.first(where: { $0.id == audio.currentDeviceID }) {
-                Text(device.name).font(.callout).foregroundStyle(.secondary).lineLimit(2)
-                    .accessibilityLabel(String(localized: "当前输出设备") + " " + device.name)
-            }
+            heading("音量", symbol: "speaker.wave.2", page: .audio)
             HStack(spacing: 10) {
                 Button {
                     audio.setMuted(!audio.isMuted)
@@ -181,11 +199,18 @@ struct SystemStatusPanel: View {
                 Text("此输出设备不提供系统音量控制。")
                     .font(.caption).foregroundStyle(.secondary)
             }
-            outputDevices
-            if preferences.configuration.showsAudioInput, let input = audio.input {
-                inputRow(input)
+            DisclosureGroup(isExpanded: $expandedAudio) {
+                outputDevices
+                if preferences.configuration.showsAudioInput, let input = audio.input {
+                    inputRow(input)
+                }
+                settingsLink("打开系统声音设置…", destination: "com.apple.Sound-Settings.extension")
+            } label: {
+                Text(expandedAudio ? String(localized: "输出设备")
+                    : audio.outputs.first(where: { $0.id == audio.currentDeviceID })?.name
+                        ?? String(localized: "输出设备"))
+                    .lineLimit(2)
             }
-            settingsLink("声音设置…", destination: "com.apple.Sound-Settings.extension")
         }
     }
 
@@ -235,27 +260,43 @@ struct SystemStatusPanel: View {
         }.map(\.element)
     }
 
+    private var displayedOutputDevices: [SystemAudioOutput] {
+        let config = preferences.configuration
+        let limit = expandedDevices || config.alwaysShowsAllOutputDevices
+            ? orderedDevices.count : config.outputDeviceLimit
+        return Array(orderedDevices.prefix(limit))
+    }
+
     private var outputDevices: some View {
         let configuration = preferences.configuration
         let all = orderedDevices
-        let limit = expandedDevices || configuration.alwaysShowsAllOutputDevices
-            ? all.count : configuration.outputDeviceLimit
-        return VStack(alignment: .leading, spacing: 4) {
-            ForEach(Array(all.prefix(limit))) { device in
-                Button { audio.selectOutput(device.id) } label: {
-                    HStack {
-                        Image(systemName: device.isBluetooth ? "headphones" : "speaker.wave.2")
-                            .frame(width: 18)
-                        Text(device.name).lineLimit(2).fixedSize(horizontal: false, vertical: true)
-                        Spacer(minLength: 8)
-                        if audio.currentDeviceID == device.id {
-                            Image(systemName: "checkmark")
-                        }
-                    }
-                    .contentShape(Rectangle()).padding(.vertical, 4)
+        return VStack(alignment: .leading, spacing: preferences.configuration.panelDensity.rowSpacing) {
+            if all.isEmpty {
+                if audio.isBusy {
+                    OperationProgress(message: String(localized: "正在读取输出设备…"))
+                } else if audio.errorMessage == nil {
+                    Text("暂无可用的输出设备").foregroundStyle(.secondary)
                 }
-                .buttonStyle(.plain)
-                .accessibilityValue(audio.currentDeviceID == device.id ? String(localized: "当前输出设备") : "")
+            }
+            if !all.isEmpty {
+                Picker("输出设备", selection: Binding(
+                    get: { audio.currentDeviceID },
+                    set: { if let deviceID = $0 { audio.selectOutput(deviceID) } }
+                )) {
+                    if audio.currentDeviceID == nil {
+                        Text("暂无可用的输出设备").tag(Optional<UInt32>.none)
+                    }
+                    ForEach(all.filter { device in
+                        displayedOutputDevices.contains { $0.id == device.id }
+                            || device.id == audio.currentDeviceID
+                    }) { device in
+                        Label(device.name, systemImage: device.isBluetooth ? "headphones" : "speaker.wave.2")
+                            .tag(Optional(device.id))
+                    }
+                }
+                .pickerStyle(.radioGroup)
+                .labelsHidden()
+                .disabled(audio.isBusy)
             }
             if all.count > configuration.outputDeviceLimit, !configuration.alwaysShowsAllOutputDevices {
                 Button(expandedDevices ? String(localized: "收起设备") : String(localized: "显示全部设备")) {
@@ -265,19 +306,74 @@ struct SystemStatusPanel: View {
         }
         .background(MenuBarPanelRegion(identifier: "BlinkerAudioDeviceList"))
     }
+}
 
-    func heading(_ title: LocalizedStringKey, symbol: String,
-                 page: MenuBarSettingsPage) -> some View {
-        HStack {
-            Label(title, systemImage: symbol).font(.callout.weight(.semibold))
-            Spacer()
-            Button { onOpenMenuBarPage(page) } label: {
-                Image(systemName: "gearshape")
+extension SystemStatusPanel {
+    private var pageNavigation: some View {
+        StatusPanelHeader(page: $page,
+                          showsQuickActions: preferences.configuration.enabledSections
+                              .contains(.quickActions))
+    }
+
+    private var managementMenu: some View {
+        Menu {
+            Button("刷新", systemImage: "arrow.clockwise") { refreshPanel() }
+                .disabled(audio.isBusy)
+            Divider()
+            Button("应用规则", systemImage: "macwindow", action: onOpenApplications)
+            Button("设置…", systemImage: "gearshape", action: onOpenSettings)
+            Section("自定义…") {
+                Button("面板布局") { onOpenMenuBarPage(.panel) }
+                Button("快速操作") { onOpenMenuBarPage(.quickActions) }
+                Menu("状态") {
+                    ForEach(preferences.configuration.visibleSections, id: \.self) { section in
+                        Button(section.title) {
+                            onOpenMenuBarPage(settingsPage(for: section))
+                        }
+                    }
+                }
             }
-            .buttonStyle(.borderless).foregroundStyle(.secondary)
-            .help("打开相关设置")
-            .accessibilityLabel(String(localized: "打开相关设置"))
+        } label: {
+            Label("管理面板", systemImage: "ellipsis")
         }
+        .labelStyle(.iconOnly)
+        .menuIndicator(.hidden)
+        .help("管理面板")
+    }
+
+    private func refreshPanel() {
+        monitor.refresh()
+        audio.refresh()
+        scanner.refresh()
+        if page == .quickActions {
+            finderToggles.refresh()
+            lowPower.refresh()
+            appearanceToggle.refresh()
+            displayModes.refresh()
+        }
+    }
+
+    private func settingsPage(for section: MenuBarConfiguration.Section) -> MenuBarSettingsPage {
+        switch section {
+        case .battery: .battery
+        case .network: .network
+        case .volume: .audio
+        case .bluetooth: .bluetooth
+        case .storage: .storage
+        case .performance: .performance
+        case .quickActions: .quickActions
+        }
+    }
+
+}
+
+extension SystemStatusPanel {
+    func heading(_ title: LocalizedStringKey, symbol: String,
+                 page _: MenuBarSettingsPage) -> some View {
+        Label(title, systemImage: symbol)
+            .font(.callout.weight(.semibold))
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .accessibilityAddTraits(.isHeader)
     }
 
     func settingsLink(_ title: LocalizedStringKey, destination: String) -> some View {
